@@ -1,4 +1,4 @@
-#include "module_manager.h"
+#include "cservice_mod_manager.h"
 
 #include <iostream>
 #include <algorithm>
@@ -7,23 +7,23 @@
 namespace skynet {
 
 // singleton
-module_manager* module_manager::instance_ = nullptr;
+cservice_mod_manager* cservice_mod_manager::instance_ = nullptr;
 
-module_manager* module_manager::instance()
+cservice_mod_manager* cservice_mod_manager::instance()
 {
     static std::once_flag once;
-    std::call_once(once, [&]() { instance_ = new module_manager; });
+    std::call_once(once, [&]() { instance_ = new cservice_mod_manager; });
     
     return instance_;
 }
 
-bool module_manager::add(service_module* mod)
+bool cservice_mod_manager::add(cservice_mod* mod)
 {
     // scope lock
     std::lock_guard<std::mutex> lock(mutex_);
 
     // already added, just return
-    service_module* exist_mod = _find_loaded_mod(mod->name);
+    cservice_mod* exist_mod = _find_loaded_mod(mod->name);
     if (exist_mod != nullptr)
         return true;
     
@@ -32,14 +32,14 @@ bool module_manager::add(service_module* mod)
         return false;
 
     // add
-    service_mods_[count_++] = *mod;
+    cservice_mods_[count_++] = *mod;
     return true;
 }
 
-service_module* module_manager::query(const std::string mod_name)
+cservice_mod* cservice_mod_manager::query(const std::string mod_name)
 {
     // return exists mod (fast find, not in scope-lock area)
-    service_module* mod = _find_loaded_mod(mod_name);
+    cservice_mod* mod = _find_loaded_mod(mod_name);
     if (mod != nullptr)
         return mod;
 
@@ -55,27 +55,27 @@ service_module* module_manager::query(const std::string mod_name)
     if (mod != nullptr)
         return mod;
     
-    // try to load mod_name.so
-    dll_handle handle = _try_load_mod(mod_name);
+    // try to load c service mod mod_name.so
+    void* handle = _try_load_mod_dll(mod_name);
     if (handle == nullptr)
         return nullptr;
 
-    int index = count_;
-    service_mods_[index].name = mod_name;
-    service_mods_[index].handle = handle;
+    int idx = count_;
+    cservice_mods_[idx].name = mod_name;
+    cservice_mods_[idx].dll_handle = handle;
 
-    // load c service mod APIs
-    if (!_load_mod_api(service_mods_[index]))
+    // try to load c service mod APIs
+    if (!_try_load_mod_api(cservice_mods_[idx]))
     {
-        service_mods_[index].name = mod_name;
+        cservice_mods_[idx].name = mod_name;
         ++count_;
-        mod = &service_mods_[index];
+        mod = &cservice_mods_[idx];
     }
 
     return mod;
 }
 
-dll_handle module_manager::_try_load_mod(const std::string& mod_name)
+void* cservice_mod_manager::_try_load_mod_dll(const std::string& mod_name)
 {
     // notice: search path divide by ';' wildcard: '?'
 
@@ -87,7 +87,7 @@ dll_handle module_manager::_try_load_mod(const std::string& mod_name)
     };
 
     // load mod_name.so
-    dll_handle handle = nullptr;
+    void* dll_handle = nullptr;
     for (auto& path : paths)
     {
         // find wildcard '?'
@@ -102,17 +102,17 @@ dll_handle module_manager::_try_load_mod(const std::string& mod_name)
         std::string mod_path = path.substr(0, pos) + mod_name;
 
         // 
-        handle = ::dlopen(mod_path.c_str(), RTLD_NOW | RTLD_GLOBAL);
-        if (handle != nullptr)
+        dll_handle = dll_helper::load(mod_path);
+        if (dll_handle != nullptr)
             break;
     }
 
-    if (handle == nullptr)
+    if (dll_handle == nullptr)
     {
-        std::cerr << "try open " << mod_name << " failed : " << ::dlerror() << std::endl;
+        std::cerr << "try open c service mod(" << mod_name << ") failed : " << dll_helper::error() << std::endl;
     }
 
-    return handle;
+    return dll_handle;
 }
 
 }

@@ -28,7 +28,7 @@ inline void skynet_node::set_monitor_exit(uint32_t monitor_exit)
     monitor_exit_ = monitor_exit;
 }
 
-inline void skynet_node::profile_enable(int enable)
+inline void skynet_node::enable_profiler(int enable)
 {
     profile_ = (bool)enable;
 }
