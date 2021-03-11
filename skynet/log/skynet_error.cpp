@@ -26,12 +26,14 @@ namespace skynet {
 // 查找名称为“logger”对应的ctx的handle id，然后向该id发送消息包skynet_context_push，消息包的类型为PTYPE_TEXT，没有设置PTYPE_ALLOCSESSION标记表示不需要接收方返回。
 void skynet_error(skynet_context* ctx, const char* msg, ...)
 {
-    // check logger c service handle
-    static uint32_t logger_svc_handle = 0;
-    if (logger_svc_handle == 0)
-        logger_svc_handle = handle_manager::instance()->find_by_name("logger");
-    // no logger c service, just skip the msg
-    if (logger_svc_handle == 0)
+    static uint32_t log_svc_handle = 0;
+
+    // check log c service handle
+    if (log_svc_handle == 0)
+        log_svc_handle = handle_manager::instance()->find_by_name("logger");
+    
+    // no log c service, just skip the msg
+    if (log_svc_handle == 0)
         return;
 
     char tmp[LOG_MESSAGE_SIZE];
@@ -82,7 +84,7 @@ void skynet_error(skynet_context* ctx, const char* msg, ...)
     smsg.session = 0;
     smsg.data = data;
     smsg.sz = len | ((size_t)PTYPE_TEXT << MESSAGE_TYPE_SHIFT);
-    skynet_context_push(logger_svc_handle, &smsg);
+    skynet_context_push(log_svc_handle, &smsg);
 }
 
 }

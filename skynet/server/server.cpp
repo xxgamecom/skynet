@@ -152,7 +152,7 @@ void skynet_context_dispatchall(struct skynet_context * ctx)
 //                2表示每帧处理mq长度的1/4(右移2位)，
 //                3表示每帧处理mq长度的1/8(右移3位)。
 // @return 返回下一个要分发的mq, 供下一帧调用
-message_queue* skynet_context_message_dispatch(skynet_monitor* sm, message_queue* q, int weight)
+message_queue* skynet_context_message_dispatch(skynet_monitor& sm, message_queue* q, int weight)
 {
     // peek next q from glboal_mq
     if (q == nullptr)
@@ -198,7 +198,7 @@ message_queue* skynet_context_message_dispatch(skynet_monitor* sm, message_queue
             skynet_error(ctx, "May overload, message queue length = %d", overload);
         }
 
-        sm->trigger(msg.source , svc_handle);
+        sm.trigger(msg.source , svc_handle);
 
         if (ctx->cb_ == nullptr)
         {
@@ -209,7 +209,7 @@ message_queue* skynet_context_message_dispatch(skynet_monitor* sm, message_queue
             dispatch_message(ctx, &msg); // 处理消息
         }
 
-        sm->trigger(0, 0);
+        sm.trigger(0, 0);
     }
 
     assert(q == ctx->queue_);

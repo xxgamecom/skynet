@@ -7,6 +7,8 @@
 #include <cstddef>
 #include <cstdint>
 
+namespace skynet {
+
 
 // type
 // 服务间的交互，只有很少的服务只需要处理别人发送过来的请求，而不需要向外提出请求。所以我们至少需要区分请求包和回应包。
@@ -51,4 +53,6 @@ int skynet_sendname(skynet_context* context, uint32_t source, const char* destin
 // 
 void skynet_debug_memory(const char *info);	// for debug use, output current service memory to stderr
 
+
+}
 

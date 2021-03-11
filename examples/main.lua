@@ -6,7 +6,7 @@ local max_client = 64
 skynet.start(function()
 	skynet.error("Server start")
 	skynet.uniqueservice("protoloader")
-	if not skynet.getenv "daemon" then
+	if not skynet.getenv "pid_file" then
 		local console = skynet.newservice("console")
 	end
 	skynet.newservice("debug_console",8000)

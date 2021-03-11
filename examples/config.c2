@@ -4,6 +4,6 @@ start = "cluster2"
 bootstrap = "snlua bootstrap"	-- The service for bootstrap
 luaservice = "./service/?.lua;./test/?.lua;./examples/?.lua"
 lualoader = "lualib/loader.lua"
-cpath = "./cservice/?.so"
+cservice_path = "./cservice/?.so"
 cluster = "./examples/clustername.lua"
 snax = "./test/?.lua"

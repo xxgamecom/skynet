@@ -5,6 +5,8 @@
 #include "skynet_monitor.h"
 #include "skynet_socket.h"
 
+#include "../skynet.h"  // api
+
 #include "../mq/mq.h"
 #include "../timer/timer_manager.h"
 #include "../context/handle_manager.h"
@@ -169,7 +171,7 @@ void server_thread::thread_timer(std::shared_ptr<monitor> m)
             msg.source = 0;
             msg.session = 0;
             msg.data = nullptr;
-            // msg.sz = (size_t)PTYPE_SYSTEM << MESSAGE_TYPE_SHIFT;
+            msg.sz = (size_t)PTYPE_SYSTEM << MESSAGE_TYPE_SHIFT;
             uint32_t logger_svc_handle = handle_manager::instance()->find_by_name("logger");
             if (logger_svc_handle != 0)
             {
@@ -197,7 +199,7 @@ void server_thread::thread_worker(std::shared_ptr<monitor> m, int idx, int weigh
     while (!m->is_quit)
     {
         // dispatch message
-//         q = skynet_context_message_dispatch(sm, q, weight);
+        q = skynet_context_message_dispatch(sm, q, weight);
         if (q == nullptr)
         {
             std::unique_lock<std::mutex> lock(m->mutex);
