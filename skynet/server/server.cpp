@@ -23,7 +23,7 @@
 #include "../log/skynet_error.h"
 
 #include "../mq/mq.h"
-#include "../mod/module_manager.h"
+#include "../mod/cservice_mod_manager.h"
 
 #include "../context/handle_manager.h"
 #include "../context/service_context.h"

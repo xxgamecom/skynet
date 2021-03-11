@@ -7,7 +7,7 @@
 
 #include "../mq/mq.h"
 #include "../timer/timer_manager.h"
-#include "../mod/module_manager.h"
+#include "../mod/cservice_mod_manager.h"
 
 #include "../context/handle_manager.h"
 #include "../context/service_context.h"
@@ -403,7 +403,7 @@ static const char* instruction_signal(skynet_context* context, const char* param
     }
 
     // NOTICE: the signal function should be thread safe
-    module_manager::instance()->instance_signal(svc_ctx->mod_, svc_ctx->instance_, sig);
+    svc_ctx->mod_->instance_signal(svc_ctx->instance_, sig);
 
     // skynet_context_release(svc_ctx);
 

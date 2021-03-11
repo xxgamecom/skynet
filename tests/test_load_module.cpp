@@ -5,11 +5,9 @@
 
 #include <dlfcn.h>
 
-typedef void* dll_handle;
-
 std::string search_path_ = "../bin/?.so;../bin/luaclib/?.so";
 
-dll_handle try_load_mod(const std::string& mod_name)
+void* try_load_mod(const std::string& mod_name)
 {
     // notice: search path divide by ';' wildcard: '?'
 
@@ -21,7 +19,7 @@ dll_handle try_load_mod(const std::string& mod_name)
     };
 
     // load mod_name.so
-    dll_handle handle = nullptr;
+    void* handle = nullptr;
     for (auto& path : paths)
     {
         // find wildcard '?'
@@ -55,7 +53,7 @@ dll_handle try_load_mod(const std::string& mod_name)
 
 int main()
 {
-    dll_handle h = nullptr;
+    void* h = nullptr;
     
     // test
     h = try_load_mod("bson.so");

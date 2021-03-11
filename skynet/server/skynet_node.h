@@ -51,7 +51,7 @@ public:
     void set_monitor_exit(uint32_t monitor_exit);
 
     // 
-    void profile_enable(int enable);
+    void enable_profiler(int enable);
 };
 
 }

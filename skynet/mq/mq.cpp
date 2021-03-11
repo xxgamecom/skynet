@@ -11,7 +11,6 @@
  */
 
 #include "mq.h"
-// #include "skynet_handle.h"
 
 #include <cassert>
 
@@ -120,7 +119,7 @@ int message_queue::pop(skynet_message* message)
 
     std::lock_guard<std::mutex> lock(mutex_);
 
-    // 说明队列不是空的
+    // queue is not empty
     if (head_ != tail_)
     {
         // 
@@ -142,7 +141,7 @@ int message_queue::pop(skynet_message* message)
         {
             length += cap;
         }
-        // 长度要超过阀值了，扩容一倍，和c++的vector一样的策略
+        // 长度要超过阀值了，扩容一倍
         while (length > overload_threshold_)
         {
             overload_ = length;

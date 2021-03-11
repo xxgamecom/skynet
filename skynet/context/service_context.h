@@ -6,7 +6,7 @@
 
 namespace skynet {
 
-class service_module;
+class cservice_mod;
 class message_queue;
 
 typedef int (*skynet_cb)(struct skynet_context * context, void *ud, int type, int session, uint32_t source , const void * msg, size_t sz);
@@ -26,7 +26,7 @@ struct skynet_context
 public:
     // mod info
     void*                       instance_ = nullptr;        // 每个ctx自己的数据块，不同类型ctx有不同数据结构，相同类型ctx数据结构相同，但具体的数据不一样，由指定module的create函数返回
-    service_module*             mod_ = nullptr;             // 保存module的指针，方便之后调用create,init,signal,release
+    cservice_mod*               mod_ = nullptr;             // 保存module的指针，方便之后调用create,init,signal,release
 
     // callback
     void*                       cb_ud_;                     // 给callback函数调用第二个参数，可以是NULL, 调用callback函数时，回传给callback的userdata，一般是instance指针

@@ -6,7 +6,7 @@
 
 #include "../skynet.h"
 #include "../mq/mq.h"
-#include "../mod/module_manager.h"
+#include "../mod/cservice_mod_manager.h"
 #include "../timer/timer_manager.h"
 #include "../context/handle_manager.h"
 
@@ -84,7 +84,7 @@ void skynet_node::start(skynet_config* config)
     global_mq::instance()->init();
 
     // 初始化服务动态库加载模块, 主要用户加载符合skynet服务模块接口的动态链接库(.so文件)
-    module_manager::instance()->init(config->cservice_path_);
+    cservice_mod_manager::instance()->init(config->cservice_path_);
 
     // 初始化定时器
     timer_manager::instance()->init();
@@ -93,7 +93,7 @@ void skynet_node::start(skynet_config* config)
     skynet_socket_init();
 
     // enable/disable profiler
-    skynet_node::instance()->profile_enable(config->profile_);
+    skynet_node::instance()->enable_profiler(config->profile_);
 
     // create c service: logger
 //     skynet_context* log_svc_ctx = skynet_context_new(config->log_service_, config->logger_);
