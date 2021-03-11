@@ -1,0 +1,14 @@
+# source file list
+AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet-luaclib/lua-lpeg" LPEG_SRC)
+
+# target shared lib (lpeg.so)
+ADD_LIBRARY(lpeg MODULE 
+    ${LPEG_SRC}
+)
+SET_TARGET_PROPERTIES(lpeg
+    PROPERTIES
+    PREFIX ""
+    ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_LUACLIB_BIN_PATH}"
+    LIBRARY_OUTPUT_DIRECTORY "${SKYNET_LUACLIB_BIN_PATH}"
+)
+TARGET_LINK_LIBRARIES(lpeg liblua)

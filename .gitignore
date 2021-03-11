@@ -1,0 +1,8 @@
+/.vscode
+/.idea
+/bin
+*.pyc
+*.dSYM
+*.so
+.DS_Store
+
