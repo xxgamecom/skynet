@@ -9,14 +9,14 @@
  *    - xxx_release: used to release c service instance.
  *    - xxx_signal:  called when a signal is triggered.
  * 2) xxx_init api must implement, other apis are optional;
- * 3) c service mod search path set by config file's cpath variable.
+ * 3) c service mod search path set by config file's cservice_path variable.
  *
  * example:
  * for c service mod logger.so
  * logger_create, logger_init, logger_release, logger_signal
  * 
  * config file
- * cpath=root.."skynet/cservice/?.so;" .. root.."user/cservice/?.so"
+ * cservice_path=root.."skynet/cservice/?.so;" .. root.."user/cservice/?.so"
  */
 #pragma once
 
@@ -77,8 +77,8 @@ private:
 
 private:
     std::string                                 search_path_ = "";      // c service mod .so file search path. 
-                                                                        // specified by the cpath of config file. divide by ';', wildcard: '?'
-                                                                        // for example: cpath = root.."skynet/cservice/?.so;" .. root.."user/cservice/?.so"
+                                                                        // specified by the cservice_path of config file. divide by ';', wildcard: '?'
+                                                                        // for example: cservice_path = root.."skynet/cservice/?.so;" .. root.."user/cservice/?.so"
 
     std::mutex                                  mutex_;                 // protect mod loaded array & count
     int                                         count_ = 0;             // loaded c service mod count

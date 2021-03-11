@@ -25,9 +25,10 @@ const char* env::getenv(const char* key)
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    // 从_ENV获取环境变量, 放入栈顶
+    // from _ENV
     lua_getglobal(L_, key);
     const char* result = lua_tostring(L_, -1);
+    
     // clear stack
     lua_pop(L_, 1);
 
@@ -38,19 +39,18 @@ void env::setenv(const char* key, const char* value)
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    // 检查旧值
+    // check old
     lua_getglobal(L_, key);
     assert(lua_isnil(L_, -1));	// 环境变量不可修改?
     lua_pop(L_,1);
 
-    // 设置新值
+    // set new
     lua_pushstring(L_,value);
     lua_setglobal(L_,key);
 }
 
 int env::get_int32(const char* key, int default_value)
 {
-    // 获取环境变量
     const char* str = getenv(key);
 
     // not exists, add default value
@@ -70,7 +70,6 @@ void env::set_int32(const char* key, int value)
 
 int env::get_boolean(const char* key, int default_value)
 {
-    // 获取环境变量
     const char* str = this->getenv(key);
 
     // not exists, add default value

@@ -10,4 +10,4 @@ luaservice = root.."service/?.lua;"..root.."test/?.lua;"..root.."examples/?.lua"
 lualoader = "lualib/loader.lua"
 -- preload = "./examples/preload.lua"	-- run preload.lua before every lua service run
 snax = root.."examples/?.lua;"..root.."test/?.lua"
-cpath = root.."cservice/?.so"
+cservice_path = root.."cservice/?.so"

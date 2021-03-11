@@ -7,7 +7,7 @@
 namespace skynet {
 
 // forward declare
-struct skynet_config;
+class skynet_config;
 
 // server node
 class skynet_node final

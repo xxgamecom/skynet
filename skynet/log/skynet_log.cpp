@@ -49,7 +49,7 @@ static void _log_socket(FILE* f, skynet_socket_message* message, size_t sz)
 //
 FILE* skynet_log_open(skynet_context* ctx, uint32_t handle)
 {
-    const char* log_path = env::instance()->getenv("logpath");
+    const char* log_path = env::instance()->getenv("log_path");
     if (log_path == nullptr)
         return nullptr;
     

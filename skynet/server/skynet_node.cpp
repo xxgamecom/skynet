@@ -4,6 +4,7 @@
 #include "skynet_config.h"
 #include "skynet_socket.h"
 
+#include "../skynet.h"
 #include "../mq/mq.h"
 #include "../mod/module_manager.h"
 #include "../timer/timer_manager.h"
@@ -43,7 +44,7 @@ void skynet_node::fini()
 
 // 启动 lua bootstrap服务
 // snlua bootstrap
-static void bootstrap(skynet_context* logger_ctx, const char* cmdline)
+static void bootstrap(skynet_context* log_svc_ctx, const char* cmdline)
 {
     // 命令行长度
     int sz = ::strlen(cmdline);
@@ -59,7 +60,7 @@ static void bootstrap(skynet_context* logger_ctx, const char* cmdline)
 //         // 通过传入的logger服务接口构建错误信息加入logger的消息队列
 //         skynet_error(nullptr, "Bootstrap error : %s\n", cmdline);
 //         // 输出消息队列中的错误信息
-//         skynet_context_dispatchall(logger_ctx);
+//         skynet_context_dispatchall(log_svc_ctx);
 
         ::exit(1);
     }
@@ -68,9 +69,9 @@ static void bootstrap(skynet_context* logger_ctx, const char* cmdline)
 void skynet_node::start(skynet_config* config)
 {
     // daemon mode
-    if (config->daemon)
+    if (config->pid_file_ != nullptr)
     {
-        if (daemon_helper::init(config->daemon))
+        if (daemon_helper::init(config->pid_file_))
         {
             ::exit(1);
         }
@@ -83,7 +84,7 @@ void skynet_node::start(skynet_config* config)
     global_mq::instance()->init();
 
     // 初始化服务动态库加载模块, 主要用户加载符合skynet服务模块接口的动态链接库(.so文件)
-    module_manager::instance()->init(config->module_path);
+    module_manager::instance()->init(config->cservice_path_);
 
     // 初始化定时器
     timer_manager::instance()->init();
@@ -92,31 +93,30 @@ void skynet_node::start(skynet_config* config)
     skynet_socket_init();
 
     // enable/disable profiler
-    skynet_node::instance()->profile_enable(config->profile);
+    skynet_node::instance()->profile_enable(config->profile_);
 
     // create c service: logger
-//     skynet_context* logger_ctx = skynet_context_new(config->logservice, config->logger);
-//     if (logger_ctx == nullptr)
+//     skynet_context* log_svc_ctx = skynet_context_new(config->log_service_, config->logger_);
+//     if (log_svc_ctx == nullptr)
     {
-        std::cerr << "Can't launch " << config->logservice << " service" << std::endl;
+        std::cerr << "Can't launch " << config->log_service_ << " service" << std::endl;
         ::exit(1);
     }
-
-    //handle_manager::instance()->set_handle_by_name("logger", logger_ctx->handle);
+    // handle_manager::instance()->set_handle_by_name("logger", log_svc_ctx->handle);
 
     // bootstrap to load snlua c service
-    // bootstrap(logger_ctx, config->bootstrap);
+    // bootstrap(log_svc_ctx, config->bootstrap);
 
     // start server threads
-    server_thread::start(config->thread);
+    server_thread::start(config->thread_);
 
     //
     skynet_socket_free();
 
-    // clean daemon
-    if (config->daemon)
+    // clean daemon pid file
+    if (config->pid_file_)
     {
-        daemon_helper::fini(config->daemon);
+        daemon_helper::fini(config->pid_file_);
     }
 }
 
