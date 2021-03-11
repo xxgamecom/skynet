@@ -1,7 +1,23 @@
-Skynet++
+skynet++
 ==========
 
-**Skynet++ Framework Architecture**
+## 编写skynet++的原因
+
+* 个人觉得原版的skynet属于比较底层的实现, 严格的来说还称不上一个框架, 使用的过程还需要做大量的开发工作
+* 对C不是太熟悉, 工作中需要对原版skynet进行修改和维护
+* 原skynet缺少服务治理的支持
+* 原skynet在缺乏上层框架框架 (不完善)
+* 
+
+## 与原版skynet的异同
+
+* 移除了分布式harbor模式, 只支持一种cluster模式
+* 底层skynet使用C++重新编写
+* 对服务治理提供支持: 注册服务、发现服务、配置服务等
+* 提供简单完善的服务RPC接口
+* 
+
+**skynet++ Framework Architecture**
 ![](docs/framework_architecture.jpg "")
 
 ## 目录结构
@@ -73,7 +89,7 @@ sudo apt-get install libssl-dev
 ```
 
 ## 编译
-Skynet++使用CMake构建。
+skynet++使用CMake构建。
 
 ```shell
 # 1 创建编译目录
