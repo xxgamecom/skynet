@@ -75,30 +75,20 @@ sudo apt-get install libssl-dev
 ## 编译
 Skynet++使用CMake构建。
 
-1. 创建目录
 ```shell
+# 1 创建编译目录
 $ mkdir skynet
 $ cd skynet
-```
 
-2. 从github拉取项目
-```shell
-$ git clone https://github.com/xxgame/skynet++
-```
+# 2 从github拉取项目
+$ git clone https://github.com/xxgamecom/skynet
 
-3. 更新子模块
-```shell
-$ git submodule update --init
-```
-
-4. 创建cmake构建目录
-```shell
+# 3 创建cmake构建目录
 $ cd ../
 $ mkdir cmake-build && cd cmake-build
-```
 
-5. 编译
-```shell
-$ cmake ../skynet++ -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl
+# 4 编译
+$ cmake ../skynet -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl
 $ make
 ```
+
