@@ -13,7 +13,7 @@ class message_queue;
 
 
 // 投递服务消息
-int skynet_context_push(uint32_t handle, skynet_message* message);
+int skynet_context_push(uint32_t svc_handle, skynet_message* message);
 // 发送消息
 void skynet_context_send(service_context* svc_ctx, void* msg, size_t sz, uint32_t src_svc_handle, int type, int session);
 
@@ -24,10 +24,7 @@ message_queue* skynet_context_message_dispatch(skynet_monitor& sm, message_queue
 void skynet_context_dispatchall(service_context* svc_ctx);
 
 // for monitor
-void skynet_context_endless(uint32_t handle);
-
-
-
+void skynet_context_endless(uint32_t svc_handle);
 
 }
 

@@ -5,6 +5,7 @@
 #include "../node/server.h"
 
 #include "../mq/mq.h"
+#include "../mq/mq_msg.h"
 #include "../context/handle_manager.h"
 #include "../context/service_context.h"
 

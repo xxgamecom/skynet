@@ -8,6 +8,8 @@
 #include "../skynet.h"  // api
 
 #include "../mq/mq.h"
+#include "../mq/mq_msg.h"
+
 #include "../timer/timer_manager.h"
 #include "../context/handle_manager.h"
 

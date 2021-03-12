@@ -39,7 +39,7 @@ private:
     // service handle (corresponding relationship between handle and name)
     struct handle_name
     {
-        std::string             name = "";                  // service name
+        std::string             svc_name = "";              // service name
         uint32_t                svc_handle = 0;             // service handle
     };
 
@@ -73,15 +73,16 @@ public:
     service_context* grab(uint32_t svc_handle);
 
     // 利用服务名字获取服务ID （二分法）
-    uint32_t find_by_name(const char* name);
+    uint32_t find_by_name(const char* svc_name);
+
     // 赋予一个ID名字, TODO: change function name
-    const char* set_handle_by_name(const char* name, uint32_t svc_handle);
+    const char* set_handle_by_name(const char* svc_name, uint32_t svc_handle);
 
 private:
     //
-    const char* _insert_name(const char* name, uint32_t svc_handle);
+    const char* _insert_name(const char* svc_name, uint32_t svc_handle);
     // 把name插入到name数组中，再关联handle
-    void _insert_name_before(char* name, uint32_t svc_handle, int before);
+    void _insert_name_before(char* svc_name, uint32_t svc_handle, int before);
 };
 
 

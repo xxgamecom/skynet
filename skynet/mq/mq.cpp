@@ -11,6 +11,7 @@
  */
 
 #include "mq.h"
+#include "mq_msg.h"
 
 #include <cassert>
 

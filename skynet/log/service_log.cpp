@@ -4,6 +4,8 @@
 
 #include "../log/log.h"
 
+#include "../mq/mq_msg.h"
+
 #include "../node/node_env.h"
 #include "../node/skynet_socket.h"
 
