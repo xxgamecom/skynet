@@ -9,6 +9,9 @@
  */
 
 #include "skynet_monitor.h"
+#include "server.h"
+
+#include "../log/log.h"
 
 namespace skynet {
 
@@ -27,8 +30,8 @@ void skynet_monitor::check()
         // 说明可能死循环或比较耗时
         if (dst_svc_handle_ != 0)
         {
-            // skynet_context_endless(dst_svc_handle_);
-            // skynet_error(NULL, "A message from [ :%08x ] to [ :%08x ] maybe in an endless loop (version = %d)", src_svc_handle_, dst_svc_handle_, version_);
+            skynet_context_endless(dst_svc_handle_);
+            log(nullptr, "A message from [ :%08x ] to [ :%08x ] maybe in an endless loop (version = %d)", src_svc_handle_, dst_svc_handle_, version_.load());
         }
     }
     else

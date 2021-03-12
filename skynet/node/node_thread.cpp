@@ -1,7 +1,7 @@
-#include "skynet_node_thread.h"
+#include "node_thread.h"
 
 #include "server.h"
-#include "skynet_node.h"
+#include "node.h"
 #include "skynet_monitor.h"
 #include "skynet_socket.h"
 
@@ -47,7 +47,7 @@ static int WORKER_THREAD_WEIGHT[] = {
 const int WORKER_THREAD_WEIGHT_COUNT = sizeof(WORKER_THREAD_WEIGHT) / sizeof(WORKER_THREAD_WEIGHT[0]);
 
 // start threads
-void server_thread::start(int thread_count)
+void node_thread::start(int thread_count)
 {
     // 注册SIGHUP信号处理器, 用于处理 log 文件 reopen
     signal_helper::handle_sighup(&handle_hup);
@@ -56,7 +56,7 @@ void server_thread::start(int thread_count)
     std::shared_ptr<std::thread> threads[thread_count + 3];
 
     //
-    auto m = std::make_shared<server_thread::monitor>();
+    auto m = std::make_shared<node_thread::monitor>();
     m->thread_count = thread_count;
     m->sleep_count = 0;
 
@@ -64,9 +64,9 @@ void server_thread::start(int thread_count)
     m->sm.reset(new skynet_monitor[thread_count], std::default_delete<skynet_monitor[]>());
 
     // start mointer, timer, socket threads
-    threads[0] = std::make_shared<std::thread>(server_thread::thread_monitor, m);
-    threads[1] = std::make_shared<std::thread>(server_thread::thread_timer, m);
-    threads[2] = std::make_shared<std::thread>(server_thread::thread_socket, m);
+    threads[0] = std::make_shared<std::thread>(node_thread::thread_monitor, m);
+    threads[1] = std::make_shared<std::thread>(node_thread::thread_timer, m);
+    threads[2] = std::make_shared<std::thread>(node_thread::thread_socket, m);
 
     // start worker threads
     int weight = 0;
@@ -75,7 +75,7 @@ void server_thread::start(int thread_count)
         weight = idx < WORKER_THREAD_WEIGHT_COUNT ? WORKER_THREAD_WEIGHT[idx] : 0;
         
         //
-        threads[idx + 3] = std::make_shared<std::thread>(server_thread::thread_worker, m, idx, weight);
+        threads[idx + 3] = std::make_shared<std::thread>(node_thread::thread_worker, m, idx, weight);
     }
 
     // wait all thread exit
@@ -86,7 +86,7 @@ void server_thread::start(int thread_count)
 }
 
 // socket thread proc，并唤醒阻塞的thread_worker线程
-void server_thread::thread_socket(std::shared_ptr<monitor> m)
+void node_thread::thread_socket(std::shared_ptr<monitor> m)
 {
     int ret = 0;
     for (;;)
@@ -102,7 +102,7 @@ void server_thread::thread_socket(std::shared_ptr<monitor> m)
         if (ret < 0)
         {
             // check abort
-            if (skynet_node::instance()->total_svc_ctx() == 0)
+            if (node::instance()->total_svc_ctx() == 0)
                 break;
 
             continue;
@@ -114,14 +114,14 @@ void server_thread::thread_socket(std::shared_ptr<monitor> m)
     }
 }
 
-void server_thread::thread_monitor(std::shared_ptr<monitor> m)
+void node_thread::thread_monitor(std::shared_ptr<monitor> m)
 {
     //
     int n = m->thread_count;
     for (;;)
     {
         // check abort
-        if (skynet_node::instance()->total_svc_ctx() == 0)
+        if (node::instance()->total_svc_ctx() == 0)
             break;
 
         // check dead lock or blocked
@@ -134,7 +134,7 @@ void server_thread::thread_monitor(std::shared_ptr<monitor> m)
         for (int i = 0; i < 5; i++)
         {
             // check abort per 1 second
-            if (skynet_node::instance()->total_svc_ctx() == 0)
+            if (node::instance()->total_svc_ctx() == 0)
                 break;
 
             // sleep 1 second
@@ -144,7 +144,7 @@ void server_thread::thread_monitor(std::shared_ptr<monitor> m)
 }
 
 // timer thread proc
-void server_thread::thread_timer(std::shared_ptr<monitor> m)
+void node_thread::thread_timer(std::shared_ptr<monitor> m)
 {
     for (;;)
     {
@@ -154,7 +154,7 @@ void server_thread::thread_timer(std::shared_ptr<monitor> m)
         skynet_socket_updatetime();
 
         // check abort
-        if (skynet_node::instance()->total_svc_ctx() == 0)
+        if (node::instance()->total_svc_ctx() == 0)
             break;
 
         // notify worker thread
@@ -168,7 +168,7 @@ void server_thread::thread_timer(std::shared_ptr<monitor> m)
         {
             // make log file reopen
             skynet_message msg;
-            msg.source = 0;
+            msg.src_svc_handle = 0;
             msg.session = 0;
             msg.data = nullptr;
             msg.sz = (size_t)PTYPE_SYSTEM << MESSAGE_TYPE_SHIFT;
@@ -191,7 +191,7 @@ void server_thread::thread_timer(std::shared_ptr<monitor> m)
     m->cond.notify_all();
 }
 
-void server_thread::thread_worker(std::shared_ptr<monitor> m, int idx, int weight)
+void node_thread::thread_worker(std::shared_ptr<monitor> m, int idx, int weight)
 {
     skynet_monitor& sm = m->sm.get()[idx];
 

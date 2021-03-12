@@ -49,7 +49,9 @@ const char * skynet_socket_udp_address(struct skynet_socket_message *, int *addr
 
 socket::socket_info* skynet_socket_info();
 
-// legacy APIs
+//
+// legacy APIs, TODO: 废弃
+//
 
 static inline void sendbuffer_init_(struct socket::send_buffer* buf, int socket_id, const void *buffer, int sz)
 {

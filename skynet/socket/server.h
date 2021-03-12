@@ -183,7 +183,7 @@ public:
      * @param msg 消息, 传入的消息必须为 socket_event_type::SOCKET_UDP 类型
      * @param addr_sz 地址所占字节数 
      */
-    const socket_udp_address* udp_address(socket_message* msg, int& addr_sz);
+    const socket_udp_address* udp_address(socket_message* msg, int* addr_sz);
 
 public:
     // 计算socket slot数组下标

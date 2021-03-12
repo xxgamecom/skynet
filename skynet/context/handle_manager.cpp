@@ -70,7 +70,7 @@ uint32_t handle_manager::registe(skynet_context* ctx)
         ::memset(new_slot, 0, slot_size_ * 2 * sizeof(struct skynet_context *));
         for (int i = 0; i < slot_size_; i++)
         {
-            int hash = slot_[i]->handle_ & (slot_size_ * 2 - 1);
+            int hash = slot_[i]->svc_handle_ & (slot_size_ * 2 - 1);
             assert(new_slot[hash] == nullptr);
             new_slot[hash] = slot_[i];
         }
@@ -92,25 +92,25 @@ int handle_manager::retire(uint32_t svc_handle)
     uint32_t hash = svc_handle & (slot_size_ - 1);
     skynet_context* ctx = slot_[hash];
 
-    if (ctx != nullptr && ctx->handle_ == svc_handle)
+    if (ctx != nullptr && ctx->svc_handle_ == svc_handle)
     {
-    //     slot_[hash] = nullptr;
-    //     ret = 1;
-    //     int j = 0, n = name_count_;
-    //     for (int i = 0; i < n; ++i)
-    //     {
-    //         if (name_[i].handle == svc_handle)
-    //         {
-    //             delete[] name_[i].name;
-    //             continue;
-    //         }
-    //         else if (i!=j)
-    //         {
-    //             name_[j] = name_[i];
-    //         }
-    //         ++j;
-    //     }
-    //     name_count_ = j;
+        slot_[hash] = nullptr;
+        ret = 1;
+        int j = 0, n = name_count_;
+        for (int i = 0; i < n; ++i)
+        {
+            if (name_[i].svc_handle == svc_handle)
+            {
+                // delete[] name_[i].name;
+                continue;
+            }
+            else if (i!=j)
+            {
+                name_[j] = name_[i];
+            }
+            ++j;
+        }
+        name_count_ = j;
     }
     else
     {
@@ -145,7 +145,7 @@ void handle_manager::retireall()
                 skynet_context* ctx = slot_[i];
                 if (ctx != nullptr)
                 {
-                    svc_handle = ctx->handle_;
+                    svc_handle = ctx->svc_handle_;
                 }
             }
 
@@ -176,7 +176,7 @@ skynet_context* handle_manager::grab(uint32_t svc_handle)
 
     uint32_t hash = svc_handle & (slot_size_-1);
     skynet_context* ctx = slot_[hash];
-    if (ctx != nullptr && ctx->handle_ == svc_handle)
+    if (ctx != nullptr && ctx->svc_handle_ == svc_handle)
     {
         result = ctx;
         result->grab();

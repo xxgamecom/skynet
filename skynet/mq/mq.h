@@ -26,7 +26,7 @@ namespace skynet {
 // skynet message
 struct skynet_message
 {
-    uint32_t                        source = 0;                 // source service address
+    uint32_t                        src_svc_handle = 0;         // source service handle
     int                             session = 0;                // message session id
     void*                           data = nullptr;             // message data
     size_t                          sz = 0;                     // message data size, high 8 bits: message type

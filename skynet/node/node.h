@@ -7,15 +7,15 @@
 namespace skynet {
 
 // forward declare
-class skynet_config;
+class node_config;
 
 // server node
-class skynet_node final
+class node final
 {
 private:
-    static skynet_node* instance_;
+    static node* instance_;
 public:
-    static skynet_node* instance();
+    static node* instance();
 
     // node info
 private:
@@ -25,9 +25,9 @@ private:
     bool                        profile_;                   // 是否开启性能统计计数, 默认关闭
 
 private:
-    skynet_node() = default;
+    node() = default;
 public:
-    ~skynet_node() = default;
+    ~node() = default;
 
 public:
     // initialize skynet node 
@@ -36,7 +36,7 @@ public:
     void fini();
 
     // start skynet node
-    void start(skynet_config* config);
+    void start(node_config* config);
 
 public:
     // get service ctx count
@@ -56,4 +56,4 @@ public:
 
 }
 
-#include "skynet_node.inl"
+#include "node.inl"

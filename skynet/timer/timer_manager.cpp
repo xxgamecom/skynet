@@ -102,7 +102,7 @@ static inline void dispatch_list(timer_node* current)
     {
         timer_event* event = (timer_event*)(current + 1);
         skynet_message message;
-        message.source = 0;
+        message.src_svc_handle = 0;
         message.session = event->session;
         message.data = nullptr;
         // message.sz = (size_t)PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
@@ -167,7 +167,7 @@ void timer_manager::init()
     TI = create_timer();
 
     uint32_t current = 0;
-    time_helper::systime(&TI->starttime, &current);
+    time_helper::systime(&TI->start_time, &current);
     TI->current = current;
     TI->current_point = time_helper::gettime();
 }
@@ -183,7 +183,7 @@ int timer_manager::timeout(uint32_t handle, int time, int session)
     if (time <= 0)
     {
         skynet_message message;
-        message.source = 0;
+        message.src_svc_handle = 0;
         message.session = session;
         message.data = NULL;
     //     message.sz = (size_t)PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
@@ -213,7 +213,7 @@ void timer_manager::update_time()
     // 
     if (cp < TI->current_point)
     {
-        // skynet_error(NULL, "time diff error: change from %lld to %lld", cp, TI->current_point);
+        // log(NULL, "time diff error: change from %lld to %lld", cp, TI->current_point);
         TI->current_point = cp;
     }
     //

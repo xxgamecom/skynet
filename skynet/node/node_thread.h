@@ -8,7 +8,7 @@ namespace skynet {
 class skynet_monitor;
 
 // server thread manager
-class server_thread final
+class node_thread final
 {
 public:
     // thread status moniter

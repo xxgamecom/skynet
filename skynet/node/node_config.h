@@ -4,8 +4,8 @@
 
 namespace skynet {
 
-// 配置信息
-class skynet_config final
+// skynet node config
+class node_config final
 {
 public:
     int                         thread_;                        // worker thread count (不要配置超过实际拥有的CPU核心数)
@@ -21,7 +21,7 @@ public:
     const char*                 cservice_path_;                 // C service module search path (.so search path)
     const char*                 bootstrap_;                     // skynet 启动的第一个服务以及其启动参数。默认配置为 snlua bootstrap ，即启动一个名为 bootstrap 的 lua 服务。通常指的是 service/bootstrap.lua 这段代码。
     
-    const char*                 logger_;                        // log file, skynet_error() API 的日志输出文件
+    const char*                 logger_;                        // log file, log() API 的日志输出文件
                                                                 // - logger = nil or logger = "": 输出到stdout
                                                                 // - logger = "./skynet.log": 输出到skynet.log日志文件中
 

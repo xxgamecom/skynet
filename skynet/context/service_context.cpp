@@ -1,9 +1,10 @@
 #include "service_context.h"
 #include "handle_manager.h"
 
-#include "../log/skynet_error.h"
+#include "../node/node.h"
+
+#include "../log/log.h"
 #include "../mq/mq.h"
-#include "../server/skynet_node.h"
 #include "../mod/cservice_mod_manager.h"
 
 namespace skynet {
@@ -22,7 +23,7 @@ static void delete_context(skynet_context* svc_ctx)
 //     CHECKCALLING_DESTROY(svc_ctx)
 
     delete svc_ctx;
-    skynet_node::instance()->dec_svc_ctx();
+    node::instance()->dec_svc_ctx();
 }
 
 // // 创建服务的一个session id
@@ -52,12 +53,12 @@ void skynet_context::reserve()
     grab();
     // don't count the context reserved, because skynet abort (the worker threads terminate) only when the total context is 0 .
     // the reserved context will be release at last.
-    skynet_node::instance()->dec_svc_ctx();
+    node::instance()->dec_svc_ctx();
 }
 
 uint32_t skynet_context::handle()
 {
-    return handle_;
+    return svc_handle_;
 }
 
 // 设置回调函数
@@ -96,7 +97,7 @@ skynet_context* skynet_context_new(const char* name, const char* param)
     ctx->session_id_ = 0;
     ctx->log_fd_ = nullptr;
 
-//     ctx->init = false;
+    ctx->init_ = false;
     ctx->endless_ = false;
 
     ctx->cpu_cost_ = 0;
@@ -105,13 +106,13 @@ skynet_context* skynet_context_new(const char* name, const char* param)
 //     ctx->profile_ = G_NODE.profile;
 
     // Should set to 0 first to avoid skynet_handle_retireall get an uninitialized handle
-    ctx->handle_ = 0;
-    ctx->handle_ = handle_manager::instance()->registe(ctx);        // 从skynet_handle获得唯一的标识id
+    ctx->svc_handle_ = 0;
+    ctx->svc_handle_ = handle_manager::instance()->registe(ctx);        // 从skynet_handle获得唯一的标识id
     // 初始化次级消息队列
-    message_queue* queue = ctx->queue_ = message_queue::create(ctx->handle_);
+    message_queue* queue = ctx->queue_ = message_queue::create(ctx->svc_handle_);
     // init function maybe use ctx->handle, so it must init at last
     // 增加服务数量
-    skynet_node::instance()->inc_svc_ctx();
+    node::instance()->inc_svc_ctx();
 
 
 //     // 调用服务模块的初始化方法
@@ -124,25 +125,25 @@ skynet_context* skynet_context_new(const char* name, const char* param)
         skynet_context* ret = skynet_context_release(ctx);
         if (ret != nullptr)
         {
-//             ctx->init = true;
+            ctx->init_ = true;
         }
         // 将服务的消息队列加到全局消息队列中, 这样才能收到消息回调
         global_mq::instance()->push(queue);
         if (ret != nullptr)
         {
-            skynet_error(ret, "LAUNCH %s %s", name, param ? param : "");
+            log(ret, "LAUNCH %s %s", name, param ? param : "");
         }
         return ret;
     } 
     // 服务模块初始化失败
     else
     {
-//         skynet_error(ctx, "FAILED launch %s", name);
-//         uint32_t handle = ctx->handle;
-//         skynet_context_release(ctx);
-//         skynet_handle_retire(handle);
-//         struct drop_t d = { handle };
-//         skynet_mq_release(queue, drop_message, &d);
+        log(ctx, "FAILED launch %s", name);
+        uint32_t handle = ctx->svc_handle_;
+        skynet_context_release(ctx);
+        handle_manager::instance()->retire(handle);
+        // drop_t d = { handle };
+        // queue->release(drop_message, &d);
         return nullptr;
     }
 }
@@ -150,11 +151,11 @@ skynet_context* skynet_context_new(const char* name, const char* param)
 // 创建服务ctx
 skynet_context* skynet_context_release(skynet_context* svc_ctx)
 {
-//     if (ATOM_DEC(&svc_ctx->ref) == 0)
-//     {
-//         delete_context(svc_ctx);
-//         return nullptr;
-//     }
+    if (--svc_ctx->ref_ == 0)
+    {
+        delete_context(svc_ctx);
+        return nullptr;
+    }
 
     return svc_ctx;
 }

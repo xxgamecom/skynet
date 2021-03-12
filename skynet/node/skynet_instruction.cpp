@@ -1,9 +1,9 @@
 #include "skynet_instruction.h"
-#include "skynet_node.h"
-#include "env.h"
+#include "node.h"
+#include "node_env.h"
 
-#include "../log/skynet_log.h"
-#include "../log/skynet_error.h"
+#include "../log/service_log.h"
+#include "../log/log.h"
 
 #include "../mq/mq.h"
 #include "../timer/timer_manager.h"
@@ -37,7 +37,7 @@ static uint32_t _to_svc_handle(skynet_context* svc_ctx, const char* param)
     //
     else
     {
-        skynet_error(svc_ctx, "Can't convert %s to svc_handle", param);
+        log(svc_ctx, "Can't convert %s to svc_handle", param);
     }
 
     return svc_handle;
@@ -60,17 +60,17 @@ static void _handle_exit(skynet_context* svc_ctx, uint32_t svc_handle)
 {
     if (svc_handle == 0)
     {
-        svc_handle = svc_ctx->handle_;
-        skynet_error(svc_ctx, "KILL self");
+        svc_handle = svc_ctx->svc_handle_;
+        log(svc_ctx, "KILL self");
     }
     else
     {
-        skynet_error(svc_ctx, "KILL :%0x", svc_handle);
+        log(svc_ctx, "KILL :%0x", svc_handle);
     }
 
-    if (skynet_node::instance()->get_monitor_exit() != 0)
+    if (node::instance()->get_monitor_exit() != 0)
     {
-        // skynet_send(svc_ctx, svc_handle, skynet_node::instance()->get_monitor_exit(), PTYPE_CLIENT, 0, nullptr, 0);
+        // skynet_send(svc_ctx, svc_handle, node::instance()->get_monitor_exit(), PTYPE_CLIENT, 0, nullptr, 0);
     }
 
     handle_manager::instance()->retire(svc_handle);
@@ -86,7 +86,7 @@ static const char* instruction_timeout(skynet_context* svc_ctx, const char* para
     int ti = ::strtol(param, &session_ptr, 10);
 
     int session = svc_ctx->newsession();
-    timer_manager::instance()->timeout(svc_ctx->handle_, ti, session);
+    timer_manager::instance()->timeout(svc_ctx->svc_handle_, ti, session);
     
     ::sprintf(svc_ctx->result_, "%d", session);
     return svc_ctx->result_;
@@ -98,16 +98,16 @@ static const char* instruction_reg(skynet_context* svc_ctx, const char* param)
 {
     if (param == nullptr || param[0] == '\0')
     {
-        ::sprintf(svc_ctx->result_, ":%x", svc_ctx->handle_);
+        ::sprintf(svc_ctx->result_, ":%x", svc_ctx->svc_handle_);
         return svc_ctx->result_;
     }
     else if (param[0] == '.')
     {
-        return handle_manager::instance()->set_handle_by_name(param + 1, svc_ctx->handle_);
+        return handle_manager::instance()->set_handle_by_name(param + 1, svc_ctx->svc_handle_);
     }
     else
     {
-        skynet_error(svc_ctx, "Can't register global name %s in C", param);
+        log(svc_ctx, "Can't register global name %s in C", param);
         return nullptr;
     }
 }
@@ -150,7 +150,7 @@ static const char* instruction_name(skynet_context* svc_ctx, const char* param)
     }
     else
     {
-        skynet_error(svc_ctx, "Can't set global name %s in C", name);
+        log(svc_ctx, "Can't set global name %s in C", name);
     }
 
     return nullptr;
@@ -190,14 +190,14 @@ static const char* instruction_launch(skynet_context* context, const char* param
     char* mod = strsep(&args, " \t\r\n");
     args = ::strsep(&args, "\r\n");
 
-    // skynet_context* svc_ctx = skynet_context_new(mod, args);
-    // if (svc_ctx == nullptr)
-    // {
-    //    return nullptr;
-    // }
-    // else
+    skynet_context* svc_ctx = skynet_context_new(mod, args);
+    if (svc_ctx == nullptr)
     {
-        // _id_to_hex(svc_ctx->handle_, context->result_);
+        return nullptr;
+    }
+    else
+    {
+        _id_to_hex(svc_ctx->svc_handle_, context->result_);
         return context->result_;
     }
 }
@@ -205,7 +205,7 @@ static const char* instruction_launch(skynet_context* context, const char* param
 // skynet cmd: getenv, 获取skynet环境变量，是key-value结构，所有ctx共享的
 static const char* instruction_getenv(skynet_context* svc_ctx, const char* param)
 {
-    return env::instance()->getenv(param);
+    return node_env::instance()->get_env(param);
 }
 
 // skynet cmd: setenv, 设置skynet环境变量，是key-value结构，所有ctx共享的
@@ -224,15 +224,15 @@ static const char* instruction_setenv(skynet_context* svc_ctx, const char* param
     key[i] = '\0';
     param += i+1;
 
-    env::instance()->setenv(key, param);
+    node_env::instance()->set_env(key, param);
 
     return nullptr;
 }
 
-// skynet cmd: starttime
-static const char* instruction_starttime(skynet_context* svc_ctx, const char* param)
+// skynet cmd: start_time
+static const char* instruction_start_time(skynet_context* svc_ctx, const char* param)
 {
-    uint32_t sec = timer_manager::instance()->starttime();
+    uint32_t sec = timer_manager::instance()->start_time();
     ::sprintf(svc_ctx->result_, "%u", sec);
     return svc_ctx->result_;
 }
@@ -252,10 +252,10 @@ static const char* instruction_monitor(skynet_context* svc_ctx, const char* para
     if (param == nullptr || param[0] == '\0')
     {
         // monitor thread has exit
-        if (skynet_node::instance()->get_monitor_exit() != 0)
+        if (node::instance()->get_monitor_exit() != 0)
         {
             // return current monitor serivce
-            ::sprintf(svc_ctx->result_, ":%x", skynet_node::instance()->get_monitor_exit());
+            ::sprintf(svc_ctx->result_, ":%x", node::instance()->get_monitor_exit());
             return svc_ctx->result_;
         }
 
@@ -266,7 +266,7 @@ static const char* instruction_monitor(skynet_context* svc_ctx, const char* para
         svc_handle = _to_svc_handle(svc_ctx, param);
     }
 
-    skynet_node::instance()->set_monitor_exit(svc_handle);
+    node::instance()->set_monitor_exit(svc_handle);
 
     return nullptr;
 }
@@ -342,7 +342,7 @@ static const char* instruction_logon(skynet_context* context, const char* param)
     if (last_f == nullptr)
     {
         // open service log file
-        FILE* f = skynet_log_open(context, svc_handle);
+        FILE* f = service_log::open_log_file(context, svc_handle);
         if (f != nullptr)
         {
             if (!svc_ctx->log_fd_.compare_exchange_strong(last_f, f))
@@ -375,7 +375,7 @@ static const char* instruction_logoff(skynet_context* context, const char* param
         // log file may close in other thread
         if (svc_ctx->log_fd_.compare_exchange_strong(last_f, nullptr))
         {
-            skynet_log_close(context, last_f, svc_handle);
+            service_log::close_log_file(context, last_f, svc_handle);
         }
     }
 
@@ -429,7 +429,7 @@ static instruction_func INSTRUCTION_FUNCS[] = {
     { "LAUNCH", instruction_launch },
     { "GETENV", instruction_getenv },
     { "SETENV", instruction_setenv },
-    { "STARTTIME", instruction_starttime },
+    { "STARTTIME", instruction_start_time },
     { "ABORT", instruction_abort },
     { "MONITOR", instruction_monitor },
     { "STAT", instruction_stat },

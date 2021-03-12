@@ -645,7 +645,7 @@ int server::udp_connect(int socket_id, const char* addr, int port)
     return 0;
 }
 
-const socket_udp_address* server::udp_address(socket_message* msg, int& addr_sz)
+const socket_udp_address* server::udp_address(socket_message* msg, int* addr_sz)
 {
     // type
     uint8_t* address = (uint8_t*)(msg->data + msg->ud);
@@ -653,9 +653,9 @@ const socket_udp_address* server::udp_address(socket_message* msg, int& addr_sz)
 
     // 必须为udp
     if (type == protocol_type::UDP)
-        addr_sz = 1 + 2 + 4;
+        *addr_sz = 1 + 2 + 4;
     else if (type == protocol_type::UDPv6)
-        addr_sz = 1 + 2 + 16;
+        *addr_sz = 1 + 2 + 16;
     else
         return nullptr;
 

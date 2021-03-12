@@ -1,7 +1,7 @@
-#include "skynet_node.h"
-#include "skynet_node_thread.h"
+#include "node.h"
+#include "node_thread.h"
 
-#include "skynet_config.h"
+#include "node_config.h"
 #include "skynet_socket.h"
 
 #include "../skynet.h"
@@ -17,19 +17,19 @@
 
 namespace skynet {
 
-skynet_node* skynet_node::instance_ = nullptr;
+node* node::instance_ = nullptr;
 
-skynet_node* skynet_node::instance()
+node* node::instance()
 {
     static std::once_flag oc;
     std::call_once(oc, [&](){ 
-        instance_ = new skynet_node;
+        instance_ = new node;
     });
 
     return instance_;
 }
 
-void skynet_node::init()
+void node::init()
 {
     // 初始化节点
     total_ = 0;
@@ -37,7 +37,7 @@ void skynet_node::init()
     init_ = 1;
 }
 
-void skynet_node::fini()
+void node::fini()
 {
 }
 
@@ -58,7 +58,7 @@ static void bootstrap(skynet_context* log_svc_ctx, const char* cmdline)
 //     if (ctx == nullptr)
     {
 //         // 通过传入的logger服务接口构建错误信息加入logger的消息队列
-//         skynet_error(nullptr, "Bootstrap error : %s\n", cmdline);
+//         log(nullptr, "Bootstrap error : %s\n", cmdline);
 //         // 输出消息队列中的错误信息
 //         skynet_context_dispatchall(log_svc_ctx);
 
@@ -66,7 +66,7 @@ static void bootstrap(skynet_context* log_svc_ctx, const char* cmdline)
     }
 }
 
-void skynet_node::start(skynet_config* config)
+void node::start(node_config* config)
 {
     // daemon mode
     if (config->pid_file_ != nullptr)
@@ -93,7 +93,7 @@ void skynet_node::start(skynet_config* config)
     skynet_socket_init();
 
     // enable/disable profiler
-    skynet_node::instance()->enable_profiler(config->profile_);
+    node::instance()->enable_profiler(config->profile_);
 
     // create c service: logger
 //     skynet_context* log_svc_ctx = skynet_context_new(config->log_service_, config->logger_);
@@ -108,7 +108,7 @@ void skynet_node::start(skynet_config* config)
     // bootstrap(log_svc_ctx, config->bootstrap);
 
     // start server threads
-    server_thread::start(config->thread_);
+    node_thread::start(config->thread_);
 
     //
     skynet_socket_free();

@@ -22,9 +22,7 @@ namespace skynet {
 #define PTYPE_SYSTEM            4                       // 系统消息
 #define PTYPE_HARBOR            5                       // 跨节点消息
 #define PTYPE_SOCKET            6                       // 套接字消息, 不一定是客户端的消息, 也可以能是服务之间的消息
-// read lualib/skynet.lua examples/simplemonitor.lua
 #define PTYPE_ERROR             7                       // 错误消息, 一般服务退出的时候会发送error消息给关联的服务
-// read lualib/skynet.lua lualib/mqueue.lua lualib/snax.lua
 #define PTYPE_RESERVED_QUEUE    8                       //
 #define PTYPE_RESERVED_DEBUG    9                       //
 #define PTYPE_RESERVED_LUA      10                      // lua类型消息, 最常用
@@ -37,22 +35,21 @@ namespace skynet {
 struct skynet_context;
 
 //
-uint32_t skynet_queryname(skynet_context* context, const char* name);
+uint32_t skynet_queryname(skynet_context* svc_ctx, const char* name);
 
 //
-// @param source 地址, 原则上不需要填写source地址, 因为默认就是它自己. 0是系统默认保留的handle, 可以指代自己.
-// @param destination 地址
+// @param src_svc_handle 地址, 原则上不需要填写source地址, 因为默认就是它自己. 0是系统默认保留的handle, 可以指代自己.
+// @param dst_svc_handle 地址
 // @param type
 // @param session skynet核心只解决单向消息包的发送问题, 每个服务仅有一个callback函数, 所以需要一个标识来区分消息包, 这就是session的作用
 //                可以在 type 里设上 alloc session 的 tag (PTYPE_TAG_ALLOCSESSION), send api 就会忽略掉传入的 session 参数，而会分配出一个当前服务从来没有使用过的 session 号，发送出去。
 //                同时约定，接收方在处理完这个消息后，把这个 session 原样发送回来。这样，编写服务的人只需要在 callback 函数里记录下所有待返回的 session 表，就可以在收到每个消息后，正确的调用对应的处理函数。
-int skynet_send(skynet_context* context, uint32_t source, uint32_t destination, int type, int session, void* msg, size_t sz);
+int skynet_send(skynet_context* svc_ctx, uint32_t src_svc_handle, uint32_t dst_svc_handle, int type, int session, void* msg, size_t sz);
 //
-int skynet_sendname(skynet_context* context, uint32_t source, const char* destination, int type, int session, void* msg, size_t sz);
+int skynet_sendname(skynet_context* svc_ctx, uint32_t src_svc_handle, const char* dst_addr, int type, int session, void* msg, size_t sz);
 
-// 
-void skynet_debug_memory(const char *info);	// for debug use, output current service memory to stderr
-
+// for debug use, output current service memory to stderr
+void skynet_debug_memory(const char* info);
 
 }
 

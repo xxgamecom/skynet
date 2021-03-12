@@ -1,4 +1,4 @@
-#include "env.h"
+#include "node_env.h"
 
 #include <mutex>
 
@@ -8,20 +8,20 @@ extern "C" {
 
 namespace skynet {
 
-env* env::instance_ = nullptr;
+node_env* node_env::instance_ = nullptr;
 
-env* env::instance()
+node_env* node_env::instance()
 {
     static std::once_flag oc;
     std::call_once(oc, [&]() {
-        instance_ = new env;
+        instance_ = new node_env;
         instance_->L_ = luaL_newstate();
     });
 
     return instance_;
 }
 
-const char* env::getenv(const char* key)
+const char* node_env::get_env(const char* key)
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -35,7 +35,7 @@ const char* env::getenv(const char* key)
     return result;
 }
 
-void env::setenv(const char* key, const char* value)
+void node_env::set_env(const char* key, const char* value)
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -49,60 +49,60 @@ void env::setenv(const char* key, const char* value)
     lua_setglobal(L_,key);
 }
 
-int env::get_int32(const char* key, int default_value)
+int node_env::get_int32(const char* key, int default_value)
 {
-    const char* str = getenv(key);
+    const char* str = get_env(key);
 
     // not exists, add default value
     if (str == nullptr) 
     {
-        this->setenv(key, std::to_string(default_value).c_str());
+        set_env(key, std::to_string(default_value).c_str());
         return default_value;
     }
 
     return std::stoi(str);
 }
 
-void env::set_int32(const char* key, int value)
+void node_env::set_int32(const char* key, int value)
 {
-    this->setenv(key, std::to_string(value).c_str());
+    set_env(key, std::to_string(value).c_str());
 }
 
-int env::get_boolean(const char* key, int default_value)
+int node_env::get_boolean(const char* key, int default_value)
 {
-    const char* str = this->getenv(key);
+    const char* str = get_env(key);
 
     // not exists, add default value
     if (str == nullptr)
     {
-        this->setenv(key, default_value == 0 ? "false" : "true");
+        set_env(key, default_value == 0 ? "false" : "true");
         return default_value;
     }
 
     return strcmp(str, "true") == 0;
 }
 
-void env::set_boolean(const char* key, int value)
+void node_env::set_boolean(const char* key, int value)
 {
-    this->setenv(key, value == 0 ? "false" : "true" );
+    set_env(key, value == 0 ? "false" : "true" );
 }
 
-void env::set_boolean(const char* key, bool value)
+void node_env::set_boolean(const char* key, bool value)
 {
-    this->setenv(key, value ? "true" : "false" );
+    set_env(key, value ? "true" : "false" );
 }
 
-const char* env::get_string(const char* key, const char* default_value)
+const char* node_env::get_string(const char* key, const char* default_value)
 {
-    const char* str = this->getenv(key);
+    const char* str = get_env(key);
 
     // not exists, add default value
     if (str == nullptr)
     {
         if (default_value != nullptr)
         {
-            this->setenv(key, default_value);
-            default_value = this->getenv(key);
+            set_env(key, default_value);
+            default_value = get_env(key);
         }
         return default_value;
     }
@@ -110,9 +110,9 @@ const char* env::get_string(const char* key, const char* default_value)
     return str;
 }
 
-void env::set_string(const char* key, const char* value)
+void node_env::set_string(const char* key, const char* value)
 {
-    this->setenv(key, value);
+    set_env(key, value);
 }
 
 }
