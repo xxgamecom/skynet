@@ -1,11 +1,12 @@
 #include "service_log.h"
 
-#include "../skynet.h"  // api
+#include "../skynet.h"      // api
+
+#include "../log/log.h"
 
 #include "../node/node_env.h"
 #include "../node/skynet_socket.h"
 
-#include "../log/log.h"
 #include "../timer/timer_manager.h"
 
 #include <string>
@@ -25,8 +26,9 @@ static void _log_blob(FILE* f, void* blob_ptr, size_t blob_sz)
 // log socket info
 static void _log_socket(FILE* f, skynet_socket_message* msg, size_t sz)
 {
-    ::fprintf(f, "[socket] %d %d %d ", msg->type, msg->id, msg->ud);
+    ::fprintf(f, "[socket] socket_event: %d, socket_id: %d, data_size: %d ", msg->socket_event, msg->socket_id, msg->ud);
 
+    // no data
     if (msg->buffer == nullptr)
     {
         const char* buf_ptr = (const char*)(msg + 1);
@@ -38,6 +40,7 @@ static void _log_socket(FILE* f, skynet_socket_message* msg, size_t sz)
         }
         ::fprintf(f, "[%*s]", (int)sz, (const char*)buf_ptr);
     }
+    // has data
     else
     {
         sz = msg->ud;
@@ -48,7 +51,7 @@ static void _log_socket(FILE* f, skynet_socket_message* msg, size_t sz)
 }    
 
 //
-FILE* service_log::open_log_file(skynet_context* svc_ctx, uint32_t svc_handle)
+FILE* service_log::open_log_file(service_context* svc_ctx, uint32_t svc_handle)
 {
     const char* log_path = node_env::instance()->get_env("log_path");
     if (log_path == nullptr)
@@ -63,18 +66,19 @@ FILE* service_log::open_log_file(skynet_context* svc_ctx, uint32_t svc_handle)
         return nullptr;
     }
 
+    // log to logger service
     skynet::log(svc_ctx, "Open log file %s", tmp);
 
     uint32_t start_time = timer_manager::instance()->start_time();
-    uint64_t currenttime = timer_manager::instance()->now();
-    time_t ti = start_time + currenttime / 100;
-    ::fprintf(f, "open time: %u %s", (uint32_t)currenttime, ::ctime(&ti));
+    uint64_t now = timer_manager::instance()->now();
+    time_t ti = start_time + now / 100;
+    ::fprintf(f, "open time: %u %s", (uint32_t)now, ::ctime(&ti));
     ::fflush(f);
     
     return f;
 }
 
-void service_log::close_log_file(skynet_context* svc_ctx, FILE* f, uint32_t svc_handle)
+void service_log::close_log_file(service_context* svc_ctx, FILE* f, uint32_t svc_handle)
 {
     skynet::log(svc_ctx, "Close log file :%08x", svc_handle);
     
@@ -87,14 +91,15 @@ void service_log::log(FILE* f, uint32_t src_svc_handle, int type, int session, v
     if (type == PTYPE_SOCKET)
     {
         _log_socket(f, (skynet_socket_message*)buffer, sz);
-        return;
     }
-
-    uint32_t ti = (uint32_t)timer_manager::instance()->now();
-    ::fprintf(f, ":%08x %d %d %u ", src_svc_handle, type, session, ti);
-    _log_blob(f, buffer, sz);
-    ::fprintf(f, "\n");
-    ::fflush(f);
+    else
+    {
+        uint32_t ti = (uint32_t)timer_manager::instance()->now();
+        ::fprintf(f, ":%08x %d %d %u ", src_svc_handle, type, session, ti);
+        _log_blob(f, buffer, sz);
+        ::fprintf(f, "\n");
+        ::fflush(f);
+    }
 }
 
 }

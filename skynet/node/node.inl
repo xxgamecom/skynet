@@ -33,4 +33,9 @@ inline void node::enable_profiler(int enable)
     profile_ = (bool)enable;
 }
 
+inline bool node::is_profile()
+{
+    return profile_;
+}
+
 }

@@ -19,13 +19,13 @@ inline void* cservice_mod::instance_create()
         return (void*)(intptr_t)(~0);
 }
 
-inline int cservice_mod::instance_init(void* inst, skynet_context* ctx, const char* param)
+inline int cservice_mod::instance_init(void* inst, service_context* svc_ctx, const char* param)
 {
     assert(init_func != nullptr);
-    return init_func(inst, ctx, param);
+    return init_func(inst, svc_ctx, param);
 }
 
-inline void cservice_mod::instance_release(void *inst)
+inline void cservice_mod::instance_release(void* inst)
 {
     if (release_func != nullptr)
         release_func(inst);

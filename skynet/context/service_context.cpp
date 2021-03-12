@@ -10,7 +10,7 @@
 namespace skynet {
 
 // 
-static void delete_context(skynet_context* svc_ctx)
+static void delete_context(service_context* svc_ctx)
 {
     if (svc_ctx->log_fd_ != nullptr)
     {
@@ -20,14 +20,12 @@ static void delete_context(skynet_context* svc_ctx)
     svc_ctx->mod_->instance_release(svc_ctx->instance_);
     svc_ctx->queue_->mark_release();
 
-//     CHECKCALLING_DESTROY(svc_ctx)
-
     delete svc_ctx;
     node::instance()->dec_svc_ctx();
 }
 
 // // 创建服务的一个session id
-int skynet_context::newsession()
+int service_context::new_session()
 {
     // 获取session id, session id必须为正数
     // session always be a positive number
@@ -41,14 +39,8 @@ int skynet_context::newsession()
     return session;
 }
 
-// 增加服务引用计数
-void skynet_context::grab()
-{
-    ++ref_;
-}
-
 // 
-void skynet_context::reserve()
+void service_context::reserve()
 {
     grab();
     // don't count the context reserved, because skynet abort (the worker threads terminate) only when the total context is 0 .
@@ -56,36 +48,24 @@ void skynet_context::reserve()
     node::instance()->dec_svc_ctx();
 }
 
-uint32_t skynet_context::handle()
-{
-    return svc_handle_;
-}
-
-// 设置回调函数
-void skynet_context::callback(void* ud, skynet_cb cb)
-{
-    cb_ = cb;
-    cb_ud_ = ud;
-}
-
 
 // 启动一个新服务ctx：name为服务模块的名字，parm为参数，由模块自己解释含义
-// @param name 服务模块名
+// @param svc_name 服务模块名
 // @param param 服务参数
-skynet_context* skynet_context_new(const char* name, const char* param)
+service_context* skynet_context_new(const char* svc_name, const char* param)
 {
     // query c service
-    cservice_mod* mod = cservice_mod_manager::instance()->query(name);
+    cservice_mod* mod = cservice_mod_manager::instance()->query(svc_name);
     if (mod == nullptr)
         return nullptr;
 
-    // ctx独有的数据块(如struct snlua, struct logger,  struct gate等)，最终会调用c服务里的xxx_create
+    // create service mod own data block (如: struct snlua, struct logger,  struct gate)
     void* inst = mod->instance_create();
     if (inst == nullptr)
         return nullptr;
     
-    // 创建并初始化 服务context
-    skynet_context* ctx = new skynet_context;
+    // create service context
+    service_context* ctx = new service_context;
 
 //     CHECKCALLING_INIT(ctx)
 
@@ -103,7 +83,7 @@ skynet_context* skynet_context_new(const char* name, const char* param)
     ctx->cpu_cost_ = 0;
     ctx->cpu_start_ = 0;
     ctx->message_count_ = 0;
-//     ctx->profile_ = G_NODE.profile;
+    ctx->profile_ = node::instance()->is_profile();
 
     // Should set to 0 first to avoid skynet_handle_retireall get an uninitialized handle
     ctx->svc_handle_ = 0;
@@ -115,14 +95,15 @@ skynet_context* skynet_context_new(const char* name, const char* param)
     node::instance()->inc_svc_ctx();
 
 
-//     // 调用服务模块的初始化方法
-//     CHECKCALLING_BEGIN(ctx)
+    // 调用服务模块的初始化方法
+    CHECKCALLING_BEGIN(ctx)
     int r = mod->instance_init(inst, ctx, param);  // 初始化ctx独有的数据块
-//     CHECKCALLING_END(ctx)
+    CHECKCALLING_END(ctx)
+
     // 服务模块初始化成功
     if (r == 0)
     {
-        skynet_context* ret = skynet_context_release(ctx);
+        service_context* ret = skynet_context_release(ctx);
         if (ret != nullptr)
         {
             ctx->init_ = true;
@@ -131,14 +112,14 @@ skynet_context* skynet_context_new(const char* name, const char* param)
         global_mq::instance()->push(queue);
         if (ret != nullptr)
         {
-            log(ret, "LAUNCH %s %s", name, param ? param : "");
+            log(ret, "LAUNCH %s %s", svc_name, param ? param : "");
         }
         return ret;
     } 
     // 服务模块初始化失败
     else
     {
-        log(ctx, "FAILED launch %s", name);
+        log(ctx, "FAILED launch %s", svc_name);
         uint32_t handle = ctx->svc_handle_;
         skynet_context_release(ctx);
         handle_manager::instance()->retire(handle);
@@ -149,7 +130,7 @@ skynet_context* skynet_context_new(const char* name, const char* param)
 }
 
 // 创建服务ctx
-skynet_context* skynet_context_release(skynet_context* svc_ctx)
+service_context* skynet_context_release(service_context* svc_ctx)
 {
     if (--svc_ctx->ref_ == 0)
     {

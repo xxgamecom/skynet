@@ -34,24 +34,6 @@
 
 namespace skynet {
 
-// #ifdef CALLING_CHECK
-
-// #define CHECKCALLING_DECL struct spinlock calling;
-// #define CHECKCALLING_INIT(ctx) spinlock_init(&ctx->calling);
-// #define CHECKCALLING_DESTROY(ctx) spinlock_destroy(&ctx->calling);
-// #define CHECKCALLING_BEGIN(ctx) if (!(spinlock_trylock(&ctx->calling))) { assert(0); }
-// #define CHECKCALLING_END(ctx) spinlock_unlock(&ctx->calling);
-
-// #else
-
-// #define CHECKCALLING_DECL
-// #define CHECKCALLING_INIT(ctx)
-// #define CHECKCALLING_DESTROY(ctx)
-// #define CHECKCALLING_BEGIN(ctx)
-// #define CHECKCALLING_END(ctx)
-
-// #endif
-
 //
 struct drop_t
 {
@@ -72,7 +54,7 @@ static void drop_message(skynet_message* msg, void* ud)
 int skynet_context_push(uint32_t handle, skynet_message* message)
 {
     // 增加服务引用计数
-    skynet_context* ctx = handle_manager::instance()->grab(handle);
+    service_context* ctx = handle_manager::instance()->grab(handle);
     if (ctx == nullptr)
         return -1;
 
@@ -87,7 +69,7 @@ int skynet_context_push(uint32_t handle, skynet_message* message)
 // 设置服务阻塞标记
 void skynet_context_endless(uint32_t handle)
 {
-    skynet_context* ctx = handle_manager::instance()->grab(handle);
+    service_context* ctx = handle_manager::instance()->grab(handle);
     if (ctx == nullptr)
         return;
 
@@ -97,11 +79,11 @@ void skynet_context_endless(uint32_t handle)
 }
 
 // handle service message (call service message callback)
-static void dispatch_message(skynet_context* ctx, skynet_message* msg)
+static void dispatch_message(service_context* ctx, skynet_message* msg)
 {
     assert(ctx->init_);
     
-//     CHECKCALLING_BEGIN(ctx)
+    CHECKCALLING_BEGIN(ctx)
 
     int type = msg->sz >> MESSAGE_TYPE_SHIFT;
     size_t sz = msg->sz & MESSAGE_TYPE_MASK;
@@ -127,11 +109,11 @@ static void dispatch_message(skynet_context* ctx, skynet_message* msg)
 //         skynet_free(msg->data);
     }
 
-//     CHECKCALLING_END(ctx)
+    CHECKCALLING_END(ctx)
 }
 
 // 派发所有消息
-void skynet_context_dispatchall(struct skynet_context * ctx)
+void skynet_context_dispatchall(service_context* ctx)
 {
     // for log
     skynet_message msg;
@@ -168,7 +150,7 @@ message_queue* skynet_context_message_dispatch(skynet_monitor& sm, message_queue
     // 当前 message_queue 所属服务的 context 的handle id
     uint32_t svc_handle = q->svc_handle_;
 
-    skynet_context* ctx = handle_manager::instance()->grab(svc_handle);
+    service_context* ctx = handle_manager::instance()->grab(svc_handle);
     // service ctx not exists
     if (ctx == nullptr)
     {
@@ -244,7 +226,7 @@ message_queue* skynet_context_message_dispatch(skynet_monitor& sm, message_queue
 // }
 
 // 
-uint32_t skynet_queryname(skynet_context* ctx, const char* name)
+uint32_t skynet_queryname(service_context* ctx, const char* name)
 {
     switch(name[0])
     {
@@ -258,25 +240,25 @@ uint32_t skynet_queryname(skynet_context* ctx, const char* name)
     return 0;
 }
 
-static void _filter_args(skynet_context* ctx, int type, int* session, void** data, size_t* sz)
+static void _filter_args(service_context* ctx, int type, int* session, void** data, size_t* sz)
 {
-//     int needcopy = !(type & PTYPE_TAG_DONTCOPY);
-//     int allocsession = type & PTYPE_TAG_ALLOCSESSION;
-//     type &= 0xff;
+    int needcopy = !(type & PTYPE_TAG_DONTCOPY);
+    int allocsession = type & PTYPE_TAG_ALLOCSESSION;
+    type &= 0xff;
 
-//     if (allocsession)
-//     {
-//         assert(*session == 0);
-//         *session = skynet_context_newsession(ctx);
-//     }
+    if (allocsession)
+    {
+        assert(*session == 0);
+        *session = ctx->new_session();
+    }
 
-//     if (needcopy && *data)
-//     {
+    if (needcopy && *data)
+    {
 //         char * msg = skynet_malloc(*sz+1);
 //         memcpy(msg, *data, *sz);
 //         msg[*sz] = '\0';
 //         *data = msg;
-//     }
+    }
 
     *sz |= (size_t)type << MESSAGE_TYPE_SHIFT;
 }
@@ -292,65 +274,54 @@ static void _filter_args(skynet_context* ctx, int type, int* session, void** dat
 // @param sz             消息包长度
 // @return int session, 源服务保存这个session，同时约定，目的服务处理完这个消息后，把这个session原样发送回来(skynet_message结构里带有一个session字段)，
 //         源服务就知道是哪个请求的返回，从而正确调用对应的回调函数。
-int skynet_send(skynet_context* ctx, uint32_t src_svc_handle, uint32_t dst_svc_handle , int type, int session, void* data, size_t sz)
+int skynet_send(service_context* ctx, uint32_t src_svc_handle, uint32_t dst_svc_handle , int type, int session, void* data, size_t sz)
 {
-//     if ((sz & MESSAGE_TYPE_MASK) != sz)
-//     {
-//         log(ctx, "The message to %x is too large", dst_svc_handle);
-//         if (type & PTYPE_TAG_DONTCOPY)
-//         {
+    if ((sz & MESSAGE_TYPE_MASK) != sz)
+    {
+        log(ctx, "The message to %x is too large", dst_svc_handle);
+        if (type & PTYPE_TAG_DONTCOPY)
+        {
 //             skynet_free(data);
-//         }
-//         return -2;
-//     }
+        }
+        return -2;
+    }
 
-//     _filter_args(ctx, type, &session, (void **)&data, &sz); // 预处理消息数据块
+    // 预处理消息数据块
+    _filter_args(ctx, type, &session, (void **)&data, &sz);
 
-//     if (src_svc_handle == 0)
-//     {
-//         src_svc_handle = ctx->handle;
-//     }
+    if (src_svc_handle == 0)
+    {
+        src_svc_handle = ctx->svc_handle_;
+    }
 
-//     if (dst_svc_handle == 0)
-//     {
-//         if (data)
-//         {
-//             log(ctx, "Destination address can't be 0");
-//             skynet_free(data);
-//             return -1;
-//         }
+    if (dst_svc_handle == 0)
+    {
+        if (data)
+        {
+            log(ctx, "Destination address can't be 0");
+            // skynet_free(data);
+            return -1;
+        }
 
-//         return session;
-//     }
-//     // 不是同一skynet节点里服务，交给harbor
-//     if (skynet_harbor_message_isremote(dst_svc_handle))
-//     {
-//         struct remote_message* rmsg = skynet_malloc(sizeof(*rmsg));
-//         rmsg->destination.handle = dst_svc_handle;
-//         rmsg->message = data;
-//         rmsg->sz = sz & MESSAGE_TYPE_MASK;
-//         rmsg->type = sz >> MESSAGE_TYPE_SHIFT;
-//         skynet_harbor_send(rmsg, src_svc_handle, session);    // 分布式消息发送
-//     }
-//     else
-//     {
-//         struct skynet_message smsg;
-//         smsg.src_svc_handle = src_svc_handle;
-//         smsg.session = session;
-//         smsg.data = data;
-//         smsg.sz = sz;
-//         // push给目的ctx
-//         if (skynet_context_push(dst_svc_handle, &smsg))
-//         {
-//             skynet_free(data);
-//             return -1;
-//         }
-//     }
+        return session;
+    }
+
+    // push message to dst service
+    struct skynet_message smsg;
+    smsg.src_svc_handle = src_svc_handle;
+    smsg.session = session;
+    smsg.data = data;
+    smsg.sz = sz;
+    if (skynet_context_push(dst_svc_handle, &smsg))
+    {
+        // skynet_free(data);
+        return -1;
+    }
 
     return session;
 }
 
-int skynet_sendname(skynet_context* ctx, uint32_t src_svc_handle, const char* dst_addr, int type, int session, void* data, size_t sz)
+int skynet_sendname(service_context* ctx, uint32_t src_svc_handle, const char* dst_addr, int type, int session, void* data, size_t sz)
 {
     if (src_svc_handle == 0)
         src_svc_handle = ctx->svc_handle_;
@@ -377,10 +348,10 @@ int skynet_sendname(skynet_context* ctx, uint32_t src_svc_handle, const char* ds
         if ((sz & MESSAGE_TYPE_MASK) != sz)
         {
             log(ctx, "The message to %s is too large", dst_addr);
-//             if (type & PTYPE_TAG_DONTCOPY)
-//             {
+            if (type & PTYPE_TAG_DONTCOPY)
+            {
 //                 skynet_free(data);
-//             }
+            }
             return -2;
         }
         _filter_args(ctx, type, &session, (void**)&data, &sz);
@@ -400,7 +371,7 @@ int skynet_sendname(skynet_context* ctx, uint32_t src_svc_handle, const char* ds
 }
 
 // 发送消息
-void skynet_context_send(skynet_context* ctx, void* msg, size_t sz, uint32_t src_svc_handle, int type, int session)
+void skynet_context_send(service_context* ctx, void* msg, size_t sz, uint32_t src_svc_handle, int type, int session)
 {
     skynet_message smsg;
     smsg.src_svc_handle = src_svc_handle;

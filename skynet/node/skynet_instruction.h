@@ -10,14 +10,14 @@
 namespace skynet {
 
 // forward declare
-struct skynet_context;
+class service_context;
 
 // 
 class skynet_instruction final
 {
 public:
     // handle skynet instruction
-    static const char* handle_instruction(skynet_context* svc_ctx, const char* instruction, const char* param);
+    static const char* handle_instruction(service_context* svc_ctx, const char* instruction, const char* param);
 };
 
 }

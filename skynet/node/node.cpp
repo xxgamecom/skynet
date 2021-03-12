@@ -44,7 +44,7 @@ void node::fini()
 
 // 启动 lua bootstrap服务
 // snlua bootstrap
-static void bootstrap(skynet_context* log_svc_ctx, const char* cmdline)
+static void bootstrap(service_context* log_svc_ctx, const char* cmdline)
 {
     // 命令行长度
     int sz = ::strlen(cmdline);
@@ -54,7 +54,7 @@ static void bootstrap(skynet_context* log_svc_ctx, const char* cmdline)
     ::sscanf(cmdline, "%s %s", svc_name, svc_args);
 
     // create service
-//     skynet_context* ctx = skynet_context_new(svc_name, svc_args);
+//     service_context* ctx = skynet_context_new(svc_name, svc_args);
 //     if (ctx == nullptr)
     {
 //         // 通过传入的logger服务接口构建错误信息加入logger的消息队列
@@ -96,7 +96,7 @@ void node::start(node_config* config)
     node::instance()->enable_profiler(config->profile_);
 
     // create c service: logger
-//     skynet_context* log_svc_ctx = skynet_context_new(config->log_service_, config->logger_);
+//     service_context* log_svc_ctx = skynet_context_new(config->log_service_, config->logger_);
 //     if (log_svc_ctx == nullptr)
     {
         std::cerr << "Can't launch " << config->log_service_ << " service" << std::endl;

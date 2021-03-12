@@ -64,7 +64,7 @@ static void forward_message(int type, bool padding, socket::socket_message* resu
 
     // skynet_socket_message* sm = (skynet_socket_message*)skynet_malloc(sz);
 //     sm->type = type;
-//     sm->id = result->socket_id;
+//     sm->socket_id = result->socket_id;
 //     sm->ud = result->ud;
 //     if (padding)
 //     {
@@ -103,28 +103,28 @@ int skynet_socket_poll()
     int type = SOCKET_SERVER->poll_socket_event(&result, is_more);
     switch (type)
     {
-    case socket::socket_event_type::SOCKET_EXIT:
+    case socket::socket_event::SOCKET_EXIT:
         return 0;
-    case socket::socket_event_type::SOCKET_DATA:
-        forward_message(SKYNET_SOCKET_TYPE_DATA, false, &result);
+    case socket::socket_event::SOCKET_DATA:
+        forward_message(skynet_socket_event::SOCKET_DATA, false, &result);
         break;
-    case socket::socket_event_type::SOCKET_CLOSE:
-        forward_message(SKYNET_SOCKET_TYPE_CLOSE, false, &result);
+    case socket::socket_event::SOCKET_CLOSE:
+        forward_message(skynet_socket_event::SOCKET_CLOSE, false, &result);
         break;
-    case socket::socket_event_type::SOCKET_OPEN:
-        forward_message(SKYNET_SOCKET_TYPE_CONNECT, true, &result);
+    case socket::socket_event::SOCKET_OPEN:
+        forward_message(skynet_socket_event::SOCKET_CONNECT, true, &result);
         break;
-    case socket::socket_event_type::SOCKET_ERROR:
-        forward_message(SKYNET_SOCKET_TYPE_ERROR, true, &result);
+    case socket::socket_event::SOCKET_ERROR:
+        forward_message(skynet_socket_event::SOCKET_ERROR, true, &result);
         break;
-    case socket::socket_event_type::SOCKET_ACCEPT:
-        forward_message(SKYNET_SOCKET_TYPE_ACCEPT, true, &result);
+    case socket::socket_event::SOCKET_ACCEPT:
+        forward_message(skynet_socket_event::SOCKET_ACCEPT, true, &result);
         break;
-    case socket::socket_event_type::SOCKET_UDP:
-        forward_message(SKYNET_SOCKET_TYPE_UDP, false, &result);
+    case socket::socket_event::SOCKET_UDP:
+        forward_message(skynet_socket_event::SOCKET_UDP, false, &result);
         break;
-    case socket::socket_event_type::SOCKET_WARNING:
-        forward_message(SKYNET_SOCKET_TYPE_WARNING, false, &result);
+    case socket::socket_event::SOCKET_WARNING:
+        forward_message(skynet_socket_event::SOCKET_WARNING, false, &result);
         break;
     default:
         //log(nullptr, "Unknown socket message type %d.", type);
@@ -138,80 +138,80 @@ int skynet_socket_poll()
     return 1;
 }
 
-int skynet_socket_sendbuffer(skynet_context* ctx, socket::send_buffer* buffer)
+int skynet_socket_sendbuffer(service_context* ctx, socket::send_buffer* buffer)
 {
     return SOCKET_SERVER->send(buffer);
 }
 
-int skynet_socket_sendbuffer_lowpriority(skynet_context* ctx, socket::send_buffer* buffer)
+int skynet_socket_sendbuffer_lowpriority(service_context* ctx, socket::send_buffer* buffer)
 {
     return SOCKET_SERVER->send_low_priority(buffer);
 }
 
-int skynet_socket_listen(skynet_context* ctx, const char* host, int port, int backlog)
+int skynet_socket_listen(service_context* ctx, const char* host, int port, int backlog)
 {
     uint32_t src_svc_handle = ctx->svc_handle_;
     return SOCKET_SERVER->listen(src_svc_handle, host, port, backlog);
 }
 
-int skynet_socket_connect(skynet_context* ctx, const char *host, int port)
+int skynet_socket_connect(service_context* ctx, const char *host, int port)
 {
     uint32_t src_svc_handle = ctx->svc_handle_;
     return SOCKET_SERVER->connect(src_svc_handle, host, port);
 }
 
-int skynet_socket_bind(skynet_context* ctx, int fd)
+int skynet_socket_bind(service_context* ctx, int fd)
 {
     uint32_t src_svc_handle = ctx->svc_handle_;
     return SOCKET_SERVER->bind(src_svc_handle, fd);
 }
 
-void skynet_socket_close(skynet_context* ctx, int id)
+void skynet_socket_close(service_context* ctx, int id)
 {
     uint32_t src_svc_handle = ctx->svc_handle_;
     SOCKET_SERVER->close(src_svc_handle, id);
 }
 
-void skynet_socket_shutdown(skynet_context* ctx, int id)
+void skynet_socket_shutdown(service_context* ctx, int id)
 {
     uint32_t src_svc_handle = ctx->svc_handle_;
     SOCKET_SERVER->shutdown(src_svc_handle, id);
 }
 
-void skynet_socket_start(skynet_context* ctx, int id)
+void skynet_socket_start(service_context* ctx, int id)
 {
     uint32_t src_svc_handle = ctx->svc_handle_;
     SOCKET_SERVER->start(src_svc_handle, id);
 }
 
-void skynet_socket_nodelay(skynet_context* ctx, int id)
+void skynet_socket_nodelay(service_context* ctx, int id)
 {
     SOCKET_SERVER->nodelay(id);
 }
 
-int skynet_socket_udp(skynet_context* ctx, const char* addr, int port)
+int skynet_socket_udp(service_context* ctx, const char* addr, int port)
 {
     uint32_t src_svc_handle = ctx->svc_handle_;
     return SOCKET_SERVER->socket_server_udp(src_svc_handle, addr, port);
 }
 
-int skynet_socket_udp_connect(struct skynet_context* ctx, int id, const char* addr, int port)
+int skynet_socket_udp_connect(service_context* ctx, int id, const char* addr, int port)
 {
     return SOCKET_SERVER->udp_connect(id, addr, port);
 }
 
-// int skynet_socket_udp_sendbuffer(skynet_context* ctx, const char* address, socket::send_buffer* buffer)
+// int skynet_socket_udp_sendbuffer(service_context* ctx, const char* address, socket::send_buffer* buffer)
 // {
 //     return SOCKET_SERVER->udp_send((const struct socket_udp_address*)address, buffer);
 // }
 
 const char* skynet_socket_udp_address(skynet_socket_message* msg, int* addrsz)
 {
-    if (msg->type != SKYNET_SOCKET_TYPE_UDP)
+    if (msg->socket_event != skynet_socket_event::SOCKET_UDP)
         return nullptr;
 
     socket::socket_message sm;
-    sm.socket_id = msg->id;
+    sm.socket_id = msg->socket_id;
     sm.svc_handle = 0;
     sm.ud = msg->ud;
     sm.data = msg->buffer;

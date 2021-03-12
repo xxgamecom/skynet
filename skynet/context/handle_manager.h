@@ -15,7 +15,7 @@
 namespace skynet {
 
 // forward delcare
-struct skynet_context;
+class service_context;
 
 /**
  * store all service handles
@@ -48,7 +48,7 @@ private:
 
     uint32_t                    handle_index_;              // 创建下一个服务时，该服务的slot idx，一般会先判断该slot是否被占用, 从1开始计数, 因为0被系统保留
     int                         slot_size_;                 // 已分配的ctx的容量, 一定是2^n，初始值是4
-    skynet_context**            slot_;                      // slot_size容量的数组, 每一项指向一个ctx
+    service_context**           slot_;                      // slot_size容量的数组, 每一项指向一个ctx
 
     // 在上层逻辑很难记住每个handle具体代表哪个服务，通常会为handle注册name（不限一个），通过name找到对应的handle，通过S->name实现。
     // S->name是一个数组，类似S->slot，动态分配内存，S->name_cap表示数组容量。
@@ -63,14 +63,14 @@ public:
     void init();
 
     // register service
-    uint32_t registe(skynet_context* ctx);
+    uint32_t registe(service_context* ctx);
     // 利用ID注销一个服务
     int retire(uint32_t svc_handle);
     // 注销全部服务
     void retireall();
 
     // 利于ID获取服务上下文指针
-    skynet_context* grab(uint32_t svc_handle);
+    service_context* grab(uint32_t svc_handle);
 
     // 利用服务名字获取服务ID （二分法）
     uint32_t find_by_name(const char* name);

@@ -29,7 +29,7 @@ void handle_manager::init()
 {
     // 给slot分配slot_size个ctx内存
     slot_size_ = DEFAULT_SLOT_SIZE;
-    slot_ = new skynet_context* [slot_size_] { nullptr };
+    slot_ = new service_context* [slot_size_] { nullptr };
 
     handle_index_ = 1;
     name_cap_ = 2;
@@ -41,7 +41,7 @@ void handle_manager::init()
     // Don't need to free H
 }
 
-uint32_t handle_manager::registe(skynet_context* ctx)
+uint32_t handle_manager::registe(service_context* ctx)
 {
     // write lock
     std::unique_lock<std::shared_mutex> wlock(rw_mutex_);
@@ -66,8 +66,8 @@ uint32_t handle_manager::registe(skynet_context* ctx)
             }
         }
         assert((slot_size_ * 2 - 1) <= HANDLE_MASK);
-        skynet_context** new_slot = new skynet_context* [2 * slot_size_];
-        ::memset(new_slot, 0, slot_size_ * 2 * sizeof(struct skynet_context *));
+        service_context** new_slot = new service_context* [2 * slot_size_];
+        ::memset(new_slot, 0, slot_size_ * 2 * sizeof(service_context*));
         for (int i = 0; i < slot_size_; i++)
         {
             int hash = slot_[i]->svc_handle_ & (slot_size_ * 2 - 1);
@@ -90,7 +90,7 @@ int handle_manager::retire(uint32_t svc_handle)
     std::unique_lock<std::shared_mutex> wlock(rw_mutex_);
 
     uint32_t hash = svc_handle & (slot_size_ - 1);
-    skynet_context* ctx = slot_[hash];
+    service_context* ctx = slot_[hash];
 
     if (ctx != nullptr && ctx->svc_handle_ == svc_handle)
     {
@@ -142,7 +142,7 @@ void handle_manager::retireall()
             {
                 std::shared_lock<std::shared_mutex> rlock(rw_mutex_);
 
-                skynet_context* ctx = slot_[i];
+                service_context* ctx = slot_[i];
                 if (ctx != nullptr)
                 {
                     svc_handle = ctx->svc_handle_;
@@ -167,15 +167,15 @@ void handle_manager::retireall()
 }
 
 // 取得一个服务 (增加服务引用计数)
-skynet_context* handle_manager::grab(uint32_t svc_handle)
+service_context* handle_manager::grab(uint32_t svc_handle)
 {
-    skynet_context* result = nullptr;
+    service_context* result = nullptr;
 
     // read lock
     std::shared_lock<std::shared_mutex> rlock(rw_mutex_);
 
     uint32_t hash = svc_handle & (slot_size_-1);
-    skynet_context* ctx = slot_[hash];
+    service_context* ctx = slot_[hash];
     if (ctx != nullptr && ctx->svc_handle_ == svc_handle)
     {
         result = ctx;

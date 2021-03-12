@@ -180,7 +180,7 @@ public:
     /**
      * 获取消息内的IP地址 (UDP)
      * 
-     * @param msg 消息, 传入的消息必须为 socket_event_type::SOCKET_UDP 类型
+     * @param msg 消息, 传入的消息必须为 socket_event::SOCKET_UDP 类型
      * @param addr_sz 地址所占字节数 
      */
     const socket_udp_address* udp_address(socket_message* msg, int* addr_sz);

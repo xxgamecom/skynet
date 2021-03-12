@@ -52,6 +52,7 @@ public:
 
     // 
     void enable_profiler(int enable);
+    bool is_profile();
 };
 
 }

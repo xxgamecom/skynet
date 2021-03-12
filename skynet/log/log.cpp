@@ -20,7 +20,7 @@ namespace skynet {
  * skynet log api implement
  * - find logger service and push log message to the logger service
  */
-void log(skynet_context* ctx, const char* msg, ...)
+void log(service_context* svc_ctx, const char* msg, ...)
 {
     static uint32_t log_svc_handle = 0;
 
@@ -32,7 +32,6 @@ void log(skynet_context* ctx, const char* msg, ...)
 
     // 
     char tmp[LOG_BUF_SIZE] = { 0 };
-    char* data = nullptr;
 
     va_list ap;
     va_start(ap, msg);
@@ -46,11 +45,13 @@ void log(skynet_context* ctx, const char* msg, ...)
         return;
     }
 
+    char* data_ptr = nullptr;
+
     // log message length < 256
     if (len >= 0 && len < LOG_BUF_SIZE)
     {
-        data = new char[len + 1] { 0 };
-        ::memcpy(data, tmp, len + 1);
+        data_ptr = new char[len + 1] { 0 };
+        ::memcpy(data_ptr, tmp, len + 1);
     }
     // log message length >= 256
     else
@@ -60,11 +61,11 @@ void log(skynet_context* ctx, const char* msg, ...)
         {
             // alloc double size
             max_size *= 2;
-            data = new char[max_size];
+            data_ptr = new char[max_size];
 
             // 
             va_start(ap, msg);
-            len = ::vsnprintf(data, max_size, msg, ap);
+            len = ::vsnprintf(data_ptr, max_size, msg, ap);
             va_end(ap);
 
             // alloc log message buffer success
@@ -72,22 +73,22 @@ void log(skynet_context* ctx, const char* msg, ...)
                 break;
             
             // not enought, try alloc again
-            delete[] data;
+            delete[] data_ptr;
         }
     }
 
     if (len < 0)
     {
-        delete[] data;
+        delete[] data_ptr;
         ::perror("vsnprintf error :");
         return;
     }    
 
     // push message to log service
     skynet_message smsg;
-    smsg.src_svc_handle = ctx != nullptr ? ctx->svc_handle_ : 0;
+    smsg.src_svc_handle = svc_ctx != nullptr ? svc_ctx->svc_handle_ : 0;
     smsg.session = 0;
-    smsg.data = data;
+    smsg.data = data_ptr;
     smsg.sz = len | ((size_t)PTYPE_TEXT << MESSAGE_TYPE_SHIFT);
     skynet_context_push(log_svc_handle, &smsg);
 }

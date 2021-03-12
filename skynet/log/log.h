@@ -10,10 +10,10 @@
 
 namespace skynet {
 
-struct skynet_context;
+class service_context;
 
 // log to logger service
-void log(skynet_context* context, const char* msg, ...);
+void log(service_context* svc_ctx, const char* msg, ...);
 
 }
 
