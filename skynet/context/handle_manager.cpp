@@ -29,7 +29,7 @@ void handle_manager::init()
 {
     // 给slot分配slot_size个ctx内存
     slot_size_ = DEFAULT_SLOT_SIZE;
-    slot_ = new skynet_context* [slot_size_] { nullptr };
+    slot_ = new service_context* [slot_size_] { nullptr };
 
     handle_index_ = 1;
     name_cap_ = 2;
@@ -41,7 +41,7 @@ void handle_manager::init()
     // Don't need to free H
 }
 
-uint32_t handle_manager::registe(skynet_context* ctx)
+uint32_t handle_manager::registe(service_context* ctx)
 {
     // write lock
     std::unique_lock<std::shared_mutex> wlock(rw_mutex_);
@@ -66,11 +66,11 @@ uint32_t handle_manager::registe(skynet_context* ctx)
             }
         }
         assert((slot_size_ * 2 - 1) <= HANDLE_MASK);
-        skynet_context** new_slot = new skynet_context* [2 * slot_size_];
-        ::memset(new_slot, 0, slot_size_ * 2 * sizeof(struct skynet_context *));
+        service_context** new_slot = new service_context* [2 * slot_size_];
+        ::memset(new_slot, 0, slot_size_ * 2 * sizeof(service_context*));
         for (int i = 0; i < slot_size_; i++)
         {
-            int hash = slot_[i]->handle_ & (slot_size_ * 2 - 1);
+            int hash = slot_[i]->svc_handle_ & (slot_size_ * 2 - 1);
             assert(new_slot[hash] == nullptr);
             new_slot[hash] = slot_[i];
         }
@@ -90,27 +90,27 @@ int handle_manager::retire(uint32_t svc_handle)
     std::unique_lock<std::shared_mutex> wlock(rw_mutex_);
 
     uint32_t hash = svc_handle & (slot_size_ - 1);
-    skynet_context* ctx = slot_[hash];
+    service_context* ctx = slot_[hash];
 
-    if (ctx != nullptr && ctx->handle_ == svc_handle)
+    if (ctx != nullptr && ctx->svc_handle_ == svc_handle)
     {
-    //     slot_[hash] = nullptr;
-    //     ret = 1;
-    //     int j = 0, n = name_count_;
-    //     for (int i = 0; i < n; ++i)
-    //     {
-    //         if (name_[i].handle == svc_handle)
-    //         {
-    //             delete[] name_[i].name;
-    //             continue;
-    //         }
-    //         else if (i!=j)
-    //         {
-    //             name_[j] = name_[i];
-    //         }
-    //         ++j;
-    //     }
-    //     name_count_ = j;
+        slot_[hash] = nullptr;
+        ret = 1;
+        int j = 0, n = name_count_;
+        for (int i = 0; i < n; ++i)
+        {
+            if (name_[i].svc_handle == svc_handle)
+            {
+                // delete[] name_[i].name;
+                continue;
+            }
+            else if (i!=j)
+            {
+                name_[j] = name_[i];
+            }
+            ++j;
+        }
+        name_count_ = j;
     }
     else
     {
@@ -142,10 +142,10 @@ void handle_manager::retireall()
             {
                 std::shared_lock<std::shared_mutex> rlock(rw_mutex_);
 
-                skynet_context* ctx = slot_[i];
+                service_context* ctx = slot_[i];
                 if (ctx != nullptr)
                 {
-                    svc_handle = ctx->handle_;
+                    svc_handle = ctx->svc_handle_;
                 }
             }
 
@@ -167,16 +167,16 @@ void handle_manager::retireall()
 }
 
 // 取得一个服务 (增加服务引用计数)
-skynet_context* handle_manager::grab(uint32_t svc_handle)
+service_context* handle_manager::grab(uint32_t svc_handle)
 {
-    skynet_context* result = nullptr;
+    service_context* result = nullptr;
 
     // read lock
     std::shared_lock<std::shared_mutex> rlock(rw_mutex_);
 
     uint32_t hash = svc_handle & (slot_size_-1);
-    skynet_context* ctx = slot_[hash];
-    if (ctx != nullptr && ctx->handle_ == svc_handle)
+    service_context* ctx = slot_[hash];
+    if (ctx != nullptr && ctx->svc_handle_ == svc_handle)
     {
         result = ctx;
         result->grab();
@@ -187,7 +187,7 @@ skynet_context* handle_manager::grab(uint32_t svc_handle)
 
 // 通过name找handle
 // S->name是按handle_name->name升序排序的，通过二分查找快速地查找name对应的handle
-uint32_t handle_manager::find_by_name(const char* name)
+uint32_t handle_manager::find_by_name(const char* svc_name)
 {
     // read lock
     std::shared_lock<std::shared_mutex> rlock(rw_mutex_);
@@ -201,7 +201,7 @@ uint32_t handle_manager::find_by_name(const char* name)
         int mid = (begin + end)/2;
         handle_name* n = &name_[mid];
         
-        int c = n->name.compare(name);
+        int c = n->svc_name.compare(svc_name);
         if (c == 0)
         {
             svc_handle = n->svc_handle;
@@ -221,16 +221,16 @@ uint32_t handle_manager::find_by_name(const char* name)
 }
 
 // 给服务handle注册命名, 保证注册完s->name的有序
-const char* handle_manager::set_handle_by_name(const char* name, uint32_t svc_handle)
+const char* handle_manager::set_handle_by_name(const char* svc_name, uint32_t svc_handle)
 {
     // write lock
     std::unique_lock<std::shared_mutex> wlock(rw_mutex_);
 
-    return _insert_name(name, svc_handle);
+    return _insert_name(svc_name, svc_handle);
 }
 
 // 
-const char* handle_manager::_insert_name(const char* name, uint32_t svc_handle)
+const char* handle_manager::_insert_name(const char* svc_name, uint32_t svc_handle)
 {
     int begin = 0;
     int end = name_count_ - 1;
@@ -239,7 +239,7 @@ const char* handle_manager::_insert_name(const char* name, uint32_t svc_handle)
         int mid = (begin + end) / 2;
         handle_name* n = &name_[mid];
 
-        int c = n->name.compare(name);
+        int c = n->svc_name.compare(svc_name);
         // exists
         if (c == 0)
             return nullptr;
@@ -254,7 +254,7 @@ const char* handle_manager::_insert_name(const char* name, uint32_t svc_handle)
         }
     }
 
-    // char* result = skynet_strdup(name);
+    // char* result = skynet_strdup(svc_name);
     // _insert_name_before(result, svc_handle, begin);
 
     // return result;
@@ -264,7 +264,7 @@ const char* handle_manager::_insert_name(const char* name, uint32_t svc_handle)
 
 
 // 把name插入到name数组中，再关联handle
-void handle_manager::_insert_name_before(char* name, uint32_t svc_handle, int before)
+void handle_manager::_insert_name_before(char* svc_name, uint32_t svc_handle, int before)
 {
     if (name_count_ >= name_cap_)
     {
@@ -290,7 +290,7 @@ void handle_manager::_insert_name_before(char* name, uint32_t svc_handle, int be
             name_[i] = name_[i-1];
         }
     }
-    name_[before].name = name;
+    name_[before].svc_name = svc_name;
     name_[before].svc_handle = svc_handle;
     ++name_count_;
 }

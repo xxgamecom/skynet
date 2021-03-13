@@ -177,7 +177,7 @@ size_t mallctl_int64(const char* name, size_t* newval)
     {
         je_mallctl(name, &v, &len, NULL, 0);
     }
-    // skynet_error(NULL, "name: %s, value: %zd\n", name, v);
+    // log(NULL, "name: %s, value: %zd\n", name, v);
     return v;
 }
 
@@ -190,11 +190,11 @@ int mallctl_opt(const char* name, int* newval)
         int ret = je_mallctl(name, &v, &len, newval, sizeof(int));
         if (ret == 0)
         {
-            skynet_error(NULL, "set new value(%d) for (%s) succeed\n", *newval, name);
+            log(NULL, "set new value(%d) for (%s) succeed\n", *newval, name);
         }
         else
         {
-            skynet_error(NULL, "set new value(%d) for (%s) failed: error -> %d\n", *newval, name, ret);
+            log(NULL, "set new value(%d) for (%s) failed: error -> %d\n", *newval, name, ret);
         }
     }
     else
@@ -268,30 +268,30 @@ int skynet_posix_memalign(void **memptr, size_t alignment, size_t size)
 
 void memory_info_dump(void)
 {
-    skynet_error(NULL, "No jemalloc");
+    log(NULL, "No jemalloc");
 }
 
 size_t mallctl_int64(const char* name, size_t* newval)
 {
-    skynet_error(NULL, "No jemalloc : mallctl_int64 %s.", name);
+    log(NULL, "No jemalloc : mallctl_int64 %s.", name);
     return 0;
 }
 
 int mallctl_opt(const char* name, int* newval)
 {
-    skynet_error(NULL, "No jemalloc : mallctl_opt %s.", name);
+    log(NULL, "No jemalloc : mallctl_opt %s.", name);
     return 0;
 }
 
 bool mallctl_bool(const char* name, bool* newval)
 {
-    skynet_error(NULL, "No jemalloc : mallctl_bool %s.", name);
+    log(NULL, "No jemalloc : mallctl_bool %s.", name);
     return 0;
 }
 
 int mallctl_cmd(const char* name)
 {
-    skynet_error(NULL, "No jemalloc : mallctl_cmd %s.", name);
+    log(NULL, "No jemalloc : mallctl_cmd %s.", name);
     return 0;
 }
 
@@ -310,17 +310,17 @@ size_t malloc_memory_block(void)
 void dump_c_mem()
 {
     size_t total = 0;
-    skynet_error(NULL, "dump all service mem:");
+    log(NULL, "dump all service mem:");
     for (int i=0; i<SLOT_SIZE; i++)
     {
         struct mem_data* data = &mem_stats[i];
         if(data->handle != 0 && data->allocated != 0)
         {
             total += data->allocated;
-            skynet_error(NULL, ":%08x -> %zdkb %db", data->handle, data->allocated >> 10, (int)(data->allocated % 1024));
+            log(NULL, ":%08x -> %zdkb %db", data->handle, data->allocated >> 10, (int)(data->allocated % 1024));
         }
     }
-    skynet_error(NULL, "+total: %zdkb",total >> 10);
+    log(NULL, "+total: %zdkb",total >> 10);
 }
 
 // skynet strdup, 字符串拷贝, 注意使用完需要释放

@@ -30,7 +30,7 @@ namespace skynet { namespace socket {
 //----------------------------------------------
 
 // socket事件类型
-enum socket_event_type
+enum socket_event
 {
     SOCKET_DATA                 = 0,                                        // socket 正常数据
     SOCKET_CLOSE                = 1,                                        // socket close 数据

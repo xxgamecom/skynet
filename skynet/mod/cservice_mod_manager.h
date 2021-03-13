@@ -31,7 +31,7 @@
 namespace skynet {
 
 // forward declare
-struct skynet_context;
+class service_context;
 
 // c service mod manager
 class cservice_mod_manager final

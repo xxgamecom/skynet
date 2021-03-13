@@ -31,10 +31,10 @@ public:
     // 帧函数, 定时器定时刷新(0.0025秒/帧)
     void update_time();
 
-    // skynet_now
+    // 返回当前进程启动后经过的时间 (0.01 秒)
     uint64_t now();
-    // 
-    uint32_t starttime();
+    // 返回当前进程的启动 UTC 时间（秒）
+    uint32_t start_time();
 
 private:
     //

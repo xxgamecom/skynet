@@ -1,0 +1,14 @@
+# source file list
+AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet-service-c/logger" LOGGER_SRC)
+
+# target shared lib (logger.so)
+ADD_LIBRARY(logger MODULE 
+    ${LOGGER_SRC}
+)
+SET_TARGET_PROPERTIES(logger
+    PROPERTIES
+    PREFIX ""
+    ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_CSERVICE_BIN_PATH}"
+    LIBRARY_OUTPUT_DIRECTORY "${SKYNET_CSERVICE_BIN_PATH}"
+)
+TARGET_LINK_LIBRARIES(logger liblua)

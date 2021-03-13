@@ -22,10 +22,14 @@
  */
 
 #include "timer_manager.h"
-// #include "skynet_server.h"
-// #include "skynet_handle.h"
+
+#include "../node/server.h"
 
 #include "../mq/mq.h"
+#include "../mq/mq_msg.h"
+
+#include "../log/log.h"
+
 #include "../utils/time_helper.h"
 
 #include <ctime>
@@ -41,8 +45,8 @@ typedef void (*timer_execute_func)(void* ud, void* arg);
 
 struct timer_event
 {
-    uint32_t handle;		                // 服务句柄，设置定时器的来源，又是超时消息发送的目标
-    int session;			                // 一个自增ID，溢出了从1开始，所以不要设时间很长的timer
+    uint32_t            svc_handle;                 // 服务句柄，设置定时器的来源，又是超时消息发送的目标
+    int                 session;                    // 一个自增ID，溢出了从1开始，所以不要设时间很长的timer
 };
 
 
@@ -102,12 +106,12 @@ static inline void dispatch_list(timer_node* current)
     {
         timer_event* event = (timer_event*)(current + 1);
         skynet_message message;
-        message.source = 0;
+        message.src_svc_handle = 0;
         message.session = event->session;
         message.data = nullptr;
-        // message.sz = (size_t)PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        message.sz = (size_t)PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
-        // skynet_context_push(event->handle, &message);
+        skynet_context_push(event->svc_handle, &message);
 
         timer_node* temp = current;
         current = current->next;
@@ -167,7 +171,7 @@ void timer_manager::init()
     TI = create_timer();
 
     uint32_t current = 0;
-    time_helper::systime(&TI->starttime, &current);
+    time_helper::systime(&TI->start_time, &current);
     TI->current = current;
     TI->current_point = time_helper::gettime();
 }
@@ -183,21 +187,21 @@ int timer_manager::timeout(uint32_t handle, int time, int session)
     if (time <= 0)
     {
         skynet_message message;
-        message.source = 0;
+        message.src_svc_handle = 0;
         message.session = session;
-        message.data = NULL;
-    //     message.sz = (size_t)PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        message.data = nullptr;
+        message.sz = (size_t)PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
-    //     if (skynet_context_push(handle, &message))
-    //     {
-    //         return -1;
-    //     }
+        if (skynet_context_push(handle, &message))
+        {
+            return -1;
+        }
     }
     // 定时发送消息, 增加一个定时器, 后续定时触发
     else
     {
         timer_event event;
-        event.handle = handle;
+        event.svc_handle = handle;
         event.session = session;
         timer_add(TI, &event, sizeof(event), time);
     }
@@ -213,7 +217,7 @@ void timer_manager::update_time()
     // 
     if (cp < TI->current_point)
     {
-        // skynet_error(NULL, "time diff error: change from %lld to %lld", cp, TI->current_point);
+        log(nullptr, "time diff error: change from %lld to %lld", cp, TI->current_point);
         TI->current_point = cp;
     }
     //

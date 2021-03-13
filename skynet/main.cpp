@@ -1,6 +1,5 @@
-#include "server/env.h"
-#include "server/skynet_config.h"
-#include "server/skynet_node.h"
+#include "node/node.h"
+#include "node/node_config.h"
 
 #include "utils/signal_helper.h"
 
@@ -30,11 +29,11 @@ int main(int argc, char* argv[])
 #endif
 
 	// initialize skynet node
-    skynet::skynet_node::instance()->init();
+    skynet::node::instance()->init();
 
     // load skynet node config
     std::string config_filename = argv[1];
-    skynet::skynet_config cfg;
+    skynet::node_config cfg;
     if (!cfg.load(config_filename))
     {
         std::cerr << "load config file failed: " << config_filename << std::endl;
@@ -42,10 +41,10 @@ int main(int argc, char* argv[])
     }
 
     // start skynet node
-    skynet::skynet_node::instance()->start(&cfg);
+    skynet::node::instance()->start(&cfg);
 
     // clean skynet node
-    skynet::skynet_node::instance()->fini();
+    skynet::node::instance()->fini();
 
     return 0;
 }

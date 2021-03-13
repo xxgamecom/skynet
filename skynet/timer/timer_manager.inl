@@ -7,9 +7,9 @@ inline uint64_t timer_manager::now()
 }
 
 // 返回当前进程的启动 UTC 时间（秒）
-inline uint32_t timer_manager::starttime()
+inline uint32_t timer_manager::start_time()
 {
-    return TI->starttime;
+    return TI->start_time;
 }
 
 }

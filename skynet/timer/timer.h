@@ -42,7 +42,7 @@ struct timer
     std::mutex                  mutex;
     
     uint32_t                    time = 0;                       // 启动到现在走过的滴答数，等同于current
-    uint32_t                    starttime = 0;                  // 节点开始运行的时间点，timestamp，秒数
+    uint32_t                    start_time = 0;                 // 节点开始运行的时间点，timestamp，秒数
     uint64_t                    current = 0;                    // 节点已经运行的时间, 滴答数
     uint64_t                    current_point = 0;              // 当前时间, 滴答数
 };

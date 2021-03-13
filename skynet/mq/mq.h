@@ -15,22 +15,8 @@
 
 namespace skynet {
 
-//----------------------------------------------
-// skynet_message
-//----------------------------------------------
-
-// 
-#define MESSAGE_TYPE_MASK           (SIZE_MAX >> 8)             // skynet_message.sz high 8 bits: message type
-#define MESSAGE_TYPE_SHIFT          ((sizeof(size_t) - 1) * 8)  // type is encoding in skynet_message.sz high 8bit
-
-// skynet message
-struct skynet_message
-{
-    uint32_t                        source = 0;                 // source service address
-    int                             session = 0;                // message session id
-    void*                           data = nullptr;             // message data
-    size_t                          sz = 0;                     // message data size, high 8 bits: message type
-};
+// forward declare
+struct skynet_message;
 
 // message drop function
 typedef void (*message_drop_proc)(skynet_message* message, void* ud);
