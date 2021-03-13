@@ -88,7 +88,7 @@
 
 // static const char* optstring(skynet_context* ctx, const char* key, const char* str)
 // {
-//     const char* ret = skynet_command(ctx, "GETENV", key);
+//     const char* ret = skynet_instruction::handle_instruction(ctx, "GETENV", key);
 //     if (ret == NULL)
 //     {
 //         return str;
@@ -132,7 +132,7 @@
 //     lua_setglobal(L, "LUA_SERVICE");
     
 //     // 预加载, lua服务运行前执行, 设置全局变量LUA_PRELOAD
-//     const char *preload = skynet_command(ctx, "GETENV", "preload");
+//     const char *preload = skynet_instruction::handle_instruction(ctx, "GETENV", "preload");
 //     lua_pushstring(L, preload);
 //     lua_setglobal(L, "LUA_PRELOAD");
 
@@ -145,7 +145,7 @@
 //     int r = luaL_loadfile(L,loader);
 //     if (r != LUA_OK)
 //     {
-//         skynet_error(ctx, "Can't load %s : %s", loader, lua_tostring(L, -1));
+//         skynet_instruction::handle_instruction(ctx, "Can't load %s : %s", loader, lua_tostring(L, -1));
 //         report_launcher_error(ctx);
 //         return 1;
 //     }
@@ -154,7 +154,7 @@
 //     r = lua_pcall(L,1,0,1);
 //     if (r != LUA_OK)
 //     {
-//         skynet_error(ctx, "lua loader error : %s", lua_tostring(L, -1));
+//         skynet_instruction::handle_instruction(ctx, "lua loader error : %s", lua_tostring(L, -1));
 //         report_launcher_error(ctx);
 //         return 1;
 //     }
@@ -167,7 +167,7 @@
 //     {
 //         size_t limit = lua_tointeger(L, -1);
 //         l->mem_limit = limit;
-//         skynet_error(ctx, "Set memory limit to %.2f M", (float)limit / (1024 * 1024));
+//         log(ctx, "Set memory limit to %.2f M", (float)limit / (1024 * 1024));
 //         lua_pushnil(L);
 //         lua_setfield(L, LUA_REGISTRYINDEX, "memlimit");
 //     }
@@ -193,7 +193,7 @@
 //     int err = init_cb(l, context, msg, sz); // 在init_cb里进行Lua层的初始化，比如初始化LUA_PATH，LUA_CPATH，LUA_SERVICE等全局变量
 //     if (err)
 //     {
-//         skynet_command(context, "EXIT", NULL);
+//         skynet_instruction::handle_instruction(context, "EXIT", NULL);
 //     }
 
 //     return 0;
@@ -208,7 +208,7 @@
 //     // 将args内容拷贝到内存中的tmp指针指向地址的内存空间
 //     memcpy(tmp, args, sz);
 //     skynet_callback(ctx, l , launch_cb);		// 设置消息回调函数: launch_cb 这个函数, 有消息传入时会调用回调函数进行处理
-//     const char * self = skynet_command(ctx, "REG", NULL);	// 
+//     const char * self = skynet_instruction::handle_instruction(ctx, "REG", NULL);	// 
 //     // 当前lua实例自己的句柄id (无符号长整型)
 //     uint32_t handle_id = strtoul(self+1, NULL, 16);
 //     // it must be first message
@@ -241,7 +241,7 @@
 //     if (l->mem > l->mem_report)
 //     {
 //         l->mem_report *= 2;
-//         skynet_error(l->ctx, "Memory warning %.2f M", (float)l->mem / (1024 * 1024));
+//         log(l->ctx, "Memory warning %.2f M", (float)l->mem / (1024 * 1024));
 //     }
 
 //     // 分配内存
@@ -268,7 +268,7 @@
 
 // void snlua_signal(struct snlua *l, int signal)
 // {
-//     skynet_error(l->ctx, "recv a signal %d", signal);
+//     log(l->ctx, "recv a signal %d", signal);
 //     if (signal == 0)
 //     {
 // #ifdef lua_checksig
@@ -278,6 +278,6 @@
 //     }
 //     else if (signal == 1)
 //     {
-//         skynet_error(l->ctx, "Current Memory %.3fK", (float)l->mem / 1024);
+//         log(l->ctx, "Current Memory %.3fK", (float)l->mem / 1024);
 //     }
 // }

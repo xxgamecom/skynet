@@ -25,28 +25,32 @@
 
 #define DEFAULT_CAP 128
 
-struct connection {
+struct connection
+{
     int sock;
     int id;
 };
 
-struct response {
+struct response
+{
     int flags;
     int32_t cursor_id[2];
     int starting_from;
     int number;
 };
 
-struct buffer {
+struct buffer
+{
     int size;
     int cap;
     uint8_t * ptr;
     uint8_t buffer[DEFAULT_CAP];
 };
 
-static inline uint32_t
-little_endian(uint32_t v) {
-    union {
+static inline uint32_t little_endian(uint32_t v)
+{
+    union
+    {
         uint32_t v;
         uint8_t b[4];
     } u;
@@ -56,9 +60,10 @@ little_endian(uint32_t v) {
 
 typedef void * document;
 
-static inline uint32_t
-get_length(document buffer) {
-    union {
+static inline uint32_t get_length(document buffer)
+{
+    union
+    {
         uint32_t v;
         uint8_t b[4];
     } u;
@@ -66,9 +71,10 @@ get_length(document buffer) {
     return u.b[0] | u.b[1] << 8 | u.b[2] << 16 | u.b[3] << 24;
 }
 
-static inline void
-buffer_destroy(struct buffer *b) {
-    if (b->ptr != b->buffer) {
+static inline void buffer_destroy(struct buffer *b)
+{
+    if (b->ptr != b->buffer)
+    {
         skynet_free(b->ptr);
     }
 }
@@ -80,24 +86,28 @@ buffer_create(struct buffer *b) {
     b->ptr = b->buffer;
 }
 
-static inline void
-buffer_reserve(struct buffer *b, int sz) {
+static inline void buffer_reserve(struct buffer *b, int sz)
+{
     if (b->size + sz <= b->cap)
         return;
-    do {
+    do
+    {
         b->cap *= 2;
     } while (b->cap <= b->size + sz);
 
-    if (b->ptr == b->buffer) {
+    if (b->ptr == b->buffer)
+    {
         b->ptr = skynet_malloc(b->cap);
         memcpy(b->ptr, b->buffer, b->size);
-    } else {
+    }
+    else
+    {
         b->ptr = skynet_realloc(b->ptr, b->cap);
     }
 }
 
-static inline void
-write_int32(struct buffer *b, int32_t v) {
+static inline void write_int32(struct buffer *b, int32_t v)
+{
     uint32_t uv = (uint32_t)v;
     buffer_reserve(b,4);
     b->ptr[b->size++] = uv & 0xff;
@@ -106,31 +116,31 @@ write_int32(struct buffer *b, int32_t v) {
     b->ptr[b->size++] = (uv >> 24)&0xff;
 }
 
-static inline void
-write_bytes(struct buffer *b, const void * buf, int sz) {
+static inline void write_bytes(struct buffer *b, const void * buf, int sz)
+{
     buffer_reserve(b,sz);
     memcpy(b->ptr + b->size, buf, sz);
     b->size += sz;
 }
 
-static void
-write_string(struct buffer *b, const char *key, size_t sz) {
+static void write_string(struct buffer *b, const char *key, size_t sz)
+{
     buffer_reserve(b,sz+1);
     memcpy(b->ptr + b->size, key, sz);
     b->ptr[b->size+sz] = '\0';
     b->size+=sz+1;
 }
 
-static inline int
-reserve_length(struct buffer *b) {
+static inline int reserve_length(struct buffer *b)
+{
     int sz = b->size;
     buffer_reserve(b,4);
     b->size +=4;
     return sz;
 }
 
-static inline void
-write_length(struct buffer *b, int32_t v, int off) {
+static inline void write_length(struct buffer *b, int32_t v, int off)
+{
     uint32_t uv = (uint32_t)v;
     b->ptr[off++] = uv & 0xff;
     b->ptr[off++] = (uv >> 8)&0xff;
@@ -146,11 +156,12 @@ write_length(struct buffer *b, int32_t v, int off) {
 // 6 document query
 // 7 document selector (optional)
 // return string package
-static int
-op_query(lua_State *L) {
+static int op_query(lua_State *L)
+{
     int id = luaL_checkinteger(L,1);
     document query = lua_touserdata(L,6);
-    if (query == NULL) {
+    if (query == NULL)
+    {
         return luaL_error(L, "require query document");
     }
     document selector = lua_touserdata(L,7);
@@ -204,11 +215,12 @@ op_query(lua_State *L) {
 //  document first
 //	string cursor_id
 //  integer startfrom
-static int
-op_reply(lua_State *L) {
+static int op_reply(lua_State *L)
+{
     size_t data_len = 0;
     const char * data = luaL_checklstring(L,1,&data_len);
-    struct {
+    struct
+    {
 //		int32_t length; // total message size, including this
         int32_t request_id; // identifier for this message
         int32_t response_id; // requestID from the original request
@@ -220,14 +232,16 @@ op_reply(lua_State *L) {
         int32_t number;
     } const *reply = (const void *)data;
 
-    if (data_len < sizeof(*reply)) {
+    if (data_len < sizeof(*reply))
+    {
         lua_pushboolean(L, 0);
         return 1;
     }
 
     int id = little_endian(reply->response_id);
     int flags = little_endian(reply->flags);
-    if (flags & REPLY_QUERYFAILURE) {
+    if (flags & REPLY_QUERYFAILURE)
+    {
         lua_pushboolean(L,0);
         lua_pushinteger(L, id);
         lua_pushlightuserdata(L, (void *)(reply+1));
@@ -239,9 +253,11 @@ op_reply(lua_State *L) {
     int sz = (int)data_len - sizeof(*reply);
     const uint8_t * doc = (const uint8_t *)(reply+1);
 
-    if (lua_istable(L,2)) {
+    if (lua_istable(L,2))
+    {
         int i = 1;
-        while (sz > 4) {
+        while (sz > 4)
+        {
             lua_pushlightuserdata(L, (void *)doc);
             lua_rawseti(L, 2, i);
 
@@ -252,22 +268,28 @@ op_reply(lua_State *L) {
 
             ++i;
         }
-        if (i != number + 1) {
+        if (i != number + 1)
+        {
             lua_pushboolean(L,0);
             lua_pushinteger(L, id);
             return 2;
         }
         int c = lua_rawlen(L, 2);
-        for (;i<=c;i++) {
+        for (;i<=c;i++)
+        {
             lua_pushnil(L);
             lua_rawseti(L, 2, i);
         }
-    } else {
-        if (sz >= 4) {
+    }
+    else
+    {
+        if (sz >= 4)
+        {
             sz -= get_length((document)doc);
         }
     }
-    if (sz != 0) {
+    if (sz != 0)
+    {
         return luaL_error(L, "Invalid result bson document");
     }
     lua_pushboolean(L,1);
@@ -276,10 +298,13 @@ op_reply(lua_State *L) {
         lua_pushnil(L);
     else
         lua_pushlightuserdata(L, (void *)(reply+1));
-    if (reply->cursor_id[0] == 0 && reply->cursor_id[1]==0) {
+    if (reply->cursor_id[0] == 0 && reply->cursor_id[1]==0)
+    {
         // closed cursor
         lua_pushnil(L);
-    } else {
+    }
+    else
+    {
         lua_pushlstring(L, (const char *)(reply->cursor_id), 8);
     }
     lua_pushinteger(L, starting_from);
@@ -291,11 +316,12 @@ op_reply(lua_State *L) {
     1 string cursor_id
     return string package
  */
-static int
-op_kill(lua_State *L) {
+static int op_kill(lua_State *L)
+{
     size_t cursor_len = 0;
     const char * cursor_id = luaL_tolstring(L, 1, &cursor_len);
-    if (cursor_len != 8) {
+    if (cursor_len != 8)
+    {
         return luaL_error(L, "Invalid cursor id");
     }
 
@@ -326,10 +352,11 @@ op_kill(lua_State *L) {
 
     return string package
  */
-static int
-op_delete(lua_State *L) {
+static int op_delete(lua_State *L)
+{
     document selector  = lua_touserdata(L,3);
-    if (selector == NULL) {
+    if (selector == NULL)
+    {
         luaL_error(L, "Invalid param");
     }
     size_t sz = 0;
@@ -340,19 +367,19 @@ op_delete(lua_State *L) {
 
     struct buffer buf;
     buffer_create(&buf);
-        int len = reserve_length(&buf);
-        write_int32(&buf, 0);
-        write_int32(&buf, 0);
-        write_int32(&buf, OP_DELETE);
-        write_int32(&buf, 0);
-        write_string(&buf, name, sz);
-        write_int32(&buf, lua_tointeger(L,2));
+    int len = reserve_length(&buf);
+    write_int32(&buf, 0);
+    write_int32(&buf, 0);
+    write_int32(&buf, OP_DELETE);
+    write_int32(&buf, 0);
+    write_string(&buf, name, sz);
+    write_int32(&buf, lua_tointeger(L,2));
 
-        int32_t selector_len = get_length(selector);
-        int total = buf.size + selector_len;
-        write_length(&buf, total, len);
+    int32_t selector_len = get_length(selector);
+    int total = buf.size + selector_len;
+    write_length(&buf, total, len);
 
-        luaL_addlstring(&b, (const char *)buf.ptr, buf.size);
+    luaL_addlstring(&b, (const char *)buf.ptr, buf.size);
     buffer_destroy(&buf);
 
     luaL_addlstring(&b, (const char *)selector, selector_len);
@@ -369,31 +396,32 @@ op_delete(lua_State *L) {
 
     return string package
  */
-static int
-op_get_more(lua_State *L) {
+static int op_get_more(lua_State *L)
+{
     int id = luaL_checkinteger(L, 1);
     size_t sz = 0;
     const char * name = luaL_checklstring(L,2,&sz);
     int number = luaL_checkinteger(L, 3);
     size_t cursor_len = 0;
     const char * cursor_id = luaL_tolstring(L, 4, &cursor_len);
-    if (cursor_len != 8) {
+    if (cursor_len != 8)
+    {
         return luaL_error(L, "Invalid cursor id");
     }
 
     struct buffer buf;
     buffer_create(&buf);
-        int len = reserve_length(&buf);
-        write_int32(&buf, id);
-        write_int32(&buf, 0);
-        write_int32(&buf, OP_GET_MORE);
-        write_int32(&buf, 0);
-        write_string(&buf, name, sz);
-        write_int32(&buf, number);
-        write_bytes(&buf, cursor_id, 8);
-        write_length(&buf, buf.size, len);
+    int len = reserve_length(&buf);
+    write_int32(&buf, id);
+    write_int32(&buf, 0);
+    write_int32(&buf, OP_GET_MORE);
+    write_int32(&buf, 0);
+    write_string(&buf, name, sz);
+    write_int32(&buf, number);
+    write_bytes(&buf, cursor_id, 8);
+    write_length(&buf, buf.size, len);
 
-        lua_pushlstring(L, (const char *)buf.ptr, buf.size);
+    lua_pushlstring(L, (const char *)buf.ptr, buf.size);
     buffer_destroy(&buf);
 
     return 1;
@@ -404,11 +432,12 @@ op_get_more(lua_State *L) {
 // 3 document selector
 // 4 document update
 // return string package
-static int
-op_update(lua_State *L) {
+static int op_update(lua_State *L)
+{
     document selector  = lua_touserdata(L,3);
     document update = lua_touserdata(L,4);
-    if (selector == NULL || update == NULL) {
+    if (selector == NULL || update == NULL)
+    {
         luaL_error(L, "Invalid param");
     }
     size_t sz = 0;
@@ -445,23 +474,29 @@ op_update(lua_State *L) {
     return 1;
 }
 
-static int
-document_length(lua_State *L) {
-    if (lua_isuserdata(L, 3)) {
+static int document_length(lua_State *L)
+{
+    if (lua_isuserdata(L, 3))
+    {
         document doc = lua_touserdata(L,3);
         return get_length(doc);
     }
-    if (lua_istable(L,3)) {
+    if (lua_istable(L,3))
+    {
         int total = 0;
         int s = lua_rawlen(L,3);
         int i;
-        for (i=1;i<=s;i++) {
+        for (i=1;i<=s;i++)
+        {
             lua_rawgeti(L, 3, i);
             document doc = lua_touserdata(L,-1);
-            if (doc == NULL) {
+            if (doc == NULL)
+            {
                 lua_pop(L,1);
                 return luaL_error(L, "Invalid document at %d", i);
-            } else {
+            }
+            else
+            {
                 total += get_length(doc);
                 lua_pop(L,1);
             }
@@ -475,8 +510,8 @@ document_length(lua_State *L) {
 // 2 string collection
 // 3 documents
 // return string package
-static int
-op_insert(lua_State *L) {
+static int op_insert(lua_State *L)
+{
     size_t sz = 0;
     const char * name = luaL_checklstring(L,2,&sz);
     int dsz = document_length(L);
@@ -500,13 +535,17 @@ op_insert(lua_State *L) {
         luaL_addlstring(&b, (const char *)buf.ptr, buf.size);
     buffer_destroy(&buf);
     
-    if (lua_isuserdata(L,3)) {
+    if (lua_isuserdata(L,3))
+    {
         document doc = lua_touserdata(L,3);
         luaL_addlstring(&b, (const char *)doc, get_length(doc));
-    } else {
+    }
+    else
+    {
         int s = lua_rawlen(L, 3);
         int i;
-        for (i=1;i<=s;i++) {
+        for (i=1;i<=s;i++)
+        {
             lua_rawgeti(L,3,i);
             document doc = lua_touserdata(L,-1);
             lua_pop(L,1);	// must call lua_pop before luaL_addlstring, because addlstring may change stack top
@@ -521,8 +560,8 @@ op_insert(lua_State *L) {
 
 // string 4 bytes length
 // return integer
-static int
-reply_length(lua_State *L) {
+static int reply_length(lua_State *L)
+{
     const char * rawlen_str = luaL_checkstring(L, 1);
     int rawlen = 0;
     memcpy(&rawlen, rawlen_str, sizeof(int));
@@ -531,8 +570,8 @@ reply_length(lua_State *L) {
     return 1;
 }
 
-LUAMOD_API int
-luaopen_skynet_mongo_driver(lua_State *L) {
+LUAMOD_API int luaopen_skynet_mongo_driver(lua_State *L)
+{
     luaL_checkversion(L);
     luaL_Reg l[] ={
         { "query", op_query },

@@ -41,4 +41,4 @@ ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-pbc/binding)
 ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/sproto)
 
 # lua-skynet
-# ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-skynet)
+ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-skynet)
