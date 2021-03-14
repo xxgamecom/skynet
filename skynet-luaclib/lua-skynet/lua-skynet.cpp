@@ -5,13 +5,14 @@
 #define LUA_LIB
 
 #include "skynet.h"
+
+#include "lua-seri.h"
+
 #include "node/skynet_instruction.h"
 #include "log/log.h"
 #include "mq/mq_msg.h"
 #include "context/service_context.h"
 #include "timer/timer_manager.h"
-
-// #include "lua-seri.h"
 
 extern "C" {
 #include <lua.h>
@@ -443,16 +444,16 @@ static int l_to_string(lua_State* L)
     return 1;
 }
 
-// static int l_pack_string(lua_State* L)
-// {
-//     luaseri_pack(L);
-//     char* str = (char*) lua_touserdata(L, -2);
-//     int sz = lua_tointeger(L, -1);
-//     lua_pushlstring(L, str, sz);
-//     // skynet_free(str);
-//     delete[] str;
-//     return 1;
-// }
+static int l_pack_string(lua_State* L)
+{
+    luaseri_pack(L);
+    char* str = (char*) lua_touserdata(L, -2);
+    int sz = lua_tointeger(L, -1);
+    lua_pushlstring(L, str, sz);
+    // skynet_free(str);
+    delete[] str;
+    return 1;
+}
 
 // 释放消息
 static int l_trash(lua_State* L)
@@ -585,9 +586,9 @@ LUAMOD_API int luaopen_skynet_core(lua_State* L)
     // functions without service_context
     luaL_Reg l2[] = {
         { "tostring", skynet::luaclib::l_to_string },
-        // { "pack", skynet::luaclib::luaseri_pack },
-        // { "unpack", skynet::luaclib::luaseri_unpack },
-        // { "packstring", skynet::luaclib::l_pack_string },
+        { "pack", luaseri_pack },
+        { "unpack", luaseri_unpack },
+        { "packstring", skynet::luaclib::l_pack_string },
         { "trash", skynet::luaclib::l_trash },
         { "now", skynet::luaclib::l_now },
         { "hpc", skynet::luaclib::lhpc },    // getHPCounter

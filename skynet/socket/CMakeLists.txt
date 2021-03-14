@@ -1,0 +1,29 @@
+set(SKYNET_SOCKET_HEADER
+    socket/buffer.h
+    socket/pipe.h
+    socket/poller.h
+    socket/server_def.h
+    socket/server.h
+    socket/server.inl
+    socket/server_ctrl_cmd.h
+    socket/socket.h
+    socket/socket_addr.h
+    socket/socket_helper.h
+    socket/socket_info.h
+    socket/socket_lock.h
+)
+
+set(SKYNET_SOCKET_SRC
+    socket/buffer.cpp
+    socket/pipe.cpp
+    socket/poller.cpp
+    socket/poller_epoll.cpp
+    socket/poller_kqueue.cpp
+    socket/server.cpp
+    socket/server_ctrl_cmd.cpp
+    socket/socket.cpp
+    socket/socket_addr.cpp
+    socket/socket_helper.cpp
+    socket/socket_info.cpp
+    socket/socket_lock.cpp
+)

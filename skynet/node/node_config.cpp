@@ -109,7 +109,7 @@ bool node_config::load(const std::string& config_file)
         return false;
     }
 
-    // 初始化skyent节点环境(读取配置文件的环境配置)
+    // 初始化skynet节点环境(读取配置文件的环境配置)
     _init_env(L);
 
     // 从节点环境中读取配置数据

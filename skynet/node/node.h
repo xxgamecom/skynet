@@ -1,6 +1,6 @@
 #pragma once
 
-#include <pthread.h>
+#include "node_config.h"
 
 #include <atomic>
 
@@ -19,6 +19,8 @@ public:
 
     // node info
 private:
+    node_config                 node_config_;               // skynet node config
+
     std::atomic<int>            total_ { 0 };               // servcie context count in this skynet node
     int                         init_;                      // 是否已初始化, 1表示已经初始化
     uint32_t                    monitor_exit_;              // monitor exit service handle
@@ -31,12 +33,12 @@ public:
 
 public:
     // initialize skynet node 
-    void init();
+    bool init(const std::string config_filename);
     // clean skynet node 
     void fini();
 
     // start skynet node
-    void start(node_config* config);
+    void start();
 
 public:
     // get service ctx count

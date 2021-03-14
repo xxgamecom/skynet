@@ -1,14 +1,15 @@
 #include "node.h"
 #include "node_thread.h"
-
 #include "node_config.h"
 #include "skynet_socket.h"
+#include "server.h"
 
-#include "../skynet.h"
 #include "../mq/mq.h"
+#include "../log/log.h"
 #include "../mod/cservice_mod_manager.h"
 #include "../timer/timer_manager.h"
 #include "../context/handle_manager.h"
+#include "../context/service_context.h"
 
 #include "../utils/daemon_helper.h"
 
@@ -22,19 +23,33 @@ node* node::instance_ = nullptr;
 node* node::instance()
 {
     static std::once_flag oc;
-    std::call_once(oc, [&](){ 
+    std::call_once(oc, [&]() {
         instance_ = new node;
     });
 
     return instance_;
 }
 
-void node::init()
+bool node::init(const std::string config_filename)
 {
-    // 初始化节点
+    // initialize skynet node lua code cache
+#ifdef LUA_CACHELIB
+    luaL_initcodecache();
+#endif
+
+    // load skynet node config
+    if (!node_config_.load(config_filename))
+    {
+        std::cerr << "load node config file failed: " << config_filename << std::endl;
+        return false;
+    }
+
+    //
     total_ = 0;
     monitor_exit_ = 0;
     init_ = 1;
+
+    return true;
 }
 
 void node::fini()
@@ -44,7 +59,7 @@ void node::fini()
 
 // 启动 lua bootstrap服务
 // snlua bootstrap
-static void bootstrap(service_context* log_svc_ctx, const char* cmdline)
+static void _bootstrap(service_context* log_svc_ctx, const char* cmdline)
 {
     // 命令行长度
     int sz = ::strlen(cmdline);
@@ -54,24 +69,24 @@ static void bootstrap(service_context* log_svc_ctx, const char* cmdline)
     ::sscanf(cmdline, "%s %s", svc_name, svc_args);
 
     // create service
-//     service_context* ctx = skynet_context_new(svc_name, svc_args);
-//     if (ctx == nullptr)
+    service_context* ctx = skynet_context_new(svc_name, svc_args);
+    if (ctx == nullptr)
     {
-//         // 通过传入的logger服务接口构建错误信息加入logger的消息队列
-//         log(nullptr, "Bootstrap error : %s\n", cmdline);
-//         // 输出消息队列中的错误信息
-//         skynet_context_dispatchall(log_svc_ctx);
+        // 通过传入的logger服务接口构建错误信息加入logger的消息队列
+        log(nullptr, "Bootstrap error : %s\n", cmdline);
+        // 输出消息队列中的错误信息
+        skynet_context_dispatchall(log_svc_ctx);
 
         ::exit(1);
     }
 }
 
-void node::start(node_config* config)
+void node::start()
 {
     // daemon mode
-    if (config->pid_file_ != nullptr)
+    if (node_config_.pid_file_ != nullptr)
     {
-        if (daemon_helper::init(config->pid_file_))
+        if (!daemon_helper::init(node_config_.pid_file_))
         {
             ::exit(1);
         }
@@ -84,7 +99,7 @@ void node::start(node_config* config)
     global_mq::instance()->init();
 
     // 初始化服务动态库加载模块, 主要用户加载符合skynet服务模块接口的动态链接库(.so文件)
-    cservice_mod_manager::instance()->init(config->cservice_path_);
+    cservice_mod_manager::instance()->init(node_config_.cservice_path_);
 
     // 初始化定时器
     timer_manager::instance()->init();
@@ -93,30 +108,30 @@ void node::start(node_config* config)
     skynet_socket_init();
 
     // enable/disable profiler
-    node::instance()->enable_profiler(config->profile_);
+    node::instance()->enable_profiler(node_config_.profile_);
 
     // create c service: logger
-//     service_context* log_svc_ctx = skynet_context_new(config->log_service_, config->logger_);
-//     if (log_svc_ctx == nullptr)
+    service_context* log_svc_ctx = skynet_context_new(node_config_.log_service_, node_config_.logger_);
+    if (log_svc_ctx == nullptr)
     {
-        std::cerr << "Can't launch " << config->log_service_ << " service" << std::endl;
+        std::cerr << "Can't launch " << node_config_.log_service_ << " service" << std::endl;
         ::exit(1);
     }
-    // handle_manager::instance()->set_handle_by_name("logger", log_svc_ctx->handle);
+    handle_manager::instance()->set_handle_by_name("logger", log_svc_ctx->svc_handle_);
 
     // bootstrap to load snlua c service
-    // bootstrap(log_svc_ctx, config->bootstrap);
+    _bootstrap(log_svc_ctx, node_config_.bootstrap_);
 
     // start server threads
-    node_thread::start(config->thread_);
+    node_thread::start(node_config_.thread_);
 
     //
     skynet_socket_free();
 
     // clean daemon pid file
-    if (config->pid_file_)
+    if (node_config_.pid_file_)
     {
-        daemon_helper::fini(config->pid_file_);
+        daemon_helper::fini(node_config_.pid_file_);
     }
 }
 
