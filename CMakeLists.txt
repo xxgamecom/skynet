@@ -49,7 +49,7 @@ endif()
 SET(EXECUTABLE_OUTPUT_PATH "${SKYNET_BIN_PATH}")
 
 # include path
-INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/skynet-deps/lua")
+INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/deps/lua")
 
 #------------------------------------------------------
 # build
@@ -62,9 +62,9 @@ OPTION(BUILD_SKYNET_LUACLIB "Build skynet luaclib" ON)
 OPTION(BUILD_SKYNET_CSERVICE "Build skynet c service" ON)
 OPTION(BUILD_SKYNET_TESTS "Build skynet tests" OFF)
 
-# build skynet-deps
+# build deps
 if (BUILD_SKYNET_DEPS)
-    ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-deps)
+    ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/deps)
 endif()
 
 # build skynet

@@ -1,9 +1,5 @@
 /**
- * service message queue
- * 
- * 
- * global message qeueu
- * 1) 
+ * service private message queue
  */
 
 #pragma once

@@ -121,17 +121,17 @@ int handle_manager::retire(uint32_t svc_handle)
 
     wlock.unlock();
 
-    // if (ctx != nullptr)
-    // {
+     if (ctx != nullptr)
+     {
     //     // release ctx may call skynet_handle_* , so wunlock first.
     //     skynet_context_release(ctx);
-    // }
+     }
 
     return ret;
 }
 
 // 注销全部服务
-void handle_manager::retireall()
+void handle_manager::retire_all()
 {
     for (;;)
     {
@@ -297,19 +297,25 @@ void handle_manager::_insert_name_before(char* svc_name, uint32_t svc_handle, in
     ++name_count_;
 }
 
-//
-uint32_t skynet_query_by_name(service_context* svc_ctx, const char* name)
+uint32_t skynet_query_by_name_or_addr(service_context* svc_ctx, const char* name_or_addr)
 {
-    switch(name[0])
+    // service address
+    if (name_or_addr[0] == ':')
     {
-        case ':':
-            return strtoul(name+1, NULL, 16);
-        case '.':
-            return handle_manager::instance()->find_by_name(name + 1);
+        return ::strtoul(name_or_addr + 1, NULL, 16);
     }
-
-    log(svc_ctx, "Don't support query global name %s", name);
-    return 0;
+    // local service
+    else if (name_or_addr[0] == '.')
+    {
+        return handle_manager::instance()->find_by_name(name_or_addr + 1);
+    }
+    // global service
+    else
+    {
+        // not support query global service, just log a message
+        log(svc_ctx, "Don't support query global name %s", name_or_addr);
+        return 0;
+    }
 }
 
 

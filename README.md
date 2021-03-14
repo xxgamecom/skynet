@@ -47,8 +47,8 @@ skynet++
 │   └── skynet                      // skynet可执行文件
 ├── cmake                           // cmake相关功能
 ├── examples                        // 示例
+├── deps                            // skynet 依赖目录
 ├── skynet-service-c                // skynet c服务 目录
-├── skynet-deps                     // skynet 依赖目录
 │   ├── jemalloc                    // jemalloc库
 │   └── lua                         // lua库
 ├── skynet-luaclib                  // skynet lua c模块源码目录

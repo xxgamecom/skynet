@@ -242,7 +242,7 @@ static const char* cmd_start_time(service_context* svc_ctx, const char* param)
 // skynet cmd: abort
 static const char* cmd_abort(service_context* svc_ctx, const char* param)
 {
-    handle_manager::instance()->retireall();
+    handle_manager::instance()->retire_all();
     return nullptr;
 }
 

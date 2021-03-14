@@ -15,15 +15,16 @@ public:
     static mq_global* instance();
 
 private:
-    mq_private*                     head_ = nullptr;                    // 头, service private message queue ptr
-    mq_private*                     tail_ = nullptr;                    // 尾, service private message queue ptr
+    // service message queue link list
+    mq_private*                     head_ = nullptr;                    // service private message queue head ptr
+    mq_private*                     tail_ = nullptr;                    // service private message queue tail ptr
 
-    std::mutex                      mutex_;                             // 保证同一时刻只有一个线程在处理
+    std::mutex                      mutex_;                             // service message queue link list protect
 
 public:
+    // initialize
     void init();
 
-    //
 public:
     // push/pop message
     void push(mq_private* q);

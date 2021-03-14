@@ -67,7 +67,7 @@ public:
     // 利用ID注销一个服务
     int retire(uint32_t svc_handle);
     // 注销全部服务
-    void retireall();
+    void retire_all();
 
     // 利于ID获取服务上下文指针
     service_context* grab(uint32_t svc_handle);
@@ -85,8 +85,8 @@ private:
     void _insert_name_before(char* svc_name, uint32_t svc_handle, int before);
 };
 
-// query by service name
-uint32_t skynet_query_by_name(service_context* svc_ctx, const char* name);
+// query by service name or service address string, return service handle
+uint32_t skynet_query_by_name_or_addr(service_context* svc_ctx, const char* name_or_addr);
 
 }
 
