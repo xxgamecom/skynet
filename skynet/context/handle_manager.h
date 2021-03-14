@@ -85,6 +85,8 @@ private:
     void _insert_name_before(char* svc_name, uint32_t svc_handle, int before);
 };
 
+// query by service name
+uint32_t skynet_query_by_name(service_context* svc_ctx, const char* name);
 
 }
 

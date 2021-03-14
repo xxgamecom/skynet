@@ -106,25 +106,25 @@ int skynet_socket_poll()
     case socket::socket_event::SOCKET_EXIT:
         return 0;
     case socket::socket_event::SOCKET_DATA:
-        forward_message(skynet_socket_event::SOCKET_DATA, false, &result);
+        forward_message(skynet_socket_event::EVENT_DATA, false, &result);
         break;
     case socket::socket_event::SOCKET_CLOSE:
-        forward_message(skynet_socket_event::SOCKET_CLOSE, false, &result);
+        forward_message(skynet_socket_event::EVENT_CLOSE, false, &result);
         break;
     case socket::socket_event::SOCKET_OPEN:
-        forward_message(skynet_socket_event::SOCKET_CONNECT, true, &result);
+        forward_message(skynet_socket_event::EVENT_CONNECT, true, &result);
         break;
     case socket::socket_event::SOCKET_ERROR:
-        forward_message(skynet_socket_event::SOCKET_ERROR, true, &result);
+        forward_message(skynet_socket_event::EVENT_ERROR, true, &result);
         break;
     case socket::socket_event::SOCKET_ACCEPT:
-        forward_message(skynet_socket_event::SOCKET_ACCEPT, true, &result);
+        forward_message(skynet_socket_event::EVENT_ACCEPT, true, &result);
         break;
     case socket::socket_event::SOCKET_UDP:
-        forward_message(skynet_socket_event::SOCKET_UDP, false, &result);
+        forward_message(skynet_socket_event::EVENT_UDP, false, &result);
         break;
     case socket::socket_event::SOCKET_WARNING:
-        forward_message(skynet_socket_event::SOCKET_WARNING, false, &result);
+        forward_message(skynet_socket_event::EVENT_WARNING, false, &result);
         break;
     default:
         //log(nullptr, "Unknown socket message type %d.", type);
@@ -207,7 +207,7 @@ int skynet_socket_udp_connect(service_context* ctx, int id, const char* addr, in
 
 const char* skynet_socket_udp_address(skynet_socket_message* msg, int* addrsz)
 {
-    if (msg->socket_event != skynet_socket_event::SOCKET_UDP)
+    if (msg->socket_event != skynet_socket_event::EVENT_UDP)
         return nullptr;
 
     socket::socket_message sm;

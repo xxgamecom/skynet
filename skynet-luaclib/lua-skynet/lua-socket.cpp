@@ -452,7 +452,7 @@ static int l_unpack(lua_State* L)
     {
         lua_pushlightuserdata(L, message->buffer);
     }
-    if (message->socket_event == skynet::skynet_socket_event::SOCKET_UDP)
+    if (message->socket_event == skynet::skynet_socket_event::EVENT_UDP)
     {
         int addrsz = 0;
         const char* addrstring = skynet_socket_udp_address(message, &addrsz);

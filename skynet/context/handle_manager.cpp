@@ -1,6 +1,8 @@
 #include "handle_manager.h"
 #include "service_context.h"
 
+#include "../log/log.h"
+
 #include <mutex>
 
 namespace skynet {
@@ -294,5 +296,21 @@ void handle_manager::_insert_name_before(char* svc_name, uint32_t svc_handle, in
     name_[before].svc_handle = svc_handle;
     ++name_count_;
 }
+
+//
+uint32_t skynet_query_by_name(service_context* svc_ctx, const char* name)
+{
+    switch(name[0])
+    {
+        case ':':
+            return strtoul(name+1, NULL, 16);
+        case '.':
+            return handle_manager::instance()->find_by_name(name + 1);
+    }
+
+    log(svc_ctx, "Don't support query global name %s", name);
+    return 0;
+}
+
 
 }

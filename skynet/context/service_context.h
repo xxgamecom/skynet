@@ -23,6 +23,7 @@ namespace skynet {
 class cservice_mod;
 class message_queue;
 class service_context;
+struct skynet_message;
 
 //
 typedef int (*skynet_cb)(service_context* svc_ctx, void* ud, int type, int session, uint32_t source , const void* msg, size_t sz);
@@ -62,8 +63,9 @@ public:
     int                         session_id_;                // 本方发出请求会设置一个对应的session，当收到对方消息返回时，通过session匹配是哪一个请求的返回
     std::atomic<int>            ref_ { 0 };                 // 引用计数，当为0，可以删除ctx
 
-    bool                        init_ = false;              // 标记是否完成初始化
-    bool                        endless_ = false;           // 标记消息是否堵住 (monitor线程监控服务是否超过规定时间, 如果规定时间内服务没有执行完成, 则会设置该标记)
+    bool                        is_init_ = false;           // service initialize tag
+    bool                        is_blocked_ = false;        // service blocked tag
+                                                            // set by service monitor thread when service dead lock or blocked.
 
     // stat
     int                         message_count_ = 0;         // 累计收到的消息数量
@@ -96,7 +98,12 @@ public:
 service_context* skynet_context_new(const char* svc_name, const char* param);
 // 创建服务ctx
 service_context* skynet_context_release(service_context* svc_ctx);
-
+// 投递服务消息
+int skynet_context_push(uint32_t svc_handle, skynet_message* message);
+// 发送消息
+void skynet_context_send(service_context* svc_ctx, void* msg, size_t sz, uint32_t src_svc_handle, int type, int session);
+// set service has blocked
+void skynet_context_blocked(uint32_t svc_handle);
 }
 
 #include "service_context.inl"

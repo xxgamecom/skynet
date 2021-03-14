@@ -1,8 +1,7 @@
 #include "node_thread.h"
 
-#include "server.h"
 #include "node.h"
-#include "skynet_monitor.h"
+#include "service_monitor.h"
 #include "skynet_socket.h"
 
 #include "../skynet.h"  // api
@@ -11,6 +10,8 @@
 #include "../mq/mq_msg.h"
 
 #include "../timer/timer_manager.h"
+
+#include "../context/service_context.h"
 #include "../context/handle_manager.h"
 
 #include "../utils/signal_helper.h"
@@ -32,8 +33,8 @@ static void handle_hup(int signal)
     }
 }
 
-// worker thread weight: it determines the processing frequency of messages in the message queue
-// -1: 每帧只处理mq中一个消息包 process one message in message queue per update frame
+// weight of the service worker thread: it determines the processing frequency of messages in the message queue
+// -1: process one message in message queue per update frame (每帧只处理mq中一个消息包)
 //  0: 每帧处理mq中所有消息包, process all messages in message queue per update frame
 //  1: 每帧处理mq长度的1/2条(>>1右移一位)消息, process 1/2 messages in message queue per update frame
 //  2: 每帧处理mq长度的1/4(右移2位), process 1/4 messages in message queue per update frame
@@ -63,7 +64,7 @@ void node_thread::start(int thread_count)
     m->sleep_count = 0;
 
     // worker thread monitor array
-    m->sm.reset(new skynet_monitor[thread_count], std::default_delete<skynet_monitor[]>());
+    m->svc_monitor.reset(new service_monitor[thread_count], std::default_delete<service_monitor[]>());
 
     // start mointer, timer, socket threads
     threads[0] = std::make_shared<std::thread>(node_thread::thread_monitor, m);
@@ -118,7 +119,6 @@ void node_thread::thread_socket(std::shared_ptr<monitor> m)
 
 void node_thread::thread_monitor(std::shared_ptr<monitor> m)
 {
-    //
     int n = m->thread_count;
     for (;;)
     {
@@ -129,10 +129,10 @@ void node_thread::thread_monitor(std::shared_ptr<monitor> m)
         // check dead lock or blocked
         for (int i = 0; i < n; i++)
         {
-            m->sm.get()[i].check();
+            m->svc_monitor.get()[i].check();
         }
 
-        // total sleep 5 seconds
+        // check interval: 5 seconds
         for (int i = 0; i < 5; i++)
         {
             // check abort per 1 second
@@ -195,13 +195,13 @@ void node_thread::thread_timer(std::shared_ptr<monitor> m)
 
 void node_thread::thread_worker(std::shared_ptr<monitor> m, int idx, int weight)
 {
-    skynet_monitor& sm = m->sm.get()[idx];
+    service_monitor& svc_monitor = m->svc_monitor.get()[idx];
 
     message_queue* q = nullptr;
     while (!m->is_quit)
     {
         // dispatch message
-        q = skynet_context_message_dispatch(sm, q, weight);
+        q = node::instance()->message_dispatch(svc_monitor, q, weight);
         if (q == nullptr)
         {
             std::unique_lock<std::mutex> lock(m->mutex);

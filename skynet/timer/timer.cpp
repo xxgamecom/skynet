@@ -3,7 +3,7 @@
 namespace skynet {
 
 // 添加一个定时器结点
-static void add_node(timer* T, timer_node* node)
+void add_node(timer* T, timer_node* node)
 {
     uint32_t time = node->expire;
     uint32_t current_time = T->time;
@@ -14,7 +14,7 @@ static void add_node(timer* T, timer_node* node)
     }
     else
     {
-        int i;
+        int i = 0;
         uint32_t mask = TIME_NEAR << TIME_LEVEL_SHIFT;
         for (i = 0; i < 3; i++)
         {

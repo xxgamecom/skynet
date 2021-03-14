@@ -4,7 +4,10 @@
 #include "../node/node.h"
 
 #include "../log/log.h"
+
 #include "../mq/mq.h"
+#include "../mq/mq_msg.h"
+
 #include "../mod/cservice_mod_manager.h"
 
 namespace skynet {
@@ -77,8 +80,8 @@ service_context* skynet_context_new(const char* svc_name, const char* param)
     ctx->session_id_ = 0;
     ctx->log_fd_ = nullptr;
 
-    ctx->init_ = false;
-    ctx->endless_ = false;
+    ctx->is_init_ = false;
+    ctx->is_blocked_ = false;
 
     ctx->cpu_cost_ = 0;
     ctx->cpu_start_ = 0;
@@ -104,10 +107,11 @@ service_context* skynet_context_new(const char* svc_name, const char* param)
     if (r == 0)
     {
         service_context* ret = skynet_context_release(ctx);
+
+        //
         if (ret != nullptr)
-        {
-            ctx->init_ = true;
-        }
+            ctx->is_init_ = true;
+
         // 将服务的消息队列加到全局消息队列中, 这样才能收到消息回调
         global_mq::instance()->push(queue);
         if (ret != nullptr)
@@ -141,5 +145,43 @@ service_context* skynet_context_release(service_context* svc_ctx)
     return svc_ctx;
 }
 
+// 投递服务消息
+int skynet_context_push(uint32_t svc_handle, skynet_message* message)
+{
+    // 增加服务引用计数
+    service_context* svc_ctx = handle_manager::instance()->grab(svc_handle);
+    if (svc_ctx == nullptr)
+        return -1;
+
+    // 消息入队
+    svc_ctx->queue_->push(message);
+    // 减少服务引用计数
+    // skynet_context_release(svc_ctx);
+
+    return 0;
+}
+
+// 发送消息
+void skynet_context_send(service_context* svc_ctx, void* msg, size_t sz, uint32_t src_svc_handle, int type, int session)
+{
+    skynet_message smsg;
+    smsg.src_svc_handle = src_svc_handle;
+    smsg.session = session;
+    smsg.data = msg;
+    smsg.sz = sz | (size_t)type << MESSAGE_TYPE_SHIFT;
+
+    svc_ctx->queue_->push(&smsg);
+}
+
+void skynet_context_blocked(uint32_t svc_handle)
+{
+    service_context* svc_ctx = handle_manager::instance()->grab(svc_handle);
+    if (svc_ctx == nullptr)
+        return;
+
+    // mark blocked
+    svc_ctx->is_blocked_ = true;
+    // skynet_context_release(svc_ctx);
+}
 
 }

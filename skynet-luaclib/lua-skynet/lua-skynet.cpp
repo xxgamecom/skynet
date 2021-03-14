@@ -8,7 +8,7 @@
 
 #include "lua-seri.h"
 
-#include "node/skynet_instruction.h"
+#include "node/skynet_command.h"
 #include "log/log.h"
 #include "mq/mq_msg.h"
 #include "context/service_context.h"
@@ -101,7 +101,7 @@ static int _cb(service_context* context, void* ud, int type, int session, uint32
         return 0;
     }
     
-    const char* self = skynet_instruction::handle_instruction(context, "REG", NULL);
+    const char* self = skynet_command::handle_command(context, "REG", NULL);
     switch (r)
     {
         case LUA_ERRRUN:
@@ -167,7 +167,7 @@ static int l_command(lua_State* L)
         parm = luaL_checkstring(L, 2);
     }
 
-    result = skynet_instruction::handle_instruction(context, cmd, parm);
+    result = skynet_command::handle_command(context, cmd, parm);
     if (result)
     {
         lua_pushstring(L, result);
@@ -186,7 +186,7 @@ static int l_address_command(lua_State* L)
     {
         parm = luaL_checkstring(L, 2);
     }
-    result = skynet_instruction::handle_instruction(context, cmd, parm);
+    result = skynet_command::handle_command(context, cmd, parm);
     if (result && result[0] == ':')
     {
         int i;
@@ -240,7 +240,7 @@ static int l_int_command(lua_State* L)
         }
     }
 
-    result = skynet_instruction::handle_instruction(context, cmd, parm);
+    result = skynet_command::handle_command(context, cmd, parm);
     if (result)
     {
         char* endptr = NULL;

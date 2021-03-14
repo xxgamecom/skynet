@@ -5,17 +5,17 @@
 
 namespace skynet {
 
-class skynet_monitor;
+class service_monitor;
 
-// server thread manager
+// server thread manager (timer, monitor, socket, work thread)
 class node_thread final
 {
 public:
-    // thread status moniter
+    // service work thread status monitor
     struct monitor
     {
         int                                 thread_count = 0;           // worker thread count
-        std::shared_ptr<skynet_monitor>     sm;                         // worker thread skynet_moniter array
+        std::shared_ptr<service_monitor>    svc_monitor;                // worker thread skynet_moniter array
         
         int                                 sleep_count = 0;            // number of sleep worker threads
         bool                                is_quit = false;            // thread quit flag
@@ -29,7 +29,7 @@ public:
     // start threads
     static void start(int thread_count);
 
-    // thread routine
+    // node thread routine (timer, monitor, socket, worker thread)
 private:
     // socket thread proc
     static void thread_socket(std::shared_ptr<monitor> m);
@@ -37,7 +37,6 @@ private:
     static void thread_monitor(std::shared_ptr<monitor> m);
     // timer thread proc
     static void thread_timer(std::shared_ptr<monitor> m);
-    
     // worker thread proc
     static void thread_worker(std::shared_ptr<monitor> m, int idx, int weight);
 };

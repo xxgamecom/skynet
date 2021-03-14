@@ -1,4 +1,4 @@
-#include "skynet_instruction.h"
+#include "skynet_command.h"
 #include "node.h"
 #include "node_env.h"
 
@@ -79,7 +79,7 @@ static void _handle_exit(service_context* svc_ctx, uint32_t svc_handle)
 
 // skynet cmd: timeout
 // @param param 
-static const char* instruction_timeout(service_context* svc_ctx, const char* param)
+static const char* cmd_timeout(service_context* svc_ctx, const char* param)
 {
     // get time & session id
     char* session_ptr = nullptr;
@@ -93,8 +93,8 @@ static const char* instruction_timeout(service_context* svc_ctx, const char* par
 }
 
 // skynet指令: reg, 给自身起一个名字（支持多个）
-// instruction_name给指定ctx起一个名字，即将ctx->handle绑定一个名称(handle_manager::instance()->set_handle_by_name)
-static const char* instruction_reg(service_context* svc_ctx, const char* param)
+// cmd_name给指定ctx起一个名字，即将ctx->handle绑定一个名称(handle_manager::instance()->set_handle_by_name)
+static const char* cmd_reg(service_context* svc_ctx, const char* param)
 {
     if (param == nullptr || param[0] == '\0')
     {
@@ -114,7 +114,7 @@ static const char* instruction_reg(service_context* svc_ctx, const char* param)
 
 // skynet cmd: query, 通过名字查找对应的handle
 // 发送消息前先要找到对应的ctx，才能给ctx发送消息
-static const char* instruction_query(service_context* svc_ctx, const char* param)
+static const char* cmd_query(service_context* svc_ctx, const char* param)
 {
     // local service
     if (param[0] == '.')
@@ -131,7 +131,7 @@ static const char* instruction_query(service_context* svc_ctx, const char* param
 }
 
 // skynet cmd: name
-static const char* instruction_name(service_context* svc_ctx, const char* param)
+static const char* cmd_name(service_context* svc_ctx, const char* param)
 {
     int size = ::strlen(param);
     char name[size + 1];
@@ -157,18 +157,18 @@ static const char* instruction_name(service_context* svc_ctx, const char* param)
 }
 
 // skynet cmd: exit, 服务主动退出
-// instruction_kill杀掉某个服务（被动），都会调用到handle_exit，
+// cmd_kill杀掉某个服务（被动），都会调用到handle_exit，
 // 然后调用到skynet_handle_retire，回收ctx->handle，供之后创建新的ctx使用，并将引用计数-1，
 // 如果ctx没有在其他地方引用，ctx->ref此时是0，所以可以删掉，delete_context主要是做一些清理回收工作。
 // 如果其他地方有引用，在下一次skynet_context_release时删掉
-static const char* instruction_exit(service_context* svc_ctx, const char* param)
+static const char* cmd_exit(service_context* svc_ctx, const char* param)
 {
     _handle_exit(svc_ctx, 0);
     return nullptr;
 }
 
 // skynet cmd: kill
-static const char* instruction_kill(service_context* svc_ctx, const char* param)
+static const char* cmd_kill(service_context* svc_ctx, const char* param)
 {
     uint32_t svc_handle = _to_svc_handle(svc_ctx, param);
     if (svc_handle != 0)
@@ -181,7 +181,7 @@ static const char* instruction_kill(service_context* svc_ctx, const char* param)
 
 // skynet cmd: launch
 // 启动一个新服务，最终会通过skynet_context_new创建一个ctx，初始化ctx中各个数据。
-static const char* instruction_launch(service_context* context, const char* param)
+static const char* cmd_launch(service_context* context, const char* param)
 {
     size_t sz = ::strlen(param);
     char tmp[sz + 1];
@@ -203,13 +203,13 @@ static const char* instruction_launch(service_context* context, const char* para
 }
 
 // skynet cmd: getenv, 获取skynet环境变量，是key-value结构，所有ctx共享的
-static const char* instruction_getenv(service_context* svc_ctx, const char* param)
+static const char* cmd_get_env(service_context* svc_ctx, const char* param)
 {
     return node_env::instance()->get_env(param);
 }
 
 // skynet cmd: setenv, 设置skynet环境变量，是key-value结构，所有ctx共享的
-static const char* instruction_setenv(service_context* svc_ctx, const char* param)
+static const char* cmd_set_env(service_context* svc_ctx, const char* param)
 {
     size_t sz = ::strlen(param);
     char key[sz + 1];
@@ -230,7 +230,7 @@ static const char* instruction_setenv(service_context* svc_ctx, const char* para
 }
 
 // skynet cmd: start_time
-static const char* instruction_start_time(service_context* svc_ctx, const char* param)
+static const char* cmd_start_time(service_context* svc_ctx, const char* param)
 {
     uint32_t sec = timer_manager::instance()->start_time();
     ::sprintf(svc_ctx->result_, "%u", sec);
@@ -238,7 +238,7 @@ static const char* instruction_start_time(service_context* svc_ctx, const char* 
 }
 
 // skynet cmd: abort
-static const char* instruction_abort(service_context* svc_ctx, const char* param)
+static const char* cmd_abort(service_context* svc_ctx, const char* param)
 {
     handle_manager::instance()->retireall();
     return nullptr;
@@ -246,7 +246,7 @@ static const char* instruction_abort(service_context* svc_ctx, const char* param
 
 // skynet cmd: monitor
 // @param param ":00000000" 格式的服务句柄字符串
-static const char* instruction_monitor(service_context* svc_ctx, const char* param)
+static const char* cmd_monitor(service_context* svc_ctx, const char* param)
 {
     uint32_t svc_handle = 0;
     if (param == nullptr || param[0] == '\0')
@@ -272,7 +272,7 @@ static const char* instruction_monitor(service_context* svc_ctx, const char* par
 }
 
 // skynet cmd: stat, 查看ctx的内部状态信息，比如查看当前的消息队列长度，查看累计消耗CPU时间，查看消息是否阻塞等
-static const char* instruction_stat(service_context* svc_ctx, const char* param)
+static const char* cmd_stat(service_context* svc_ctx, const char* param)
 {
     // message queue length
     if (::strcmp(param, "mqlen") == 0)
@@ -280,23 +280,23 @@ static const char* instruction_stat(service_context* svc_ctx, const char* param)
         int len = svc_ctx->queue_->length();
         sprintf(svc_ctx->result_, "%d", len);
     }
-    // 服务堵塞(可能服务进入死循环)
-    else if (::strcmp(param, "endless") == 0)
+    // maybe dead loop or blocked
+    else if (::strcmp(param, "is_blocked") == 0)
     {
-        if (svc_ctx->endless_)
+        if (svc_ctx->is_blocked_)
         {
             ::strcpy(svc_ctx->result_, "1");
-            svc_ctx->endless_ = false;
+            svc_ctx->is_blocked_ = false;
         }
         else
         {
             ::strcpy(svc_ctx->result_, "0");
         }
     }
-    // cpu使用情况
+    // cpu usage
     else if (::strcmp(param, "cpu") == 0)
     {
-        double t = (double)svc_ctx->cpu_cost_ / 1000000.0;    // microsec
+        double t = (double)svc_ctx->cpu_cost_ / 1000000.0;    // microsecond
         ::sprintf(svc_ctx->result_, "%lf", t);
     }
     // 
@@ -305,7 +305,7 @@ static const char* instruction_stat(service_context* svc_ctx, const char* param)
         if (svc_ctx->profile_)
         {
             uint64_t ti = time_helper::thread_time() - svc_ctx->cpu_start_;
-            double t = (double)ti / 1000000.0;    // microsec
+            double t = (double)ti / 1000000.0;    // microsecond
             ::sprintf(svc_ctx->result_, "%lf", t);
         }
         else
@@ -328,7 +328,7 @@ static const char* instruction_stat(service_context* svc_ctx, const char* param)
 }
 
 // skynet cmd: set logger on
-static const char* instruction_log_on(service_context* context, const char* param)
+static const char* cmd_log_on(service_context* context, const char* param)
 {
     uint32_t svc_handle = _to_svc_handle(context, param);
     if (svc_handle == 0)
@@ -359,7 +359,7 @@ static const char* instruction_log_on(service_context* context, const char* para
 }
 
 // skynet cmd: set logger off
-static const char* instruction_log_off(service_context* context, const char* param)
+static const char* cmd_log_off(service_context* context, const char* param)
 {
     uint32_t svc_handle = _to_svc_handle(context, param);
     if (svc_handle == 0)
@@ -385,7 +385,7 @@ static const char* instruction_log_off(service_context* context, const char* par
 }
 
 // skynet cmd: signal, 在skynet控制台，可以给指定的ctx发信号以完成相应的命令
-static const char* instruction_signal(service_context* context, const char* param)
+static const char* cmd_signal(service_context* context, const char* param)
 {
     uint32_t svc_handle = _to_svc_handle(context, param);
     if (svc_handle == 0)
@@ -412,44 +412,44 @@ static const char* instruction_signal(service_context* context, const char* para
 
 
 // skynet instruction function data structure
-struct instruction_func
+struct cmd_func
 {
     const char* name;
     const char* (*func)(service_context* svc_ctx, const char* param);
 };
 
 // skynet instructions
-static instruction_func INSTRUCTION_FUNCS[] = {
-    { "TIMEOUT", instruction_timeout },
-    { "REG", instruction_reg },
-    { "QUERY", instruction_query },
-    { "NAME", instruction_name },
-    { "EXIT", instruction_exit },
-    { "KILL", instruction_kill },
-    { "LAUNCH", instruction_launch },
-    { "GETENV", instruction_getenv },
-    { "SETENV", instruction_setenv },
-    { "START_TIME", instruction_start_time },
-    { "ABORT", instruction_abort },
-    { "MONITOR", instruction_monitor },
-    { "STAT", instruction_stat },
-    { "LOG_ON", instruction_log_on },
-    { "LOG_OFF", instruction_log_off },
-    { "SIGNAL", instruction_signal },
+static cmd_func CMD_FUNCS[] = {
+    { "TIMEOUT", cmd_timeout },
+    { "REG", cmd_reg },
+    { "QUERY", cmd_query },
+    { "NAME", cmd_name },
+    { "EXIT", cmd_exit },
+    { "KILL", cmd_kill },
+    { "LAUNCH", cmd_launch },
+    { "GETENV", cmd_get_env },
+    { "SETENV", cmd_set_env },
+    { "START_TIME", cmd_start_time },
+    { "ABORT", cmd_abort },
+    { "MONITOR", cmd_monitor },
+    { "STAT", cmd_stat },
+    { "LOG_ON", cmd_log_on },
+    { "LOG_OFF", cmd_log_off },
+    { "SIGNAL", cmd_signal },
 
     { nullptr, nullptr }
 };
 
-const char* skynet_instruction::handle_instruction(service_context* svc_ctx, const char* instruction , const char* param)
+const char* skynet_command::handle_command(service_context* svc_ctx, const char* cmd , const char* param)
 {
-    for (auto& inst : INSTRUCTION_FUNCS)
+    for (auto& inst : CMD_FUNCS)
     {
         // end
         if (inst.name == nullptr)
             break;
 
         // 
-        if (::strcmp(instruction, inst.name) == 0)
+        if (::strcmp(cmd, inst.name) == 0)
             return inst.func(svc_ctx, param);
     }
 

@@ -24,12 +24,11 @@
 #include "timer_manager.h"
 #include "timer.h"
 
-#include "../node/server.h"
-
 #include "../mq/mq.h"
 #include "../mq/mq_msg.h"
 
 #include "../log/log.h"
+#include "../context/service_context.h"
 
 #include "../utils/time_helper.h"
 
@@ -53,9 +52,9 @@ struct timer_event
 };
 
 // create a timer
-static timer* create_timer()
+timer* create_timer()
 {
-    struct timer* r = new timer;
+    timer* r = (timer*)::malloc(sizeof(timer));
 
     for (int i = 0; i < TIME_NEAR; i++)
     {
@@ -76,16 +75,16 @@ static timer* create_timer()
 }
 
 // add a timer
-static void timer_add(struct timer* t, void* arg, size_t sz, int time)
+static void timer_add(timer* t, void* arg, size_t sz, int time)
 {
-    // timer_node* node = (timer_node*)skynet_malloc(sizeof(*node) + sz);
-    // memcpy(node + 1, arg, sz);
+     timer_node* node = (timer_node*)::malloc(sizeof(timer_node) + sz);
+     ::memcpy(node + 1, arg, sz);
 
      //
      std::lock_guard<std::mutex> lock(t->mutex);
 
-    // node->expire = time + t->time;
-    // add_node(t, node);
+     node->expire = time + t->time;
+     add_node(t, node);
 }
 
 // 重新分配定时器所在区间
@@ -130,17 +129,17 @@ static inline void dispatch_list(timer_node* current)
     do
     {
         timer_event* event = (timer_event*)(current + 1);
-        skynet_message message;
-        message.src_svc_handle = 0;
-        message.session = event->session;
-        message.data = nullptr;
-        message.sz = (size_t)PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        skynet_message msg;
+        msg.src_svc_handle = 0;
+        msg.session = event->session;
+        msg.data = nullptr;
+        msg.sz = (size_t)PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
-        skynet_context_push(event->svc_handle, &message);
+        skynet_context_push(event->svc_handle, &msg);
 
         timer_node* temp = current;
         current = current->next;
-        delete temp;
+        ::free(temp);
     } while (current != nullptr);
 }
 
@@ -184,9 +183,7 @@ timer_manager* timer_manager::instance_ = nullptr;
 timer_manager* timer_manager::instance()
 {
     static std::once_flag oc;
-    std::call_once(oc, [&]() {
-        instance_ = new timer_manager;
-    });
+    std::call_once(oc, [&]() { instance_ = new timer_manager; });
 
     return instance_;
 }
@@ -211,13 +208,13 @@ int timer_manager::timeout(uint32_t handle, int time, int session)
     // time<=0说明是立即发送消息, 无需定时处理
     if (time <= 0)
     {
-        skynet_message message;
-        message.src_svc_handle = 0;
-        message.session = session;
-        message.data = nullptr;
-        message.sz = (size_t)PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        skynet_message msg;
+        msg.src_svc_handle = 0;
+        msg.session = session;
+        msg.data = nullptr;
+        msg.sz = (size_t)PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
-        if (skynet_context_push(handle, &message))
+        if (skynet_context_push(handle, &msg))
         {
             return -1;
         }

@@ -8,13 +8,13 @@ namespace skynet {
 // skynet socket event type
 enum skynet_socket_event
 {
-    SOCKET_DATA                 = 1,                        // 正常数据
-    SOCKET_CONNECT              = 2,                        // 连接
-    SOCKET_CLOSE                = 3,                        // 关闭
-    SOCKET_ACCEPT               = 4,                        //
-    SOCKET_ERROR                = 5,                        // 错误
-    SOCKET_UDP                  = 6,                        //
-    SOCKET_WARNING              = 7,                        //
+    EVENT_DATA                  = 1,                        // data event
+    EVENT_CONNECT               = 2,                        // connect event
+    EVENT_CLOSE                 = 3,                        // socket close event
+    EVENT_ACCEPT                = 4,                        // accept connection event
+    EVENT_ERROR                 = 5,                        // socket error event
+    EVENT_UDP                   = 6,                        //
+    EVENT_WARNING               = 7,                        //
 };
 
 

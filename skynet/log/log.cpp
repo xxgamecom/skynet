@@ -2,8 +2,6 @@
 
 #include "../skynet.h"      // api
 
-#include "../node/server.h"
-
 #include "../mq/mq.h"
 #include "../mq/mq_msg.h"
 #include "../context/handle_manager.h"

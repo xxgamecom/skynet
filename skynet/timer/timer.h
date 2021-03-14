@@ -51,6 +51,7 @@ struct timer
 timer_node* link_clear(link_list* list);
 void link(link_list* list, timer_node* node);
 void move_list(timer* T, int level, int idx);
+void add_node(timer* T, timer_node* node);
 
 }
 
