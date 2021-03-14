@@ -29,11 +29,11 @@ struct skynet_message;
 typedef int (*skynet_cb)(service_context* svc_ctx, void* ud, int type, int session, uint32_t source , const void* msg, size_t sz);
 
 /**
- * skynet_context管理模块
+ * service_context
  * 
  * 我们创建一个新的服务，首先要先找到对应服务的module，在创建完module实例并完成初始化以后，
- * 还需要创建一个skynet_context上下文，并将module实例和module模块和这个context关联起来，
- * 最后放置于skynet_context list中，一个个独立的沙盒环境就这样被创建出来了
+ * 还需要创建一个 service_context 上下文，并将module实例和module模块和这个context关联起来，
+ * 最后放置于 service_context list中，一个个独立的沙盒环境就这样被创建出来了
  */
 
 // 一个skynet服务ctx的结构
@@ -95,15 +95,15 @@ public:
 
 // 创建一个服务：name为服务模块的名字，parm为参数，由模块自己解释含义
 // @param svc_name 模块名称, skynet根据这个名字加载模块, 并调用约定好的导出函数
-service_context* skynet_context_new(const char* svc_name, const char* param);
+service_context* service_context_new(const char* svc_name, const char* param);
 // 创建服务ctx
-service_context* skynet_context_release(service_context* svc_ctx);
+service_context* service_context_release(service_context* svc_ctx);
 // 投递服务消息
-int skynet_context_push(uint32_t svc_handle, skynet_message* message);
+int service_context_push(uint32_t svc_handle, skynet_message* message);
 // 发送消息
-void skynet_context_send(service_context* svc_ctx, void* msg, size_t sz, uint32_t src_svc_handle, int type, int session);
+void service_context_send(service_context* svc_ctx, void* msg, size_t sz, uint32_t src_svc_handle, int type, int session);
 // set service has blocked
-void skynet_context_blocked(uint32_t svc_handle);
+void service_context_blocked(uint32_t svc_handle);
 }
 
 #include "service_context.inl"

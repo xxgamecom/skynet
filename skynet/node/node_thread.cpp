@@ -6,13 +6,13 @@
 
 #include "../skynet.h"  // api
 
-#include "../mq/mq_private.h"
 #include "../mq/mq_msg.h"
+#include "../mq/mq_private.h"
 
 #include "../timer/timer_manager.h"
 
 #include "../context/service_context.h"
-#include "../context/handle_manager.h"
+#include "../context/service_context_manager.h"
 
 #include "../utils/signal_helper.h"
 
@@ -189,10 +189,10 @@ void node_thread::thread_timer(std::shared_ptr<monitor_data> monitor_data_ptr)
             msg.session = 0;
             msg.data = nullptr;
             msg.sz = (size_t)message_type::PTYPE_SYSTEM << MESSAGE_TYPE_SHIFT;
-            uint32_t logger_svc_handle = handle_manager::instance()->find_by_name("logger");
+            uint32_t logger_svc_handle = service_context_manager::instance()->find_by_name("logger");
             if (logger_svc_handle != 0)
             {
-                skynet_context_push(logger_svc_handle, &msg);
+                service_context_push(logger_svc_handle, &msg);
             }
 
             SIG = 0;

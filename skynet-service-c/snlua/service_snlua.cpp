@@ -23,7 +23,7 @@
 // struct snlua
 // {
 //     lua_State*                  L;                          // 服务lua虚拟机
-//     skynet_context*             ctx;                        // 服务ctx
+//     service_context*             ctx;                        // 服务ctx
 //     size_t                      mem;                        // 已占用内存
 //     size_t                      mem_report;                 // 内存报告阈值
 //     size_t                      mem_limit;                  // 最大内存分配限制值
@@ -80,13 +80,13 @@
 //     return 1;
 // }
 
-// static void report_launcher_error(struct skynet_context* ctx)
+// static void report_launcher_error(struct service_context* ctx)
 // {
 //     // sizeof "ERROR" == 5
 //     skynet_sendname(ctx, 0, ".launcher", message_type::PTYPE_TEXT, 0, "ERROR", 5);
 // }
 
-// static const char* optstring(skynet_context* ctx, const char* key, const char* str)
+// static const char* optstring(service_context* ctx, const char* key, const char* str)
 // {
 //     const char* ret = skynet_command::handle_command(ctx, "GETENV", key);
 //     if (ret == NULL)
@@ -98,7 +98,7 @@
 
 // // 初始化lua服务的回调, 设置一些虚拟机环境变量 (主要是路径资源之类的)
 // // 在init_cb里进行Lua层的初始化，比如初始化LUA_PATH，LUA_CPATH，LUA_SERVICE等全局变量
-// static int init_cb(struct snlua* l, skynet_context* ctx, const char* args, size_t sz)
+// static int init_cb(struct snlua* l, service_context* ctx, const char* args, size_t sz)
 // {
 //     lua_State* L = l->L;
 //     l->ctx = ctx;
@@ -111,7 +111,7 @@
     
 //     // 将ctx设置到LUA_REGISTRYINDEX里，以便在Lua中能获取到ctx
 //     lua_pushlightuserdata(L, ctx);
-//     lua_setfield(L, LUA_REGISTRYINDEX, "skynet_context");
+//     lua_setfield(L, LUA_REGISTRYINDEX, "service_context");
 //     //
 //     luaL_requiref(L, "skynet.codecache", codecache , 0);
 //     lua_pop(L,1);
@@ -180,7 +180,7 @@
 // }
 
 // // 消息回调函数
-// static int launch_cb(skynet_context* context, void* ud, int type, int session, uint32_t source, const void* msg, size_t sz)
+// static int launch_cb(service_context* context, void* ud, int type, int session, uint32_t source, const void* msg, size_t sz)
 // {
 //     assert(type == 0 && session == 0);
 //     struct snlua *l = ud;
@@ -200,7 +200,7 @@
 // }
 
 // // 这个方法里把服务自己在C语言层面的回调函数给注销了，使它不再接收消息，目的是：在lua层重新注册它，把消息通过lua接口来接收
-// int snlua_init(struct snlua* l, skynet_context* ctx, const char* args)
+// int snlua_init(struct snlua* l, service_context* ctx, const char* args)
 // {
 //     // 在内存中准备一个空间(动态内存分配)
 //     int sz = strlen(args);

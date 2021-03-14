@@ -4,8 +4,8 @@
 #include "skynet_socket.h"
 #include "service_monitor.h"
 
-#include "../mq/mq_private.h"
 #include "../mq/mq_msg.h"
+#include "../mq/mq_private.h"
 #include "../mq/mq_global.h"
 
 #include "../log/log.h"
@@ -13,7 +13,7 @@
 
 #include "../mod/cservice_mod_manager.h"
 #include "../timer/timer_manager.h"
-#include "../context/handle_manager.h"
+#include "../context/service_context_manager.h"
 #include "../context/service_context.h"
 
 #include "../utils/daemon_helper.h"
@@ -123,7 +123,7 @@ void node::_bootstrap(service_context* log_svc_ctx, const char* cmdline)
     ::sscanf(cmdline, "%s %s", svc_name, svc_args);
 
     // create service
-    service_context* svc_ctx = skynet_context_new(svc_name, svc_args);
+    service_context* svc_ctx = service_context_new(svc_name, svc_args);
     if (svc_ctx == nullptr)
     {
         // 通过传入的logger服务接口构建错误信息加入logger的消息队列
@@ -147,7 +147,7 @@ void node::start()
     }
 
     // 初始化具柄模块, 用于每个skynet服务创建一个全局唯一的具柄值
-    handle_manager::instance()->init();
+    service_context_manager::instance()->init();
 
     // 初始化消息队列
     mq_global::instance()->init();
@@ -165,13 +165,13 @@ void node::start()
     node::instance()->enable_profiler(node_config_.profile_);
 
     // create c service: logger
-    service_context* log_svc_ctx = skynet_context_new(node_config_.log_service_, node_config_.logger_);
+    service_context* log_svc_ctx = service_context_new(node_config_.log_service_, node_config_.logger_);
     if (log_svc_ctx == nullptr)
     {
         std::cerr << "Can't launch " << node_config_.log_service_ << " service" << std::endl;
         ::exit(1);
     }
-    handle_manager::instance()->set_handle_by_name("logger", log_svc_ctx->svc_handle_);
+    service_context_manager::instance()->set_handle_by_name("logger", log_svc_ctx->svc_handle_);
 
     // bootstrap to load snlua c service
     _bootstrap(log_svc_ctx, node_config_.bootstrap_);
@@ -203,7 +203,7 @@ void node::dispatch_all(service_context* svc_ctx)
 
 // 派发服务消息, 工作线程的核心逻辑
 // 派发完成后，它会进入睡眠状态，等待另外两个线程来唤醒
-// skynet可以启动多个工作线程，调用skynet_context_message_dispatch这个api不断的分发消息
+// skynet可以启动多个工作线程，调用 skynet_context_message_dispatch 这个api不断的分发消息
 // @param svc_monitor service_monitor监测消息是否堵住
 // @param q 需要分发的次级消息队列
 // @param weight 权重, -1只处理一条消息，0处理完q中所有消息，>0处理长度右移weight位(1/(2*weight))条消息
@@ -227,7 +227,7 @@ mq_private* node::message_dispatch(service_monitor& svc_monitor, mq_private* q, 
     // 当前 mq_private 所属服务的 context 的handle id
     uint32_t svc_handle = q->svc_handle_;
 
-    service_context* ctx = handle_manager::instance()->grab(svc_handle);
+    service_context* ctx = service_context_manager::instance()->grab(svc_handle);
     // service ctx not exists
     if (ctx == nullptr)
     {
@@ -245,7 +245,7 @@ mq_private* node::message_dispatch(service_monitor& svc_monitor, mq_private* q, 
         if (q->pop(&msg))
         {
             // 如果ctx的次级消息队列为空，返回
-            // skynet_context_release(ctx);
+            // service_context_release(ctx);
             return mq_global::instance()->pop();
         }
         else if (i == 0 && weight >= 0)
@@ -288,7 +288,7 @@ mq_private* node::message_dispatch(service_monitor& svc_monitor, mq_private* q, 
         q = nq;
     }
 
-//     skynet_context_release(ctx);
+//     service_context_release(ctx);
 
     return q;
 }
@@ -381,7 +381,7 @@ int skynet_send(service_context* svc_ctx, uint32_t src_svc_handle, uint32_t dst_
     smsg.session = session;
     smsg.data = data;
     smsg.sz = sz;
-    if (skynet_context_push(dst_svc_handle, &smsg))
+    if (service_context_push(dst_svc_handle, &smsg))
     {
         // skynet_free(data);
         return -1;
@@ -404,7 +404,7 @@ int skynet_send_by_name(service_context* svc_ctx, uint32_t src_svc_handle, const
         // local service
     else if (dst_name_or_addr[0] == '.')
     {
-        des = handle_manager::instance()->find_by_name(dst_name_or_addr + 1);
+        des = service_context_manager::instance()->find_by_name(dst_name_or_addr + 1);
         if (des == 0)
         {
             if (type & message_type::TAG_DONT_COPY)

@@ -1,9 +1,9 @@
-# snlua c service
+# c service snlua
 ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-service-c/snlua)
 
-# gate c service
+# c service gate
 ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-service-c/gate)
 
-# logger c service
+# c service logger
 ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-service-c/logger)
 

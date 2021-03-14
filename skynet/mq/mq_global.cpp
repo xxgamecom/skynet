@@ -1,9 +1,9 @@
 /**
  * 队列处理流程
  * 1) 调用 mq_private->push 向消息队列压入一个消息
- * 2) 然后，调用skynet_globalmq_push把消息队列链到global_queue尾部
+ * 2) 然后，调用 mq_global::push 把消息队列链到 global_queue 尾部
  * 3) 从全局链表弹出一个消息队列，处理队列中的消息，如果队列的消息处理完则不压回全局链表，如果未处理完则重新压入全局链表，等待下一次处理
- * 具体的细节还是要查看skynet_context_message_dispatch这个函数
+ * 具体的细节还是要查看 skynet_context_message_dispatch 这个函数
  */
 
 #include "mq_global.h"

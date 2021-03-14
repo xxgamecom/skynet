@@ -37,7 +37,7 @@ void service_monitor::check()
         if (dst_svc_handle_ != 0)
         {
             // mark blocked
-            skynet_context_blocked(dst_svc_handle_);
+            service_context_blocked(dst_svc_handle_);
 
             // just output a log message
             log(nullptr, "A message from [ :%08x ] to [ :%08x ] maybe in an dead loop (last_version = %d)", src_svc_handle_, dst_svc_handle_, last_version_.load());

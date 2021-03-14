@@ -1,4 +1,4 @@
-#include "handle_manager.h"
+#include "service_context_manager.h"
 #include "service_context.h"
 
 #include "../log/log.h"
@@ -11,29 +11,26 @@ namespace skynet {
 #define HANDLE_MASK                 0xFFFFFF        // handle mask
 #define HANDLE_REMOTE_SHIFT         24              // remote service id offset
 
-#define DEFAULT_SLOT_SIZE           4
-#define MAX_SLOT_SIZE               0x40000000
+service_context_manager* service_context_manager::instance_ = nullptr;
 
-handle_manager* handle_manager::instance_ = nullptr;
-
-handle_manager* handle_manager::instance()
+service_context_manager* service_context_manager::instance()
 {
     static std::once_flag oc;
     std::call_once(oc, [&](){
-        instance_ = new handle_manager;
+        instance_ = new service_context_manager;
     });
 
     return instance_;
 }
 
 // 
-void handle_manager::init()
+void service_context_manager::init()
 {
     // 给slot分配slot_size个ctx内存
-    slot_size_ = DEFAULT_SLOT_SIZE;
-    slot_ = new service_context* [slot_size_] { nullptr };
+    svc_ctx_slot_size_ = DEFAULT_SLOT_SIZE;
+    svc_ctx_slot_ = new service_context* [svc_ctx_slot_size_] { nullptr };
 
-    handle_index_ = 1;
+    alloc_svc_handle_seed_ = 1;
     name_cap_ = 2;
     name_count_ = 0;
 
@@ -43,60 +40,60 @@ void handle_manager::init()
     // Don't need to free H
 }
 
-uint32_t handle_manager::registe(service_context* ctx)
+uint32_t service_context_manager::register_svc_ctx(service_context* svc_ctx)
 {
     // write lock
     std::unique_lock<std::shared_mutex> wlock(rw_mutex_);
 
     for (;;)
     {
-        uint32_t handle = handle_index_;
-        for (int i = 0; i < slot_size_; i++, handle++)
+        uint32_t svc_handle = alloc_svc_handle_seed_;
+        for (int i = 0; i < svc_ctx_slot_size_; i++, svc_handle++)
         {
-            if (handle > HANDLE_MASK)
+            if (svc_handle > HANDLE_MASK)
             {
                 // 0 is reserved
-                handle = 1;
+                svc_handle = 1;
             }
-            int hash = handle & (slot_size_ - 1);
-            if (slot_[hash] == nullptr)
+            int hash = svc_handle & (svc_ctx_slot_size_ - 1);
+            if (svc_ctx_slot_[hash] == nullptr)
             {
-                slot_[hash] = ctx;
-                handle_index_ = handle + 1;
+                svc_ctx_slot_[hash] = svc_ctx;
+                alloc_svc_handle_seed_ = svc_handle + 1;
 
-                return handle;
+                return svc_handle;
             }
         }
-        assert((slot_size_ * 2 - 1) <= HANDLE_MASK);
-        service_context** new_slot = new service_context* [2 * slot_size_];
-        ::memset(new_slot, 0, slot_size_ * 2 * sizeof(service_context*));
-        for (int i = 0; i < slot_size_; i++)
+        assert((svc_ctx_slot_size_ * 2 - 1) <= HANDLE_MASK);
+        service_context** new_slot = new service_context* [2 * svc_ctx_slot_size_];
+        ::memset(new_slot, 0, svc_ctx_slot_size_ * 2 * sizeof(service_context*));
+        for (int i = 0; i < svc_ctx_slot_size_; i++)
         {
-            int hash = slot_[i]->svc_handle_ & (slot_size_ * 2 - 1);
+            int hash = svc_ctx_slot_[i]->svc_handle_ & (svc_ctx_slot_size_ * 2 - 1);
             assert(new_slot[hash] == nullptr);
-            new_slot[hash] = slot_[i];
+            new_slot[hash] = svc_ctx_slot_[i];
         }
 
-        delete[] slot_;
-        slot_ = new_slot;
-        slot_size_ *= 2;
+        delete[] svc_ctx_slot_;
+        svc_ctx_slot_ = new_slot;
+        svc_ctx_slot_size_ *= 2;
     }
 }
 
 // 注销一个服务
-int handle_manager::retire(uint32_t svc_handle)
+int service_context_manager::retire(uint32_t svc_handle)
 {
     int ret = 0;
 
     // write lock
     std::unique_lock<std::shared_mutex> wlock(rw_mutex_);
 
-    uint32_t hash = svc_handle & (slot_size_ - 1);
-    service_context* ctx = slot_[hash];
+    uint32_t hash = svc_handle & (svc_ctx_slot_size_ - 1);
+    service_context* svc_ctx = svc_ctx_slot_[hash];
 
-    if (ctx != nullptr && ctx->svc_handle_ == svc_handle)
+    if (svc_ctx != nullptr && svc_ctx->svc_handle_ == svc_handle)
     {
-        slot_[hash] = nullptr;
+        svc_ctx_slot_[hash] = nullptr;
         ret = 1;
         int j = 0, n = name_count_;
         for (int i = 0; i < n; ++i)
@@ -116,27 +113,27 @@ int handle_manager::retire(uint32_t svc_handle)
     }
     else
     {
-        ctx = nullptr;
+        svc_ctx = nullptr;
     }
 
     wlock.unlock();
 
-     if (ctx != nullptr)
+     if (svc_ctx != nullptr)
      {
-    //     // release ctx may call skynet_handle_* , so wunlock first.
-    //     skynet_context_release(ctx);
+    //     // release service context may call skynet_handle_*, so wunlock first.
+    //     service_context_release(svc_ctx);
      }
 
     return ret;
 }
 
 // 注销全部服务
-void handle_manager::retire_all()
+void service_context_manager::retire_all()
 {
     for (;;)
     {
         int n = 0;
-        for (int i = 0; i < slot_size_; i++)
+        for (int i = 0; i < svc_ctx_slot_size_; i++)
         {
             uint32_t svc_handle = 0;
 
@@ -144,10 +141,10 @@ void handle_manager::retire_all()
             {
                 std::shared_lock<std::shared_mutex> rlock(rw_mutex_);
 
-                service_context* ctx = slot_[i];
-                if (ctx != nullptr)
+                service_context* svc_ctx = svc_ctx_slot_[i];
+                if (svc_ctx != nullptr)
                 {
-                    svc_handle = ctx->svc_handle_;
+                    svc_handle = svc_ctx->svc_handle_;
                 }
             }
 
@@ -169,18 +166,18 @@ void handle_manager::retire_all()
 }
 
 // 取得一个服务 (增加服务引用计数)
-service_context* handle_manager::grab(uint32_t svc_handle)
+service_context* service_context_manager::grab(uint32_t svc_handle)
 {
     service_context* result = nullptr;
 
     // read lock
     std::shared_lock<std::shared_mutex> rlock(rw_mutex_);
 
-    uint32_t hash = svc_handle & (slot_size_-1);
-    service_context* ctx = slot_[hash];
-    if (ctx != nullptr && ctx->svc_handle_ == svc_handle)
+    uint32_t hash = svc_handle & (svc_ctx_slot_size_ - 1);
+    service_context* svc_ctx = svc_ctx_slot_[hash];
+    if (svc_ctx != nullptr && svc_ctx->svc_handle_ == svc_handle)
     {
-        result = ctx;
+        result = svc_ctx;
         result->grab();
     }
 
@@ -189,7 +186,7 @@ service_context* handle_manager::grab(uint32_t svc_handle)
 
 // 通过name找handle
 // S->name是按handle_name->name升序排序的，通过二分查找快速地查找name对应的handle
-uint32_t handle_manager::find_by_name(const char* svc_name)
+uint32_t service_context_manager::find_by_name(const char* svc_name)
 {
     // read lock
     std::shared_lock<std::shared_mutex> rlock(rw_mutex_);
@@ -223,7 +220,7 @@ uint32_t handle_manager::find_by_name(const char* svc_name)
 }
 
 // 给服务handle注册命名, 保证注册完s->name的有序
-const char* handle_manager::set_handle_by_name(const char* svc_name, uint32_t svc_handle)
+const char* service_context_manager::set_handle_by_name(const char* svc_name, uint32_t svc_handle)
 {
     // write lock
     std::unique_lock<std::shared_mutex> wlock(rw_mutex_);
@@ -232,7 +229,7 @@ const char* handle_manager::set_handle_by_name(const char* svc_name, uint32_t sv
 }
 
 // 
-const char* handle_manager::_insert_name(const char* svc_name, uint32_t svc_handle)
+const char* service_context_manager::_insert_name(const char* svc_name, uint32_t svc_handle)
 {
     int begin = 0;
     int end = name_count_ - 1;
@@ -266,7 +263,7 @@ const char* handle_manager::_insert_name(const char* svc_name, uint32_t svc_hand
 
 
 // 把name插入到name数组中，再关联handle
-void handle_manager::_insert_name_before(char* svc_name, uint32_t svc_handle, int before)
+void service_context_manager::_insert_name_before(char* svc_name, uint32_t svc_handle, int before)
 {
     if (name_count_ >= name_cap_)
     {
@@ -307,7 +304,7 @@ uint32_t skynet_query_by_name_or_addr(service_context* svc_ctx, const char* name
     // local service
     else if (name_or_addr[0] == '.')
     {
-        return handle_manager::instance()->find_by_name(name_or_addr + 1);
+        return service_context_manager::instance()->find_by_name(name_or_addr + 1);
     }
     // global service
     else

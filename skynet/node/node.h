@@ -1,5 +1,5 @@
 /**
- * skynet是以服务为主体进行运作的，服务称作为skynet_context(简称ctx)，是一个c结构，是skynet里最重要的结构，整个skynet的运作都是围绕ctx进行的。
+ * skynet是以服务为主体进行运作的，服务称作为 service_context (简称ctx)，是一个c结构，是skynet里最重要的结构，整个skynet的运作都是围绕ctx进行的。
  *
  * skynet_server提供的api主要分两大类：
  * 1. 对ctx的一系列操作，比如创建，删除ctx等
@@ -11,7 +11,7 @@
  * 3. cmd_kill杀掉一个服务等，
  * 上层统一调用skynet_command接口即可执行这些操作。
  *
- * 对ctx操作，通常会先调用skynet_context_grab将引用计数+1，操作完调用skynet_context_release将引用计数-1，以保证操作ctx过程中，不会被其他线程释放掉。
+ * 对ctx操作，通常会先调用 service_context::grab 将引用计数+1，操作完调用 service_context_release 将引用计数-1，以保证操作ctx过程中，不会被其他线程释放掉。
  */
 
 #pragma once

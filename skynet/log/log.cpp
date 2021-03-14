@@ -2,9 +2,10 @@
 
 #include "../skynet.h"      // api
 
-#include "../mq/mq_private.h"
 #include "../mq/mq_msg.h"
-#include "../context/handle_manager.h"
+#include "../mq/mq_private.h"
+
+#include "../context/service_context_manager.h"
 #include "../context/service_context.h"
 
 #include <cstdarg>
@@ -25,7 +26,7 @@ void log(service_context* svc_ctx, const char* msg, ...)
 
     // find logger service 'logger'
     if (log_svc_handle == 0)
-        log_svc_handle = handle_manager::instance()->find_by_name("logger");
+        log_svc_handle = service_context_manager::instance()->find_by_name("logger");
     if (log_svc_handle == 0)
         return;
 
@@ -89,7 +90,7 @@ void log(service_context* svc_ctx, const char* msg, ...)
     smsg.session = 0;
     smsg.data = data_ptr;
     smsg.sz = len | ((size_t)message_type::PTYPE_TEXT << MESSAGE_TYPE_SHIFT);
-    skynet_context_push(log_svc_handle, &smsg);
+    service_context_push(log_svc_handle, &smsg);
 }
 
 }

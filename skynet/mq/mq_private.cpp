@@ -1,7 +1,7 @@
 /**
  * 
  * 设计原理:
- * 1. 各个服务(skynet_context_xxx, ctx)之间是通过消息进行通信的。
+ * 1. 各个服务 (service_context_xxx, ctx) 之间是通过消息进行通信的。
  * 2. skynet包含了 '全局消息队列' 和 '次级服务消息队列' 的两级队列。skynet开启了多个 os 工作线程 (通过配置文件的thread参数配置), 
  * 每个线程不断的从全局队列里pop出一个次级服务消息队列, 然后分发次级消息队列里的消息, 分发完后视情况是否push回全局队列, 每个 ctx 有自己的次级服务消息队列。
  * 
@@ -30,7 +30,7 @@ mq_private* mq_private::create(uint32_t svc_handle)
 
     // When the queue is create (always between service create and service init),
     // set in_global flag to avoid push it to global queue.
-    // If the service init success, skynet_context_new will call mq_private->push to push it to global queue.
+    // If the service init success, service_context_new will call mq_private->push to push it to global queue.
     // 创建队列时可以发送和接收消息，但还不能被工作线程调度，所以设置成MQ_IN_GLOBAL，保证不会push到全局队列，
     // 当ctx初始化完成再直接调用skynet_globalmq_push到全局队列
     q->is_in_global_ = true;  // in global message queue

@@ -5,13 +5,13 @@
 #include "../log/service_log.h"
 #include "../log/log.h"
 
-#include "../mq/mq_private.h"
 #include "../mq/mq_msg.h"
+#include "../mq/mq_private.h"
 
 #include "../timer/timer_manager.h"
 #include "../mod/cservice_mod_manager.h"
 
-#include "../context/handle_manager.h"
+#include "../context/service_context_manager.h"
 #include "../context/service_context.h"
 
 #include "../utils/time_helper.h"
@@ -34,7 +34,7 @@ static uint32_t _to_svc_handle(service_context* svc_ctx, const char* param)
     // local service name
     else if (param[0] == '.')
     {
-        svc_handle = handle_manager::instance()->find_by_name(param + 1);
+        svc_handle = service_context_manager::instance()->find_by_name(param + 1);
     }
     //
     else
@@ -75,7 +75,7 @@ static void _handle_exit(service_context* svc_ctx, uint32_t svc_handle)
          skynet_send(svc_ctx, svc_handle, node::instance()->get_monitor_exit(), message_type::PTYPE_CLIENT, 0, nullptr, 0);
     }
 
-    handle_manager::instance()->retire(svc_handle);
+    service_context_manager::instance()->retire(svc_handle);
 }
 
 
@@ -95,7 +95,7 @@ static const char* cmd_timeout(service_context* svc_ctx, const char* param)
 }
 
 // skynet指令: reg, 给自身起一个名字（支持多个）
-// cmd_name给指定ctx起一个名字，即将ctx->handle绑定一个名称(handle_manager::instance()->set_handle_by_name)
+// cmd_name给指定ctx起一个名字，即将ctx->handle绑定一个名称(service_context_manager::instance()->set_handle_by_name)
 static const char* cmd_reg(service_context* svc_ctx, const char* param)
 {
     if (param == nullptr || param[0] == '\0')
@@ -105,7 +105,7 @@ static const char* cmd_reg(service_context* svc_ctx, const char* param)
     }
     else if (param[0] == '.')
     {
-        return handle_manager::instance()->set_handle_by_name(param + 1, svc_ctx->svc_handle_);
+        return service_context_manager::instance()->set_handle_by_name(param + 1, svc_ctx->svc_handle_);
     }
     else
     {
@@ -121,7 +121,7 @@ static const char* cmd_query(service_context* svc_ctx, const char* param)
     // local service
     if (param[0] == '.')
     {
-        uint32_t svc_handle = handle_manager::instance()->find_by_name(param + 1);
+        uint32_t svc_handle = service_context_manager::instance()->find_by_name(param + 1);
         if (svc_handle != 0)
         {
             ::sprintf(svc_ctx->result_, ":%x", svc_handle);
@@ -148,7 +148,7 @@ static const char* cmd_name(service_context* svc_ctx, const char* param)
 
     if (name[0] == '.')
     {
-        return handle_manager::instance()->set_handle_by_name(name + 1, handle_id);
+        return service_context_manager::instance()->set_handle_by_name(name + 1, handle_id);
     }
     else
     {
@@ -162,7 +162,7 @@ static const char* cmd_name(service_context* svc_ctx, const char* param)
 // cmd_kill杀掉某个服务（被动），都会调用到handle_exit，
 // 然后调用到skynet_handle_retire，回收ctx->handle，供之后创建新的ctx使用，并将引用计数-1，
 // 如果ctx没有在其他地方引用，ctx->ref此时是0，所以可以删掉，delete_context主要是做一些清理回收工作。
-// 如果其他地方有引用，在下一次skynet_context_release时删掉
+// 如果其他地方有引用，在下一次service_context_release时删掉
 static const char* cmd_exit(service_context* svc_ctx, const char* param)
 {
     _handle_exit(svc_ctx, 0);
@@ -182,7 +182,7 @@ static const char* cmd_kill(service_context* svc_ctx, const char* param)
 }
 
 // skynet cmd: launch
-// 启动一个新服务，最终会通过skynet_context_new创建一个ctx，初始化ctx中各个数据。
+// 启动一个新服务，最终会通过service_context_new创建一个ctx，初始化ctx中各个数据。
 static const char* cmd_launch(service_context* context, const char* param)
 {
     size_t sz = ::strlen(param);
@@ -192,7 +192,7 @@ static const char* cmd_launch(service_context* context, const char* param)
     char* mod_name = ::strsep(&args, " \t\r\n");
     args = ::strsep(&args, "\r\n");
 
-    service_context* svc_ctx = skynet_context_new(mod_name, args);
+    service_context* svc_ctx = service_context_new(mod_name, args);
     if (svc_ctx == nullptr)
     {
         return nullptr;
@@ -242,7 +242,7 @@ static const char* cmd_start_time(service_context* svc_ctx, const char* param)
 // skynet cmd: abort
 static const char* cmd_abort(service_context* svc_ctx, const char* param)
 {
-    handle_manager::instance()->retire_all();
+    service_context_manager::instance()->retire_all();
     return nullptr;
 }
 
@@ -336,7 +336,7 @@ static const char* cmd_log_on(service_context* context, const char* param)
     if (svc_handle == 0)
         return nullptr;
 
-    service_context* svc_ctx = handle_manager::instance()->grab(svc_handle);
+    service_context* svc_ctx = service_context_manager::instance()->grab(svc_handle);
     if (svc_ctx == nullptr)
         return nullptr;
 
@@ -355,7 +355,7 @@ static const char* cmd_log_on(service_context* context, const char* param)
         }
     }
 
-    // skynet_context_release(svc_ctx);
+    // service_context_release(svc_ctx);
 
     return nullptr;
 }
@@ -367,7 +367,7 @@ static const char* cmd_log_off(service_context* context, const char* param)
     if (svc_handle == 0)
         return nullptr;
 
-    service_context* svc_ctx = handle_manager::instance()->grab(svc_handle);
+    service_context* svc_ctx = service_context_manager::instance()->grab(svc_handle);
     if (svc_ctx == nullptr)
         return nullptr;
 
@@ -381,7 +381,7 @@ static const char* cmd_log_off(service_context* context, const char* param)
         }
     }
 
-    // skynet_context_release(svc_ctx);
+    // service_context_release(svc_ctx);
 
     return nullptr;
 }
@@ -393,7 +393,7 @@ static const char* cmd_signal(service_context* context, const char* param)
     if (svc_handle == 0)
         return nullptr;
 
-    service_context* svc_ctx = handle_manager::instance()->grab(svc_handle);
+    service_context* svc_ctx = service_context_manager::instance()->grab(svc_handle);
     if (svc_ctx == nullptr)
         return nullptr;
 
@@ -407,7 +407,7 @@ static const char* cmd_signal(service_context* context, const char* param)
     // NOTICE: the signal function should be thread safe
     svc_ctx->mod_->instance_signal(svc_ctx->instance_, sig);
 
-    // skynet_context_release(svc_ctx);
+    // service_context_release(svc_ctx);
 
     return nullptr;
 }
