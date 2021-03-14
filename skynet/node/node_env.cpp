@@ -1,8 +1,7 @@
 #include "node_env.h"
 
-#include <mutex>
-
 extern "C" {
+#include <lua.h>
 #include <lauxlib.h>
 }
 

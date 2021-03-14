@@ -80,7 +80,7 @@ static void forward_message(int type, bool padding, socket::socket_message* resu
     // message.src_svc_handle = 0;
     // message.session = 0;
 //     message.data = sm;
-//     message.sz = sz | ((size_t)PTYPE_SOCKET << MESSAGE_TYPE_SHIFT);
+//     message.sz = sz | ((size_t)message_type::PTYPE_SOCKET << MESSAGE_TYPE_SHIFT);
     
 //     if (skynet_context_push((uint32_t)result->svc_handle, &message))
 //     {

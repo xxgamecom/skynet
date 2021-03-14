@@ -64,13 +64,13 @@ void logger_release(logger* inst)
 //     // struct logger * inst = ud;
 //     // switch (type)
 //     // {
-//     // case PTYPE_SYSTEM:
+//     // case message_type::PTYPE_SYSTEM:
 //     //     if (inst->filename)
 //     //     {
 //     //         inst->handle = freopen(inst->filename, "a", inst->handle);
 //     //     }
 //     //     break;
-//     // case PTYPE_TEXT:
+//     // case message_type::PTYPE_TEXT:
 //     //     fprintf(inst->handle, "[:%08x] ",source);
 //     //     fwrite(msg, sz, 1, inst->handle);
 //     //     fprintf(inst->handle, "\n");

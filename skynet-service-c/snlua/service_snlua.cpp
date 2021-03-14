@@ -83,7 +83,7 @@
 // static void report_launcher_error(struct skynet_context* ctx)
 // {
 //     // sizeof "ERROR" == 5
-//     skynet_sendname(ctx, 0, ".launcher", PTYPE_TEXT, 0, "ERROR", 5);
+//     skynet_sendname(ctx, 0, ".launcher", message_type::PTYPE_TEXT, 0, "ERROR", 5);
 // }
 
 // static const char* optstring(skynet_context* ctx, const char* key, const char* str)

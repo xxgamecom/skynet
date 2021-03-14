@@ -6,6 +6,8 @@
 #include "../log/log.h"
 
 #include "../mq/mq.h"
+#include "../mq/mq_msg.h"
+
 #include "../timer/timer_manager.h"
 #include "../mod/cservice_mod_manager.h"
 
@@ -70,7 +72,7 @@ static void _handle_exit(service_context* svc_ctx, uint32_t svc_handle)
 
     if (node::instance()->get_monitor_exit() != 0)
     {
-        // skynet_send(svc_ctx, svc_handle, node::instance()->get_monitor_exit(), PTYPE_CLIENT, 0, nullptr, 0);
+         skynet_send(svc_ctx, svc_handle, node::instance()->get_monitor_exit(), message_type::PTYPE_CLIENT, 0, nullptr, 0);
     }
 
     handle_manager::instance()->retire(svc_handle);

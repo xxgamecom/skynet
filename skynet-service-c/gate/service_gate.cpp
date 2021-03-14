@@ -182,7 +182,7 @@
 //     int n = vsnprintf(tmp, sizeof(tmp), data, ap);
 //     va_end(ap);
 
-//     skynet_send(ctx, 0, g->watchdog, PTYPE_TEXT,  0, tmp, n);
+//     skynet_send(ctx, 0, g->watchdog, message_type::PTYPE_TEXT,  0, tmp, n);
 // }
 
 // static void _forward(struct gate* g, struct connection* c, int size)
@@ -212,7 +212,7 @@
 //         char * tmp = skynet_malloc(size + 32);
 //         int n = snprintf(tmp,32,"%d data ",c->id);
 //         databuffer_read(&c->buffer,&g->mp,tmp+n,size);
-//         skynet_send(ctx, 0, g->watchdog, PTYPE_TEXT | PTYPE_TAG_DONTCOPY, fd, tmp, size + n);
+//         skynet_send(ctx, 0, g->watchdog, message_type::PTYPE_TEXT | message_type::TAG_DONT_COPY, fd, tmp, size + n);
 //     }
 // }
 
@@ -321,11 +321,11 @@
 //     switch (type)
 //     {
 //         // 接收本地指令
-//     case PTYPE_TEXT:
+//     case message_type::PTYPE_TEXT:
 //         _ctrl(g , msg , (int)sz);
 //         break;
 //         // 
-//     case PTYPE_CLIENT:
+//     case message_type::PTYPE_CLIENT:
 //     {
 //         if (sz <= 4)
 //         {
@@ -349,7 +349,7 @@
 //             break;
 //         }
 //     }
-//     case PTYPE_SOCKET:
+//     case message_type::PTYPE_SOCKET:
 //         // recv socket message from skynet_socket
 //         dispatch_socket_message(g, msg, (int)(sz-sizeof(struct skynet_socket_message)));
 //         break;
@@ -421,7 +421,7 @@
 
 //     if (client_tag == 0)
 //     {
-//         client_tag = PTYPE_CLIENT;
+//         client_tag = message_type::PTYPE_CLIENT;
 //     }
 //     if (watchdog[0] == '!')
 //     {

@@ -133,7 +133,7 @@ static inline void dispatch_list(timer_node* current)
         msg.src_svc_handle = 0;
         msg.session = event->session;
         msg.data = nullptr;
-        msg.sz = (size_t)PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        msg.sz = (size_t)message_type::PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
         skynet_context_push(event->svc_handle, &msg);
 
@@ -212,7 +212,7 @@ int timer_manager::timeout(uint32_t handle, int time, int session)
         msg.src_svc_handle = 0;
         msg.session = session;
         msg.data = nullptr;
-        msg.sz = (size_t)PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        msg.sz = (size_t)message_type::PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
         if (skynet_context_push(handle, &msg))
         {
