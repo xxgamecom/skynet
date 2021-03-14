@@ -1,4 +1,4 @@
-#include "server_ctrl_cmd.h"
+#include "socket_server_ctrl_cmd.h"
 #include "socket_addr.h"
 
 #include <iostream>
@@ -138,15 +138,15 @@ int prepare_ctrl_cmd_request_send(ctrl_cmd_package& cmd, int socket_id, const se
     return len;
 }
 
-int prepare_ctrl_cmd_request_setopt(ctrl_cmd_package& cmd, int socket_id)
+int prepare_ctrl_cmd_request_set_opt(ctrl_cmd_package& cmd, int socket_id)
 {
     // cmd data
-    cmd.u.setopt.socket_id = socket_id;
-    cmd.u.setopt.what = TCP_NODELAY;
-    cmd.u.setopt.value = 1;
+    cmd.u.set_opt.socket_id = socket_id;
+    cmd.u.set_opt.what = TCP_NODELAY;
+    cmd.u.set_opt.value = 1;
 
     // actually length
-    int len = sizeof(cmd.u.setopt);
+    int len = sizeof(cmd.u.set_opt);
     
     // cmd header
     cmd.header[6] = (uint8_t)'T';

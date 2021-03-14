@@ -10,7 +10,7 @@
  * 并且将该socket fd传递给poller事件集, 目的是当epoll事件触发时可以找到对应的socket对象而做对应的处理。
  */
 
-#include "server.h"
+#include "socket_server.h"
 #include "poller.h"
 #include "socket_helper.h"
 
@@ -51,13 +51,13 @@ enum priority_type
     LOW                         = 1,                                        // 低
 };
 
-server::~server()
+socket_server::~socket_server()
 {
     fini();
 }
 
 // 初始化
-bool server::init(uint64_t time/* = 0*/)
+bool socket_server::init(uint64_t time/* = 0*/)
 {
     //
     time_ = time;
@@ -76,9 +76,9 @@ bool server::init(uint64_t time/* = 0*/)
         return false;
     }
 
-    // add recv_ctrl_fd to event poll
-    int pipe_recv_fd = pipe_.recv_fd();
-    if (!event_poller_.add(pipe_recv_fd, nullptr))
+    // add read ctrl fd to event poll
+    int pipe_read_fd = pipe_.read_fd();
+    if (!event_poller_.add(pipe_read_fd, nullptr))
     {
         std::cerr << "socket-server: can't add server socket fd to event poll." << std::endl;
         
@@ -93,7 +93,7 @@ bool server::init(uint64_t time/* = 0*/)
 }
 
 // 清理
-void server::fini()
+void socket_server::fini()
 {
     //
     socket_message dummy;
@@ -113,39 +113,39 @@ void server::fini()
     event_poller_.fini();
 }
 
-void server::start(uint64_t svc_handle, int socket_id)
+void socket_server::start(uint64_t svc_handle, int socket_id)
 {
     ctrl_cmd_package cmd;
     prepare_ctrl_cmd_request_start(cmd, svc_handle, socket_id);
     _send_ctrl_cmd(&cmd);
 }
 
-void server::exit()
+void socket_server::exit()
 {
     ctrl_cmd_package cmd;
     _send_ctrl_cmd(&cmd);
 }
 
-void server::close(uint64_t svc_handle, int socket_id)
+void socket_server::close(uint64_t svc_handle, int socket_id)
 {
     ctrl_cmd_package cmd;
     prepare_ctrl_cmd_request_close(cmd, svc_handle, socket_id);
     _send_ctrl_cmd(&cmd);
 }
 
-void server::shutdown(uint64_t svc_handle, int socket_id)
+void socket_server::shutdown(uint64_t svc_handle, int socket_id)
 {
     ctrl_cmd_package cmd;
     prepare_ctrl_cmd_request_shutdown(cmd, svc_handle, socket_id);
     _send_ctrl_cmd(&cmd);
 }
 
-void server::update_time(uint64_t time)
+void socket_server::update_time(uint64_t time)
 {
     time_ = time;
 }
 
-int server::poll_socket_event(socket_message* result, bool& is_more)
+int socket_server::poll_socket_event(socket_message* result, bool& is_more)
 {
     for (;;)
     {
@@ -309,7 +309,7 @@ int server::poll_socket_event(socket_message* result, bool& is_more)
 }
 
 // 
-int server::listen(uint64_t svc_handle, const char* addr, int port, int backlog)
+int socket_server::listen(uint64_t svc_handle, const char* addr, int port, int backlog)
 {
     // 调用unix系统接口bind，listen获取一个fd
     int listen_fd = socket_helper::listen(addr, port, backlog);
@@ -332,7 +332,7 @@ int server::listen(uint64_t svc_handle, const char* addr, int port, int backlog)
     return socket_id;
 }
 
-int server::send(send_buffer* buf)
+int socket_server::send(send_buffer* buf)
 {
     int socket_id = buf->socket_id;
     auto& socket_ref = socket_slot_[calc_slot_index(socket_id)];
@@ -417,7 +417,7 @@ int server::send(send_buffer* buf)
     return 0;
 }
 
-int server::send_low_priority(send_buffer* buf)
+int socket_server::send_low_priority(send_buffer* buf)
 {
     int socket_id = buf->socket_id;
     auto& socket_ref = socket_slot_[calc_slot_index(socket_id)];
@@ -441,12 +441,12 @@ int server::send_low_priority(send_buffer* buf)
     return 0;
 }
 
-void server::userobject(socket_object_interface* soi)
+void socket_server::userobject(socket_object_interface* soi)
 {
     soi_ = *soi;
 }
 
-int server::connect(uint64_t svc_handle, const char* addr, int port)
+int socket_server::connect(uint64_t svc_handle, const char* addr, int port)
 {
     // 分配一个socket
     int socket_id = _alloc_socket_id();
@@ -463,7 +463,7 @@ int server::connect(uint64_t svc_handle, const char* addr, int port)
     return socket_id;
 }
 
-int server::bind(uint64_t svc_handle, int fd)
+int socket_server::bind(uint64_t svc_handle, int fd)
 {
     // 分配一个socket
     int socket_id = _alloc_socket_id();
@@ -478,10 +478,10 @@ int server::bind(uint64_t svc_handle, int fd)
     return socket_id;
 }
 
-void server::nodelay(int socket_id)
+void socket_server::nodelay(int socket_id)
 {
     ctrl_cmd_package cmd;
-    prepare_ctrl_cmd_request_setopt(cmd, socket_id);
+    prepare_ctrl_cmd_request_set_opt(cmd, socket_id);
     _send_ctrl_cmd(&cmd);
 }
 
@@ -490,7 +490,7 @@ void server::nodelay(int socket_id)
 // UDP
 //----------------------------------------------
 
-int server::socket_server_udp(uint64_t svc_handle, const char* addr, int port)
+int socket_server::socket_server_udp(uint64_t svc_handle, const char* addr, int port)
 {
     int fd = INVALID_FD;
     int family;
@@ -524,7 +524,7 @@ int server::socket_server_udp(uint64_t svc_handle, const char* addr, int port)
     return socket_id;
 }
 
-int server::udp_send(const socket_udp_address* addr, send_buffer* buf)
+int socket_server::udp_send(const socket_udp_address* addr, send_buffer* buf)
 {
     int socket_id = buf->socket_id;
     auto& socket_ref = socket_slot_[calc_slot_index(socket_id)];
@@ -591,7 +591,7 @@ int server::udp_send(const socket_udp_address* addr, send_buffer* buf)
     return 0;
 }
 
-int server::udp_connect(int socket_id, const char* addr, int port)
+int socket_server::udp_connect(int socket_id, const char* addr, int port)
 {
     auto& socket_ref = socket_slot_[calc_slot_index(socket_id)];
     if (socket_ref.socket_id != socket_id || socket_ref.status == socket_status::FREE)
@@ -645,7 +645,7 @@ int server::udp_connect(int socket_id, const char* addr, int port)
     return 0;
 }
 
-const socket_udp_address* server::udp_address(socket_message* msg, int* addr_sz)
+const socket_udp_address* socket_server::udp_address(socket_message* msg, int* addr_sz)
 {
     // type
     uint8_t* address = (uint8_t*)(msg->data + msg->ud);
@@ -662,7 +662,7 @@ const socket_udp_address* server::udp_address(socket_message* msg, int* addr_sz)
     return (const socket_udp_address*)address;
 }
 
-socket_info* server::get_socket_info()
+socket_info* socket_server::get_socket_info()
 {
     socket_info* si = nullptr;
     for (int i=0; i<MAX_SOCKET; i++)
@@ -687,7 +687,7 @@ socket_info* server::get_socket_info()
 // ctrl cmd
 //----------------------------------------------
 
-void server::_send_ctrl_cmd(ctrl_cmd_package* cmd)
+void socket_server::_send_ctrl_cmd(ctrl_cmd_package* cmd)
 {
     // header部分的长度为数据长度, 不header部分
     // header部分为2字节, type: 1 byte, data_len: 1 byte
@@ -716,7 +716,7 @@ void server::_send_ctrl_cmd(ctrl_cmd_package* cmd)
 }
 
 // 当工作线程执行socket.listen后，socket线程从接收管道读取数据，执行ctrl_cmd
-int server::_recv_ctrl_cmd(socket_message* result)
+int socket_server::_recv_ctrl_cmd(socket_message* result)
 {
     // recv header: type (1 byte) + len (1 byte)
     uint8_t header[2] = { 0 };
@@ -769,9 +769,9 @@ int server::_recv_ctrl_cmd(socket_message* result)
         return handle_ctrl_cmd_send_socket(&cmd->send, result, priority_type::HIGH, cmd->address);
     }
     case 'C':
-        return handle_ctrl_cmd_set_udp_address((request_setudp*)buf, result);
+        return handle_ctrl_cmd_set_udp_address((request_set_udp*)buf, result);
     case 'T':
-        return handle_ctrl_cmd_setopt_socket((request_setopt*)buf);
+        return handle_ctrl_cmd_setopt_socket((request_set_opt*)buf);
     case 'U':
         return handle_ctrl_cmd_add_udp_socket((request_udp*)buf);
     }
@@ -782,7 +782,7 @@ int server::_recv_ctrl_cmd(socket_message* result)
 }
 
 // return -1 when connecting
-int server::handle_ctrl_cmd_open_socket(request_open* cmd, socket_message* result)
+int socket_server::handle_ctrl_cmd_open_socket(request_open* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
 
@@ -881,7 +881,7 @@ int server::handle_ctrl_cmd_open_socket(request_open* cmd, socket_message* resul
     return -1;
 }
 
-int server::handle_ctrl_cmd_close_socket(request_close* cmd, socket_message* result)
+int socket_server::handle_ctrl_cmd_close_socket(request_close* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
     auto& socket_ref = socket_slot_[calc_slot_index(socket_id)];
@@ -922,7 +922,7 @@ int server::handle_ctrl_cmd_close_socket(request_close* cmd, socket_message* res
     return -1;
 }
 
-int server::handle_ctrl_cmd_bind_socket(request_bind* cmd, socket_message* result)
+int socket_server::handle_ctrl_cmd_bind_socket(request_bind* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
     result->socket_id = socket_id;
@@ -944,7 +944,7 @@ int server::handle_ctrl_cmd_bind_socket(request_bind* cmd, socket_message* resul
     return socket_event::SOCKET_OPEN;
 }
 
-int server::handle_ctrl_cmd_start_socket(request_start* cmd, socket_message* result)
+int socket_server::handle_ctrl_cmd_start_socket(request_start* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
 
@@ -991,7 +991,7 @@ int server::handle_ctrl_cmd_start_socket(request_start* cmd, socket_message* res
     return -1;
 }
 
-int server::handle_ctrl_cmd_setopt_socket(request_setopt* cmd)
+int socket_server::handle_ctrl_cmd_setopt_socket(request_set_opt* cmd)
 {
     int socket_id = cmd->socket_id;
 
@@ -1005,7 +1005,7 @@ int server::handle_ctrl_cmd_setopt_socket(request_setopt* cmd)
     return -1;
 }
 
-int server::handle_ctrl_cmd_exit_socket(socket_message* result)
+int socket_server::handle_ctrl_cmd_exit_socket(socket_message* result)
 {
     result->svc_handle = 0;
     result->socket_id = 0;
@@ -1023,7 +1023,7 @@ int server::handle_ctrl_cmd_exit_socket(socket_message* result)
  * 如果是写入部分数据, 将剩余部分写入到 高优先级 列表中. (即使优先级为 priority_type::LOW 也是如此)
  * 否则, 将数据添加到高优先级队列(priority_type::HIGH) 或 低优先级队列(priority_type::LOW).
  */
-int server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message* result, int priority, const uint8_t* udp_address)
+int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message* result, int priority, const uint8_t* udp_address)
 {
     int socket_id = cmd->socket_id;
     send_object so;
@@ -1116,7 +1116,7 @@ int server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message* resul
     return -1;
 }
 
-int server::handle_ctrl_cmd_listen_socket(request_listen* cmd, socket_message* result)
+int socket_server::handle_ctrl_cmd_listen_socket(request_listen* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
     int listen_fd = cmd->fd;
@@ -1140,7 +1140,7 @@ int server::handle_ctrl_cmd_listen_socket(request_listen* cmd, socket_message* r
     return -1;
 }
 
-int server::handle_ctrl_cmd_add_udp_socket(request_udp* cmd)
+int socket_server::handle_ctrl_cmd_add_udp_socket(request_udp* cmd)
 {
     int socket_id = cmd->socket_id;
     int protocol = cmd->family == AF_INET6 ? protocol_type::UDPv6 : protocol_type::UDP;
@@ -1159,7 +1159,7 @@ int server::handle_ctrl_cmd_add_udp_socket(request_udp* cmd)
     return -1;
 }
 
-int server::handle_ctrl_cmd_set_udp_address(request_setudp* cmd, socket_message* result)
+int socket_server::handle_ctrl_cmd_set_udp_address(request_set_udp* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
     auto& socket_ref = socket_slot_[calc_slot_index(socket_id)];
@@ -1193,7 +1193,7 @@ int server::handle_ctrl_cmd_set_udp_address(request_setudp* cmd, socket_message*
 // private
 //----------------------------------------------
 
-void server::_clear_closed_event(int socket_id)
+void socket_server::_clear_closed_event(int socket_id)
 {
     for (int i = event_next_index_; i < event_wait_n_; i++)
     {
@@ -1213,7 +1213,7 @@ void server::_clear_closed_event(int socket_id)
     }
 }
 
-void server::force_close(socket* socket_ptr, socket_lock& sl, socket_message* result)
+void socket_server::force_close(socket* socket_ptr, socket_lock& sl, socket_message* result)
 {
     //
     result->svc_handle = socket_ptr->svc_handle;
@@ -1253,7 +1253,7 @@ void server::force_close(socket* socket_ptr, socket_lock& sl, socket_message* re
     sl.unlock();
 }
 
-int server::_alloc_socket_id()
+int socket_server::_alloc_socket_id()
 {
     for (int i = 0; i < MAX_SOCKET; i++)
     {
@@ -1279,7 +1279,7 @@ int server::_alloc_socket_id()
         {
             socket_ref.socket_id = socket_id;
             socket_ref.protocol = protocol_type::UNKNOWN;
-            socket_ref.udp_connecting = 0;  // server::udp_connect 可以直接增加 socket_ref.udp_conncting (在其他线程, new_fd之前), 因此这里重置为0
+            socket_ref.udp_connecting = 0;  // socket_server::udp_connect 可以直接增加 socket_ref.udp_conncting (在其他线程, new_fd之前), 因此这里重置为0
             socket_ref.socket_fd = INVALID_FD;
             return socket_id;
         }
@@ -1293,7 +1293,7 @@ int server::_alloc_socket_id()
     return -1;
 }
 
-void server::drop_udp(socket* socket_ptr, write_buffer_list* wb_list, write_buffer* wb)
+void socket_server::drop_udp(socket* socket_ptr, write_buffer_list* wb_list, write_buffer* wb)
 {
     socket_ptr->wb_size -= wb->sz;
     wb_list->head = wb->next;
@@ -1302,7 +1302,7 @@ void server::drop_udp(socket* socket_ptr, write_buffer_list* wb_list, write_buff
     free_write_buffer(wb);
 }
 
-socket* server::new_socket(int socket_id, int sock_fd, int protocol, uint64_t svc_handle, bool add/* = true*/)
+socket* socket_server::new_socket(int socket_id, int sock_fd, int protocol, uint64_t svc_handle, bool add/* = true*/)
 {
     auto& socket_ref = socket_slot_[calc_slot_index(socket_id)];
     assert(socket_ref.status == socket_status::ALLOCED);
@@ -1340,7 +1340,7 @@ socket* server::new_socket(int socket_id, int sock_fd, int protocol, uint64_t sv
     return &socket_ref;
 }
 
-void server::free_send_buffer(send_buffer* buf_ptr)
+void socket_server::free_send_buffer(send_buffer* buf_ptr)
 {
     if (buf_ptr == nullptr)
         return;
@@ -1360,7 +1360,7 @@ void server::free_send_buffer(send_buffer* buf_ptr)
     }
 }
 
-const void* server::clone_send_buffer(send_buffer* buf_ptr, size_t *sz)
+const void* socket_server::clone_send_buffer(send_buffer* buf_ptr, size_t *sz)
 {
     if (buf_ptr == nullptr)
     {
@@ -1394,7 +1394,7 @@ const void* server::clone_send_buffer(send_buffer* buf_ptr, size_t *sz)
     }
 }
 
-void server::append_sendbuffer(socket* socket_ptr, request_send* cmd, bool is_high/* = true*/, const uint8_t* udp_address/* = nullptr*/)
+void socket_server::append_sendbuffer(socket* socket_ptr, request_send* cmd, bool is_high/* = true*/, const uint8_t* udp_address/* = nullptr*/)
 {
     auto wb_list= is_high ? &socket_ptr->wb_list_high : &socket_ptr->wb_list_low;
     auto write_buf_ptr = prepare_write_buffer(wb_list, cmd, udp_address == nullptr ? SIZEOF_TCP_BUFFER : SIZEOF_UDP_BUFFER);
@@ -1408,7 +1408,7 @@ void server::append_sendbuffer(socket* socket_ptr, request_send* cmd, bool is_hi
 }
 
 //
-write_buffer* server::prepare_write_buffer(write_buffer_list* wb_list, request_send* cmd, int size)
+write_buffer* socket_server::prepare_write_buffer(write_buffer_list* wb_list, request_send* cmd, int size)
 {
     //
     auto write_buf_ptr = (write_buffer*)new char[size]{0};
@@ -1436,7 +1436,7 @@ write_buffer* server::prepare_write_buffer(write_buffer_list* wb_list, request_s
     return write_buf_ptr;
 }
 
-void server::free_write_buffer(write_buffer* wb)
+void socket_server::free_write_buffer(write_buffer* wb)
 {
     if (wb->is_userobject)
     {
@@ -1451,7 +1451,7 @@ void server::free_write_buffer(write_buffer* wb)
     delete wb;
 }
 
-void server::free_write_buffer_list(write_buffer_list* wb_list)
+void socket_server::free_write_buffer_list(write_buffer_list* wb_list)
 {
     write_buffer* wb = wb_list->head;
     while (wb != nullptr)
@@ -1465,7 +1465,7 @@ void server::free_write_buffer_list(write_buffer_list* wb_list)
 }
 
 //
-int server::send_write_buffer(socket* socket_ptr, socket_lock& sl, socket_message* result)
+int socket_server::send_write_buffer(socket* socket_ptr, socket_lock& sl, socket_message* result)
 {
     // blocked by direct write, 稍后再发
     if (!sl.try_lock())
@@ -1505,7 +1505,7 @@ int server::send_write_buffer(socket* socket_ptr, socket_lock& sl, socket_messag
 }
 
 
-int server::send_write_buffer_list(socket* socket_ptr, write_buffer_list* wb_list, socket_lock& sl, socket_message* result)
+int socket_server::send_write_buffer_list(socket* socket_ptr, write_buffer_list* wb_list, socket_lock& sl, socket_message* result)
 {
     if (socket_ptr->protocol == protocol_type::TCP)
         return send_write_buffer_list_tcp(socket_ptr, wb_list, sl, result);
@@ -1513,7 +1513,7 @@ int server::send_write_buffer_list(socket* socket_ptr, write_buffer_list* wb_lis
         return send_write_buffer_list_udp(socket_ptr, wb_list, result);
 }
 
-int server::send_write_buffer_list_tcp(socket* socket_ptr, write_buffer_list* wb_list, socket_lock& sl, socket_message* result)
+int socket_server::send_write_buffer_list_tcp(socket* socket_ptr, write_buffer_list* wb_list, socket_lock& sl, socket_message* result)
 {
     while (wb_list->head != nullptr)
     {
@@ -1555,7 +1555,7 @@ int server::send_write_buffer_list_tcp(socket* socket_ptr, write_buffer_list* wb
 }
 
 
-int server::send_write_buffer_list_udp(socket* socket_ptr, write_buffer_list* wb_list, socket_message* result)
+int socket_server::send_write_buffer_list_udp(socket* socket_ptr, write_buffer_list* wb_list, socket_message* result)
 {
     while (wb_list->head != nullptr)
     {
@@ -1595,7 +1595,7 @@ int server::send_write_buffer_list_udp(socket* socket_ptr, write_buffer_list* wb
     return -1;
 }
 
-int server::list_uncomplete(write_buffer_list* wb_list)
+int socket_server::list_uncomplete(write_buffer_list* wb_list)
 {
     auto write_buf_ptr = wb_list->head;
     if (write_buf_ptr == nullptr)
@@ -1604,7 +1604,7 @@ int server::list_uncomplete(write_buffer_list* wb_list)
     return (void*)write_buf_ptr->ptr != write_buf_ptr->buffer;
 }
 
-void server::raise_uncomplete(socket* socket_ptr)
+void socket_server::raise_uncomplete(socket* socket_ptr)
 {
     auto wb_list_low = &socket_ptr->wb_list_low;
     auto tmp = wb_list_low->head;
@@ -1630,7 +1630,7 @@ void server::raise_uncomplete(socket* socket_ptr)
  * 3. 若 '低优先级'写缓存列表内的数据是不完整的 (write_buffer_list head不完整, 之前发送了部分数据), 将 '低优先级'写缓存列表的head移到空'高优先级'写缓存队列内(调用raise_uncomplete);
  * 4. 如果两个写缓存队列都为空, 重新加入到epoll事件里? turn off the event. (调用 check_close)
  */
-int server::do_send_write_buffer(socket* socket_ptr, socket_lock& sl, socket_message* result)
+int socket_server::do_send_write_buffer(socket* socket_ptr, socket_lock& sl, socket_message* result)
 {
     assert(list_uncomplete(&socket_ptr->wb_list_low) == 0);
 
@@ -1680,7 +1680,7 @@ int server::do_send_write_buffer(socket* socket_ptr, socket_lock& sl, socket_mes
     return -1;
 }
 
-int server::report_accept(socket* socket_ptr, socket_message* result)
+int socket_server::report_accept(socket* socket_ptr, socket_message* result)
 {
     // wait accept
     socket_addr sa;
@@ -1741,7 +1741,7 @@ int server::report_accept(socket* socket_ptr, socket_message* result)
 }
 
 
-int server::report_connect(socket* socket_ptr, socket_message* result)
+int socket_server::report_connect(socket* socket_ptr, socket_message* result)
 {
     // check socket error
     int error = 0;
@@ -1786,7 +1786,7 @@ int server::report_connect(socket* socket_ptr, socket_message* result)
 // 比如，客户端发了一个1kb的数据，socket线程会从内核里依次读取64b，128b，256b，512b，64b数据，总共需读取5次，即会向gateserver服务发5条消息，一个TCP包被切割成5个数据块。
 // 第5次尝试读取1024b数据，所以可能会读到其他TCP包的数据(只要客户端有发送其他数据)。接下来，客户端再发一个1kb的数据，socket线程只需从内核读取一次即可。
 // return -1 (ignore) when error
-int server::forward_message_tcp(socket* socket_ptr, socket_lock& sl, socket_message* result)
+int socket_server::forward_message_tcp(socket* socket_ptr, socket_lock& sl, socket_message* result)
 {
     int sz = socket_ptr->p.size;
     char* buffer = new char[sz]{0};
@@ -1847,7 +1847,7 @@ int server::forward_message_tcp(socket* socket_ptr, socket_lock& sl, socket_mess
     return socket_event::SOCKET_DATA;
 }
 
-int server::forward_message_udp(socket* socket_ptr, socket_lock& sl, socket_message* result)
+int socket_server::forward_message_udp(socket* socket_ptr, socket_lock& sl, socket_message* result)
 {
     socket_addr sa;
     socklen_t sa_sz = sizeof(sa);
@@ -1899,7 +1899,7 @@ int server::forward_message_udp(socket* socket_ptr, socket_lock& sl, socket_mess
     return socket_event::SOCKET_UDP;
 }
 
-bool server::send_object_init(send_object* so, const void* object, size_t sz)
+bool socket_server::send_object_init(send_object* so, const void* object, size_t sz)
 {
     if (sz == USER_OBJECT)
     {
@@ -1917,7 +1917,7 @@ bool server::send_object_init(send_object* so, const void* object, size_t sz)
     }
 }
 
-void server::send_object_init(send_object* so, send_buffer* buf_ptr)
+void socket_server::send_object_init(send_object* so, send_buffer* buf_ptr)
 {
     if (buf_ptr == nullptr)
         return;
@@ -1946,7 +1946,7 @@ void server::send_object_init(send_object* so, send_buffer* buf_ptr)
 }
 
 
-bool server::_query_socket_info(socket& socket_ref, socket_info& si)
+bool socket_server::_query_socket_info(socket& socket_ref, socket_info& si)
 {
     socket_addr sa;
     socklen_t sa_sz = sizeof(sa);

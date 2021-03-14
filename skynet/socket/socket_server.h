@@ -8,7 +8,7 @@
 #include "socket_addr.h"
 #include "socket_info.h"
 #include "buffer.h"
-#include "server_ctrl_cmd.h"
+#include "socket_server_ctrl_cmd.h"
 #include "pipe.h"
 #include "poller.h"
 
@@ -17,7 +17,7 @@ namespace skynet { namespace socket {
 struct socket_udp_address;
 
 // skynet socket全局的结构，包含socket池，epoll监听的事件列表等
-class server
+class socket_server
 {
 private:
     // constants
@@ -52,8 +52,8 @@ private:
     char                                addr_tmp_buf_[ADDR_TMP_BUFFER_SIZE] = { 0 };    // 地址信息临时数据
 
 public:
-    server() = default;
-    ~server();
+    socket_server() = default;
+    ~socket_server();
 
 public:
     // 初始化
@@ -172,7 +172,7 @@ public:
     int udp_connect(int socket_id, const char* addr, int port);
 
     /*
-    * 如果 socket_udp_address 为 NULL, 则使用最后调用 server::udp_connect 时传入的address代替。
+    * 如果 socket_udp_address 为 NULL, 则使用最后调用 socket_server::udp_connect 时传入的address代替。
     * 也可以使用 send 来发送udp数据
     */
     int udp_send(const socket_udp_address*, send_buffer* buf);
@@ -207,7 +207,7 @@ private:
     int handle_ctrl_cmd_close_socket(request_close* cmd, socket_message* result);
     int handle_ctrl_cmd_bind_socket(request_bind* cmd, socket_message* result);
     int handle_ctrl_cmd_start_socket(request_start* cmd, socket_message* result);
-    int handle_ctrl_cmd_setopt_socket(request_setopt* cmd);
+    int handle_ctrl_cmd_setopt_socket(request_set_opt* cmd);
     int handle_ctrl_cmd_exit_socket(socket_message* result);
     /**
      * 发送数据
@@ -223,7 +223,7 @@ private:
     //
     int handle_ctrl_cmd_add_udp_socket(request_udp* cmd);
     //
-    int handle_ctrl_cmd_set_udp_address(request_setudp* cmd, socket_message* result);
+    int handle_ctrl_cmd_set_udp_address(request_set_udp* cmd, socket_message* result);
 
     // send
 private:
@@ -315,5 +315,5 @@ private:
 
 } }
 
-#include "server.inl"
+#include "socket_server.inl"
 

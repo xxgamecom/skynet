@@ -15,50 +15,38 @@ bool pipe::init()
     {
         return false;
     }
-    
-    recv_fd_ = fd[0];
-    send_fd_ = fd[1];
+
+    read_fd_ = fd[0];
+    write_fd_ = fd[1];
 
     FD_ZERO(&rfds_);
 
     //
-    assert(recv_fd_ < FD_SETSIZE);
+    assert(read_fd_ < FD_SETSIZE);
 
     return true;
 }
 
 void pipe::fini()
 {
-    if (recv_fd_ != INVALID_FD)
+    if (read_fd_ != INVALID_FD)
     {
-        ::close(recv_fd_);
-        recv_fd_ = INVALID_FD;
+        ::close(read_fd_);
+        read_fd_ = INVALID_FD;
     }
-    if (send_fd_ != INVALID_FD)
+    if (write_fd_ != INVALID_FD)
     {
-        ::close(send_fd_);
-        send_fd_ = INVALID_FD;
+        ::close(write_fd_);
+        write_fd_ = INVALID_FD;
     }
-}
-
-// 获取读数据fd
-int pipe::recv_fd()
-{
-    return recv_fd_;
-}
-
-// 获取写数据fd
-int pipe::send_fd()
-{
-    return send_fd_;
 }
 
 // 是否有数据可读
 bool pipe::is_readable()
 {
-    FD_SET(recv_fd_, &rfds_);
+    FD_SET(read_fd_, &rfds_);
     timeval tv = {0, 0};
-    return ::select(recv_fd_ + 1, &rfds_, NULL, NULL, &tv) == 1;
+    return ::select(read_fd_ + 1, &rfds_, NULL, NULL, &tv) == 1;
 }
 
 // 读取数
@@ -66,7 +54,7 @@ int pipe::read(char* buf_ptr, int sz)
 {
     for (;;)
     {
-        int n = ::read(recv_fd_, buf_ptr, sz);
+        int n = ::read(read_fd_, buf_ptr, sz);
         if (n < 0)
         {
             // interupte
@@ -84,7 +72,7 @@ int pipe::read(char* buf_ptr, int sz)
 
 int pipe::write(const char* data_ptr, int data_sz)
 {
-    return ::write(send_fd_, data_ptr, data_sz);
+    return ::write(write_fd_, data_ptr, data_sz);
 }
 
 } }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "server_def.h"
+#include "socket_server_def.h"
 #include "buffer.h"
 
 #include <cstdint>
@@ -33,7 +33,7 @@ struct request_send_udp
 };
 
 // cmd - 
-struct request_setudp
+struct request_set_udp
 {
     int                         socket_id = 0;                      //
     uint8_t                     address[UDP_ADDRESS_SIZE] = { 0 };  //
@@ -72,7 +72,7 @@ struct request_start
 };
 
 // cmd - set socket option
-struct request_setopt
+struct request_set_opt
 {
     int                         socket_id = 0;                      //
     int                         what = 0;                           // socket option
@@ -128,9 +128,9 @@ struct ctrl_cmd_package
         request_listen          listen;
         request_bind            bind;
         request_start           start;
-        request_setopt          setopt;
+        request_set_opt         set_opt;
         request_udp             udp;
-        request_setudp          set_udp;
+        request_set_udp         set_udp;
     } u = { { 0 } };
 
     //
@@ -156,8 +156,8 @@ int prepare_ctrl_cmd_request_listen(ctrl_cmd_package& cmd, uint64_t svc_handle, 
 //
 int prepare_ctrl_cmd_request_send(ctrl_cmd_package& cmd, int socket_id, const send_buffer* buf_ptr, bool is_high);
 
-// 准备 request_setopt 请求数据
-int prepare_ctrl_cmd_request_setopt(ctrl_cmd_package& cmd, int socket_id);
+// 准备 request_set_opt 请求数据
+int prepare_ctrl_cmd_request_set_opt(ctrl_cmd_package& cmd, int socket_id);
 
 // udp
 int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int protocol, const socket_addr* sa);

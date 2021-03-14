@@ -61,22 +61,22 @@ void poller::del(int sock_fd)
     ::kevent(poll_fd_, &ke, 1, nullptr, 0, nullptr);
 }
 
-void poller::write(int sock_fd, void* ud, bool enable)
+void poller::write(int sock_fd, void* ud, bool enable_write)
 {
     struct kevent ke;
 
-    EV_SET(&ke, sock_fd, EVFILT_WRITE, enable ? EV_ENABLE : EV_DISABLE, 0, 0, ud);
+    EV_SET(&ke, sock_fd, EVFILT_WRITE, enable_write ? EV_ENABLE : EV_DISABLE, 0, 0, ud);
     if (::kevent(poll_fd_, &ke, 1, nullptr, 0, nullptr) == -1 || ke.flags & EV_ERROR)
     {
         // todo: check error
     }
 }
 
-int poller::wait(event* event_ptr, int max/* = MAX_EVENT*/)
+int poller::wait(event* event_ptr, int max_events/* = MAX_EVENT*/)
 {
-    struct kevent ev[max];
+    struct kevent ev[max_events];
     
-    int n = ::kevent(poll_fd_, nullptr, 0, ev, max, nullptr);
+    int n = ::kevent(poll_fd_, nullptr, 0, ev, max_events, nullptr);
     for (int i = 0; i < n; i++)
     {
         event_ptr[i].socket_ptr = (socket*)ev[i].udata;
