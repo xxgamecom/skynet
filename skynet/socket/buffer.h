@@ -1,24 +1,24 @@
 #pragma once
 
-#include <stdlib.h>
+#include <cstdlib>
 
 namespace skynet { namespace socket {
 
 // 缓存类型
 enum buffer_type
 {
-    MEMORY                          = 0,                    // 内存
-    OBJECT                          = 1,                    // 对象
-    RAW_POINTER                     = 2,                    // 用户数据内存指针
+    MEMORY                          = 0,                            // memory
+    OBJECT                          = 1,                            // object
+    RAW_POINTER                     = 2,                            // user data ptr
 };
 
 // 发送缓存
 struct send_buffer
 {
-    int                             socket_id = 0;          // socket id
-    int                             type = 0;               // 缓存类型
-    const void*                     buffer = nullptr;       // 缓存
-    size_t                          sz = 0;                 // 缓存大小
+    int                             socket_id = 0;                  // socket id
+    int                             type = buffer_type::MEMORY;     // buffer type
+    const void*                     buffer = nullptr;               // data
+    size_t                          sz = 0;                         // data size
 };
 
 //
@@ -27,8 +27,8 @@ struct send_buffer
 // 
 struct send_object
 {
-    const void*                     buffer = nullptr;       //
-    size_t                          sz = 0;                 //
+    const void*                     buffer = nullptr;               //
+    size_t                          sz = 0;                         //
     void (*free_func)(void*);
 };
 

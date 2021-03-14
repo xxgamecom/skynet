@@ -1,6 +1,7 @@
 /**
- * 内存管理钩子
- * 用于按服务分开统计内存的开销
+ * memory manage hook
+ * 
+ * used to service memory statistics
  */
 
 #pragma once
@@ -23,3 +24,5 @@ extern void   dump_c_mem(void);
 extern int    dump_mem_lua(lua_State* L);
 extern size_t malloc_current_memory(void);
 
+// for debug use, output current service memory to stderr
+void skynet_debug_memory(const char* info);

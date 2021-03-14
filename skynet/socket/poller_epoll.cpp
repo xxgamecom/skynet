@@ -35,18 +35,18 @@ void poller::del(int sock)
     ::epoll_ctl(poll_fd_, EPOLL_CTL_DEL, sock , nullptr);
 }
 
-void poller::write(int sock, void* ud, bool enable)
+void poller::write(int sock, void* ud, bool enable_write)
 {
     epoll_event ev;
-    ev.events = EPOLLIN | (enable ? EPOLLOUT : 0);
+    ev.events = EPOLLIN | (enable_write ? EPOLLOUT : 0);
     ev.data.ptr = ud;
     ::epoll_ctl(poll_fd_, EPOLL_CTL_MOD, sock, &ev);
 }
 
-int poller::wait(event* event_ptr, int max/* = MAX_EVENT*/)
+int poller::wait(event* event_ptr, int max_events/* = MAX_EVENT*/)
 {
-    epoll_event ev[max];
-    int n = ::epoll_wait(poll_fd_ , ev, max, -1);
+    epoll_event ev[max_events];
+    int n = ::epoll_wait(poll_fd_ , ev, max_events, -1);
     for (int i = 0; i < n; i++)
     {
         event_ptr[i].socket_ptr = (socket*)ev[i].data.ptr;

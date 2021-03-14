@@ -1,27 +1,40 @@
-# source file list
-AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet" SKYNET_SRC)
-AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet/log" SKYNET_LOG_SRC)
-AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet/utils" SKYNET_UTILS_SRC)
-AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet/context" SKYNET_CTX_SRC)
-AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet/mod" SKYNET_MOD_SRC)
-AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet/mq" SKYNET_MQ_SRC)
-AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet/timer" SKYNET_TIMER_SRC)
-AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet/socket" SKYNET_SOCKET_SRC)
-AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet/node" SKYNET_NODE_SRC)
+include(mq/CMakeLists.txt)
+include(log/CMakeLists.txt)
+include(timer/CMakeLists.txt)
+include(context/CMakeLists.txt)
+include(mod/CMakeLists.txt)
+include(socket/CMakeLists.txt)
+include(node/CMakeLists.txt)
+include(memory/CMakeLists.txt)
+include(utils/CMakeLists.txt)
 
-# target
-ADD_LIBRARY(skynet_o OBJECT
-    ${SKYNET_SRC}
-    ${SKYNET_LOG_SRC}
-    ${SKYNET_UTILS_SRC}
-    ${SKYNET_CTX_SRC}
-    ${SKYNET_MOD_SRC}
+# source file list
+SET(SKYNET_HEADER skynet.h
+    ${SKYNET_MQ_HEADER}
+    ${SKYNET_LOG_HEADER}
+    ${SKYNET_TIMER_HEADER}
+    ${SKYNET_CONTEXT_HEADER}
+    ${SKYNET_MOD_HEADER}
+    ${SKYNET_SOCKET_HEADER}
+    ${SKYNET_NODE_HEADER}
+    ${SKYNET_MEMORY_HEADER}
+    ${SKYNET_UTILS_HEADER}
+)
+SET(SKYNET_SRC skynet.cpp
     ${SKYNET_MQ_SRC}
+    ${SKYNET_LOG_SRC}
     ${SKYNET_TIMER_SRC}
+    ${SKYNET_CONTEXT_SRC}
+    ${SKYNET_MOD_SRC}
     ${SKYNET_SOCKET_SRC}
     ${SKYNET_NODE_SRC}
+#    ${SKYNET_MEMORY_SRC}
+    ${SKYNET_UTILS_SRC}
 )
-ADD_EXECUTABLE(skynet
-    $<TARGET_OBJECTS:skynet_o>
-)
+
+LIST(APPEND SKYNET_SRC ${SKYNET_HEADER})
+
+# target
+ADD_LIBRARY(skynet_o OBJECT ${SKYNET_SRC})
+ADD_EXECUTABLE(skynet $<TARGET_OBJECTS:skynet_o>)
 TARGET_LINK_LIBRARIES(skynet liblua)

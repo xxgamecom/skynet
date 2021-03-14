@@ -6,8 +6,7 @@ AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet-luaclib/lua-skynet" SKYNET_SRC)
 
 # target shared lib (skynet.so)
 ADD_LIBRARY(libskynet MODULE 
-#     ${SKYNET_SRC}
-    "${SKYNET_ROOT_PATH}/skynet-luaclib/lua-skynet/lua-skynet.cpp"
+    ${SKYNET_SRC}
     $<TARGET_OBJECTS:skynet_o>
 )
 SET_TARGET_PROPERTIES(libskynet

@@ -1,6 +1,6 @@
 #include "skynet_socket.h"
 
-#include "../socket/server.h"
+#include "../socket/socket_server.h"
 #include "../timer/timer_manager.h"
 #include "../context/service_context.h"
 
@@ -12,11 +12,11 @@
 
 namespace skynet {
 
-static std::shared_ptr<socket::server> SOCKET_SERVER;
+static std::shared_ptr<socket::socket_server> SOCKET_SERVER;
 
 void skynet_socket_init()
 {
-    SOCKET_SERVER = std::make_shared<socket::server>();
+    SOCKET_SERVER = std::make_shared<socket::socket_server>();
     if (!SOCKET_SERVER->init(timer_manager::instance()->now()))
     {
         std::cerr << "socket-server : init failed." << std::endl;

@@ -1,5 +1,5 @@
 #include "socket.h"
-#include "server.h"
+#include "socket_server.h"
 
 #include <cassert>
 
@@ -54,7 +54,7 @@ void socket::inc_sending_ref(int socket_id)
         uint16_t expect_socket_id = expect_sending >> 16;
 
         // inc sending only matching the same socket id
-        if (expect_socket_id == server::socket_id_tag16(socket_id))
+        if (expect_socket_id == socket_server::socket_id_tag16(socket_id))
         {
             // s->sending maybe overflow, wait socket thread dec. see issue #794
             if ((expect_sending & 0xFFFF) == 0xFFFF)

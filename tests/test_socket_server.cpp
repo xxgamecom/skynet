@@ -10,7 +10,7 @@ using namespace skynet;
 
 static void* _poll(void* ud)
 {
-    socket::server* ss = (socket::server*)ud;
+    socket::socket_server* ss = (socket::socket_server*)ud;
     socket::socket_message result;
     for (;;)
     {
@@ -41,7 +41,7 @@ static void* _poll(void* ud)
     }
 }
 
-static void test(socket::server* ss)
+static void test(socket::socket_server* ss)
 {
     pthread_t pid;
     pthread_create(&pid, NULL, _poll, ss);
@@ -73,7 +73,7 @@ int main()
     sa.sa_handler = SIG_IGN;
     sigaction(SIGPIPE, &sa, 0);
 
-    socket::server* ss = new socket::server();
+    socket::socket_server* ss = new socket::socket_server();
     ss->init();
     test(ss);
     
