@@ -72,7 +72,7 @@ void poller::write(int sock_fd, void* ud, bool enable_write)
     }
 }
 
-int poller::wait(event* event_ptr, int max_events/* = MAX_EVENT*/)
+int poller::wait(event* event_ptr, int max_events/* = MAX_WAIT_EVENT*/)
 {
     struct kevent ev[max_events];
     
@@ -82,8 +82,8 @@ int poller::wait(event* event_ptr, int max_events/* = MAX_EVENT*/)
         event_ptr[i].socket_ptr = (socket*)ev[i].udata;
         uint32_t filter = ev[i].filter;
         bool is_eof = (ev[i].flags & EV_EOF) != 0;
-        event_ptr[i].is_write = (filter == EVFILT_WRITE) && (!is_eof);
-        event_ptr[i].is_read = (filter == EVFILT_READ);
+        event_ptr[i].is_writeable = (filter == EVFILT_WRITE) && (!is_eof);
+        event_ptr[i].is_readable = (filter == EVFILT_READ);
         event_ptr[i].is_error = (ev[i].flags & EV_ERROR) != 0;
         event_ptr[i].is_eof = is_eof;
     }

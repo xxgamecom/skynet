@@ -19,15 +19,15 @@ namespace skynet {
 // 定时器节点
 struct timer_node
 {
-    struct timer_node*          next = nullptr;                 // 下一节点
-    uint32_t                    expire;                         // 指定定时器到期的时间，这个时间被表示成自系统启动以来的时钟滴答数。超时滴答数
+    timer_node*                 next = nullptr;                 // next timer node ptr
+    uint32_t                    expire;                         // expire ticks (the number of ticks since skynet node startup)
 };
 
 // 定时器链表
 struct link_list
 {
-    struct timer_node           head;                           //
-    struct timer_node*          tail = nullptr;                 //
+    timer_node                  head;                           //
+    timer_node*                 tail = nullptr;                 //
 };
 
 // 有四个级别的定时器数组，这些数组在timer_shift中被不断地重新调整优先级，
@@ -36,8 +36,8 @@ struct link_list
 // 定时器信息
 struct timer
 {
-    struct link_list            near[TIME_NEAR];                // 临近的定时器数组
-    struct link_list            t[4][TIME_LEVEL];               // 四个级别的定时器数组
+    link_list                   near[TIME_NEAR];                // 临近的定时器数组
+    link_list                   t[4][TIME_LEVEL];               // 四个级别的定时器数组
 
     std::mutex                  mutex;
     
@@ -50,7 +50,7 @@ struct timer
 
 timer_node* link_clear(link_list* list);
 void link(link_list* list, timer_node* node);
-void move_list(struct timer* T, int level, int idx);
+void move_list(timer* T, int level, int idx);
 
 }
 

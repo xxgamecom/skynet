@@ -159,7 +159,7 @@ int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int p
 {
     // cmd data
     cmd.u.set_udp.socket_id = socket_id;
-    int addr_sz = sockaddr_to_udp_address(protocol, sa, cmd.u.set_udp.address);
+    int addr_sz = socket_addr_to_udp_address(protocol, sa, cmd.u.set_udp.address);
 
     // actually length
     int len = sizeof(cmd.u.set_udp) - sizeof(cmd.u.set_udp.address) + addr_sz;

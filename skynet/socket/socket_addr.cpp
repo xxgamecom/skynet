@@ -11,7 +11,7 @@ bool to_endpoint(const socket_addr* sa, char* buf_ptr, size_t buf_sz)
     void* sin_addr = (sa->s.sa_family == AF_INET) ? (void*)&sa->v4.sin_addr : (void*)&sa->v6.sin6_addr;
     int sin_port = ntohs((sa->s.sa_family == AF_INET) ? sa->v4.sin_port : sa->v6.sin6_port);
 
-    // 将数值格式ip地址 转 字符串ip地址
+    // convert numeric ip address to ip string
     char tmp[INET6_ADDRSTRLEN];
     if (::inet_ntop(sa->s.sa_family, sin_addr, tmp, sizeof(tmp)) == nullptr)
     {
@@ -24,7 +24,7 @@ bool to_endpoint(const socket_addr* sa, char* buf_ptr, size_t buf_sz)
     return true;
 }
 
-int udp_address_to_sockaddr(int protocol, const uint8_t* udp_address, socket_addr& sa)
+int udp_address_to_socket_addr(int protocol, const uint8_t* udp_address, socket_addr& sa)
 {
     // protocol: 1 byte
     int type = (uint8_t)udp_address[0];
@@ -62,21 +62,21 @@ int udp_address_to_sockaddr(int protocol, const uint8_t* udp_address, socket_add
 }
 
 /**
- * 生成的addr_udp的内存结构:
+ * udp address specs:
  * 
- * for UDPv4: 占用 1 + 2 + 4 字节
+ * for UDPv4: use 1 + 2 + 4 bytes
  *    1 byte     2 bytes       4 bytes
  * +----------+----------+----------------+
  * | protocol |  port    |  v4.sin_addr   |
  * +----------+----------+----------------+
  * 
- * for UDPv6: 占用 1 + 2 + 16 字节
+ * for UDPv6: use 1 + 2 + 16 bytes
  *    1 byte     2 bytes      16 bytes
  * +----------+----------+----------------+
  * | protocol |  port    |  v6.sin_addr   |
  * +----------+----------+----------------+
  */
-int sockaddr_to_udp_address(int protocol, const socket_addr* sa, uint8_t* udp_address)
+int socket_addr_to_udp_address(int protocol, const socket_addr* sa, uint8_t* udp_address)
 {
     // 1 byte
     udp_address[0] = (uint8_t)protocol;

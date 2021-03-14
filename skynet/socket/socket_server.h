@@ -41,7 +41,7 @@ private:
 
     //
     poller                              event_poller_;                                  // poller (epoll或kevent的句柄)
-    poller::event                       events_[MAX_EVENT];                             // poller 事件列表 (epoll_wait 返回的事件集合)
+    poller::event                       events_[poller::MAX_WAIT_EVENT];                // poller 事件列表 (epoll_wait 返回的事件集合)
     int                                 event_wait_n_ = 0;                              // poller 需要处理的事件数目
     int                                 event_next_index_ = 0;                          // poller 的下一个未处理的事件索引
 

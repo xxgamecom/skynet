@@ -7,7 +7,7 @@ namespace skynet { namespace socket {
 class pipe final
 {
 private:
-    fd_set                              rfds_;                              // 用于select的fd集
+    fd_set                              read_fds_;                          // fd set for readable check
 
     int                                 read_fd_ = INVALID_FD;              // 读数据pipe句柄
     int                                 write_fd_ = INVALID_FD;             // 写数据pipe句柄

@@ -17,9 +17,9 @@ void poller::fini()
     poll_fd_ = INVALID_FD;
 }
 
-bool poller::is_invalid()
+bool poller::is_valid()
 {
-    return poll_fd_ == INVALID_FD;
+    return poll_fd_ != INVALID_FD;
 }
 
 } }
