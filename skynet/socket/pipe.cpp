@@ -12,14 +12,13 @@ bool pipe::init()
 {
     int fd[2] = { 0 };
     if (::pipe(fd) == -1)
-    {
         return false;
-    }
 
     read_fd_ = fd[0];
     write_fd_ = fd[1];
 
-    FD_ZERO(&rfds_);
+    //
+    FD_ZERO(&read_fds_);
 
     //
     assert(read_fd_ < FD_SETSIZE);
@@ -44,9 +43,9 @@ void pipe::fini()
 // 是否有数据可读
 bool pipe::is_readable()
 {
-    FD_SET(read_fd_, &rfds_);
-    timeval tv = {0, 0};
-    return ::select(read_fd_ + 1, &rfds_, NULL, NULL, &tv) == 1;
+    FD_SET(read_fd_, &read_fds_);
+    timeval tv = { 0, 0 };
+    return ::select(read_fd_ + 1, &read_fds_, NULL, NULL, &tv) == 1;
 }
 
 // 读取数

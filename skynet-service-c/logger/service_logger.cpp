@@ -4,7 +4,7 @@
  * logger服务功能简单，在skynet启动时，会启动一个"logger"服务，默认是logger类型服务，当然也可以配置成snlua类型。
  * 
  * //skynet_start.c
- * struct skynet_context *ctx = skynet_context_new(config->logservice, config->logger) 
+ * struct service_context *ctx = service_context_new(config->logservice, config->logger)
  * 
  * //skynet_main.c
  * config.logger = optstring("logger", nullptr);
@@ -59,18 +59,18 @@ void logger_release(logger* inst)
 // // @param source
 // // @param msg
 // // @param sz
-// static int logger_cb(skynet_context* context, void* ud, int type, int session, uint32_t source, const void* msg, size_t sz)
+// static int logger_cb(service_context* context, void* ud, int type, int session, uint32_t source, const void* msg, size_t sz)
 // {
 //     // struct logger * inst = ud;
 //     // switch (type)
 //     // {
-//     // case PTYPE_SYSTEM:
+//     // case message_type::PTYPE_SYSTEM:
 //     //     if (inst->filename)
 //     //     {
 //     //         inst->handle = freopen(inst->filename, "a", inst->handle);
 //     //     }
 //     //     break;
-//     // case PTYPE_TEXT:
+//     // case message_type::PTYPE_TEXT:
 //     //     fprintf(inst->handle, "[:%08x] ",source);
 //     //     fwrite(msg, sz, 1, inst->handle);
 //     //     fprintf(inst->handle, "\n");
@@ -81,7 +81,7 @@ void logger_release(logger* inst)
 //     return 0;
 // }
 
-// int logger_init(struct logger* inst, skynet_context* ctx, const char* parm)
+// int logger_init(struct logger* inst, service_context* ctx, const char* parm)
 // {
 //     // if (parm)
 //     // {

@@ -22,13 +22,13 @@
  */
 
 #include "timer_manager.h"
+#include "timer.h"
 
-#include "../node/server.h"
-
-#include "../mq/mq.h"
 #include "../mq/mq_msg.h"
+#include "../mq/mq_private.h"
 
 #include "../log/log.h"
+#include "../context/service_context.h"
 
 #include "../utils/time_helper.h"
 
@@ -37,30 +37,54 @@
 
 namespace skynet {
 
-
+//
 typedef void (*timer_execute_func)(void* ud, void* arg);
 
 // 每次更新都会对一个叫time的计数器做加1操作，所以这个计数器其实可以当作时间来看待
-// 整个timer中毫秒的精度都是10ms，
 
+//
 struct timer_event
 {
-    uint32_t            svc_handle;                 // 服务句柄，设置定时器的来源，又是超时消息发送的目标
-    int                 session;                    // 一个自增ID，溢出了从1开始，所以不要设时间很长的timer
+    uint32_t            svc_handle;                 // source service handle, which service set the timer.
+                                                    // it also the target of sending timeout messages.
+    int                 session;                    // a self increasing id. todo: check this, this means context call session_id?
+                                                    // when overflowing, restart with 1, so don't set a timer that takes a long time.
 };
 
-
-// 添加一个定时器
-static void timer_add(struct timer* T, void* arg, size_t sz, int time)
+// create a timer
+timer* create_timer()
 {
-    // timer_node* node = (timer_node*)skynet_malloc(sizeof(*node) + sz);
-    // memcpy(node + 1, arg, sz);
+    timer* r = (timer*)::malloc(sizeof(timer));
 
-    // //
-    // std::lock_guard<std::mutex> lock(T->mutex);
+    for (int i = 0; i < TIME_NEAR; i++)
+    {
+        link_clear(&r->near[i]);
+    }
 
-    // node->expire = time + T->time;
-    // add_node(T, node);
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < TIME_LEVEL; j++)
+        {
+            link_clear(&r->t[i][j]);
+        }
+    }
+
+    r->current = 0;
+
+    return r;
+}
+
+// add a timer
+static void timer_add(timer* t, void* arg, size_t sz, int time)
+{
+     timer_node* node = (timer_node*)::malloc(sizeof(timer_node) + sz);
+     ::memcpy(node + 1, arg, sz);
+
+     //
+     std::lock_guard<std::mutex> lock(t->mutex);
+
+     node->expire = time + t->time;
+     add_node(t, node);
 }
 
 // 重新分配定时器所在区间
@@ -105,17 +129,17 @@ static inline void dispatch_list(timer_node* current)
     do
     {
         timer_event* event = (timer_event*)(current + 1);
-        skynet_message message;
-        message.src_svc_handle = 0;
-        message.session = event->session;
-        message.data = nullptr;
-        message.sz = (size_t)PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        skynet_message msg;
+        msg.src_svc_handle = 0;
+        msg.session = event->session;
+        msg.data = nullptr;
+        msg.sz = (size_t)message_type::PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
-        skynet_context_push(event->svc_handle, &message);
+        service_context_push(event->svc_handle, &msg);
 
         timer_node* temp = current;
         current = current->next;
-        delete temp;
+        ::free(temp);
     } while (current != nullptr);
 }
 
@@ -159,9 +183,7 @@ timer_manager* timer_manager::instance_ = nullptr;
 timer_manager* timer_manager::instance()
 {
     static std::once_flag oc;
-    std::call_once(oc, [&]() {
-        instance_ = new timer_manager;
-    });
+    std::call_once(oc, [&]() { instance_ = new timer_manager; });
 
     return instance_;
 }
@@ -186,13 +208,13 @@ int timer_manager::timeout(uint32_t handle, int time, int session)
     // time<=0说明是立即发送消息, 无需定时处理
     if (time <= 0)
     {
-        skynet_message message;
-        message.src_svc_handle = 0;
-        message.session = session;
-        message.data = nullptr;
-        message.sz = (size_t)PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        skynet_message msg;
+        msg.src_svc_handle = 0;
+        msg.session = session;
+        msg.data = nullptr;
+        msg.sz = (size_t)message_type::PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
-        if (skynet_context_push(handle, &message))
+        if (service_context_push(handle, &msg))
         {
             return -1;
         }
@@ -238,27 +260,16 @@ void timer_manager::update_time()
     }
 }
 
-// 
-timer* timer_manager::create_timer()
+// 返回当前进程启动后经过的时间 (0.01 秒)
+uint64_t timer_manager::now()
 {
-    struct timer* r = new timer;
+    return TI->current;
+}
 
-    for (int i = 0; i < TIME_NEAR; i++)
-    {
-        link_clear(&r->near[i]);
-    }
-
-    for (int i = 0; i < 4; i++)
-    {
-        for (int j = 0; j < TIME_LEVEL; j++)
-        {
-            link_clear(&r->t[i][j]);
-        }
-    }
-
-    r->current = 0;
-
-    return r;
+// 返回当前进程的启动 UTC 时间（秒）
+uint32_t timer_manager::start_time()
+{
+    return TI->start_time;
 }
 
 }

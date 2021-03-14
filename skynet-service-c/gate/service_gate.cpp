@@ -25,7 +25,7 @@
 // //
 // struct gate
 // {
-//     struct skynet_context *ctx;
+//     struct service_context *ctx;
 //     int listen_id;
 //     uint32_t watchdog;
 //     uint32_t broker;
@@ -49,7 +49,7 @@
 // void gate_release(struct gate* g)
 // {
 //     int i;
-//     struct skynet_context *ctx = g->ctx;
+//     struct service_context *ctx = g->ctx;
 //     for (i=0;i<g->max_connection;i++)
 //     {
 //         struct connection *c = &g->conn[i];
@@ -94,7 +94,7 @@
 
 // static void _ctrl(struct gate* g, const void* msg, int sz)
 // {
-//     skynet_context* ctx = g->ctx;
+//     service_context* ctx = g->ctx;
 //     char tmp[sz+1];
 //     memcpy(tmp, msg, sz);
 //     tmp[sz] = '\0';
@@ -175,19 +175,19 @@
 //     {
 //         return;
 //     }
-//     struct skynet_context * ctx = g->ctx;
+//     struct service_context * ctx = g->ctx;
 //     va_list ap;
 //     va_start(ap, data);
 //     char tmp[1024];
 //     int n = vsnprintf(tmp, sizeof(tmp), data, ap);
 //     va_end(ap);
 
-//     skynet_send(ctx, 0, g->watchdog, PTYPE_TEXT,  0, tmp, n);
+//     skynet_send(ctx, 0, g->watchdog, message_type::PTYPE_TEXT,  0, tmp, n);
 // }
 
 // static void _forward(struct gate* g, struct connection* c, int size)
 // {
-//     skynet_context* ctx = g->ctx;
+//     service_context* ctx = g->ctx;
 //     int fd = c->id;
 //     if (fd <= 0)
 //     {
@@ -212,7 +212,7 @@
 //         char * tmp = skynet_malloc(size + 32);
 //         int n = snprintf(tmp,32,"%d data ",c->id);
 //         databuffer_read(&c->buffer,&g->mp,tmp+n,size);
-//         skynet_send(ctx, 0, g->watchdog, PTYPE_TEXT | PTYPE_TAG_DONTCOPY, fd, tmp, size + n);
+//         skynet_send(ctx, 0, g->watchdog, message_type::PTYPE_TEXT | message_type::TAG_DONT_COPY, fd, tmp, size + n);
 //     }
 // }
 
@@ -225,7 +225,7 @@
 //             return;
 //         } else if (size > 0) {
 //             if (size >= 0x1000000) {
-//                 struct skynet_context * ctx = g->ctx;
+//                 struct service_context * ctx = g->ctx;
 //                 databuffer_clear(&c->buffer,&g->mp);
 //                 skynet_socket_close(ctx, id);
 //                 skynet_error(ctx, "Recv socket message > 16M");
@@ -240,7 +240,7 @@
 
 // static void dispatch_socket_message(struct gate* g, const skynet_socket_message* message, int sz)
 // {
-//     struct skynet_context * ctx = g->ctx;
+//     struct service_context * ctx = g->ctx;
 //     switch(message->type)
 //     {
 //     case SKYNET_SOCKET_TYPE_DATA:
@@ -315,17 +315,17 @@
 // }
 
 // // 处理事件的回调函数
-// static int _cb(skynet_context* ctx, void* ud, int type, int session, uint32_t source, const void* msg, size_t sz)
+// static int _cb(service_context* ctx, void* ud, int type, int session, uint32_t source, const void* msg, size_t sz)
 // {
 //     struct gate *g = ud;
 //     switch (type)
 //     {
 //         // 接收本地指令
-//     case PTYPE_TEXT:
+//     case message_type::PTYPE_TEXT:
 //         _ctrl(g , msg , (int)sz);
 //         break;
 //         // 
-//     case PTYPE_CLIENT:
+//     case message_type::PTYPE_CLIENT:
 //     {
 //         if (sz <= 4)
 //         {
@@ -349,7 +349,7 @@
 //             break;
 //         }
 //     }
-//     case PTYPE_SOCKET:
+//     case message_type::PTYPE_SOCKET:
 //         // recv socket message from skynet_socket
 //         dispatch_socket_message(g, msg, (int)(sz-sizeof(struct skynet_socket_message)));
 //         break;
@@ -359,7 +359,7 @@
 
 // static int start_listen(struct gate* g, char* listen_addr)
 // {
-//     skynet_context* ctx = g->ctx;
+//     service_context* ctx = g->ctx;
 //     char* portstr = strrchr(listen_addr,':');
 //     const char * host = "";
 //     int port;
@@ -392,7 +392,7 @@
 //     return 0;
 // }
 
-// int gate_init(struct gate* g, skynet_context* ctx, char* parm)
+// int gate_init(struct gate* g, service_context* ctx, char* parm)
 // {
 //     if (parm == NULL)
 //         return 1;
@@ -421,7 +421,7 @@
 
 //     if (client_tag == 0)
 //     {
-//         client_tag = PTYPE_CLIENT;
+//         client_tag = message_type::PTYPE_CLIENT;
 //     }
 //     if (watchdog[0] == '!')
 //     {

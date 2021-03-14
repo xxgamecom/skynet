@@ -769,8 +769,9 @@ function skynet.start(start_func)
     end)
 end
 
-function skynet.endless()
-    return (c.intcommand("STAT", "endless") == 1)
+-- query service is in dead loop or blocked
+function skynet.is_blocked()
+    return (c.intcommand("STAT", "is_blocked") == 1)
 end
 
 function skynet.mqlen()

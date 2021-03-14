@@ -10,10 +10,10 @@
 namespace skynet {
 
 // check the process pid file
-int _check_pid(const char* pidfile) 
+int _check_pid(const char* pid_file)
 {
     // open process pid file
-    FILE* f = ::fopen(pidfile, "r");
+    FILE* f = ::fopen(pid_file, "r");
     if (f == nullptr)
         return -1;
 
@@ -35,20 +35,20 @@ int _check_pid(const char* pidfile)
 }
 
 // write process pid file
-int _write_pid(const char* pidfile) 
+int _write_pid(const char* pid_file)
 {
     // 
-    int fd = ::open(pidfile, O_RDWR|O_CREAT, 0644);
+    int fd = ::open(pid_file, O_RDWR|O_CREAT, 0644);
     if (fd == -1) 
     {
-        std::cerr << "Can't create pidfile: [" << pidfile << "]." << std::endl;
+        std::cerr << "Can't create pidfile: [" << pid_file << "]." << std::endl;
         return -1;
     }
 
     FILE* f = ::fdopen(fd, "w+");
     if (f == nullptr) 
     {
-        std::cerr << "Can't open pidfile: [" << pidfile << "]." << std::endl;
+        std::cerr << "Can't open pidfile: [" << pid_file << "]." << std::endl;
         return -1;
     }
 
@@ -111,9 +111,9 @@ bool _redirect_fds()
 }
 
 
-bool daemon_helper::init(const char* pidfile)
+bool daemon_helper::init(const char* pid_file)
 {
-    int pid = _check_pid(pidfile);
+    int pid = _check_pid(pid_file);
     if (pid == -1)
     {
         std::cerr << "Skynet is already running, pid = " << pid << "." << std::endl;
@@ -130,7 +130,7 @@ bool daemon_helper::init(const char* pidfile)
     }
 #endif
 
-    pid = _write_pid(pidfile);
+    pid = _write_pid(pid_file);
     if (pid == -1)
     {
         return false;
@@ -145,10 +145,10 @@ bool daemon_helper::init(const char* pidfile)
     return true;
 }
 
-bool daemon_helper::fini(const char* pidfile) 
+bool daemon_helper::fini(const char* pid_file)
 {
     // delete pid file
-    return ::unlink(pidfile) != -1;
+    return ::unlink(pid_file) != -1;
 }
 
 }

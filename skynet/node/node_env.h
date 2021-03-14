@@ -1,15 +1,13 @@
 #pragma once
 
-extern "C" {
-#include <lua.h>
-}
-
 #include <mutex>
+
+struct lua_State;
 
 namespace skynet {
 
 // skynet node environment
-class node_env
+class node_env final
 {
     // singleton
 private:
@@ -20,10 +18,6 @@ public:
 private:
     std::mutex                  mutex_;
     lua_State*                  L_ = nullptr;
-
-public:
-    node_env() = default;
-    ~node_env() = default;
 
 public:
     // set/get node environment variable

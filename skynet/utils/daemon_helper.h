@@ -10,9 +10,9 @@ public:
     
 public:
     // initialize when create daemon process (create process pid file)
-    static bool init(const char* pidfile);
+    static bool init(const char* pid_file);
     // clean when daemon process exit (delete process pid file)
-    static bool fini(const char* pidfile);
+    static bool fini(const char* pid_file);
 };
 
 

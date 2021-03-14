@@ -30,7 +30,7 @@ int socket_helper::bind(const char* host, int port, int protocol, int* family)
     ai_hints.ai_protocol = protocol;
 
     // host: INADDR_ANY
-    if (host == NULL || host[0] == 0)
+    if (host == nullptr || host[0] == 0)
         host = "0.0.0.0";
     // port
     char portstr[16] = { 0 };

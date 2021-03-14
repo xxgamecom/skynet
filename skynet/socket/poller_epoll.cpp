@@ -22,28 +22,28 @@ bool poller::init()
     return (poll_fd_ != INVALID_FD);
 }
 
-bool poller::add(int sock, void* ud)
+bool poller::add(int sock_fd, void* ud)
 {
     epoll_event ev;
     ev.events = EPOLLIN;
     ev.data.ptr = ud;
-    return !(::epoll_ctl(poll_fd_, EPOLL_CTL_ADD, sock, &ev) == -1);
+    return !(::epoll_ctl(poll_fd_, EPOLL_CTL_ADD, sock_fd, &ev) == -1);
 }
 
-void poller::del(int sock)
+void poller::del(int sock_fd)
 {
-    ::epoll_ctl(poll_fd_, EPOLL_CTL_DEL, sock , nullptr);
+    ::epoll_ctl(poll_fd_, EPOLL_CTL_DEL, sock_fd , nullptr);
 }
 
-void poller::write(int sock, void* ud, bool enable_write)
+void poller::write(int sock_fd, void* ud, bool enable_write)
 {
     epoll_event ev;
     ev.events = EPOLLIN | (enable_write ? EPOLLOUT : 0);
     ev.data.ptr = ud;
-    ::epoll_ctl(poll_fd_, EPOLL_CTL_MOD, sock, &ev);
+    ::epoll_ctl(poll_fd_, EPOLL_CTL_MOD, sock_fd, &ev);
 }
 
-int poller::wait(event* event_ptr, int max_events/* = MAX_EVENT*/)
+int poller::wait(event* event_ptr, int max_events/* = MAX_WAIT_EVENT*/)
 {
     epoll_event ev[max_events];
     int n = ::epoll_wait(poll_fd_ , ev, max_events, -1);
@@ -51,8 +51,8 @@ int poller::wait(event* event_ptr, int max_events/* = MAX_EVENT*/)
     {
         event_ptr[i].socket_ptr = (socket*)ev[i].data.ptr;
         uint32_t flag = ev[i].events;
-        event_ptr[i].is_write = (flag & EPOLLOUT) != 0;
-        event_ptr[i].is_read = (flag & (EPOLLIN | EPOLLHUP)) != 0;
+        event_ptr[i].is_writeable = (flag & EPOLLOUT) != 0;
+        event_ptr[i].is_readable = (flag & (EPOLLIN | EPOLLHUP)) != 0;
         event_ptr[i].is_error = (flag & EPOLLERR) != 0;
         event_ptr[i].is_eof = false;
     }

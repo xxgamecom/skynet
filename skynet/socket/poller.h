@@ -6,9 +6,6 @@
 
 namespace skynet { namespace socket {
 
-// 每次返回多少事件
-#define MAX_EVENT                   64
-
 // forward declare
 class socket;
 
@@ -16,13 +13,19 @@ class socket;
 class poller final
 {
 public:
+    // constants
+    enum
+    {
+        MAX_WAIT_EVENT              = 64,                                   // max number of events
+    };
+
     // poll event
     struct event
     {
         socket*                     socket_ptr = nullptr;                   // 事件关联的socket对象
 
-        bool                        is_read = false;
-        bool                        is_write = false;
+        bool                        is_readable = false;
+        bool                        is_writeable = false;
         bool                        is_error = false;
         bool                        is_eof = false;
     };
@@ -41,10 +44,10 @@ public:
     void fini();
 
 public:
-    //
-    bool is_invalid();
+    // is poller valid (poll_fd_ != INVALID_FD)
+    bool is_valid();
 
-    //
+    // add/del socket event detect
     bool add(int sock_fd, void* ud);
     void del(int sock_fd);
 
@@ -59,13 +62,13 @@ public:
     void write(int sock_fd, void* ud, bool enable_write);
 
     /**
-     * wait event
+     * wait socket event
      * 
      * @param event_ptr poll events ptr
      * @param max_events max number of events
      * @return number of events
      */
-    int wait(event* event_ptr, int max_events = MAX_EVENT);
+    int wait(event* event_ptr, int max_events = MAX_WAIT_EVENT);
 };
 
 }}

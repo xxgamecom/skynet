@@ -16,7 +16,7 @@ public:
     template<typename SYMBOL>
     static SYMBOL get_symbol(void* handle, std::string symbol);
 
-    // 
+    // get dll load error info
     static std::string error();
 };
 

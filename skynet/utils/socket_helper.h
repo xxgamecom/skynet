@@ -6,16 +6,18 @@ namespace skynet { namespace socket {
 class socket_helper final
 {
 public:
-    // return -1 means failed
-    // or return AF_INET or AF_INET6
+    // @return -1 failed
+    //         AF_INET
+    //         AF_INET6
     static int bind(const char* host, int port, int protocol, int* family);
     // 
     static int listen(const char* host, int port, int backlog);
-    // 
+
+    // set socket option: keepalive
     static bool keepalive(int fd);
-    // 
+    // set socket option: reuse address
     static bool reuse_address(int fd);
-    // 为套接字描述符设置为非阻塞的
+    // set socket option: nonblocking
     static void nonblocking(int fd);
 };
 
