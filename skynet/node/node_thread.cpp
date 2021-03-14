@@ -6,7 +6,7 @@
 
 #include "../skynet.h"  // api
 
-#include "../mq/mq.h"
+#include "../mq/mq_private.h"
 #include "../mq/mq_msg.h"
 
 #include "../timer/timer_manager.h"
@@ -212,7 +212,7 @@ void node_thread::thread_worker(std::shared_ptr<monitor_data> monitor_data_ptr, 
 {
     service_monitor& svc_monitor = monitor_data_ptr->svc_monitors.get()[idx];
 
-    message_queue* q = nullptr;
+    mq_private* q = nullptr;
     while (!monitor_data_ptr->is_work_thread_quit)
     {
         // dispatch message

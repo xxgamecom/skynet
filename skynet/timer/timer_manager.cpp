@@ -24,7 +24,7 @@
 #include "timer_manager.h"
 #include "timer.h"
 
-#include "../mq/mq.h"
+#include "../mq/mq_private.h"
 #include "../mq/mq_msg.h"
 
 #include "../log/log.h"

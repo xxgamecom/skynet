@@ -5,7 +5,7 @@
 #include "../log/service_log.h"
 #include "../log/log.h"
 
-#include "../mq/mq.h"
+#include "../mq/mq_private.h"
 #include "../mq/mq_msg.h"
 
 #include "../timer/timer_manager.h"

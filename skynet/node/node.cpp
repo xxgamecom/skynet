@@ -4,8 +4,9 @@
 #include "skynet_socket.h"
 #include "service_monitor.h"
 
-#include "../mq/mq.h"
+#include "../mq/mq_private.h"
 #include "../mq/mq_msg.h"
+#include "../mq/mq_global.h"
 
 #include "../log/log.h"
 #include "../log/service_log.h"
@@ -149,7 +150,7 @@ void node::start()
     handle_manager::instance()->init();
 
     // 初始化消息队列
-    global_mq::instance()->init();
+    mq_global::instance()->init();
 
     // 初始化服务动态库加载模块, 主要用户加载符合skynet服务模块接口的动态链接库(.so文件)
     cservice_mod_manager::instance()->init(node_config_.cservice_path_);
@@ -192,7 +193,7 @@ void node::dispatch_all(service_context* svc_ctx)
 {
     // for log
     skynet_message msg;
-    message_queue* q = svc_ctx->queue_;
+    mq_private* q = svc_ctx->queue_;
     while (!q->pop(&msg))
     {
         dispatch_message(svc_ctx, &msg);
@@ -213,17 +214,17 @@ void node::dispatch_all(service_context* svc_ctx)
 //                2表示每帧处理mq长度的1/4(右移2位)，
 //                3表示每帧处理mq长度的1/8(右移3位)。
 // @return 返回下一个要分发的mq, 供下一帧调用
-message_queue* node::message_dispatch(service_monitor& svc_monitor, message_queue* q, int weight)
+mq_private* node::message_dispatch(service_monitor& svc_monitor, mq_private* q, int weight)
 {
     // peek next q from glboal_mq
     if (q == nullptr)
     {
-        q = global_mq::instance()->pop();
+        q = mq_global::instance()->pop();
         if (q == nullptr)
             return nullptr;
     }
 
-    // 当前 message_queue 所属服务的 context 的handle id
+    // 当前 mq_private 所属服务的 context 的handle id
     uint32_t svc_handle = q->svc_handle_;
 
     service_context* ctx = handle_manager::instance()->grab(svc_handle);
@@ -232,7 +233,7 @@ message_queue* node::message_dispatch(service_monitor& svc_monitor, message_queu
     {
         struct drop_t d = { svc_handle };
         q->release(drop_message, &d);
-        return global_mq::instance()->pop();
+        return mq_global::instance()->pop();
     }
 
     int n = 1;
@@ -245,7 +246,7 @@ message_queue* node::message_dispatch(service_monitor& svc_monitor, message_queu
         {
             // 如果ctx的次级消息队列为空，返回
             // skynet_context_release(ctx);
-            return global_mq::instance()->pop();
+            return mq_global::instance()->pop();
         }
         else if (i == 0 && weight >= 0)
         {
@@ -278,12 +279,12 @@ message_queue* node::message_dispatch(service_monitor& svc_monitor, message_queu
     }
 
     assert(q == ctx->queue_);
-    message_queue* nq = global_mq::instance()->pop();
+    mq_private* nq = mq_global::instance()->pop();
     if (nq != nullptr)
     {
         // If global mq is not empty , push q back, and return next queue (nq)
         // Else (global mq is empty or block, don't push q back, and return q again (for next dispatch)
-        global_mq::instance()->push(q);
+        mq_global::instance()->push(q);
         q = nq;
     }
 

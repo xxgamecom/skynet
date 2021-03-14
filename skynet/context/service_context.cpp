@@ -5,8 +5,9 @@
 
 #include "../log/log.h"
 
-#include "../mq/mq.h"
+#include "../mq/mq_private.h"
 #include "../mq/mq_msg.h"
+#include "../mq/mq_global.h"
 
 #include "../mod/cservice_mod_manager.h"
 
@@ -92,7 +93,7 @@ service_context* skynet_context_new(const char* svc_name, const char* param)
     ctx->svc_handle_ = 0;
     ctx->svc_handle_ = handle_manager::instance()->registe(ctx);        // 从skynet_handle获得唯一的标识id
     // 初始化次级消息队列
-    message_queue* queue = ctx->queue_ = message_queue::create(ctx->svc_handle_);
+    mq_private* queue = ctx->queue_ = mq_private::create(ctx->svc_handle_);
     // init function maybe use ctx->handle, so it must init at last
     // 增加服务数量
     node::instance()->inc_svc_ctx();
@@ -113,7 +114,7 @@ service_context* skynet_context_new(const char* svc_name, const char* param)
             ctx->is_init_ = true;
 
         // 将服务的消息队列加到全局消息队列中, 这样才能收到消息回调
-        global_mq::instance()->push(queue);
+        mq_global::instance()->push(queue);
         if (ret != nullptr)
         {
             log(ret, "LAUNCH %s %s", svc_name, param ? param : "");

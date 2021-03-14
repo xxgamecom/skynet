@@ -21,7 +21,7 @@ namespace skynet {
 #endif
 
 class cservice_mod;
-class message_queue;
+class mq_private;
 class service_context;
 struct skynet_message;
 
@@ -50,7 +50,7 @@ public:
     skynet_cb                   cb_;                        // 消息回调函数指针，通常在module的init里设置
 
     //
-    message_queue*              queue_ = nullptr;           // ctx自己的消息队列指针
+    mq_private*              queue_ = nullptr;           // ctx自己的消息队列指针
 
     //
     std::atomic<FILE*>          log_fd_ { nullptr };        // 

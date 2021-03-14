@@ -25,7 +25,7 @@ namespace skynet {
 // forward declare
 class node_config;
 class service_context;
-class message_queue;
+class mq_private;
 class service_monitor;
 
 // server node
@@ -79,7 +79,7 @@ public:
     // for log output before exit
     void dispatch_all(service_context* svc_ctx);
     // 派发消息, 工作线程的核心逻辑 // return next queue
-    message_queue* message_dispatch(service_monitor& svc_monitor, message_queue*, int weight);
+    mq_private* message_dispatch(service_monitor& svc_monitor, mq_private*, int weight);
 
 private:
     void _bootstrap(service_context* log_svc_ctx, const char* cmdline);
