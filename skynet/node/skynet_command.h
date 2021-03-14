@@ -16,7 +16,7 @@ class service_context;
 class skynet_command final
 {
 public:
-    // handle skynet instruction
+    // handle skynet command
     static const char* handle_command(service_context* svc_ctx, const char* cmd, const char* param);
 };
 

@@ -10,12 +10,12 @@ class service_context;
 
 /**
  * service context manager
- *
  * 1) store all service context
  * 2) generate service handle
  *
  * service handle specs:
- * 1)
+ * 1) 0 is reserved
+ * 2) count start of 1
  */
 class service_context_manager
 {
@@ -53,16 +53,16 @@ private:
     handle_name*                name_ = nullptr;                        // service alias name list (sort by svc_name, because find_by_name() use binary search)
 
 public:
-    // initialize service handle manager
+    // initialize service context manager
     void init();
 
 public:
-    // register service context
+    // register service context, return service handle
     uint32_t register_svc_ctx(service_context* svc_ctx);
     // unregister service context by service handle
-    int retire(uint32_t svc_handle);
+    int unregister(uint32_t svc_handle);
     // unregister all service context
-    void retire_all();
+    void unregister_all();
 
     // 利于ID获取服务上下文指针
     service_context* grab(uint32_t svc_handle);

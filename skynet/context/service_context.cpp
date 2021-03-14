@@ -67,11 +67,11 @@ service_context* service_context_new(const char* svc_name, const char* param)
     void* inst = mod->instance_create();
     if (inst == nullptr)
         return nullptr;
+
+    // TODO: check mod is_valid
     
     // create service context
     service_context* svc_ctx = new service_context;
-
-//     CHECKCALLING_INIT(svc_ctx)
 
     svc_ctx->mod_ = mod;
     svc_ctx->instance_ = inst;
@@ -89,7 +89,7 @@ service_context* service_context_new(const char* svc_name, const char* param)
     svc_ctx->message_count_ = 0;
     svc_ctx->profile_ = node::instance()->is_profile();
 
-    // Should set to 0 first to avoid service_context_manager::retire_all() get an uninitialized handle
+    // Should set to 0 first to avoid service_context_manager::unregister_all() get an uninitialized handle
     // initialize function maybe use svc_ctx->svc_handle_, so it must init at last
     svc_ctx->svc_handle_ = 0;
     svc_ctx->svc_handle_ = service_context_manager::instance()->register_svc_ctx(svc_ctx); // register service context and get service handle
@@ -127,7 +127,7 @@ service_context* service_context_new(const char* svc_name, const char* param)
 
         uint32_t svc_handle = svc_ctx->svc_handle_;
         service_context_release(svc_ctx);
-        service_context_manager::instance()->retire(svc_handle);
+        service_context_manager::instance()->unregister(svc_handle);
         // drop_t d = { svc_handle };
         // queue->release(drop_message, &d);
 

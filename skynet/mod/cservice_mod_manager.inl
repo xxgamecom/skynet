@@ -22,9 +22,9 @@ inline bool cservice_mod_manager::_try_load_mod_api(cservice_mod& mod)
     mod.create_func  = dll_helper::get_symbol<mod_create_proc>(mod.dll_handle, mod.name + "_create");
     mod.init_func    = dll_helper::get_symbol<mod_init_proc>(mod.dll_handle, mod.name + "_init");
     mod.release_func = dll_helper::get_symbol<mod_release_proc>(mod.dll_handle, mod.name + "_release");
-    mod.signal_func  = dll_helper::get_symbol<mod_signal_proc>(mod.dll_handle, mod.name + "_signal");    
+    mod.signal_func  = dll_helper::get_symbol<mod_signal_proc>(mod.dll_handle, mod.name + "_signal");
 
-    return mod.init_func == nullptr;
+    return mod.init_func != nullptr;
 }
 
 }

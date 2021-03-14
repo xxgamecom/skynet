@@ -56,16 +56,16 @@ cservice_mod* cservice_mod_manager::query(const std::string mod_name)
         return mod;
     
     // try to load c service mod mod_name.so
-    void* handle = _try_load_mod_dll(mod_name);
-    if (handle == nullptr)
+    void* dll_handle = _try_load_mod_dll(mod_name);
+    if (dll_handle == nullptr)
         return nullptr;
 
     int idx = count_;
     cservice_mods_[idx].name = mod_name;
-    cservice_mods_[idx].dll_handle = handle;
+    cservice_mods_[idx].dll_handle = dll_handle;
 
     // try to load c service mod APIs
-    if (!_try_load_mod_api(cservice_mods_[idx]))
+    if (_try_load_mod_api(cservice_mods_[idx]))
     {
         cservice_mods_[idx].name = mod_name;
         ++count_;

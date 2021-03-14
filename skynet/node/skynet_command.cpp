@@ -75,7 +75,7 @@ static void _handle_exit(service_context* svc_ctx, uint32_t svc_handle)
          skynet_send(svc_ctx, svc_handle, node::instance()->get_monitor_exit(), message_type::PTYPE_CLIENT, 0, nullptr, 0);
     }
 
-    service_context_manager::instance()->retire(svc_handle);
+    service_context_manager::instance()->unregister(svc_handle);
 }
 
 
@@ -232,22 +232,24 @@ static const char* cmd_set_env(service_context* svc_ctx, const char* param)
 }
 
 // skynet cmd: start_time
+// get skynet node start time (seconds)
 static const char* cmd_start_time(service_context* svc_ctx, const char* param)
 {
-    uint32_t sec = timer_manager::instance()->start_time();
-    ::sprintf(svc_ctx->result_, "%u", sec);
+    uint32_t start_seconds = timer_manager::instance()->start_time();
+    ::sprintf(svc_ctx->result_, "%u", start_seconds);
     return svc_ctx->result_;
 }
 
 // skynet cmd: abort
+// abort all service
 static const char* cmd_abort(service_context* svc_ctx, const char* param)
 {
-    service_context_manager::instance()->retire_all();
+    service_context_manager::instance()->unregister_all();
     return nullptr;
 }
 
 // skynet cmd: monitor
-// @param param ":00000000" 格式的服务句柄字符串
+// @param param service handle string format: ":00000000"
 static const char* cmd_monitor(service_context* svc_ctx, const char* param)
 {
     uint32_t svc_handle = 0;
@@ -273,7 +275,8 @@ static const char* cmd_monitor(service_context* svc_ctx, const char* param)
     return nullptr;
 }
 
-// skynet cmd: stat, 查看ctx的内部状态信息，比如查看当前的消息队列长度，查看累计消耗CPU时间，查看消息是否阻塞等
+// skynet cmd: stat
+// query service statistics info, such as mq length, cpu usage, service blocked, message count etc.
 static const char* cmd_stat(service_context* svc_ctx, const char* param)
 {
     // message queue length
@@ -315,7 +318,7 @@ static const char* cmd_stat(service_context* svc_ctx, const char* param)
             ::strcpy(svc_ctx->result_, "0");
         }
     } 
-    //
+    // message count
     else if (::strcmp(param, "message") == 0)
     {
         ::sprintf(svc_ctx->result_, "%d", svc_ctx->message_count_);
@@ -329,7 +332,8 @@ static const char* cmd_stat(service_context* svc_ctx, const char* param)
     return svc_ctx->result_;
 }
 
-// skynet cmd: set logger on
+// skynet cmd: log_on
+// set service file log on
 static const char* cmd_log_on(service_context* context, const char* param)
 {
     uint32_t svc_handle = _to_svc_handle(context, param);
@@ -360,7 +364,8 @@ static const char* cmd_log_on(service_context* context, const char* param)
     return nullptr;
 }
 
-// skynet cmd: set logger off
+// skynet cmd: log_off
+// set service file log off
 static const char* cmd_log_off(service_context* context, const char* param)
 {
     uint32_t svc_handle = _to_svc_handle(context, param);
@@ -386,7 +391,8 @@ static const char* cmd_log_off(service_context* context, const char* param)
     return nullptr;
 }
 
-// skynet cmd: signal, 在skynet控制台，可以给指定的ctx发信号以完成相应的命令
+// skynet cmd: signal
+// in skynet console, send signal to the service
 static const char* cmd_signal(service_context* context, const char* param)
 {
     uint32_t svc_handle = _to_svc_handle(context, param);
@@ -413,7 +419,7 @@ static const char* cmd_signal(service_context* context, const char* param)
 }
 
 
-// skynet instruction function data structure
+// skynet command function data structure
 struct cmd_func
 {
     const char* name;

@@ -8,8 +8,8 @@
 namespace skynet {
 
 // high 8 bits: remote service id
-#define HANDLE_MASK                 0xFFFFFF        // handle mask
-#define HANDLE_REMOTE_SHIFT         24              // remote service id offset
+#define HANDLE_MASK                 0x00FFFFFF      // handle mask, high 8bits is harbor id
+#define HANDLE_REMOTE_SHIFT         24              // remote service id offset (harbor id)
 
 service_context_manager* service_context_manager::instance_ = nullptr;
 
@@ -81,7 +81,7 @@ uint32_t service_context_manager::register_svc_ctx(service_context* svc_ctx)
 }
 
 // 注销一个服务
-int service_context_manager::retire(uint32_t svc_handle)
+int service_context_manager::unregister(uint32_t svc_handle)
 {
     int ret = 0;
 
@@ -128,7 +128,7 @@ int service_context_manager::retire(uint32_t svc_handle)
 }
 
 // 注销全部服务
-void service_context_manager::retire_all()
+void service_context_manager::unregister_all()
 {
     for (;;)
     {
@@ -150,7 +150,7 @@ void service_context_manager::retire_all()
 
             if (svc_handle != 0)
             {
-                if (retire(svc_handle))
+                if (unregister(svc_handle))
                 {
                     ++n;
                 }
