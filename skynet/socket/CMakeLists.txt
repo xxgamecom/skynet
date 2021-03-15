@@ -5,6 +5,7 @@ set(SKYNET_SOCKET_HEADER
     socket/poller.h
     socket/socket.h
     socket/socket.inl
+    socket/socket_helper.h
     socket/socket_addr.h
     socket/socket_info.h
     socket/socket_lock.h
@@ -20,6 +21,7 @@ set(SKYNET_SOCKET_SRC
     socket/poller_epoll.cpp
     socket/poller_kqueue.cpp
     socket/socket.cpp
+    socket/socket_helper.cpp
     socket/socket_addr.cpp
     socket/socket_info.cpp
     socket/socket_lock.cpp

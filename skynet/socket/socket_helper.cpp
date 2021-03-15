@@ -83,7 +83,7 @@ int socket_helper::listen(const char* host, int port, int backlog)
         return -1;
     }
 
-    // 监听
+    // listen
     if (::listen(listen_fd, backlog) == -1)
     {
         ::close(listen_fd);

@@ -5,8 +5,7 @@
 
 #define LUA_LIB
 
-// #include "skynet_malloc.h"
-#include "node/skynet_socket.h"
+#include "skynet.h"
 
 extern "C" {
 #include <lua.h>
@@ -455,7 +454,7 @@ static int l_unpack(lua_State* L)
     if (message->socket_event == skynet::skynet_socket_event::EVENT_UDP)
     {
         int addrsz = 0;
-        const char* addrstring = skynet_socket_udp_address(message, &addrsz);
+        const char* addrstring = node_socket::instance()->udp_address(message, &addrsz);
         if (addrstring != nullptr)
         {
             lua_pushlstring(L, addrstring, addrsz);
@@ -527,7 +526,7 @@ static int l_connect(lua_State* L)
     }
     
     skynet::service_context* ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
-    int id = skynet_socket_connect(ctx, host, port);
+    int id = node_socket::instance()->connect(ctx, host, port);
     lua_pushinteger(L, id);
 
     return 1;
@@ -537,7 +536,7 @@ static int l_close(lua_State* L)
 {
     int id = luaL_checkinteger(L,1);
     skynet::service_context* ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
-    skynet_socket_close(ctx, id);
+    node_socket::instance()->close(ctx, id);
     return 0;
 }
 
@@ -545,7 +544,7 @@ static int l_shutdown(lua_State* L)
 {
     int id = luaL_checkinteger(L,1);
     skynet::service_context* ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
-    skynet_socket_shutdown(ctx, id);
+    node_socket::instance()->shutdown(ctx, id);
     
     return 0;
 }
@@ -556,7 +555,7 @@ static int l_listen(lua_State* L)
     int port = luaL_checkinteger(L, 2);
     int backlog = luaL_optinteger(L, 3, BACKLOG);
     skynet::service_context* ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
-    int id = skynet_socket_listen(ctx, host, port, backlog);
+    int id = node_socket::instance()->listen(ctx, host, port, backlog);
     if (id < 0)
     {
         return luaL_error(L, "Listen error");
@@ -667,7 +666,7 @@ static int l_send(lua_State* L)
     socket::send_buffer buf;
     buf.socket_id = id;
     get_buffer(L, 2, &buf);
-    int err = skynet_socket_sendbuffer(ctx, &buf);
+    int err = node_socket::instance()->sendbuffer(ctx, &buf);
     lua_pushboolean(L, !err);
     return 1;
 }
@@ -679,7 +678,7 @@ static int l_send_low(lua_State* L)
     socket::send_buffer buf;
     buf.socket_id = id;
     get_buffer(L, 2, &buf);
-    int err = skynet_socket_sendbuffer_lowpriority(ctx, &buf);
+    int err = node_socket::instance()->sendbuffer_lowpriority(ctx, &buf);
     lua_pushboolean(L, !err);
     return 1;
 }
@@ -688,7 +687,7 @@ static int l_bind(lua_State* L)
 {
     skynet::service_context* ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
     int fd = luaL_checkinteger(L, 1);
-    int id = skynet_socket_bind(ctx,fd);
+    int id = node_socket::instance()->bind(ctx,fd);
     lua_pushinteger(L,id);
     return 1;
 }
@@ -697,7 +696,7 @@ static int l_start(lua_State* L)
 {
     skynet::service_context* ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
     int id = luaL_checkinteger(L, 1);
-    skynet_socket_start(ctx,id);
+    node_socket::instance()->start(ctx,id);
     return 0;
 }
 
@@ -705,7 +704,7 @@ static int l_nodelay(lua_State* L)
 {
     skynet::service_context* ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
     int id = luaL_checkinteger(L, 1);
-    skynet_socket_nodelay(ctx,id);
+    node_socket::instance()->nodelay(ctx,id);
     return 0;
 }
 
@@ -722,7 +721,7 @@ static int l_udp(lua_State* L)
         host = address_port(L, tmp, addr, 2, &port);
     }
 
-    int id = skynet_socket_udp(ctx, host, port);
+    int id = node_socket::instance()->udp(ctx, host, port);
     if (id < 0)
     {
         return luaL_error(L, "udp init failed");
@@ -745,7 +744,7 @@ static int l_udp_connect(lua_State* L)
         host = address_port(L, tmp, addr, 3, &port);
     }
 
-    if (skynet_socket_udp_connect(ctx, id, host, port))
+    if (node_socket::instance()->udp_connect(ctx, id, host, port))
     {
         return luaL_error(L, "udp connect failed");
     }
@@ -761,7 +760,7 @@ static int l_udp_send(lua_State* L)
     // socket::send_buffer buf;
     // buf.socket_id = id;
     // get_buffer(L, 3, &buf);
-    // int err = skynet_socket_udp_sendbuffer(ctx, address, &buf);
+    // int err = node_socket::instance()->udp_sendbuffer(ctx, address, &buf);
 
     // lua_pushboolean(L, !err);
 
@@ -856,7 +855,7 @@ static void getinfo(lua_State* L, socket::socket_info* si)
 static int l_info(lua_State* L)
 {
     lua_newtable(L);
-    socket::socket_info* si = skynet_socket_info();
+    socket::socket_info* si = node_socket::instance()->get_socket_info();
     socket::socket_info* temp = si;
     int n = 0;
     while (temp)

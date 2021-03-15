@@ -12,8 +12,8 @@ namespace skynet {
 // forward declare
 class service_context;
 
-// 
-class skynet_command final
+//
+class service_command final
 {
 public:
     // handle skynet command

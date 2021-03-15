@@ -2,7 +2,6 @@ include(mq/CMakeLists.txt)
 include(log/CMakeLists.txt)
 include(timer/CMakeLists.txt)
 include(service/CMakeLists.txt)
-include(mod/CMakeLists.txt)
 include(socket/CMakeLists.txt)
 include(node/CMakeLists.txt)
 include(memory/CMakeLists.txt)
@@ -15,7 +14,6 @@ SET(SKYNET_HEADER skynet.h
     ${SKYNET_LOG_HEADER}
     ${SKYNET_TIMER_HEADER}
     ${SKYNET_SERVICE_HEADER}
-    ${SKYNET_MOD_HEADER}
     ${SKYNET_SOCKET_HEADER}
     ${SKYNET_NODE_HEADER}
     ${SKYNET_UTILS_HEADER}
@@ -26,7 +24,6 @@ SET(SKYNET_SRC skynet.cpp
     ${SKYNET_LOG_SRC}
     ${SKYNET_TIMER_SRC}
     ${SKYNET_SERVICE_SRC}
-    ${SKYNET_MOD_SRC}
     ${SKYNET_SOCKET_SRC}
     ${SKYNET_NODE_SRC}
     ${SKYNET_UTILS_SRC}

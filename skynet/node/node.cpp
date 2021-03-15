@@ -1,21 +1,21 @@
 #include "node.h"
 #include "node_thread.h"
 #include "node_config.h"
-#include "skynet_socket.h"
+#include "node_socket.h"
 
 #include "../mq/mq_msg.h"
 #include "../mq/mq_private.h"
 #include "../mq/mq_global.h"
 
 #include "../log/log.h"
-#include "../log/service_log.h"
 
-#include "../mod/cservice_mod_manager.h"
 #include "../timer/timer_manager.h"
 
+#include "../service/service_log.h"
 #include "../service/service_context.h"
 #include "../service/service_monitor.h"
 #include "../service/service_manager.h"
+#include "../service/service_mod_manager.h"
 
 #include "../utils/daemon_helper.h"
 #include "../utils/time_helper.h"
@@ -48,8 +48,9 @@ static void drop_message(skynet_message* msg, void* ud)
 
     uint32_t src_svc_handle = d->svc_handle;
     assert(src_svc_handle != 0);
+
     // report error to the message source
-    skynet_send(NULL, src_svc_handle, msg->src_svc_handle, message_type::PTYPE_ERROR, 0, nullptr, 0);
+    service_manager::instance()->send(nullptr, src_svc_handle, msg->src_svc_handle, message_type::PTYPE_ERROR, 0, nullptr, 0);
 }
 
 bool node::init(const std::string config_filename)
@@ -92,11 +93,11 @@ void node::start()
     //
     mq_global::instance()->init();
     //
-    cservice_mod_manager::instance()->init(config_.cservice_path_);
+    service_mod_manager::instance()->init(config_.cservice_path_);
     //
     timer_manager::instance()->init();
     //
-    skynet_socket_init();
+    node_socket::instance()->init();
 
     // enable/disable profiler
     enable_profiler(config_.profile_);
@@ -117,7 +118,7 @@ void node::start()
     node_thread::start(config_.thread_);
 
     //
-    skynet_socket_free();
+    node_socket::instance()->fini();
 
     // clean daemon pid file
     if (config_.pid_file_)
@@ -284,154 +285,6 @@ void node::_do_dispatch_message(service_context* svc_ctx, skynet_message* msg)
         delete[] msg->data;
     }
 }
-
-// static void copy_name(char name[GLOBALNAME_LENGTH], const char* addr)
-// {
-//     int i;
-//     for (i=0;i<GLOBALNAME_LENGTH && addr[i];i++)
-//     {
-//         name[i] = addr[i];
-//     }
-//     for (;i<GLOBALNAME_LENGTH;i++)
-//     {
-//         name[i] = '\0';
-//     }
-// }
-
-
-//
-static void _filter_args(service_context* svc_ctx, int type, int* session, void** data, size_t* sz)
-{
-    int need_copy = !(type & message_type::TAG_DONT_COPY);
-    int alloc_session = type & message_type::TAG_ALLOC_SESSION;
-    type &= 0xff;
-
-    if (alloc_session)
-    {
-        assert(*session == 0);
-        *session = svc_ctx->new_session();
-    }
-
-    if (need_copy && *data)
-    {
-        char* msg = new char[*sz + 1];
-        ::memcpy(msg, *data, *sz);
-        msg[*sz] = '\0';
-        *data = msg;
-    }
-
-    *sz |= (size_t)type << MESSAGE_TYPE_SHIFT;
-}
-
-// 发送消息
-// ctx之间通过消息进行通信，调用skynet_send向对方发送消息(skynet_sendname最终也会调用skynet_send)。
-// @param svc_ctx            源服务的ctx，可以为NULL，drop_message时这个参数为NULL
-// @param src_svc_handle         源服务地址，通常设置为0即可，api里会设置成ctx->handle，当context为NULL时，需指定source
-// @param dst_svc_handle     目的服务地址
-// @param type             消息类型， skynet定义了多种消息，PTYPE_TEXT，PTYPE_CLIENT，PTYPE_RESPONSE等（详情见skynet.h）
-// @param session         如果在type里设上allocsession的tag(message_type::TAG_ALLOC_SESSION)，api会忽略掉传入的session参数，重新生成一个新的唯一的
-// @param data             消息包数据
-// @param sz             消息包长度
-// @return int session, 源服务保存这个session，同时约定，目的服务处理完这个消息后，把这个session原样发送回来(skynet_message结构里带有一个session字段)，
-//         源服务就知道是哪个请求的返回，从而正确调用对应的回调函数。
-int skynet_send(service_context* svc_ctx, uint32_t src_svc_handle, uint32_t dst_svc_handle , int type, int session, void* data, size_t sz)
-{
-    if ((sz & MESSAGE_TYPE_MASK) != sz)
-    {
-        log(svc_ctx, "The message to %x is too large", dst_svc_handle);
-        if (type & message_type::TAG_DONT_COPY)
-        {
-//             skynet_free(data);
-        }
-        return -2;
-    }
-
-    // 预处理消息数据块
-    _filter_args(svc_ctx, type, &session, (void **)&data, &sz);
-
-    if (src_svc_handle == 0)
-    {
-        src_svc_handle = svc_ctx->svc_handle_;
-    }
-
-    if (dst_svc_handle == 0)
-    {
-        if (data)
-        {
-            log(svc_ctx, "Destination address can't be 0");
-            // skynet_free(data);
-            return -1;
-        }
-
-        return session;
-    }
-
-    // push message to dst service
-    struct skynet_message smsg;
-    smsg.src_svc_handle = src_svc_handle;
-    smsg.session = session;
-    smsg.data = data;
-    smsg.sz = sz;
-    if (service_manager::instance()->push_service_message(dst_svc_handle, &smsg))
-    {
-        // skynet_free(data);
-        return -1;
-    }
-
-    return session;
-}
-
-int skynet_send_by_name(service_context* svc_ctx, uint32_t src_svc_handle, const char* dst_name_or_addr, int type, int session, void* data, size_t sz)
-{
-    if (src_svc_handle == 0)
-        src_svc_handle = svc_ctx->svc_handle_;
-
-    uint32_t des = 0;
-    // service address
-    if (dst_name_or_addr[0] == ':')
-    {
-        des = ::strtoul(dst_name_or_addr + 1, NULL, 16);
-    }
-        // local service
-    else if (dst_name_or_addr[0] == '.')
-    {
-        des = service_manager::instance()->find_by_name(dst_name_or_addr + 1);
-        if (des == 0)
-        {
-            if (type & message_type::TAG_DONT_COPY)
-            {
-                // skynet_free(data);
-            }
-            return -1;
-        }
-    }
-    else
-    {
-        if ((sz & MESSAGE_TYPE_MASK) != sz)
-        {
-            log(svc_ctx, "The message to %s is too large", dst_name_or_addr);
-            if (type & message_type::TAG_DONT_COPY)
-            {
-//                 skynet_free(data);
-            }
-            return -2;
-        }
-        _filter_args(svc_ctx, type, &session, (void**)&data, &sz);
-
-//         remote_message* rmsg = skynet_malloc(sizeof(*rmsg));
-//         copy_name(rmsg->destination.name, dst_name_or_addr);
-//         rmsg->destination.handle = 0;
-//         rmsg->message = data;
-//         rmsg->sz = sz & MESSAGE_TYPE_MASK;
-//         rmsg->type = sz >> MESSAGE_TYPE_SHIFT;
-
-//         skynet_harbor_send(rmsg, src_svc_handle, session);
-//         return session;
-    }
-
-    return skynet_send(svc_ctx, src_svc_handle, des, type, session, data, sz);
-}
-
 
 }
 

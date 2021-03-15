@@ -5,14 +5,7 @@
 #define LUA_LIB
 
 #include "skynet.h"
-
 #include "lua-seri.h"
-
-#include "node/skynet_command.h"
-#include "log/log.h"
-#include "mq/mq_msg.h"
-#include "service/service_context.h"
-#include "timer/timer_manager.h"
 
 extern "C" {
 #include <lua.h>
@@ -100,7 +93,7 @@ static int _cb(service_context* context, void* ud, int type, int session, uint32
         return 0;
     }
     
-    const char* self = skynet_command::handle_command(context, "REG", NULL);
+    const char* self = service_command::handle_command(context, "REG", NULL);
     switch (r)
     {
         case LUA_ERRRUN:
@@ -145,11 +138,11 @@ static int l_callback(lua_State* L)
 
     if (forward)
     {
-        context->callback(gL, forward_cb);
+        context->set_callback(gL, forward_cb);
     }
     else
     {
-        context->callback(gL, _cb);
+        context->set_callback(gL, _cb);
     }
 
     return 0;
@@ -166,7 +159,7 @@ static int l_command(lua_State* L)
         parm = luaL_checkstring(L, 2);
     }
 
-    result = skynet_command::handle_command(context, cmd, parm);
+    result = service_command::handle_command(context, cmd, parm);
     if (result)
     {
         lua_pushstring(L, result);
@@ -185,7 +178,7 @@ static int l_address_command(lua_State* L)
     {
         parm = luaL_checkstring(L, 2);
     }
-    result = skynet_command::handle_command(context, cmd, parm);
+    result = service_command::handle_command(context, cmd, parm);
     if (result && result[0] == ':')
     {
         int i;
@@ -239,7 +232,7 @@ static int l_int_command(lua_State* L)
         }
     }
 
-    result = skynet_command::handle_command(context, cmd, parm);
+    result = service_command::handle_command(context, cmd, parm);
     if (result)
     {
         char* endptr = NULL;
@@ -270,7 +263,7 @@ static int l_int_command(lua_State* L)
 static int l_genid(lua_State* L)
 {
     service_context* context = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
-    int session = skynet_send(context, 0, 0, message_type::TAG_ALLOC_SESSION, 0, NULL, 0);
+    int session = service_manager::instance()->send(context, 0, 0, message_type::TAG_ALLOC_SESSION, 0, NULL, 0);
     lua_pushinteger(L, session);
     return 1;
 }
@@ -325,11 +318,11 @@ static int send_message(lua_State* L, int source, int idx_type)
         }
         if (dest_string)
         {
-            session = skynet_send_by_name(context, source, dest_string, type, session, msg, len);
+            session = service_manager::instance()->send_by_name(context, source, dest_string, type, session, msg, len);
         }
         else
         {
-            session = skynet_send(context, source, dest, type, session, msg, len);
+            session = service_manager::instance()->send(context, source, dest, type, session, msg, len);
         }
         break;
     }
@@ -339,11 +332,11 @@ static int send_message(lua_State* L, int source, int idx_type)
         int size = luaL_checkinteger(L, idx_type + 3);
         if (dest_string)
         {
-            session = skynet_send_by_name(context, source, dest_string, type | message_type::TAG_DONT_COPY, session, msg, size);
+            session = service_manager::instance()->send_by_name(context, source, dest_string, type | message_type::TAG_DONT_COPY, session, msg, size);
         }
         else
         {
-            session = skynet_send(context, source, dest, type | message_type::TAG_DONT_COPY, session, msg, size);
+            session = service_manager::instance()->send(context, source, dest, type | message_type::TAG_DONT_COPY, session, msg, size);
         }
         break;
     }

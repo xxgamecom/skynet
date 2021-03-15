@@ -26,7 +26,7 @@ struct skynet_message
 // 
 enum message_type
 {
-    PTYPE_TEXT                  = 0,                        // 内部服务最为常用的文本消息类型
+    PTYPE_TEXT                  = 0,                        // internal use, text message, 内部服务最为常用的文本消息类型
     PTYPE_RESPONSE              = 1,                        // 响应消息
     PTYPE_MULTICAST             = 2,                        // 组播消息
     PTYPE_CLIENT                = 3,                        // 用来处理客户端的请求消息, 是 gate 给外部连接定义出来的消息类型
@@ -41,14 +41,11 @@ enum message_type
 
     // message tag
     TAG_DONT_COPY               = 0x10000,                  // 让框架不复制 msg/sz 指代的数据包
-    TAG_ALLOC_SESSION           = 0x20000,                  // 使用 skynet_send 发送一个包的时候，你可以在 type 里设上, send api 就会忽略掉传入的 session 参数，而会分配出一个当前服务从来没有使用过的 session 号，发送出去
-
-    
-
+    TAG_ALLOC_SESSION           = 0x20000,                  // 使用 send 发送一个包的时候，你可以在 type 里设上, send api 就会忽略掉传入的 session 参数，而会分配出一个当前服务从来没有使用过的 session 号，发送出去
 };
 
 // 
-#define MESSAGE_TYPE_MASK           (SIZE_MAX >> 8)             // skynet_message.sz high 8 bits: message type
-#define MESSAGE_TYPE_SHIFT          ((sizeof(size_t) - 1) * 8)  // type is encoding in skynet_message.sz high 8bit
+#define MESSAGE_TYPE_MASK       (SIZE_MAX >> 8)             // skynet_message.sz high 8 bits: message type
+#define MESSAGE_TYPE_SHIFT      ((sizeof(size_t) - 1) * 8)  // type is encoding in skynet_message.sz high 8bit
 
 }

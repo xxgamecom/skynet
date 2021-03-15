@@ -1,7 +1,7 @@
 #include "node_thread.h"
 
 #include "node.h"
-#include "skynet_socket.h"
+#include "node_socket.h"
 
 #include "../mq/mq_msg.h"
 #include "../mq/mq_private.h"
@@ -100,14 +100,13 @@ void node_thread::start(int work_thread_num)
     }
 }
 
-// socket thread proc，并唤醒阻塞的thread_worker线程
 void node_thread::thread_socket(std::shared_ptr<monitor_data> monitor_data_ptr)
 {
     int ret = 0;
     for (;;)
     {
         // poll socket message
-        ret = skynet_socket_poll();
+        ret = node_socket::instance()->poll_socket_event();
         
         // exit
         if (ret == 0)
@@ -157,7 +156,6 @@ void node_thread::thread_monitor(std::shared_ptr<monitor_data> monitor_data_ptr)
     }
 }
 
-// timer thread proc
 void node_thread::thread_timer(std::shared_ptr<monitor_data> monitor_data_ptr)
 {
     for (;;)
@@ -165,7 +163,7 @@ void node_thread::thread_timer(std::shared_ptr<monitor_data> monitor_data_ptr)
         //
         timer_manager::instance()->update_time();
         // update socket server time
-        skynet_socket_updatetime();
+        node_socket::instance()->update_time();
 
         // check abort
         if (service_manager::instance()->svc_count() == 0)
@@ -198,7 +196,7 @@ void node_thread::thread_timer(std::shared_ptr<monitor_data> monitor_data_ptr)
     }
 
     // exit socket thread
-    skynet_socket_exit();
+    node_socket::instance()->exit();
 
     // exit all worker thread
     std::unique_lock<std::mutex> lock(monitor_data_ptr->mutex);

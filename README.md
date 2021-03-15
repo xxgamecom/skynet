@@ -50,7 +50,7 @@ skynet                              // skynet源码目录
 ├── examples                        // 示例
 ├── skynet                          // skynet源码目录, 最底层的skynet actor模型等的实现
 │   ├── ...
-│   ├── skynet.cpp                  // skynet主文件
+│   ├── skynet.cpp                  // skynet main入口文件
 │   └── skynet.h                    // skynet API header file
 ├── skynet-luaclib                  // skynet luaclib 源码目录
 │   ├── lua-bson                    // bson模块

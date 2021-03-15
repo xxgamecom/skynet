@@ -1,18 +1,18 @@
-#include "skynet_command.h"
-#include "node.h"
-#include "node_env.h"
+#include "service_command.h"
+#include "service_context.h"
+#include "service_manager.h"
+#include "service_mod.h"
+#include "service_log.h"
 
-#include "../log/service_log.h"
+#include "../node/node.h"
+#include "../node/node_env.h"
+
 #include "../log/log.h"
 
 #include "../mq/mq_msg.h"
 #include "../mq/mq_private.h"
 
 #include "../timer/timer_manager.h"
-#include "../mod/cservice_mod_manager.h"
-
-#include "../service/service_context.h"
-#include "../service/service_manager.h"
 
 #include "../utils/time_helper.h"
 
@@ -72,7 +72,7 @@ static void _handle_exit(service_context* svc_ctx, uint32_t svc_handle)
 
     if (node::instance()->get_monitor_exit() != 0)
     {
-         skynet_send(svc_ctx, svc_handle, node::instance()->get_monitor_exit(), message_type::PTYPE_CLIENT, 0, nullptr, 0);
+        service_manager::instance()->send(svc_ctx, svc_handle, node::instance()->get_monitor_exit(), message_type::PTYPE_CLIENT, 0, nullptr, 0);
     }
 
     service_manager::instance()->unregister_service(svc_handle);
@@ -441,7 +441,7 @@ static cmd_func CMD_FUNCS[] = {
     { nullptr, nullptr }
 };
 
-const char* skynet_command::handle_command(service_context* svc_ctx, const char* cmd , const char* param)
+const char* service_command::handle_command(service_context* svc_ctx, const char* cmd , const char* param)
 {
     for (auto& inst : CMD_FUNCS)
     {

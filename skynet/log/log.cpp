@@ -10,12 +10,10 @@
 
 namespace skynet {
 
-// 日志缓存长度
 #define LOG_BUF_SIZE            256
 
-
 /**
- * skynet log api implement
+ * log
  * - find logger service and push log message to the logger service
  */
 void log(service_context* svc_ctx, const char* msg, ...)

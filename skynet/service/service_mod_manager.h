@@ -20,7 +20,7 @@
  */
 #pragma once
 
-#include "cservice_mod.h"
+#include "service_mod.h"
 
 #include "../utils/dll_helper.h"
 
@@ -34,13 +34,13 @@ namespace skynet {
 class service_context;
 
 // c service mod manager
-class cservice_mod_manager final
+class service_mod_manager final
 {
     // singleton
 private:
-    static cservice_mod_manager* instance_;
+    static service_mod_manager* instance_;
 public:
-    static cservice_mod_manager* instance();
+    static service_mod_manager* instance();
 
 private:
     enum
@@ -55,7 +55,7 @@ private:
 
     std::mutex                                  mutex_;                 // protect mod loaded array & count
     int                                         count_ = 0;             // loaded c service mod count
-    std::array<cservice_mod, MAX_MODULE_NUM>    cservice_mods_;         // store loaded c service mods
+    std::array<service_mod, MAX_MODULE_NUM>     service_mods_;          // store loaded c service mods
 
 public:
     // initialize
@@ -63,22 +63,22 @@ public:
     bool init(const std::string search_path);
 
     // add c service mod
-    bool add(cservice_mod* mod);
+    bool add(service_mod* mod);
     // query c service mod (try to load if mod not exists)
-    cservice_mod* query(const std::string mod_name);
+    service_mod* query(const std::string mod_name);
 
 private:
     // find mod in loaded mods array
-    cservice_mod* _find_loaded_mod(const std::string& mod_name);
+    service_mod* _find_loaded_mod(const std::string& mod_name);
 
     // try to load c service mod_name.so file
     void* _try_load_mod_dll(const std::string& mod_name);
     // try to load c service mod APIs
-    static bool _try_load_mod_api(cservice_mod& mod);
+    static bool _try_load_mod_api(service_mod& mod);
 };
 
 }
 
 // include inline methods
-#include "cservice_mod_manager.inl"
+#include "service_mod_manager.inl"
 

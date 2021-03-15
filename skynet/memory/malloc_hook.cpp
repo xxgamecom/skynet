@@ -7,7 +7,7 @@ extern "C" {
 }
 
 #include "malloc_hook.h"
-#include "../skynet.h"
+#include "../log/log.h"
 
 //
 std::atomic<size_t> _used_memory = 0;

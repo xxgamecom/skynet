@@ -62,10 +62,7 @@ public:
     void fini();
 
 public:
-    // create service context
-    // @param svc_name service name
-    // @param param service mod data
-    service_context* create_service(const char* svc_name, const char* param);
+    service_context* create_service(const char* svc_name, const char* svc_args);
     service_context* release_service(service_context* svc_ctx);
 
     // register service context, return service handle
@@ -85,16 +82,36 @@ public:
     const char* set_handle_by_name(const char* svc_name, uint32_t svc_handle);
 
     // query by service name or service address string, return service handle
-    uint32_t query_by_name_or_addr(service_context* svc_ctx, const char* name_or_addr);
+    uint32_t query_by_name(service_context* svc_ctx, const char* name_or_addr);
 
+    //
+    int svc_count();
+
+public:
     // push service message
     int push_service_message(uint32_t svc_handle, skynet_message* message);
 
-public:
     //
-    void svc_inc();
-    void svc_dec();
-    int svc_count();
+    // @param src_svc_handle 0: reserve service handle, self
+    // @param dst_svc_handle
+    // @param type
+    // @param session 每个服务仅有一个callback函数, 所以需要一个标识来区分消息包, 这就是session的作用
+    //                可以在 type 里设上 alloc session 的 tag (message_type::TAG_ALLOC_SESSION), send api 就会忽略掉传入的 session 参数，而会分配出一个当前服务从来没有使用过的 session 号，发送出去。
+    //                同时约定，接收方在处理完这个消息后，把这个 session 原样发送回来。这样，编写服务的人只需要在 callback 函数里记录下所有待返回的 session 表，就可以在收到每个消息后，正确的调用对应的处理函数。
+    int send(service_context* svc_ctx, uint32_t src_svc_handle, uint32_t dst_svc_handle, int type, int session, void* msg, size_t sz);
+
+    /**
+     * send by service name or service address (format: ":%08x")
+     *
+     * @param svc_ctx
+     * @param src_svc_handle 0: reserve service handle, self
+     * @param dst_name_or_addr service name or service address (format: ":%08x")
+     * @param type
+     * @param session
+     * @param msg
+     * @param sz
+     */
+    int send_by_name(service_context* svc_ctx, uint32_t src_svc_handle, const char* dst_name_or_addr, int type, int session, void* msg, size_t sz);
 
 private:
     //
