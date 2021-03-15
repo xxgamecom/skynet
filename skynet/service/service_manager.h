@@ -2,14 +2,16 @@
 
 #include <cstdint>
 #include <shared_mutex>
+#include <atomic>
 
 namespace skynet {
 
 // forward declare
+struct skynet_message;
 class service_context;
 
 /**
- * service context manager
+ * skynet node service manager
  * 1) store all service context
  * 2) generate service handle
  *
@@ -17,12 +19,12 @@ class service_context;
  * 1) 0 is reserved
  * 2) count start of 1
  */
-class service_context_manager
+class service_manager
 {
 private:
-    static service_context_manager* instance_;
+    static service_manager* instance_;
 public:
-    static service_context_manager* instance();
+    static service_manager* instance();
 
 private:
     // constants
@@ -52,19 +54,29 @@ private:
     int                         name_count_ = 0;                        // number of service alias name in service alias name list.
     handle_name*                name_ = nullptr;                        // service alias name list (sort by svc_name, because find_by_name() use binary search)
 
+    std::atomic<int>            svc_count_ { 0 };                       // service context count in this skynet node
+
 public:
     // initialize service context manager
-    void init();
+    bool init();
+    void fini();
 
 public:
-    // register service context, return service handle
-    uint32_t register_svc_ctx(service_context* svc_ctx);
-    // unregister service context by service handle
-    int unregister(uint32_t svc_handle);
-    // unregister all service context
-    void unregister_all();
+    // create service context
+    // @param svc_name service name
+    // @param param service mod data
+    service_context* create_service(const char* svc_name, const char* param);
+    service_context* release_service(service_context* svc_ctx);
 
-    // 利于ID获取服务上下文指针
+    // register service context, return service handle
+    uint32_t register_service(service_context* svc_ctx);
+    int unregister_service(uint32_t svc_handle);
+    void unregister_service_all();
+
+    // service has blocked, process
+    void process_blocked_service(uint32_t svc_handle);
+
+    // grab a service by service handle
     service_context* grab(uint32_t svc_handle);
 
     // find service handle by service name (binary search)
@@ -72,15 +84,26 @@ public:
     // set service handle alias (sort by svc_name, because find_by_name() use binary search)
     const char* set_handle_by_name(const char* svc_name, uint32_t svc_handle);
 
+    // query by service name or service address string, return service handle
+    uint32_t query_by_name_or_addr(service_context* svc_ctx, const char* name_or_addr);
+
+    // push service message
+    int push_service_message(uint32_t svc_handle, skynet_message* message);
+
+public:
+    //
+    void svc_inc();
+    void svc_dec();
+    int svc_count();
+
 private:
     //
     const char* _insert_name(const char* svc_name, uint32_t svc_handle);
     // 把name插入到name数组中，再关联handle
-    void _insert_name_before(char* svc_name, uint32_t svc_handle, int before);
+    const char* _insert_name_before(const char* svc_name, uint32_t svc_handle, int before);
 };
 
-// query by service name or service address string, return service handle
-uint32_t skynet_query_by_name_or_addr(service_context* svc_ctx, const char* name_or_addr);
-
 }
+
+#include "service_manager.inl"
 

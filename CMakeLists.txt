@@ -36,9 +36,9 @@ MESSAGE(STATUS "CMAKE_MODULE_PATH        : " ${CMAKE_MODULE_PATH})
 # rebuild: delete build dir if you hope a full clean rebuild
 MESSAGE(STATUS "SKYNET_BUILD_DIR         : " ${PROJECT_BINARY_DIR})
 
-# no use jemalloc
+# use jemalloc
 if (MACOSX)
-    ADD_DEFINITIONS(-DNOUSE_JEMALLOC)
+    ADD_DEFINITIONS(-DDONT_USE_JEMALLOC)
 endif()
 
 #------------------------------------------------------

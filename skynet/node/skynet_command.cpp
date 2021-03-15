@@ -11,8 +11,8 @@
 #include "../timer/timer_manager.h"
 #include "../mod/cservice_mod_manager.h"
 
-#include "../context/service_context_manager.h"
-#include "../context/service_context.h"
+#include "../service/service_context.h"
+#include "../service/service_manager.h"
 
 #include "../utils/time_helper.h"
 
@@ -34,7 +34,7 @@ static uint32_t _to_svc_handle(service_context* svc_ctx, const char* param)
     // local service name
     else if (param[0] == '.')
     {
-        svc_handle = service_context_manager::instance()->find_by_name(param + 1);
+        svc_handle = service_manager::instance()->find_by_name(param + 1);
     }
     //
     else
@@ -75,7 +75,7 @@ static void _handle_exit(service_context* svc_ctx, uint32_t svc_handle)
          skynet_send(svc_ctx, svc_handle, node::instance()->get_monitor_exit(), message_type::PTYPE_CLIENT, 0, nullptr, 0);
     }
 
-    service_context_manager::instance()->unregister(svc_handle);
+    service_manager::instance()->unregister_service(svc_handle);
 }
 
 
@@ -90,22 +90,22 @@ static const char* cmd_timeout(service_context* svc_ctx, const char* param)
     int session = svc_ctx->new_session();
     timer_manager::instance()->timeout(svc_ctx->svc_handle_, ti, session);
     
-    ::sprintf(svc_ctx->result_, "%d", session);
-    return svc_ctx->result_;
+    ::sprintf(svc_ctx->cmd_result_, "%d", session);
+    return svc_ctx->cmd_result_;
 }
 
 // skynet指令: reg, 给自身起一个名字（支持多个）
-// cmd_name给指定ctx起一个名字，即将ctx->handle绑定一个名称(service_context_manager::instance()->set_handle_by_name)
+// cmd_name给指定ctx起一个名字，即将ctx->handle绑定一个名称(service_manager::instance()->set_handle_by_name)
 static const char* cmd_reg(service_context* svc_ctx, const char* param)
 {
     if (param == nullptr || param[0] == '\0')
     {
-        ::sprintf(svc_ctx->result_, ":%x", svc_ctx->svc_handle_);
-        return svc_ctx->result_;
+        ::sprintf(svc_ctx->cmd_result_, ":%x", svc_ctx->svc_handle_);
+        return svc_ctx->cmd_result_;
     }
     else if (param[0] == '.')
     {
-        return service_context_manager::instance()->set_handle_by_name(param + 1, svc_ctx->svc_handle_);
+        return service_manager::instance()->set_handle_by_name(param + 1, svc_ctx->svc_handle_);
     }
     else
     {
@@ -121,11 +121,11 @@ static const char* cmd_query(service_context* svc_ctx, const char* param)
     // local service
     if (param[0] == '.')
     {
-        uint32_t svc_handle = service_context_manager::instance()->find_by_name(param + 1);
+        uint32_t svc_handle = service_manager::instance()->find_by_name(param + 1);
         if (svc_handle != 0)
         {
-            ::sprintf(svc_ctx->result_, ":%x", svc_handle);
-            return svc_ctx->result_;
+            ::sprintf(svc_ctx->cmd_result_, ":%x", svc_handle);
+            return svc_ctx->cmd_result_;
         }
     }
 
@@ -148,7 +148,7 @@ static const char* cmd_name(service_context* svc_ctx, const char* param)
 
     if (name[0] == '.')
     {
-        return service_context_manager::instance()->set_handle_by_name(name + 1, handle_id);
+        return service_manager::instance()->set_handle_by_name(name + 1, handle_id);
     }
     else
     {
@@ -192,16 +192,12 @@ static const char* cmd_launch(service_context* context, const char* param)
     char* mod_name = ::strsep(&args, " \t\r\n");
     args = ::strsep(&args, "\r\n");
 
-    service_context* svc_ctx = service_context_new(mod_name, args);
+    service_context* svc_ctx = service_manager::instance()->create_service(mod_name, args);
     if (svc_ctx == nullptr)
-    {
         return nullptr;
-    }
-    else
-    {
-        _id_to_hex(svc_ctx->svc_handle_, context->result_);
-        return context->result_;
-    }
+
+    _id_to_hex(svc_ctx->svc_handle_, context->cmd_result_);
+    return context->cmd_result_;
 }
 
 // skynet cmd: getenv, 获取skynet环境变量，是key-value结构，所有ctx共享的
@@ -236,15 +232,15 @@ static const char* cmd_set_env(service_context* svc_ctx, const char* param)
 static const char* cmd_start_time(service_context* svc_ctx, const char* param)
 {
     uint32_t start_seconds = timer_manager::instance()->start_time();
-    ::sprintf(svc_ctx->result_, "%u", start_seconds);
-    return svc_ctx->result_;
+    ::sprintf(svc_ctx->cmd_result_, "%u", start_seconds);
+    return svc_ctx->cmd_result_;
 }
 
 // skynet cmd: abort
 // abort all service
 static const char* cmd_abort(service_context* svc_ctx, const char* param)
 {
-    service_context_manager::instance()->unregister_all();
+    service_manager::instance()->unregister_service_all();
     return nullptr;
 }
 
@@ -259,17 +255,14 @@ static const char* cmd_monitor(service_context* svc_ctx, const char* param)
         if (node::instance()->get_monitor_exit() != 0)
         {
             // return current monitor serivce
-            ::sprintf(svc_ctx->result_, ":%x", node::instance()->get_monitor_exit());
-            return svc_ctx->result_;
+            ::sprintf(svc_ctx->cmd_result_, ":%x", node::instance()->get_monitor_exit());
+            return svc_ctx->cmd_result_;
         }
 
         return nullptr;
     }
-    else
-    {
-        svc_handle = _to_svc_handle(svc_ctx, param);
-    }
 
+    svc_handle = _to_svc_handle(svc_ctx, param);
     node::instance()->set_monitor_exit(svc_handle);
 
     return nullptr;
@@ -283,26 +276,26 @@ static const char* cmd_stat(service_context* svc_ctx, const char* param)
     if (::strcmp(param, "mqlen") == 0)
     {
         int len = svc_ctx->queue_->length();
-        sprintf(svc_ctx->result_, "%d", len);
+        sprintf(svc_ctx->cmd_result_, "%d", len);
     }
     // maybe dead loop or blocked
     else if (::strcmp(param, "is_blocked") == 0)
     {
         if (svc_ctx->is_blocked_)
         {
-            ::strcpy(svc_ctx->result_, "1");
+            ::strcpy(svc_ctx->cmd_result_, "1");
             svc_ctx->is_blocked_ = false;
         }
         else
         {
-            ::strcpy(svc_ctx->result_, "0");
+            ::strcpy(svc_ctx->cmd_result_, "0");
         }
     }
     // cpu usage
     else if (::strcmp(param, "cpu") == 0)
     {
         double t = (double)svc_ctx->cpu_cost_ / 1000000.0;    // microsecond
-        ::sprintf(svc_ctx->result_, "%lf", t);
+        ::sprintf(svc_ctx->cmd_result_, "%lf", t);
     }
     // 
     else if (::strcmp(param, "time") == 0)
@@ -311,25 +304,25 @@ static const char* cmd_stat(service_context* svc_ctx, const char* param)
         {
             uint64_t ti = time_helper::thread_time() - svc_ctx->cpu_start_;
             double t = (double)ti / 1000000.0;    // microsecond
-            ::sprintf(svc_ctx->result_, "%lf", t);
+            ::sprintf(svc_ctx->cmd_result_, "%lf", t);
         }
         else
         {
-            ::strcpy(svc_ctx->result_, "0");
+            ::strcpy(svc_ctx->cmd_result_, "0");
         }
     } 
     // message count
     else if (::strcmp(param, "message") == 0)
     {
-        ::sprintf(svc_ctx->result_, "%d", svc_ctx->message_count_);
+        ::sprintf(svc_ctx->cmd_result_, "%d", svc_ctx->message_count_);
     }
     // 
     else
     {
-        svc_ctx->result_[0] = '\0';
+        svc_ctx->cmd_result_[0] = '\0';
     }
 
-    return svc_ctx->result_;
+    return svc_ctx->cmd_result_;
 }
 
 // skynet cmd: log_on
@@ -340,7 +333,7 @@ static const char* cmd_log_on(service_context* context, const char* param)
     if (svc_handle == 0)
         return nullptr;
 
-    service_context* svc_ctx = service_context_manager::instance()->grab(svc_handle);
+    service_context* svc_ctx = service_manager::instance()->grab(svc_handle);
     if (svc_ctx == nullptr)
         return nullptr;
 
@@ -359,7 +352,7 @@ static const char* cmd_log_on(service_context* context, const char* param)
         }
     }
 
-    // service_context_release(svc_ctx);
+    service_manager::instance()->release_service(svc_ctx);
 
     return nullptr;
 }
@@ -372,7 +365,7 @@ static const char* cmd_log_off(service_context* context, const char* param)
     if (svc_handle == 0)
         return nullptr;
 
-    service_context* svc_ctx = service_context_manager::instance()->grab(svc_handle);
+    service_context* svc_ctx = service_manager::instance()->grab(svc_handle);
     if (svc_ctx == nullptr)
         return nullptr;
 
@@ -386,7 +379,7 @@ static const char* cmd_log_off(service_context* context, const char* param)
         }
     }
 
-    // service_context_release(svc_ctx);
+    service_manager::instance()->release_service(svc_ctx);
 
     return nullptr;
 }
@@ -399,7 +392,7 @@ static const char* cmd_signal(service_context* context, const char* param)
     if (svc_handle == 0)
         return nullptr;
 
-    service_context* svc_ctx = service_context_manager::instance()->grab(svc_handle);
+    service_context* svc_ctx = service_manager::instance()->grab(svc_handle);
     if (svc_ctx == nullptr)
         return nullptr;
 
@@ -413,7 +406,7 @@ static const char* cmd_signal(service_context* context, const char* param)
     // NOTICE: the signal function should be thread safe
     svc_ctx->mod_->instance_signal(svc_ctx->instance_, sig);
 
-    // service_context_release(svc_ctx);
+    service_manager::instance()->release_service(svc_ctx);
 
     return nullptr;
 }

@@ -1,7 +1,5 @@
 #include "service_log.h"
 
-#include "../skynet.h"      // api
-
 #include "../log/log.h"
 
 #include "../mq/mq_msg.h"

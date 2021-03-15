@@ -6,24 +6,9 @@
 
 namespace skynet {
 
-#ifdef CALLING_CHECK
-
-#define CHECKCALLING_DECL std::mutex calling_;
-#define CHECKCALLING_BEGIN(ctx) if (!(ctx->calling_.try_lock())) { assert(0); }
-#define CHECKCALLING_END(ctx) ctx->calling_->unlock();
-
-#else
-
-#define CHECKCALLING_DECL
-#define CHECKCALLING_BEGIN(ctx)
-#define CHECKCALLING_END(ctx)
-
-#endif
-
 class cservice_mod;
 class mq_private;
 class service_context;
-struct skynet_message;
 
 //
 typedef int (*skynet_cb)(service_context* svc_ctx, void* ud, int type, int session, uint32_t source , const void* msg, size_t sz);
@@ -50,13 +35,12 @@ public:
     skynet_cb                   cb_;                        // 消息回调函数指针，通常在module的init里设置
 
     //
-    mq_private*              queue_ = nullptr;           // ctx自己的消息队列指针
+    mq_private*                 queue_ = nullptr;           // ctx自己的消息队列指针
 
-    //
-    std::atomic<FILE*>          log_fd_ { nullptr };        // 
+    std::atomic<FILE*>          log_fd_ { nullptr };        // service log fd
 
     // skynet cmd result
-    char                        result_[32];                // 保存skynet_command操作后的结果
+    char                        cmd_result_[32];            // store skynet_command op result
 
     //
     uint32_t                    svc_handle_ = 0;            // 标识唯一的ctx id, 和进程ID类似, 用于标识唯一服务, 每个服务都关联一个句柄, 句柄的实现在 skynet_handle.h|c 中, 句柄是一个32位无符号整型，最高8位表示集群ID(已不推荐使用)，剩下的24位为服务ID
@@ -75,9 +59,6 @@ public:
     uint64_t                    cpu_start_ = 0;             // in microsec
     bool                        profile_ = false;           // 标记是否需要开启性能监测(记录cpu调用时间)
 
-    //
-    CHECKCALLING_DECL
-
 public:
     // 创建服务的一个新的session id
     int new_session();
@@ -93,17 +74,6 @@ public:
     void callback(void* ud, skynet_cb cb);
 };
 
-// 创建一个服务：name为服务模块的名字，parm为参数，由模块自己解释含义
-// @param svc_name 模块名称, skynet根据这个名字加载模块, 并调用约定好的导出函数
-service_context* service_context_new(const char* svc_name, const char* param);
-// 创建服务ctx
-service_context* service_context_release(service_context* svc_ctx);
-// 投递服务消息
-int service_context_push(uint32_t svc_handle, skynet_message* message);
-// 发送消息
-void service_context_send(service_context* svc_ctx, void* msg, size_t sz, uint32_t src_svc_handle, int type, int session);
-// set service has blocked
-void service_context_blocked(uint32_t svc_handle);
 }
 
 #include "service_context.inl"

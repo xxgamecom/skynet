@@ -62,7 +62,7 @@ public:
     int overload();    
 
     void push(skynet_message* message);
-    int pop(skynet_message* message);
+    bool pop(skynet_message* message);
 
     // 
     void mark_release();

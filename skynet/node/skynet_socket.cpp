@@ -2,7 +2,7 @@
 
 #include "../socket/socket_server.h"
 #include "../timer/timer_manager.h"
-#include "../context/service_context.h"
+#include "../service/service_context.h"
 
 #include <iostream>
 #include <cassert>
@@ -82,7 +82,7 @@ static void forward_message(int type, bool padding, socket::socket_message* resu
 //     message.data = sm;
 //     message.sz = sz | ((size_t)message_type::PTYPE_SOCKET << MESSAGE_TYPE_SHIFT);
     
-//     if (service_context_push((uint32_t)result->svc_handle, &message))
+//     if (push_service_message((uint32_t)result->svc_handle, &message))
 //     {
 //         // todo: report somewhere to close socket
 //         // don't call skynet_socket_close here (It will block mainloop)

@@ -4,7 +4,7 @@
  * logger服务功能简单，在skynet启动时，会启动一个"logger"服务，默认是logger类型服务，当然也可以配置成snlua类型。
  * 
  * //skynet_start.c
- * struct service_context *ctx = service_context_new(config->logservice, config->logger)
+ * struct service_context *ctx = service_manager::instance()->create_service(config->logservice, config->logger)
  * 
  * //skynet_main.c
  * config.logger = optstring("logger", nullptr);

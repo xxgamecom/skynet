@@ -216,8 +216,7 @@
 //     }
 // }
 
-// static void
-// dispatch_message(struct gate *g, struct connection *c, int id, void * data, int sz) {
+// static void do_dispatch_message(struct gate *g, struct connection *c, int id, void * data, int sz) {
 //     databuffer_push(&c->buffer,&g->mp, data, sz);
 //     for (;;) {
 //         int size = databuffer_readheader(&c->buffer, &g->mp, g->header_size);
@@ -249,7 +248,7 @@
 //         if (id >= 0)
 //         {
 //             struct connection* c = &g->conn[id];
-//             dispatch_message(g, c, message->id, message->buffer, message->ud);
+//             do_dispatch_message(g, c, message->id, message->buffer, message->ud);
 //         }
 //         else
 //         {

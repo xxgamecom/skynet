@@ -8,9 +8,10 @@
  */
 
 #include "service_monitor.h"
+#include "service_context.h"
+#include "service_manager.h"
 
 #include "../log/log.h"
-#include "../context/service_context.h"
 
 namespace skynet {
 
@@ -36,8 +37,8 @@ void service_monitor::check()
         // 说明可能死循环或比较耗时
         if (dst_svc_handle_ != 0)
         {
-            // mark blocked
-            service_context_blocked(dst_svc_handle_);
+            // process blocked service
+            service_manager::instance()->process_blocked_service(dst_svc_handle_);
 
             // just output a log message
             log(nullptr, "A message from [ :%08x ] to [ :%08x ] maybe in an dead loop (last_version = %d)", src_svc_handle_, dst_svc_handle_, last_version_.load());

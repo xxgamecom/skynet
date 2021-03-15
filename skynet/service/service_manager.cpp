@@ -1,7 +1,15 @@
-#include "service_context_manager.h"
+#include "service_manager.h"
 #include "service_context.h"
 
+#include "../node/node.h"
+
 #include "../log/log.h"
+
+#include "../mq/mq_msg.h"
+#include "../mq/mq_private.h"
+#include "../mq/mq_global.h"
+
+#include "../mod/cservice_mod_manager.h"
 
 #include <mutex>
 
@@ -11,20 +19,20 @@ namespace skynet {
 #define HANDLE_MASK                 0x00FFFFFF      // handle mask, high 8bits is harbor id
 #define HANDLE_REMOTE_SHIFT         24              // remote service id offset (harbor id)
 
-service_context_manager* service_context_manager::instance_ = nullptr;
+service_manager* service_manager::instance_ = nullptr;
 
-service_context_manager* service_context_manager::instance()
+service_manager* service_manager::instance()
 {
     static std::once_flag oc;
     std::call_once(oc, [&](){
-        instance_ = new service_context_manager;
+        instance_ = new service_manager;
     });
 
     return instance_;
 }
 
-// 
-void service_context_manager::init()
+//
+bool service_manager::init()
 {
     // 给slot分配slot_size个ctx内存
     svc_ctx_slot_size_ = DEFAULT_SLOT_SIZE;
@@ -37,10 +45,87 @@ void service_context_manager::init()
     //
     name_ = new handle_name[name_cap_];
 
-    // Don't need to free H
+    svc_count_ = 0;
+
+    return true;
 }
 
-uint32_t service_context_manager::register_svc_ctx(service_context* svc_ctx)
+service_context* service_manager::create_service(const char* svc_name, const char* param)
+{
+    // query c service
+    cservice_mod* mod = cservice_mod_manager::instance()->query(svc_name);
+    if (mod == nullptr)
+        return nullptr;
+
+    // create service mod own data block (如: struct snlua, struct logger,  struct gate)
+    void* inst = mod->instance_create();
+    if (inst == nullptr)
+        return nullptr;
+
+    // create service context
+    service_context* svc_ctx = new service_context;
+
+    svc_ctx->mod_ = mod;
+    svc_ctx->instance_ = inst;
+    svc_ctx->ref_ = 2;        // 初始化完成会调用 service_manager::instance()->release_service() 将引用计数-1，ref变成1而不会被释放掉
+    svc_ctx->cb_ = nullptr;
+    svc_ctx->cb_ud_ = nullptr;
+    svc_ctx->session_id_ = 0;
+    svc_ctx->log_fd_ = nullptr;
+
+    svc_ctx->is_init_ = false;
+    svc_ctx->is_blocked_ = false;
+
+    svc_ctx->cpu_cost_ = 0;
+    svc_ctx->cpu_start_ = 0;
+    svc_ctx->message_count_ = 0;
+    svc_ctx->profile_ = node::instance()->is_profile();
+
+    // Should set to 0 first to avoid unregister_service_all() get an uninitialized handle
+    // initialize function maybe use svc_ctx->svc_handle_, so it must init at last
+    svc_ctx->svc_handle_ = 0;
+    svc_ctx->svc_handle_ = register_service(svc_ctx); // register service context and get service handle
+
+    // initialize service private queue
+    mq_private* queue = mq_private::create(svc_ctx->svc_handle_);
+    svc_ctx->queue_ = queue;
+
+    // increase service count
+    svc_inc();
+
+    // init mod data
+    int r = mod->instance_init(inst, svc_ctx, param);
+
+    // service mod initialize success
+    if (r == 0)
+    {
+        service_context* ret = release_service(svc_ctx);
+        if (ret != nullptr)
+            svc_ctx->is_init_ = true;
+
+        // put service private queue into global mq. service can recv message now.
+        mq_global::instance()->push(queue);
+        if (ret != nullptr)
+            log(ret, "LAUNCH %s %s", svc_name, param ? param : "");
+
+        return ret;
+    }
+        // service mod initialize failed
+    else
+    {
+        log(svc_ctx, "FAILED launch %s", svc_name);
+
+        uint32_t svc_handle = svc_ctx->svc_handle_;
+        release_service(svc_ctx);
+        unregister_service(svc_handle);
+        // drop_t d = { svc_handle };
+        // queue->release(drop_message, &d);
+
+        return nullptr;
+    }
+}
+
+uint32_t service_manager::register_service(service_context* svc_ctx)
 {
     // write lock
     std::unique_lock<std::shared_mutex> wlock(rw_mutex_);
@@ -80,8 +165,7 @@ uint32_t service_context_manager::register_svc_ctx(service_context* svc_ctx)
     }
 }
 
-// 注销一个服务
-int service_context_manager::unregister(uint32_t svc_handle)
+int service_manager::unregister_service(uint32_t svc_handle)
 {
     int ret = 0;
 
@@ -100,10 +184,9 @@ int service_context_manager::unregister(uint32_t svc_handle)
         {
             if (name_[i].svc_handle == svc_handle)
             {
-                // delete[] name_[i].name;
                 continue;
             }
-            else if (i!=j)
+            else if (i != j)
             {
                 name_[j] = name_[i];
             }
@@ -120,15 +203,15 @@ int service_context_manager::unregister(uint32_t svc_handle)
 
      if (svc_ctx != nullptr)
      {
-    //     // release service context may call skynet_handle_*, so wunlock first.
-    //     service_context_release(svc_ctx);
+         // release service context may call skynet_handle_*, so wunlock first.
+         release_service(svc_ctx);
      }
 
     return ret;
 }
 
 // 注销全部服务
-void service_context_manager::unregister_all()
+void service_manager::unregister_service_all()
 {
     for (;;)
     {
@@ -150,23 +233,31 @@ void service_context_manager::unregister_all()
 
             if (svc_handle != 0)
             {
-                if (unregister(svc_handle))
-                {
+                if (unregister_service(svc_handle))
                     ++n;
-                }
             }
         }
 
         //
         if (n == 0)
-        {
             return;
-        }
+    }
+}
+
+void service_manager::process_blocked_service(uint32_t svc_handle)
+{
+    service_context* svc_ctx = service_manager::instance()->grab(svc_handle);
+    if (svc_ctx != nullptr)
+    {
+        // mark blocked
+        svc_ctx->is_blocked_ = true;
+        // try release
+        service_manager::instance()->release_service(svc_ctx);
     }
 }
 
 // 取得一个服务 (增加服务引用计数)
-service_context* service_context_manager::grab(uint32_t svc_handle)
+service_context* service_manager::grab(uint32_t svc_handle)
 {
     service_context* result = nullptr;
 
@@ -186,7 +277,7 @@ service_context* service_context_manager::grab(uint32_t svc_handle)
 
 // 通过name找handle
 // S->name是按handle_name->name升序排序的，通过二分查找快速地查找name对应的handle
-uint32_t service_context_manager::find_by_name(const char* svc_name)
+uint32_t service_manager::find_by_name(const char* svc_name)
 {
     // read lock
     std::shared_lock<std::shared_mutex> rlock(rw_mutex_);
@@ -220,7 +311,7 @@ uint32_t service_context_manager::find_by_name(const char* svc_name)
 }
 
 // 给服务handle注册命名, 保证注册完s->name的有序
-const char* service_context_manager::set_handle_by_name(const char* svc_name, uint32_t svc_handle)
+const char* service_manager::set_handle_by_name(const char* svc_name, uint32_t svc_handle)
 {
     // write lock
     std::unique_lock<std::shared_mutex> wlock(rw_mutex_);
@@ -228,8 +319,45 @@ const char* service_context_manager::set_handle_by_name(const char* svc_name, ui
     return _insert_name(svc_name, svc_handle);
 }
 
+uint32_t service_manager::query_by_name_or_addr(service_context* svc_ctx, const char* name_or_addr)
+{
+    // service address
+    if (name_or_addr[0] == ':')
+    {
+        return ::strtoul(name_or_addr + 1, NULL, 16);
+    }
+    // local service
+    else if (name_or_addr[0] == '.')
+    {
+        return service_manager::instance()->find_by_name(name_or_addr + 1);
+    }
+    // global service
+    else
+    {
+        // not support query global service, just log a message
+        log(svc_ctx, "Don't support query global name %s", name_or_addr);
+        return 0;
+    }
+}
+
+// 投递服务消息
+int service_manager::push_service_message(uint32_t svc_handle, skynet_message* message)
+{
+    // 增加服务引用计数
+    service_context* svc_ctx = grab(svc_handle);
+    if (svc_ctx == nullptr)
+        return -1;
+
+    // 消息入队
+    svc_ctx->queue_->push(message);
+    // 减少服务引用计数
+    release_service(svc_ctx);
+
+    return 0;
+}
+
 // 
-const char* service_context_manager::_insert_name(const char* svc_name, uint32_t svc_handle)
+const char* service_manager::_insert_name(const char* svc_name, uint32_t svc_handle)
 {
     int begin = 0;
     int end = name_count_ - 1;
@@ -253,17 +381,11 @@ const char* service_context_manager::_insert_name(const char* svc_name, uint32_t
         }
     }
 
-    // char* result = skynet_strdup(svc_name);
-    // _insert_name_before(result, svc_handle, begin);
-
-    // return result;
-
-    return nullptr;
+    return _insert_name_before(svc_name, svc_handle, begin);
 }
 
-
 // 把name插入到name数组中，再关联handle
-void service_context_manager::_insert_name_before(char* svc_name, uint32_t svc_handle, int before)
+const char* service_manager::_insert_name_before(const char* svc_name, uint32_t svc_handle, int before)
 {
     if (name_count_ >= name_cap_)
     {
@@ -279,6 +401,7 @@ void service_context_manager::_insert_name_before(char* svc_name, uint32_t svc_h
         {
             n[i+1] = name_[i];
         }
+
         delete[] name_;
         name_ = n;
     }
@@ -292,28 +415,32 @@ void service_context_manager::_insert_name_before(char* svc_name, uint32_t svc_h
     name_[before].svc_name = svc_name;
     name_[before].svc_handle = svc_handle;
     ++name_count_;
+
+    return name_[before].svc_name.c_str();
 }
 
-uint32_t skynet_query_by_name_or_addr(service_context* svc_ctx, const char* name_or_addr)
+
+// 创建服务ctx
+service_context* service_manager::release_service(service_context* svc_ctx)
 {
-    // service address
-    if (name_or_addr[0] == ':')
+    // need delete service
+    if (--svc_ctx->ref_ == 0)
     {
-        return ::strtoul(name_or_addr + 1, NULL, 16);
-    }
-    // local service
-    else if (name_or_addr[0] == '.')
-    {
-        return service_context_manager::instance()->find_by_name(name_or_addr + 1);
-    }
-    // global service
-    else
-    {
-        // not support query global service, just log a message
-        log(svc_ctx, "Don't support query global name %s", name_or_addr);
-        return 0;
-    }
-}
+        if (svc_ctx->log_fd_ != nullptr)
+        {
+            ::fclose(svc_ctx->log_fd_);
+        }
 
+        svc_ctx->mod_->instance_release(svc_ctx->instance_);
+        svc_ctx->queue_->mark_release();
+
+        delete svc_ctx;
+        service_manager::instance()->svc_dec();
+
+        return nullptr;
+    }
+
+    return svc_ctx;
+}
 
 }

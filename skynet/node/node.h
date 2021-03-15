@@ -1,17 +1,17 @@
 /**
- * skynet是以服务为主体进行运作的，服务称作为 service_context (简称ctx)，是一个c结构，是skynet里最重要的结构，整个skynet的运作都是围绕ctx进行的。
- *
- * skynet_server提供的api主要分两大类：
+ * skynet提供的api主要分两大类:
  * 1. 对ctx的一系列操作，比如创建，删除ctx等
  * 2. 如何发送消息和处理自身的消息
  *
- * 为了统一对ctx操作的接口，采用指令的格式，定义了一系列指令(cmd_xxx):
- * 1. cmd_launch创建一个新服务，
- * 2. cmd_exit服务自身退出，
- * 3. cmd_kill杀掉一个服务等，
- * 上层统一调用skynet_command接口即可执行这些操作。
+ * node service command (cmd_xxx):
+ * 1. cmd_launch 创建一个新服务，
+ * 2. cmd_exit 服务自身退出，
+ * 3. cmd_kill 杀掉一个服务等，
+ * 上层统一调用 skynet_command 接口即可执行这些操作。
  *
- * 对ctx操作，通常会先调用 service_context::grab 将引用计数+1，操作完调用 service_context_release 将引用计数-1，以保证操作ctx过程中，不会被其他线程释放掉。
+ * 对ctx操作，通常会先调用 service_context::grab 将引用计数+1，
+ * 操作完调用 service_manager::instance()->release_service() 将引用计数-1，
+ * 以保证操作ctx过程中，不会被其他线程释放掉。
  */
 
 #pragma once
@@ -27,6 +27,7 @@ class node_config;
 class service_context;
 class mq_private;
 class service_monitor;
+struct skynet_message;
 
 // server node
 class node final
@@ -38,34 +39,18 @@ public:
 
     // node info
 private:
-    node_config                 node_config_;               // skynet node config
+    node_config                 config_;                    // skynet node config
 
-    std::atomic<int>            total_ { 0 };               // servcie context count in this skynet node
-    bool                        is_init_ = false;           // 是否已初始化, 1表示已经初始化
     uint32_t                    monitor_exit_ = 0;          // monitor exit service handle
     bool                        profile_ = false;           // enable statistics profiler, default: disable
 
-private:
-    node() = default;
 public:
-    ~node() = default;
-
-public:
-    // initialize skynet node 
+    //
     bool init(const std::string config_filename);
-    // clean skynet node 
     void fini();
 
-    // start skynet node
+    //
     void start();
-
-public:
-    // get service ctx count
-    int total_svc_ctx();
-    // inc service ctx count
-    void inc_svc_ctx();
-    // dec service ctx count
-    void dec_svc_ctx();
 
     //
     uint32_t get_monitor_exit();
@@ -75,14 +60,17 @@ public:
     void enable_profiler(int enable);
     bool is_profile();
 
-public:
-    // for log output before exit
-    void dispatch_all(service_context* svc_ctx);
-    // 派发消息, 工作线程的核心逻辑 // return next queue
-    mq_private* message_dispatch(service_monitor& svc_monitor, mq_private*, int weight);
+    // process service message, called by work thread, return next queue
+    mq_private* dispatch_message(service_monitor& svc_monitor, mq_private*, int weight);
 
 private:
+    //
     void _bootstrap(service_context* log_svc_ctx, const char* cmdline);
+    // for log output before exit
+    void _dispatch_all(service_context* svc_ctx);
+
+    // handle service message (call service message callback)
+    void _do_dispatch_message(service_context* svc_ctx, skynet_message* msg);
 };
 
 
