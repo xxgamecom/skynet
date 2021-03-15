@@ -4,20 +4,20 @@ skynet++
 ## 编写skynet++的原因
 
 * 原版的skynet属于比较底层的实现, 严格的来说还称不上一个框架, 使用的过程还需要做大量的开发工作
-* 对C不是太熟悉, 工作中需要对原版skynet进行修改和维护, 使用C++重写
+* 对C使用的比较少, 工作中需要对原版skynet进行修改和维护, 所以使用C++进行重写
 * 原skynet缺少服务治理的支持
 * 原skynet上层服务框架不完善
 * 
 
 ## 与原版skynet的异同
 
-* 移除了分布式harbor模式(harbor模式有点鸡肋), 只支持cluster模式
 * 底层skynet使用C++重新编写
-* 对服务治理提供支持: 注册服务、发现服务、配置服务等
+* 移除了分布式harbor模式(harbor模式有点鸡肋), 只支持cluster模式
+* 为完善上层服务框架, 提供一些基础设施, 为服务治理提供支持: 注册服务、发现服务、配置服务等
 * 提供简单完善的服务RPC接口
-* 
+*
 
-**skynet++ Framework Architecture**
+## skynet++ 架构
 ![](docs/framework_architecture.jpg "")
 
 ## 目录结构
@@ -33,8 +33,9 @@ bin                                 // 编译输出目录 (编译后生成)
 │   ├── cjson.so                    // lua-cjson模块编译生成文件
 │   ├── protobuf.so                 // pbc模块编译生成文件
 │   ├── codec.so                    // ...
+│   ├── ...
 │   ├── skynet.so                   // skynet luaclib编译生成文件
-│   └── sproto.so
+│   └── sproto.so                   // sprote编译生成文件
 ├── skynet                          // skynet可执行文件
 ├── ...
 cmake-build                         // cmake编译目录
@@ -49,7 +50,7 @@ skynet                              // skynet源码目录
 ├── examples                        // 示例
 ├── skynet                          // skynet源码目录, 最底层的skynet actor模型等的实现
 │   ├── ...
-│   ├── skynet.cpp                  // skynet主文件
+│   ├── skynet.cpp                  // skynet main入口文件
 │   └── skynet.h                    // skynet API header file
 ├── skynet-luaclib                  // skynet luaclib 源码目录
 │   ├── lua-bson                    // bson模块

@@ -28,7 +28,9 @@
 #include "../mq/mq_private.h"
 
 #include "../log/log.h"
-#include "../context/service_context.h"
+
+#include "../service/service_context.h"
+#include "../service/service_manager.h"
 
 #include "../utils/time_helper.h"
 
@@ -135,7 +137,7 @@ static inline void dispatch_list(timer_node* current)
         msg.data = nullptr;
         msg.sz = (size_t)message_type::PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
-        service_context_push(event->svc_handle, &msg);
+        service_manager::instance()->push_service_message(event->svc_handle, &msg);
 
         timer_node* temp = current;
         current = current->next;
@@ -214,7 +216,7 @@ int timer_manager::timeout(uint32_t handle, int time, int session)
         msg.data = nullptr;
         msg.sz = (size_t)message_type::PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
-        if (service_context_push(handle, &msg))
+        if (service_manager::instance()->push_service_message(handle, &msg))
         {
             return -1;
         }

@@ -14,7 +14,7 @@ typedef void (*mod_release_proc)(void* inst);
 typedef void (*mod_signal_proc)(void* inst, int signal);
 
 // c service mod
-class cservice_mod
+class service_mod
 {
 public:
     std::string                     name = "";                      // c service mod file name (include file extension .so)
@@ -40,5 +40,5 @@ public:
 
 }
 
-#include "cservice_mod.inl"
+#include "service_mod.inl"
 

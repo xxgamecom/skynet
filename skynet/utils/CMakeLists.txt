@@ -4,12 +4,12 @@ set(SKYNET_UTILS_HEADER
     utils/dll_helper.inl
     utils/signal_helper.h
     utils/time_helper.h
-    utils/socket_helper.h
+    utils/string_helper.h
 )
 
 set(SKYNET_UTILS_SRC
     utils/daemon_helper.cpp
     utils/signal_helper.cpp
     utils/time_helper.cpp
-    utils/socket_helper.cpp
+    utils/string_helper.cpp
 )

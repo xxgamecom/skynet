@@ -1,13 +1,11 @@
 #include "service_log.h"
 
-#include "../skynet.h"      // api
-
 #include "../log/log.h"
 
 #include "../mq/mq_msg.h"
 
 #include "../node/node_env.h"
-#include "../node/skynet_socket.h"
+#include "../node/node_socket.h"
 
 #include "../timer/timer_manager.h"
 

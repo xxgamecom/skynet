@@ -30,7 +30,7 @@ mq_private* mq_private::create(uint32_t svc_handle)
 
     // When the queue is create (always between service create and service init),
     // set in_global flag to avoid push it to global queue.
-    // If the service init success, service_context_new will call mq_private->push to push it to global queue.
+    // If the service init success, service_manager::instance()->create_service() will call mq_private->push to push it to global queue.
     // 创建队列时可以发送和接收消息，但还不能被工作线程调度，所以设置成MQ_IN_GLOBAL，保证不会push到全局队列，
     // 当ctx初始化完成再直接调用skynet_globalmq_push到全局队列
     q->is_in_global_ = true;  // in global message queue
@@ -74,7 +74,7 @@ int mq_private::overload()
     if (overload_ != 0)
     {
         int overload = overload_;
-        overload_ = 0; // reset
+        overload_ = 0;
         return overload;
     }
 
@@ -111,9 +111,9 @@ void mq_private::push(skynet_message* message)
 }
 
 // 从私有队列里pop一个消息
-int mq_private::pop(skynet_message* message)
+bool mq_private::pop(skynet_message* message)
 {
-    int ret = 1;
+    bool is_empty = true;
 
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -121,9 +121,9 @@ int mq_private::pop(skynet_message* message)
     if (head_ != tail_)
     {
         // 
-        *message = queue_[head_++];     // 注意head++，数据不移动，移动的是游标
+        *message = queue_[head_++];
 
-        ret = 0;
+        is_empty = false;
         int head = head_;
         int tail = tail_;
         int cap = cap_;
@@ -153,12 +153,12 @@ int mq_private::pop(skynet_message* message)
         overload_threshold_ = DEFAULT_OVERLOAD_THRESHOLD;
     }
 
-    if (ret != 0)
+    if (is_empty)
     {
         is_in_global_ = false;
     }
 
-    return ret;
+    return is_empty;
 }
 
 // 服务释放标记
@@ -199,15 +199,16 @@ void mq_private::release(message_drop_proc drop_func, void* ud)
 void mq_private::_drop_queue(mq_private* q, message_drop_proc drop_func, void* ud)
 {
     skynet_message msg;
-    // 先向队列里各个消息的源地址发送特定消息，再释放内存
-    while (q->pop(&msg) == 0)
+
+    // drop all
+    while (!q->pop(&msg))
     {
         drop_func(&msg, ud);
     }
 
     assert(q->next_ == nullptr);
 
-    // 回收内存
+    //
     delete[] q->queue_;
     delete q;
 }

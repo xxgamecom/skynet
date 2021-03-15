@@ -182,7 +182,7 @@
 //     int n = vsnprintf(tmp, sizeof(tmp), data, ap);
 //     va_end(ap);
 
-//     skynet_send(ctx, 0, g->watchdog, message_type::PTYPE_TEXT,  0, tmp, n);
+//     service_manager::instance()->send(ctx, 0, g->watchdog, message_type::PTYPE_TEXT,  0, tmp, n);
 // }
 
 // static void _forward(struct gate* g, struct connection* c, int size)
@@ -198,26 +198,25 @@
 //     {
 //         void * temp = skynet_malloc(size);
 //         databuffer_read(&c->buffer,&g->mp,temp, size);
-//         skynet_send(ctx, 0, g->broker, g->client_tag | PTYPE_TAG_DONTCOPY, fd, temp, size);
+//         service_manager::instance()->send(ctx, 0, g->broker, g->client_tag | PTYPE_TAG_DONTCOPY, fd, temp, size);
 //         return;
 //     }
 //     if (c->agent)
 //     {
 //         void * temp = skynet_malloc(size);
 //         databuffer_read(&c->buffer,&g->mp,temp, size);
-//         skynet_send(ctx, c->client, c->agent, g->client_tag | PTYPE_TAG_DONTCOPY, fd , temp, size);
+//         service_manager::instance()->send(ctx, c->client, c->agent, g->client_tag | PTYPE_TAG_DONTCOPY, fd , temp, size);
 //     }
 //     else if (g->watchdog)
 //     {
 //         char * tmp = skynet_malloc(size + 32);
 //         int n = snprintf(tmp,32,"%d data ",c->id);
 //         databuffer_read(&c->buffer,&g->mp,tmp+n,size);
-//         skynet_send(ctx, 0, g->watchdog, message_type::PTYPE_TEXT | message_type::TAG_DONT_COPY, fd, tmp, size + n);
+//         service_manager::instance()->send(ctx, 0, g->watchdog, message_type::PTYPE_TEXT | message_type::TAG_DONT_COPY, fd, tmp, size + n);
 //     }
 // }
 
-// static void
-// dispatch_message(struct gate *g, struct connection *c, int id, void * data, int sz) {
+// static void do_dispatch_message(struct gate *g, struct connection *c, int id, void * data, int sz) {
 //     databuffer_push(&c->buffer,&g->mp, data, sz);
 //     for (;;) {
 //         int size = databuffer_readheader(&c->buffer, &g->mp, g->header_size);
@@ -249,7 +248,7 @@
 //         if (id >= 0)
 //         {
 //             struct connection* c = &g->conn[id];
-//             dispatch_message(g, c, message->id, message->buffer, message->ud);
+//             do_dispatch_message(g, c, message->id, message->buffer, message->ud);
 //         }
 //         else
 //         {

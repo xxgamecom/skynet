@@ -1,18 +1,16 @@
 #include "node_thread.h"
 
 #include "node.h"
-#include "service_monitor.h"
-#include "skynet_socket.h"
-
-#include "../skynet.h"  // api
+#include "node_socket.h"
 
 #include "../mq/mq_msg.h"
 #include "../mq/mq_private.h"
 
 #include "../timer/timer_manager.h"
 
-#include "../context/service_context.h"
-#include "../context/service_context_manager.h"
+#include "../service/service_context.h"
+#include "../service/service_monitor.h"
+#include "../service/service_manager.h"
 
 #include "../utils/signal_helper.h"
 
@@ -102,14 +100,13 @@ void node_thread::start(int work_thread_num)
     }
 }
 
-// socket thread proc，并唤醒阻塞的thread_worker线程
 void node_thread::thread_socket(std::shared_ptr<monitor_data> monitor_data_ptr)
 {
     int ret = 0;
     for (;;)
     {
         // poll socket message
-        ret = skynet_socket_poll();
+        ret = node_socket::instance()->poll_socket_event();
         
         // exit
         if (ret == 0)
@@ -119,7 +116,7 @@ void node_thread::thread_socket(std::shared_ptr<monitor_data> monitor_data_ptr)
         if (ret < 0)
         {
             // check abort
-            if (node::instance()->total_svc_ctx() == 0)
+            if (service_manager::instance()->svc_count() == 0)
                 break;
 
             continue;
@@ -137,7 +134,7 @@ void node_thread::thread_monitor(std::shared_ptr<monitor_data> monitor_data_ptr)
     for (;;)
     {
         // check abort
-        if (node::instance()->total_svc_ctx() == 0)
+        if (service_manager::instance()->svc_count() == 0)
             break;
 
         // check dead lock or blocked
@@ -150,7 +147,7 @@ void node_thread::thread_monitor(std::shared_ptr<monitor_data> monitor_data_ptr)
         for (int i = 0; i < 5; i++)
         {
             // check abort per 1 second
-            if (node::instance()->total_svc_ctx() == 0)
+            if (service_manager::instance()->svc_count() == 0)
                 break;
 
             // sleep 1 second
@@ -159,7 +156,6 @@ void node_thread::thread_monitor(std::shared_ptr<monitor_data> monitor_data_ptr)
     }
 }
 
-// timer thread proc
 void node_thread::thread_timer(std::shared_ptr<monitor_data> monitor_data_ptr)
 {
     for (;;)
@@ -167,10 +163,10 @@ void node_thread::thread_timer(std::shared_ptr<monitor_data> monitor_data_ptr)
         //
         timer_manager::instance()->update_time();
         // update socket server time
-        skynet_socket_updatetime();
+        node_socket::instance()->update_time();
 
         // check abort
-        if (node::instance()->total_svc_ctx() == 0)
+        if (service_manager::instance()->svc_count() == 0)
             break;
 
         // notify worker thread
@@ -189,10 +185,10 @@ void node_thread::thread_timer(std::shared_ptr<monitor_data> monitor_data_ptr)
             msg.session = 0;
             msg.data = nullptr;
             msg.sz = (size_t)message_type::PTYPE_SYSTEM << MESSAGE_TYPE_SHIFT;
-            uint32_t logger_svc_handle = service_context_manager::instance()->find_by_name("logger");
+            uint32_t logger_svc_handle = service_manager::instance()->find_by_name("logger");
             if (logger_svc_handle != 0)
             {
-                service_context_push(logger_svc_handle, &msg);
+                service_manager::instance()->push_service_message(logger_svc_handle, &msg);
             }
 
             SIG = 0;
@@ -200,7 +196,7 @@ void node_thread::thread_timer(std::shared_ptr<monitor_data> monitor_data_ptr)
     }
 
     // exit socket thread
-    skynet_socket_exit();
+    node_socket::instance()->exit();
 
     // exit all worker thread
     std::unique_lock<std::mutex> lock(monitor_data_ptr->mutex);
@@ -215,8 +211,10 @@ void node_thread::thread_worker(std::shared_ptr<monitor_data> monitor_data_ptr, 
     mq_private* q = nullptr;
     while (!monitor_data_ptr->is_work_thread_quit)
     {
-        // dispatch message
-        q = node::instance()->message_dispatch(svc_monitor, q, weight);
+        // process service message
+        q = node::instance()->dispatch_message(svc_monitor, q, weight);
+
+        // no more message, sleep
         if (q == nullptr)
         {
             std::unique_lock<std::mutex> lock(monitor_data_ptr->mutex);

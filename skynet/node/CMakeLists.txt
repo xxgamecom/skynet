@@ -3,10 +3,8 @@ set(SKYENT_NODE_HEADER
     node/node_config.h
     node/node_env.h
     node/node_thread.h
-    node/service_monitor.h
-    node/skynet_command.h
-    node/skynet_socket.h
-    node/skynet_socket.inl
+    node/node_socket.h
+    node/node_socket.inl
 )
 
 set(SKYNET_NODE_SRC
@@ -14,7 +12,5 @@ set(SKYNET_NODE_SRC
     node/node_config.cpp
     node/node_env.cpp
     node/node_thread.cpp
-    node/service_monitor.cpp
-    node/skynet_command.cpp
-    node/skynet_socket.cpp
+    node/node_socket.cpp
 )

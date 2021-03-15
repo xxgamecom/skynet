@@ -6,7 +6,7 @@
 
 #define LUA_LIB
 
-#include "node/skynet_socket.h"
+#include "skynet.h"
 
 extern "C" {
 #include <lua.h>
