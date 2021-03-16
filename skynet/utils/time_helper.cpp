@@ -9,8 +9,11 @@
 #include <mach/mach.h>
 #endif
 
-
 namespace skynet {
+
+//
+#define NANO_SEC    1000000000
+#define MICRO_SEC   1000000
 
 // 获取当前系统时间 (滴答数: 1滴答 = 10ms)
 // centisecond: 1/100 second
@@ -31,36 +34,40 @@ void time_helper::systime(uint32_t* sec, uint32_t* cs)
 #endif
 }
 
-// 获取系统启动以来的滴答数(滴答数: 1滴答 = 10ms)
-uint64_t time_helper::gettime()
+uint64_t time_helper::get_time_tick()
 {
-    uint64_t t;
 #if !defined(__APPLE__) || defined(AVAILABLE_MAC_OS_X_VERSION_10_12_AND_LATER)
     struct timespec ti;
-    ::clock_gettime(CLOCK_MONOTONIC, &ti);      // CLOCK_MONOTONIC: 开机到现在的时间, 不受系统时间影响
-    // 系统启动以来的滴答数 (百分之一秒)
-    t = (uint64_t)ti.tv_sec * 100;              // 秒数转百分之一秒数
-    t += ti.tv_nsec / 10000000;                 // 纳秒数转百分之一秒数 = 纳秒 / 10000000
+    ::clock_gettime(CLOCK_MONOTONIC, &ti);
+    return (uint64_t)ti.tv_sec * 100 + ti.tv_nsec / 10000000;
 #else
     struct timeval tv;
     ::gettimeofday(&tv, NULL);
-    t = (uint64_t)tv.tv_sec * 100;              // 系统启动以来的滴答数 (1滴答 = 10ms)
-    t += tv.tv_usec / 10000;                    //
+    return (uint64_t)tv.tv_sec * 100 + tv.tv_usec / 10000;
 #endif
-    return t;
+}
+
+// return nanoseconds
+uint64_t time_helper::get_time_ns()
+{
+#if !defined(__APPLE__) || defined(AVAILABLE_MAC_OS_X_VERSION_10_12_AND_LATER)
+    struct timespec ti;
+    ::clock_gettime(CLOCK_MONOTONIC, &ti);
+    return (uint64_t)ti.tv_sec * NANO_SEC + ti.tv_nsec;
+#else
+    struct timeval tv;
+    ::gettimeofday(&tv, NULL);
+    return (uint64_t)tv.tv_sec * NANO_SEC + tv.tv_usec * 1000;
+#endif
 }
 
 // for profile
-
-#define NANO_SEC    1000000000
-#define MICRO_SEC   1000000
 
 uint64_t time_helper::thread_time()
 {
 #if !defined(__APPLE__) || defined(AVAILABLE_MAC_OS_X_VERSION_10_12_AND_LATER)
     struct timespec ti;
     ::clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ti);
-
     return (uint64_t)ti.tv_sec * MICRO_SEC + (uint64_t)ti.tv_nsec / (NANO_SEC / MICRO_SEC);
 #else
     struct task_thread_times_info ti;
@@ -69,7 +76,6 @@ uint64_t time_helper::thread_time()
     {
         return 0;
     }
-
     return (uint64_t)(ti.user_time.seconds) + (uint64_t)ti.user_time.microseconds;
 #endif
 }

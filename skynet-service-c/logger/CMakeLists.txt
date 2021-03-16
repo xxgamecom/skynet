@@ -1,9 +1,21 @@
-# source file list
-AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet-service-c/logger" LOGGER_SRC)
+# include path
+INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/skynet")
+
+#
+set(SKYNET_LOGGER_HEADER
+
+)
+
+set(SKYNET_LOGGER_SRC
+    service_logger.cpp
+)
+
+LIST(APPEND SKYNET_LOGGER_SRC ${SKYNET_LOGGER_HEADER})
 
 # target shared lib (logger.so)
 ADD_LIBRARY(logger MODULE 
-    ${LOGGER_SRC}
+    ${SKYNET_LOGGER_SRC}
+    $<TARGET_OBJECTS:skynet_o>
 )
 SET_TARGET_PROPERTIES(logger
     PROPERTIES

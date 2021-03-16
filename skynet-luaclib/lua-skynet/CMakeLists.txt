@@ -1,12 +1,23 @@
 # include path
 INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/skynet")
 
-# source file list
-AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet-luaclib/lua-skynet" SKYNET_SRC)
+#
+set(SKYNET_LUACLIB_HEADER
+    lua-seri.h
+)
+
+set(SKYNET_LUACLIB_SRC
+    lua-seri.cpp
+    lua-netpack.cpp
+    lua-socket.cpp
+    lua-skynet.cpp
+)
+
+LIST(APPEND SKYNET_LUACLIB_SRC ${SKYNET_LUACLIB_HEADER})
 
 # target shared lib (skynet.so)
-ADD_LIBRARY(libskynet MODULE 
-    ${SKYNET_SRC}
+ADD_LIBRARY(libskynet MODULE
+    ${SKYNET_LUACLIB_SRC}
     $<TARGET_OBJECTS:skynet_o>
 )
 SET_TARGET_PROPERTIES(libskynet

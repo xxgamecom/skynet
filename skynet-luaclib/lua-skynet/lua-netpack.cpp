@@ -57,9 +57,9 @@ struct uncomplete
 // 
 struct queue
 {
-    int                     cap = 0;                    // 
-    int                     head = 0;                   // 
-    int                     tail = 0;                   // 
+    int                     cap = 0;                    //
+    int                     head = 0;                   //
+    int                     tail = 0;                   //
     uncomplete*             hash[HASHSIZE];             // 一次从内核读取多个tcp包时放入该队列里
     netpack                 queue[QUEUESIZE];           // 指针数组，数组里每个位置指向一个不完整的tcp包链表，fd hash值相同的组成一个链表
 };
@@ -105,7 +105,7 @@ static inline int hash_fd(int fd)
     int a = fd >> 24;
     int b = fd >> 12;
     int c = fd;
-    return (int) (((uint32_t)(a + b + c)) % HASHSIZE);
+    return (int)(((uint32_t)(a + b + c)) % HASHSIZE);
 }
 
 static uncomplete* find_uncomplete(queue* q, int fd)
@@ -210,8 +210,7 @@ static struct uncomplete* save_uncomplete(lua_State* L, int fd)
 
 static inline int read_size(uint8_t* buffer)
 {
-    int r = (int) buffer[0] << 8 | (int) buffer[1];
-    return r;
+    return (int)buffer[0] << 8 | (int)buffer[1];
 }
 
 static void push_more(lua_State* L, int fd, uint8_t* buffer, int size)
@@ -223,6 +222,7 @@ static void push_more(lua_State* L, int fd, uint8_t* buffer, int size)
         uc->header = *buffer;
         return;
     }
+
     int pack_size = read_size(buffer);
     buffer += 2;
     size -= 2;
@@ -250,7 +250,7 @@ static void close_uncomplete(lua_State* L, int fd)
 {
     queue* q = (queue*)lua_touserdata(L, 1);
     uncomplete* uc = find_uncomplete(q, fd);
-    if (uc)
+    if (uc != nullptr)
     {
         delete[] uc->pack.buf_ptr;
         delete uc;
@@ -363,7 +363,7 @@ static inline int filter_data(lua_State* L, int fd, uint8_t* buffer, int size)
 
 static void pushstring(lua_State* L, const char* msg, int size)
 {
-    if (msg)
+    if (msg != nullptr)
     {
         lua_pushlstring(L, msg, size);
     }
@@ -390,7 +390,7 @@ static int l_filter(lua_State* L)
     char* buffer = message->buffer;
     if (buffer == nullptr)
     {
-        buffer = (char*) (message + 1);
+        buffer = (char*)(message + 1);
         size -= sizeof(*message);
     }
     else
@@ -405,7 +405,7 @@ static int l_filter(lua_State* L)
     case skynet::skynet_socket_event::EVENT_DATA:
         // ignore listen socket id (message->socket_id)
         assert(size == -1);    // never padding string
-        return filter_data(L, message->socket_id, (uint8_t*) buffer, message->ud);
+        return filter_data(L, message->socket_id, (uint8_t*)buffer, message->ud);
     case skynet::skynet_socket_event::EVENT_CONNECT:
         // ignore listen fd connect
         return 1;
@@ -451,7 +451,7 @@ static int l_pop(lua_State* L)
     queue* q = (queue*)lua_touserdata(L, 1);
     if (q == nullptr || q->head == q->tail)
         return 0;
-    
+
     netpack* np = &q->queue[q->head];
     if (++q->head >= q->cap)
     {
@@ -475,13 +475,14 @@ static const char* tolstring(lua_State* L, size_t* sz, int index)
     const char* ptr;
     if (lua_isuserdata(L, index))
     {
-        ptr = (const char*) lua_touserdata(L, index);
-        *sz = (size_t) luaL_checkinteger(L, index + 1);
+        ptr = (const char*)lua_touserdata(L, index);
+        *sz = (size_t)luaL_checkinteger(L, index + 1);
     }
     else
     {
         ptr = luaL_checklstring(L, index, sz);
     }
+
     return ptr;
 }
 
@@ -497,7 +498,7 @@ static int l_pack(lua_State* L)
     const char* ptr = tolstring(L, &len, 1);
     if (len >= 0x10000)
     {
-        return luaL_error(L, "Invalid size (too long) of data : %d", (int) len);
+        return luaL_error(L, "Invalid size (too long) of data : %d", (int)len);
     }
 
     uint8_t* buffer = new uint8_t[len + 2];
@@ -520,20 +521,23 @@ static int l_tostring(lua_State* L)
     }
     else
     {
-        lua_pushlstring(L, (const char*) ptr, size);
+        lua_pushlstring(L, (const char*)ptr, size);
         delete ptr;
     }
+
     return 1;
 }
 
 LUAMOD_API int luaopen_skynet_netpack(lua_State* L)
 {
     luaL_checkversion(L);
+
     luaL_Reg l[] = {
         { "pop", l_pop },
         { "pack", l_pack },
         { "clear", l_clear },
         { "tostring", l_tostring },
+
         { nullptr, nullptr },
     };
     luaL_newlib(L, l);

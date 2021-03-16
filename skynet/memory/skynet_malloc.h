@@ -22,7 +22,6 @@ void* skynet_memalign(size_t alignment, size_t size);
 void* skynet_aligned_alloc(size_t alignment, size_t size);
 int skynet_posix_memalign(void** memptr, size_t alignment, size_t size);
 
-
 #endif
 
 // use for lua memory alloc, 返回值用于lua_newstate的第一个参数

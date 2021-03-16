@@ -44,11 +44,11 @@ enum
     SIZEOF_UDP_BUFFER               = sizeof(write_buffer),
 };
 
-// 缓存优先级
+// buffer priority
 enum priority_type
 {
-    HIGH                        = 0,                                        // 高
-    LOW                         = 1,                                        // 低
+    HIGH                            = 0,
+    LOW                             = 1,
 };
 
 socket_server::~socket_server()
@@ -160,7 +160,7 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
                     continue;
 
                 // 需要清理 closed 事件
-                if (type == socket_event::SOCKET_CLOSE || type == socket_event::SOCKET_ERROR)
+                if (type == socket_event::EVENT_CLOSE || type == socket_event::EVENT_ERROR)
                 {
                     _clear_closed_event(result->socket_id);
                 }
@@ -214,9 +214,9 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
             {
                 int ok = report_accept(socket_ptr, result);
                 if (ok > 0)
-                    return socket_event::SOCKET_ACCEPT;
+                    return socket_event::EVENT_ACCEPT;
                 if (ok < 0)
-                    return socket_event::SOCKET_ERROR;
+                    return socket_event::EVENT_ERROR;
                 
                 // ok == 0, retry
                 break;
@@ -241,17 +241,17 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
                     type = forward_message_udp(socket_ptr, sl, result);
 
                     // 尝试再次读取
-                    if (type == socket_event::SOCKET_UDP)
+                    if (type == socket_event::EVENT_UDP)
                     {
                         --event_next_index_;
-                        return socket_event::SOCKET_UDP;
+                        return socket_event::EVENT_UDP;
                     }
                 }
 
                 // Try to dispatch write message next step if write flag set.
                 if (event_ref.is_writeable &&
-                    type != socket_event::SOCKET_CLOSE && 
-                    type != socket_event::SOCKET_ERROR)
+                    type != socket_event::EVENT_CLOSE &&
+                    type != socket_event::EVENT_ERROR)
                 {
                     event_ref.is_readable = false;
                     --event_next_index_;
@@ -293,14 +293,14 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
                 force_close(socket_ptr, sl, result);
                 result->data = const_cast<char*>(err);
 
-                return socket_event::SOCKET_ERROR;
+                return socket_event::EVENT_ERROR;
             }
             
             // eof
             if (event_ref.is_eof)
             {
                 force_close(socket_ptr, sl, result);
-                return socket_event::SOCKET_CLOSE;
+                return socket_event::EVENT_CLOSE;
             }
 
             break;
@@ -490,7 +490,7 @@ void socket_server::nodelay(int socket_id)
 // UDP
 //----------------------------------------------
 
-int socket_server::socket_server_udp(uint64_t svc_handle, const char* addr, int port)
+int socket_server::udp(uint64_t svc_handle, const char* addr, int port)
 {
     int fd = INVALID_FD;
     int family;
@@ -662,25 +662,23 @@ const socket_udp_address* socket_server::udp_address(socket_message* msg, int* a
     return (const socket_udp_address*)address;
 }
 
-socket_info* socket_server::get_socket_info()
+void socket_server::get_socket_info(std::list<socket_info>& si_list)
 {
-    socket_info* si = nullptr;
-    for (int i=0; i<MAX_SOCKET; i++)
-    {
-        auto& socket_ref = socket_slot_[i];
-        int socket_id = socket_ref.socket_id;
-        socket_info tmp_info;
+    // reset
+    si_list.clear();
 
-        // 该方法可以在不同的线程中调用, 再次检查下id
-        if (_query_socket_info(socket_ref, tmp_info) && socket_ref.socket_id == socket_id)
+    //
+    for (auto& socket_ref : socket_slot_)
+    {
+        auto socket_id = socket_ref.socket_id;
+        socket_info info;
+
+        // get_socket_info() may call in different thread, so check socket id again
+        if (_query_socket_info(socket_ref, info) && socket_ref.socket_id == socket_id)
         {
-            si = socket_info::create(si);
-            tmp_info.next = si->next;
-            *si = tmp_info;
+            si_list.push_back(info);
         }
     }
-
-    return si;
 }
 
 //----------------------------------------------
@@ -689,16 +687,15 @@ socket_info* socket_server::get_socket_info()
 
 void socket_server::_send_ctrl_cmd(ctrl_cmd_package* cmd)
 {
-    // header部分的长度为数据长度, 不header部分
-    // header部分为2字节, type: 1 byte, data_len: 1 byte
+    // header[6] - type, 1 byte
+    // header[7] - data len, 1 byte
     int data_len = cmd->header[7];
 
     for (;;)
     {
-        // 写数据到pipe
         int n = pipe_.write((const char*)&cmd->header[6], data_len + 2);
 
-        // 写失败了, 重试
+        // write failed, retry
         if (n < 0)
         {
             if (errno != EINTR)
@@ -718,13 +715,15 @@ void socket_server::_send_ctrl_cmd(ctrl_cmd_package* cmd)
 // 当工作线程执行socket.listen后，socket线程从接收管道读取数据，执行ctrl_cmd
 int socket_server::_recv_ctrl_cmd(socket_message* result)
 {
-    // recv header: type (1 byte) + len (1 byte)
+    // recv header: ctrl_cmd (1 byte) + data len (1 byte)
     uint8_t header[2] = { 0 };
     if (pipe_.read((char*)header, 2) == -1)
     {
         std::cerr << "socket-server : read pipe error " << ::strerror(errno) << "." << std::endl;
         return -1;
     }
+
+    //
     int ctrl_cmd = header[0];
     int len = header[1];
 
@@ -736,7 +735,7 @@ int socket_server::_recv_ctrl_cmd(socket_message* result)
         return -1;
     }
 
-    // 处理
+    // handle
     switch (ctrl_cmd)
     {
     case 'S':
@@ -857,7 +856,7 @@ int socket_server::handle_ctrl_cmd_open_socket(request_open* cmd, socket_message
                 result->data = addr_tmp_buf_;
             }
             ::freeaddrinfo(ai_list);
-            return socket_event::SOCKET_OPEN;
+            return socket_event::EVENT_OPEN;
         }
         else
         {
@@ -873,7 +872,7 @@ int socket_server::handle_ctrl_cmd_open_socket(request_open* cmd, socket_message
     {
         ::freeaddrinfo(ai_list);
         socket_slot_[calc_slot_index(socket_id)].status = socket::status::FREE;
-        return socket_event::SOCKET_ERROR;
+        return socket_event::EVENT_ERROR;
     }
 
     // success
@@ -891,7 +890,7 @@ int socket_server::handle_ctrl_cmd_close_socket(request_close* cmd, socket_messa
         result->svc_handle = cmd->svc_handle;
         result->ud = 0;
         result->data = nullptr;
-        return socket_event::SOCKET_CLOSE;
+        return socket_event::EVENT_CLOSE;
     }
 
     socket_lock sl(socket_ref.dw_mutex);
@@ -901,9 +900,9 @@ int socket_server::handle_ctrl_cmd_close_socket(request_close* cmd, socket_messa
     {
         int type = send_write_buffer(&socket_ref, sl, result);
 
-        // -1 or socket_event::SOCKET_WARNING or socket_event::SOCKET_CLOSE, 
-        //       socket_event::SOCKET_WARNING means nomore_sending_data
-        if (type != -1 && type != socket_event::SOCKET_WARNING)
+        // -1 or socket_event::EVENT_WARNING or socket_event::EVENT_CLOSE,
+        //       socket_event::EVENT_WARNING means nomore_sending_data
+        if (type != -1 && type != socket_event::EVENT_WARNING)
             return type;
     }
 
@@ -914,7 +913,7 @@ int socket_server::handle_ctrl_cmd_close_socket(request_close* cmd, socket_messa
 
         result->socket_id = socket_id;
         result->svc_handle = cmd->svc_handle;
-        return socket_event::SOCKET_CLOSE;
+        return socket_event::EVENT_CLOSE;
     }
     
     socket_ref.status = socket::status::HALF_CLOSE;
@@ -934,14 +933,14 @@ int socket_server::handle_ctrl_cmd_bind_socket(request_bind* cmd, socket_message
     if (new_socket_ptr == nullptr)
     {
         result->data = const_cast<char*>("reach skynet socket number limit");
-        return socket_event::SOCKET_ERROR;
+        return socket_event::EVENT_ERROR;
     }
 
     socket_helper::nonblocking(cmd->fd);
     new_socket_ptr->status = socket::status::BIND;
     result->data = const_cast<char*>("binding");
 
-    return socket_event::SOCKET_OPEN;
+    return socket_event::EVENT_OPEN;
 }
 
 int socket_server::handle_ctrl_cmd_start_socket(request_start* cmd, socket_message* result)
@@ -958,7 +957,7 @@ int socket_server::handle_ctrl_cmd_start_socket(request_start* cmd, socket_messa
     if (socket_ref.status == socket::status::FREE || socket_ref.socket_id != socket_id)
     {
         result->data = const_cast<char*>("invalid socket");
-        return socket_event::SOCKET_ERROR;
+        return socket_event::EVENT_ERROR;
     }
     
     //
@@ -970,13 +969,13 @@ int socket_server::handle_ctrl_cmd_start_socket(request_start* cmd, socket_messa
             force_close(&socket_ref, sl, result);
 
             result->data = ::strerror(errno);
-            return socket_event::SOCKET_ERROR;
+            return socket_event::EVENT_ERROR;
         }
 
         socket_ref.status = (socket_ref.status == socket::status::PACCEPT) ? socket::status::CONNECTED : socket::status::LISTEN;
         socket_ref.svc_handle = cmd->svc_handle;
         result->data = const_cast<char*>("start");
-        return socket_event::SOCKET_OPEN;
+        return socket_event::EVENT_OPEN;
     }
     //
     else if (socket_ref.status == socket::status::CONNECTED)
@@ -984,7 +983,7 @@ int socket_server::handle_ctrl_cmd_start_socket(request_start* cmd, socket_messa
         // todo: maybe we should send a message SOCKET_TRANSFER to socket_ptr->svc_handle
         socket_ref.svc_handle = cmd->svc_handle;
         result->data = const_cast<char*>("transfer");
-        return socket_event::SOCKET_OPEN;
+        return socket_event::EVENT_OPEN;
     }
 
     // if socket_ptr->status == socket::status::HALF_CLOSE , socket::status::SOCKET_CLOSE message will send later
@@ -997,7 +996,7 @@ int socket_server::handle_ctrl_cmd_setopt_socket(request_set_opt* cmd)
 
     auto& socket_ref = socket_slot_[calc_slot_index(socket_id)];
     if (socket_ref.status == socket::status::FREE || socket_ref.socket_id != socket_id)
-        return socket_event::SOCKET_ERROR;
+        return socket_event::EVENT_ERROR;
 
     int v = cmd->value;
     ::setsockopt(socket_ref.socket_fd, IPPROTO_TCP, cmd->what, &v, sizeof(v));
@@ -1012,7 +1011,7 @@ int socket_server::handle_ctrl_cmd_exit_socket(socket_message* result)
     result->ud = 0;
     result->data = nullptr;
 
-    return socket_event::SOCKET_EXIT;
+    return socket_event::EVENT_EXIT;
 }
 
 /**
@@ -1110,7 +1109,7 @@ int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message
         result->socket_id = socket_ref.socket_id;
         result->ud = socket_ref.wb_size % 1024 == 0 ? socket_ref.wb_size / 1024 : socket_ref.wb_size / 1024 + 1;
         result->data = nullptr;
-        return socket_event::SOCKET_WARNING;
+        return socket_event::EVENT_WARNING;
     }
     
     return -1;
@@ -1126,13 +1125,16 @@ int socket_server::handle_ctrl_cmd_listen_socket(request_listen* cmd, socket_mes
     if (new_socket_ptr == nullptr)
     {
         ::close(listen_fd);
+
         result->svc_handle = cmd->svc_handle;
         result->socket_id = socket_id;
         result->ud = 0;
         result->data = const_cast<char*>("reach socket number limit");
+
+        //
         socket_slot_[calc_slot_index(socket_id)].status = socket::status::FREE;
 
-        return socket_event::SOCKET_ERROR;
+        return socket_event::EVENT_ERROR;
     }
     
     new_socket_ptr->status = socket::status::PLISTEN;
@@ -1150,7 +1152,7 @@ int socket_server::handle_ctrl_cmd_add_udp_socket(request_udp* cmd)
     {
         ::close(cmd->fd);
         socket_slot_[calc_slot_index(socket_id)].status = socket::status::FREE;
-        return socket_event::SOCKET_ERROR;
+        return socket_event::EVENT_ERROR;
     }
 
     new_socket_ptr->status = socket::status::CONNECTED;
@@ -1176,7 +1178,7 @@ int socket_server::handle_ctrl_cmd_set_udp_address(request_set_udp* cmd, socket_
         result->ud = 0;
         result->data = const_cast<char*>("protocol mismatch");
 
-        return socket_event::SOCKET_ERROR;
+        return socket_event::EVENT_ERROR;
     }
 
     if (type == protocol_type::UDP)
@@ -1415,7 +1417,7 @@ write_buffer* socket_server::prepare_write_buffer(write_buffer_list* wb_list, re
 
     //
     send_object so;
-    write_buf_ptr->is_userobject = send_object_init(&so, cmd->data_ptr, cmd->sz);
+    write_buf_ptr->is_user_object = send_object_init(&so, cmd->data_ptr, cmd->sz);
     write_buf_ptr->ptr = (char*)so.buffer;
     write_buf_ptr->sz = so.sz;
     write_buf_ptr->buffer = cmd->data_ptr;
@@ -1438,7 +1440,7 @@ write_buffer* socket_server::prepare_write_buffer(write_buffer_list* wb_list, re
 
 void socket_server::free_write_buffer(write_buffer* wb)
 {
-    if (wb->is_userobject)
+    if (wb->is_user_object)
     {
 //         soi_.free((void*)wb->buffer);
         delete[] (char*)wb->buffer;
@@ -1477,7 +1479,7 @@ int socket_server::send_write_buffer(socket* socket_ptr, socket_lock& sl, socket
         auto write_buf_ptr = (write_buffer*)new char[SIZEOF_TCP_BUFFER]{0};
 
         send_object so;
-        write_buf_ptr->is_userobject = send_object_init(&so, (void*)socket_ptr->dw_buffer, socket_ptr->dw_size);
+        write_buf_ptr->is_user_object = send_object_init(&so, (void*)socket_ptr->dw_buffer, socket_ptr->dw_size);
         write_buf_ptr->ptr = (char*)so.buffer + socket_ptr->dw_offset;
         write_buf_ptr->sz = so.sz - socket_ptr->dw_offset;
         write_buf_ptr->buffer = (void*)socket_ptr->dw_buffer;
@@ -1532,7 +1534,7 @@ int socket_server::send_write_buffer_list_tcp(socket* socket_ptr, write_buffer_l
                     return -1;
 
                 force_close(socket_ptr, sl, result);
-                return socket_event::SOCKET_CLOSE;
+                return socket_event::EVENT_CLOSE;
             }
             
             socket_ptr->stat_send((int)sz, time_);
@@ -1635,8 +1637,8 @@ int socket_server::do_send_write_buffer(socket* socket_ptr, socket_lock& sl, soc
     assert(list_uncomplete(&socket_ptr->wb_list_low) == 0);
 
     // step 1
-    if (send_write_buffer_list(socket_ptr, &socket_ptr->wb_list_high, sl, result) == socket_event::SOCKET_CLOSE)
-        return socket_event::SOCKET_CLOSE;
+    if (send_write_buffer_list(socket_ptr, &socket_ptr->wb_list_high, sl, result) == socket_event::EVENT_CLOSE)
+        return socket_event::EVENT_CLOSE;
 
     //
     if (socket_ptr->wb_list_high.head == nullptr)
@@ -1644,8 +1646,8 @@ int socket_server::do_send_write_buffer(socket* socket_ptr, socket_lock& sl, soc
         // step 2
         if (socket_ptr->wb_list_low.head != nullptr)
         {
-            if (send_write_buffer_list(socket_ptr, &socket_ptr->wb_list_low, sl, result) == socket_event::SOCKET_CLOSE)
-                return socket_event::SOCKET_CLOSE;
+            if (send_write_buffer_list(socket_ptr, &socket_ptr->wb_list_low, sl, result) == socket_event::EVENT_CLOSE)
+                return socket_event::EVENT_CLOSE;
 
             // step 3
             if (list_uncomplete(&socket_ptr->wb_list_low) != 0)
@@ -1664,7 +1666,7 @@ int socket_server::do_send_write_buffer(socket* socket_ptr, socket_lock& sl, soc
         if (socket_ptr->status == socket::status::HALF_CLOSE)
         {
             force_close(socket_ptr, sl, result);
-            return socket_event::SOCKET_CLOSE;
+            return socket_event::EVENT_CLOSE;
         }
         if(socket_ptr->warn_size > 0)
         {
@@ -1673,7 +1675,7 @@ int socket_server::do_send_write_buffer(socket* socket_ptr, socket_lock& sl, soc
             result->socket_id = socket_ptr->socket_id;
             result->ud = 0;
             result->data = nullptr;
-            return socket_event::SOCKET_WARNING;
+            return socket_event::EVENT_WARNING;
         }
     }
 
@@ -1754,7 +1756,7 @@ int socket_server::report_connect(socket* socket_ptr, socket_message* result)
 
         result->data = code >= 0 ? ::strerror(error) : ::strerror(errno);
         
-        return socket_event::SOCKET_ERROR;
+        return socket_event::EVENT_ERROR;
     }
 
     // 
@@ -1774,12 +1776,12 @@ int socket_server::report_connect(socket* socket_ptr, socket_message* result)
         if (::inet_ntop(sa.s.sa_family, sin_addr, addr_tmp_buf_, ADDR_TMP_BUFFER_SIZE))
         {
             result->data = addr_tmp_buf_;
-            return socket_event::SOCKET_OPEN;
+            return socket_event::EVENT_OPEN;
         }
     }
     result->data = nullptr;
 
-    return socket_event::SOCKET_OPEN;
+    return socket_event::EVENT_OPEN;
 }
 
 // 单个socket每次从内核尝试读取的数据字节数为sz
@@ -1809,7 +1811,7 @@ int socket_server::forward_message_tcp(socket* socket_ptr, socket_lock& sl, sock
         force_close(socket_ptr, sl, result);
         result->data = ::strerror(errno);
 
-        return socket_event::SOCKET_ERROR;
+        return socket_event::EVENT_ERROR;
     }
     //
     if (n == 0)
@@ -1817,7 +1819,7 @@ int socket_server::forward_message_tcp(socket* socket_ptr, socket_lock& sl, sock
         delete[] buffer;
 
         force_close(socket_ptr, sl, result);
-        return socket_event::SOCKET_CLOSE;
+        return socket_event::EVENT_CLOSE;
     }
 
     if (socket_ptr->status == socket::status::HALF_CLOSE)
@@ -1844,7 +1846,7 @@ int socket_server::forward_message_tcp(socket* socket_ptr, socket_lock& sl, sock
     result->ud = n;
     result->data = buffer;
 
-    return socket_event::SOCKET_DATA;
+    return socket_event::EVENT_DATA;
 }
 
 int socket_server::forward_message_udp(socket* socket_ptr, socket_lock& sl, socket_message* result)
@@ -1861,7 +1863,7 @@ int socket_server::forward_message_udp(socket* socket_ptr, socket_lock& sl, sock
         force_close(socket_ptr, sl, result);
         result->data = ::strerror(errno);
 
-        return socket_event::SOCKET_ERROR;
+        return socket_event::EVENT_ERROR;
     }
 
     // recv statistics
@@ -1896,7 +1898,7 @@ int socket_server::forward_message_udp(socket* socket_ptr, socket_lock& sl, sock
     result->ud = n;
     result->data = (char*)data_ptr;
 
-    return socket_event::SOCKET_UDP;
+    return socket_event::EVENT_UDP;
 }
 
 bool socket_server::send_object_init(send_object* so, const void* object, size_t sz)
@@ -1946,7 +1948,7 @@ void socket_server::send_object_init(send_object* so, send_buffer* buf_ptr)
 }
 
 
-bool socket_server::_query_socket_info(socket& socket_ref, socket_info& si)
+bool socket_server::_query_socket_info(const socket& socket_ref, socket_info& si)
 {
     socket_addr sa;
     socklen_t sa_sz = sizeof(sa);
@@ -1956,13 +1958,13 @@ bool socket_server::_query_socket_info(socket& socket_ref, socket_info& si)
     {
     case socket::status::BIND:
         {
-            si.status = socket_info::status::BIND;
+            si.type = socket_info_type::BIND;
             si.endpoint[0] = '\0';
         }
         break;
     case socket::status::LISTEN:
         {
-            si.status = socket_info::status::LISTEN;
+            si.type = socket_info_type::LISTEN;
             // local server listen address
             if (::getsockname(socket_ref.socket_fd, &sa.s, &sa_sz) == 0)
                 to_endpoint(&sa, si.endpoint, sizeof(si.endpoint));
@@ -1971,14 +1973,14 @@ bool socket_server::_query_socket_info(socket& socket_ref, socket_info& si)
     case socket::status::CONNECTED:
         if (socket_ref.protocol == protocol_type::TCP)
         {
-            si.status = socket_info::status::TCP;
+            si.type = socket_info_type::TCP;
             // remote client address
             if (::getpeername(socket_ref.socket_fd, &sa.s, &sa_sz) == 0)
                 to_endpoint(&sa, si.endpoint, sizeof(si.endpoint));
         }
         else
         {
-            si.status = socket_info::status::UDP;
+            si.type = socket_info_type::UDP;
             // 
             if (udp_address_to_socket_addr(socket_ref.protocol, socket_ref.p.udp_address, sa))
                 to_endpoint(&sa, si.endpoint, sizeof(si.endpoint));

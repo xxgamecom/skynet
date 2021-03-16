@@ -22,7 +22,7 @@ public:
     // poll event
     struct event
     {
-        socket*                     socket_ptr = nullptr;                   // 事件关联的socket对象
+        socket*                     socket_ptr = nullptr;                   // the socket object associated with the event
 
         bool                        is_readable = false;
         bool                        is_writeable = false;
@@ -71,4 +71,4 @@ public:
     int wait(event* event_ptr, int max_events = MAX_WAIT_EVENT);
 };
 
-}}
+} }

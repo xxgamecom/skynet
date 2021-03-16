@@ -54,7 +54,7 @@ struct timer_event
 };
 
 // create a timer
-timer* create_timer()
+static timer* create_timer()
 {
     timer* r = (timer*)::malloc(sizeof(timer));
 
@@ -197,7 +197,7 @@ void timer_manager::init()
     uint32_t current = 0;
     time_helper::systime(&TI->start_time, &current);
     TI->current = current;
-    TI->current_point = time_helper::gettime();
+    TI->current_point = time_helper::get_time_tick();
 }
 
 // 创建定时操作
@@ -237,7 +237,7 @@ int timer_manager::timeout(uint32_t handle, int time, int session)
 void timer_manager::update_time()
 {
     // 当前时间
-    uint64_t cp = time_helper::gettime();
+    uint64_t cp = time_helper::get_time_tick();
     // 
     if (cp < TI->current_point)
     {

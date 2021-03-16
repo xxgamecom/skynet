@@ -39,7 +39,7 @@ local function suspend(s)
 end
 
 -- read skynet_socket.h for these macro
--- SKYNET_SOCKET_TYPE_DATA = 1
+-- skynet_socket_event::EVENT_DATA = 1
 socket_message[1] = function(id, size, data)
     local s = socket_pool[id]
     if s == nil then
@@ -74,7 +74,7 @@ socket_message[1] = function(id, size, data)
     end
 end
 
--- SKYNET_SOCKET_TYPE_CONNECT = 2
+-- skynet_socket_event::EVENT_CONNECT = 2
 socket_message[2] = function(id, _ , addr)
     local s = socket_pool[id]
     if s == nil then
@@ -85,7 +85,7 @@ socket_message[2] = function(id, _ , addr)
     wakeup(s)
 end
 
--- SKYNET_SOCKET_TYPE_CLOSE = 3
+-- skynet_socket_event::EVENT_CLOSE = 3
 socket_message[3] = function(id)
     local s = socket_pool[id]
     if s == nil then
@@ -95,7 +95,7 @@ socket_message[3] = function(id)
     wakeup(s)
 end
 
--- SKYNET_SOCKET_TYPE_ACCEPT = 4
+-- skynet_socket_event::EVENT_ACCEPT = 4
 socket_message[4] = function(id, newid, addr)
     local s = socket_pool[id]
     if s == nil then
@@ -105,7 +105,7 @@ socket_message[4] = function(id, newid, addr)
     s.callback(newid, addr)
 end
 
--- SKYNET_SOCKET_TYPE_ERROR = 5
+-- skynet_socket_event::EVENT_ERROR = 5
 socket_message[5] = function(id, _, err)
     local s = socket_pool[id]
     if s == nil then
@@ -144,7 +144,7 @@ local function default_warning(id, size)
     skynet.error(string.format("WARNING: %d K bytes need to send out (fd = %d)", size, id))
 end
 
--- SKYNET_SOCKET_TYPE_WARNING
+-- skynet_socket_event::EVENT_WARNING
 socket_message[7] = function(id, size)
     local s = socket_pool[id]
     if s then
@@ -213,7 +213,7 @@ function socket.shutdown(id)
     local s = socket_pool[id]
     if s then
         driver.clear(s.buffer,buffer_pool)
-        -- the framework would send SKYNET_SOCKET_TYPE_CLOSE , need close(id) later
+        -- the framework would send skynet_socket_event::EVENT_CLOSE , need close(id) later
         driver.shutdown(id)
     end
 end

@@ -19,22 +19,22 @@ static void* _poll(void* ud)
         // DO NOT use any ctrl command (socket_server_close , etc. ) in this thread.
         switch (type)
         {
-        case socket::socket_event::SOCKET_EXIT:
+        case socket::socket_event::EVENT_EXIT:
             return NULL;
-        case socket::socket_event::SOCKET_DATA:
+        case socket::socket_event::EVENT_DATA:
             printf("message(%llu) [id=%d] size=%d\n", result.svc_handle, result.socket_id, result.ud);
             free(result.data);
             break;
-        case socket::socket_event::SOCKET_CLOSE:
+        case socket::socket_event::EVENT_CLOSE:
             printf("close(%llu) [id=%d]\n", result.svc_handle, result.socket_id);
             break;
-        case socket::socket_event::SOCKET_OPEN:
+        case socket::socket_event::EVENT_OPEN:
             printf("open(%llu) [id=%d] %s\n", result.svc_handle, result.socket_id, result.data);
             break;
-        case socket::socket_event::SOCKET_ERROR:
+        case socket::socket_event::EVENT_ERROR:
             printf("error(%llu) [id=%d]\n", result.svc_handle, result.socket_id);
             break;
-        case socket::socket_event::SOCKET_ACCEPT:
+        case socket::socket_event::EVENT_ACCEPT:
             printf("accept(%llu) [id=%d %s] from [%d]\n", result.svc_handle, result.ud, result.data, result.socket_id);
             break;
         }

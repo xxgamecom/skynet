@@ -28,11 +28,6 @@ ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-snapshot)
 # lua-httpsc
 ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-httpsc)
 
-# lua-epoll
-if (LINUX)
-    ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-epoll)
-endif()
-
 # lua-pbc
 ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-pbc)
 ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-pbc/binding)

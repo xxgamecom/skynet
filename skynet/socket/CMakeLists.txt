@@ -23,7 +23,6 @@ set(SKYNET_SOCKET_SRC
     socket/socket.cpp
     socket/socket_helper.cpp
     socket/socket_addr.cpp
-    socket/socket_info.cpp
     socket/socket_lock.cpp
     socket/socket_server.cpp
     socket/socket_server_ctrl_cmd.cpp

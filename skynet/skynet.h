@@ -13,7 +13,7 @@
 #include "memory/skynet_malloc.h"
 
 // message api:
-// enum message_type;
+// enum message_type
 #include "mq/mq_msg.h"
 
 // log api:
@@ -32,9 +32,13 @@
 #include "service/service_command.h"
 
 // socket api
+// node_socket::instance()->
 #include "node/node_socket.h"
 
 // time api:
 // timer_manager::instance()->now();
 #include "timer/timer_manager.h"
 
+// utils api
+// time_helper
+#include "utils/time_helper.h"

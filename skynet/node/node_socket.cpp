@@ -115,27 +115,27 @@ int node_socket::poll_socket_event()
     int type = socket_server_->poll_socket_event(&result, is_more);
     switch (type)
     {
-    case socket::socket_event::SOCKET_EXIT:
+    case socket::socket_event::EVENT_EXIT:
         return 0;
-    case socket::socket_event::SOCKET_DATA:
+    case socket::socket_event::EVENT_DATA:
         forward_message(skynet_socket_event::EVENT_DATA, false, &result);
         break;
-    case socket::socket_event::SOCKET_CLOSE:
+    case socket::socket_event::EVENT_CLOSE:
         forward_message(skynet_socket_event::EVENT_CLOSE, false, &result);
         break;
-    case socket::socket_event::SOCKET_OPEN:
+    case socket::socket_event::EVENT_OPEN:
         forward_message(skynet_socket_event::EVENT_CONNECT, true, &result);
         break;
-    case socket::socket_event::SOCKET_ERROR:
+    case socket::socket_event::EVENT_ERROR:
         forward_message(skynet_socket_event::EVENT_ERROR, true, &result);
         break;
-    case socket::socket_event::SOCKET_ACCEPT:
+    case socket::socket_event::EVENT_ACCEPT:
         forward_message(skynet_socket_event::EVENT_ACCEPT, true, &result);
         break;
-    case socket::socket_event::SOCKET_UDP:
+    case socket::socket_event::EVENT_UDP:
         forward_message(skynet_socket_event::EVENT_UDP, false, &result);
         break;
-    case socket::socket_event::SOCKET_WARNING:
+    case socket::socket_event::EVENT_WARNING:
         forward_message(skynet_socket_event::EVENT_WARNING, false, &result);
         break;
     default:
@@ -155,7 +155,7 @@ int node_socket::sendbuffer(service_context* ctx, socket::send_buffer* buffer)
     return socket_server_->send(buffer);
 }
 
-int node_socket::sendbuffer_lowpriority(service_context* ctx, socket::send_buffer* buffer)
+int node_socket::sendbuffer_low_priority(service_context* ctx, socket::send_buffer* buffer)
 {
     return socket_server_->send_low_priority(buffer);
 }
@@ -204,7 +204,7 @@ void node_socket::nodelay(service_context* ctx, int id)
 int node_socket::udp(service_context* ctx, const char* addr, int port)
 {
     uint32_t src_svc_handle = ctx->svc_handle_;
-    return socket_server_->socket_server_udp(src_svc_handle, addr, port);
+    return socket_server_->udp(src_svc_handle, addr, port);
 }
 
 int node_socket::udp_connect(service_context* ctx, int id, const char* addr, int port)
@@ -231,9 +231,9 @@ const char* node_socket::udp_address(skynet_socket_message* msg, int* addrsz)
     return (const char*)socket_server_->udp_address(&sm, addrsz);
 }
 
-socket::socket_info* node_socket::get_socket_info()
+void node_socket::get_socket_info(std::list<socket::socket_info>& si_list)
 {
-    return socket_server_->get_socket_info();
+    socket_server_->get_socket_info(si_list);
 }
 
 }

@@ -4,6 +4,7 @@
 #include "../socket/buffer.h"
 
 #include <memory>
+#include <list>
 
 namespace skynet {
 
@@ -64,9 +65,6 @@ public:
     int poll_socket_event();
 
     //
-    int sendbuffer(service_context* ctx, socket::send_buffer* buffer);
-    int sendbuffer_lowpriority(service_context* ctx, socket::send_buffer* buffer);
-
     int listen(service_context* ctx, const char* host, int port, int backlog);
     int connect(service_context* ctx, const char* host, int port);
     int bind(service_context* ctx, int fd);
@@ -75,13 +73,16 @@ public:
     void start(service_context* ctx, int id);
     void nodelay(service_context* ctx, int id);
 
+    int sendbuffer(service_context* ctx, socket::send_buffer* buffer);
+    int sendbuffer_low_priority(service_context* ctx, socket::send_buffer* buffer);
+
     //
     int udp(service_context* ctx, const char* addr, int port);
     int udp_connect(service_context* ctx, int id, const char* addr, int port);
     int udp_sendbuffer(service_context* ctx, const char* address, socket::send_buffer* buffer);
     const char* udp_address(skynet_socket_message*, int* addrsz);
 
-    socket::socket_info* get_socket_info();
+    void get_socket_info(std::list<socket::socket_info>& si_list);
 };
 
 //
@@ -114,7 +115,7 @@ static inline int skynet_socket_send_low_priority(service_context* ctx, int id, 
 {
     socket::send_buffer tmp;
     sendbuffer_init_(&tmp, id, buffer, sz);
-    return node_socket::instance()->sendbuffer_lowpriority(ctx, &tmp);
+    return node_socket::instance()->sendbuffer_low_priority(ctx, &tmp);
 }
 
 static inline int skynet_socket_udp_send(service_context* ctx, int id, const char* address, const void* buffer, int sz)

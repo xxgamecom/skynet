@@ -2,15 +2,16 @@
 
 #include <cstdint>
 #include <memory>
+#include <list>
 
 #include "socket.h"
 #include "socket_lock.h"
 #include "socket_addr.h"
 #include "socket_info.h"
 #include "buffer.h"
-#include "socket_server_ctrl_cmd.h"
 #include "pipe.h"
 #include "poller.h"
+#include "socket_server_ctrl_cmd.h"
 
 namespace skynet { namespace socket {
 
@@ -37,7 +38,7 @@ private:
     pipe                                pipe_;                                          //
     bool                                need_check_ctrl_cmd_ = true;                    // 是否需要检查控制命令    
 
-    std::atomic<int>                    alloc_socket_id_{ 0 };                          // 用于分配socket id
+    std::atomic<int>                    alloc_socket_id_ { 0 };                         // 用于分配socket id
 
     //
     poller                              event_poller_;                                  // poller (epoll或kevent的句柄)
@@ -89,7 +90,7 @@ public:
      */
     void shutdown(uint64_t svc_handle, int socket_id);
 
-        /**
+    /**
      * 绑定监听ip端口
      * 
      * @param svc_handle skynet服务句柄
@@ -120,6 +121,11 @@ public:
     int bind(uint64_t svc_handle, int fd);
 
     /**
+     * for tcp
+     */
+    void nodelay(int socket_id);
+
+    /**
      * 刷新时间
      */
     void update_time(uint64_t time);
@@ -134,16 +140,11 @@ public:
      */
     int poll_socket_event(socket_message* result, bool& is_more);
 
-    /**
-     * for tcp
-     */
-    void nodelay(int socket_id);
-
     // if you send package with type buffer_type::OBJECT, use soi.
     void userobject(socket_object_interface* soi);
 
     // 查询所有socket信息 (socket_info是一个链表)
-    socket_info* get_socket_info();
+    void get_socket_info(std::list<socket_info>& si_list);
 
     /**
      * 发送数据 (低优先级)
@@ -162,7 +163,7 @@ public:
     * 如果 addr == NULL, 绑定 ipv4 0.0.0.0;
     * 如果想要使用ipv6，地址使用“::”，端口中port设为0
     */
-    int socket_server_udp(uint64_t svc_handle, const char* addr, int port);
+    int udp(uint64_t svc_handle, const char* addr, int port);
 
     /**
      * 设置默认的端口地址
@@ -180,7 +181,7 @@ public:
     /**
      * 获取消息内的IP地址 (UDP)
      * 
-     * @param msg 消息, 传入的消息必须为 socket_event::SOCKET_UDP 类型
+     * @param msg 消息, 传入的消息必须为 socket_event::EVENT_UDP 类型
      * @param addr_sz 地址所占字节数 
      */
     const socket_udp_address* udp_address(socket_message* msg, int* addr_sz);
@@ -189,7 +190,7 @@ public:
     // 计算socket slot数组下标
     inline static uint32_t calc_slot_index(int socket_id);
     // 高16位
-    inline static uint16_t socket_id_tag16(int id);
+    inline static uint16_t socket_id_tag16(int socket_id);
 
     // ctrl cmd
 private:
@@ -209,20 +210,9 @@ private:
     int handle_ctrl_cmd_start_socket(request_start* cmd, socket_message* result);
     int handle_ctrl_cmd_setopt_socket(request_set_opt* cmd);
     int handle_ctrl_cmd_exit_socket(socket_message* result);
-    /**
-     * 发送数据
-     * 可以设置发送优先级: priority_type::HIGH 或 priority_type::LOW
-     * 
-     * 如果socket缓存为空, 直接将数据写入fd中.
-     * 如果是写入部分数据, 将剩余部分写入到 高优先级 列表中. (即使优先级为 priority_type::LOW 也是如此)
-     * 否则, 将数据添加到高优先级队列(priority_type::HIGH) 或 低优先级队列(priority_type::LOW).
-     */
     int handle_ctrl_cmd_send_socket(request_send* cmd, socket_message* result, int priority, const uint8_t* udp_address);
-    // 
     int handle_ctrl_cmd_listen_socket(request_listen* cmd, socket_message* result);
-    //
     int handle_ctrl_cmd_add_udp_socket(request_udp* cmd);
-    //
     int handle_ctrl_cmd_set_udp_address(request_set_udp* cmd, socket_message* result);
 
     // send
@@ -306,10 +296,8 @@ private:
     bool send_object_init(send_object* so, const void* object, size_t sz);
     void send_object_init(send_object* so, send_buffer* buf);
 
-    // 查询socket info
-    bool _query_socket_info(socket& socket_ref, socket_info& si);
+    bool _query_socket_info(const socket& socket_ref, socket_info& si);
 
-    // 清理关闭事件
     void _clear_closed_event(int socket_id);    
 };
 

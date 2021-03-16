@@ -78,7 +78,7 @@ void node_thread::start(int work_thread_num)
     // worker thread monitor array
     monitor_data_ptr->svc_monitors.reset(new service_monitor[work_thread_num], std::default_delete<service_monitor[]>());
 
-    // start mointer, timer, socket threads
+    // start monitor, timer, socket threads
     threads[0] = std::make_shared<std::thread>(node_thread::thread_monitor, monitor_data_ptr);
     threads[1] = std::make_shared<std::thread>(node_thread::thread_timer, monitor_data_ptr);
     threads[2] = std::make_shared<std::thread>(node_thread::thread_socket, monitor_data_ptr);

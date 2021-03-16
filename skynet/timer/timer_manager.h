@@ -29,10 +29,11 @@ public:
     // 定时器初始化
     void init();
 
-    // 定时执行操作
-    int timeout(uint32_t handle, int time, int session);
     // 帧函数, 定时器定时刷新(0.0025秒/帧)
     void update_time();
+
+    // timeout function
+    int timeout(uint32_t handle, int time, int session);
 
     // 返回当前进程启动后经过的时间 (0.01 秒)
     uint64_t now();

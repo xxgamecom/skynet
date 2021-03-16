@@ -20,7 +20,7 @@ namespace skynet {
 struct timer_node
 {
     timer_node*                 next = nullptr;                 // next timer node ptr
-    uint32_t                    expire;                         // expire ticks (the number of ticks since skynet node startup)
+    uint32_t                    expire = 0;                     // expire ticks (the number of ticks since skynet node startup)
 };
 
 // 定时器链表

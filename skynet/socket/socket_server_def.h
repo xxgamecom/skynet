@@ -19,36 +19,36 @@ namespace skynet { namespace socket {
 // common constants
 //----------------------------------------------
 
-// 无效fd
+//
 #define INVALID_FD              -1
 
-// udp
-#define UDP_ADDRESS_SIZE        19                                          // udp地址长度 = ipv6 128bit + port 16bit + 1 byte type
+// udp地址长度 = ipv6 128bit + port 16bit + 1 byte type
+#define UDP_ADDRESS_SIZE        19
 
 //----------------------------------------------
 // 
 //----------------------------------------------
 
-// socket事件类型
+// socket event type
 enum socket_event
 {
-    SOCKET_DATA                 = 0,                                        // socket 正常数据
-    SOCKET_CLOSE                = 1,                                        // socket close 数据
-    SOCKET_OPEN                 = 2,                                        // socket open 数据 (connect)
-    SOCKET_ACCEPT               = 3,                                        // socket accept 数据
-    SOCKET_ERROR                = 4,                                        // socket error 数据
-    SOCKET_EXIT                 = 5,                                        // socket exit 数据
-    SOCKET_UDP                  = 6,                                        // socket udp 数据
-    SOCKET_WARNING              = 7,                                        // socket warning 数据
+    EVENT_DATA                  = 0,                                        // socket 正常数据
+    EVENT_CLOSE                 = 1,                                        // socket close 数据
+    EVENT_OPEN                  = 2,                                        // socket open 数据 (connect)
+    EVENT_ACCEPT                = 3,                                        // socket accept 数据
+    EVENT_ERROR                 = 4,                                        // socket error 数据
+    EVENT_EXIT                  = 5,                                        // socket exit 数据
+    EVENT_UDP                   = 6,                                        // socket udp 数据
+    EVENT_WARNING               = 7,                                        // socket warning 数据
 };
 
 // 协议类型
 enum protocol_type
 {
-    TCP                         = 0,                                        //
-    UDP                         = 1,                                        //
-    UDPv6                       = 2,                                        //
-    UNKNOWN                     = 255,                                      //
+    TCP                         = 0,
+    UDP                         = 1,
+    UDPv6                       = 2,
+    UNKNOWN                     = 255,
 };
 
 // 发送缓存
@@ -59,7 +59,7 @@ struct write_buffer
     const void*                 buffer = nullptr;                           //
     char*                       ptr = nullptr;                              //
     size_t                      sz = 0;                                     //
-    bool                        is_userobject = false;                      //
+    bool                        is_user_object = false;                     //
     uint8_t                     udp_address[UDP_ADDRESS_SIZE] = { 0 };      //
 };
 
