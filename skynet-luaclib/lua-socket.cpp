@@ -25,6 +25,7 @@ namespace skynet { namespace luaclib {
 
 #define BACKLOG             32
 #define LARGE_PAGE_NODE     12                  // 2 ** 12 == 4096
+#define POOL_SIZE_WARNING   32
 #define BUFFER_LIMIT        (256 * 1024)
 
 struct buffer_node
@@ -62,7 +63,7 @@ static int l_freepool(lua_State* L)
 static int l_newpool(lua_State* L, int sz)
 {
     // alloc buffer pool
-    buffer_node* pool = (buffer_node*)lua_newuserdata(L, sizeof(buffer_node) * sz);
+    buffer_node* pool = (buffer_node*)lua_newuserdatauv(L, sizeof(buffer_node) * sz, 0);
     for (int i = 0; i < sz; i++)
     {
         pool[i].msg = nullptr;
@@ -86,7 +87,7 @@ static int l_newpool(lua_State* L, int sz)
 static int l_new_socket_buffer(lua_State* L)
 {
     // alloc socket buffer
-    socket_buffer* sb = (socket_buffer*)lua_newuserdata(L, sizeof(*sb));
+    socket_buffer* sb = (socket_buffer*)lua_newuserdatauv(L, sizeof(*sb), 0);
     sb->size = 0;
     sb->offset = 0;
     sb->head = nullptr;
@@ -145,6 +146,10 @@ static int l_pushbuffer(lua_State* L)
         l_newpool(L, size);
         free_node = (buffer_node*)lua_touserdata(L, -1);
         lua_rawseti(L, pool_index, tsz + 1);
+        if (tsz > POOL_SIZE_WARNING)
+        {
+            log(nullptr, "Too many socket pool (%d)", tsz);
+        }
     }
     lua_pushlightuserdata(L, free_node->next);
     lua_rawseti(L, pool_index, 1);    // sb poolt msg size
@@ -208,7 +213,7 @@ static void pop_lstring(lua_State* L, socket_buffer* sb, int sz, int skip)
     }
 
     luaL_Buffer b;
-    luaL_buffinit(L, &b);
+    luaL_buffinitsize(L, &b, sz);
     for (;;)
     {
         int bytes = current->sz - sb->offset;
@@ -723,6 +728,14 @@ static int l_start(lua_State* L)
     return 0;
 }
 
+static int l_pause(lua_State* L)
+{
+    skynet::service_context* ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    int id = luaL_checkinteger(L, 1);
+    node_socket::instance()->pause(ctx, id);
+    return 0;
+}
+
 static int l_nodelay(lua_State* L)
 {
     skynet::service_context* svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
@@ -875,6 +888,10 @@ static void _get_socket_info(lua_State* L, socket_info& si)
     {
         lua_pushstring(L, "BIND");
     }
+    else if (si.type == SOCKET_INFO_TYPE_CLOSING)
+    {
+        lua_pushstring(L, "CLOSING");
+    }
     else
     {
         lua_pushstring(L, "UNKNOWN");
@@ -897,6 +914,12 @@ static void _get_socket_info(lua_State* L, socket_info& si)
 
     lua_pushinteger(L, si.send_time);
     lua_setfield(L, -2, "wtime");
+
+    lua_pushboolean(L, si.reading);
+    lua_setfield(L, -2, "reading");
+
+    lua_pushboolean(L, si.writing);
+    lua_setfield(L, -2, "writing");
 
     //
     if (si.endpoint[0])
@@ -987,6 +1010,7 @@ LUAMOD_API int luaopen_skynet_socketdriver(lua_State* L)
         { "lsend", skynet::luaclib::l_send_low },
         { "bind", skynet::luaclib::l_bind },
         { "start", skynet::luaclib::l_start },
+        { "pause", skynet::luaclib::l_pause },
         { "nodelay", skynet::luaclib::l_nodelay },
         { "udp", skynet::luaclib::l_udp },
         { "udp_connect", skynet::luaclib::l_udp_connect },

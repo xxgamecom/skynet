@@ -1,19 +1,35 @@
 #include "socket_addr.h"
-#include "socket_server_def.h"
+#include "socket.h"
+
+#include "../utils/string_helper.h"
 
 #include <iostream>
 
 namespace skynet {
 
-bool to_endpoint(const socket_addr* sa, char* buf_ptr, size_t buf_sz)
+std::string socket_addr::to_string() const
 {
     // ip & port
-    void* sin_addr = (sa->s.sa_family == AF_INET) ? (void*)&sa->v4.sin_addr : (void*)&sa->v6.sin6_addr;
-    int sin_port = ntohs((sa->s.sa_family == AF_INET) ? sa->v4.sin_port : sa->v6.sin6_port);
+    void* sin_addr = (addr.s.sa_family == AF_INET) ? (void*)&addr.v4.sin_addr : (void*)&addr.v6.sin6_addr;
+    int sin_port = ntohs((addr.s.sa_family == AF_INET) ? addr.v4.sin_port : addr.v6.sin6_port);
 
     // convert numeric ip address to ip string
-    char tmp[INET6_ADDRSTRLEN];
-    if (::inet_ntop(sa->s.sa_family, sin_addr, tmp, sizeof(tmp)) == nullptr)
+    char tmp[INET6_ADDRSTRLEN] = { 0 };
+    if (::inet_ntop(addr.s.sa_family, sin_addr, tmp, sizeof(tmp)) == nullptr)
+        return "";
+
+    return string_helper::format("%s:%d", tmp, sin_port);
+}
+
+bool socket_addr::to_string(char* buf_ptr, size_t buf_sz) const
+{
+    // ip & port
+    void* sin_addr = (addr.s.sa_family == AF_INET) ? (void*)&addr.v4.sin_addr : (void*)&addr.v6.sin6_addr;
+    int sin_port = ntohs((addr.s.sa_family == AF_INET) ? addr.v4.sin_port : addr.v6.sin6_port);
+
+    // convert numeric ip address to ip string
+    char tmp[INET6_ADDRSTRLEN] = { 0 };
+    if (::inet_ntop(addr.s.sa_family, sin_addr, tmp, sizeof(tmp)) == nullptr)
     {
         buf_ptr[0] = '\0';
         return false;
@@ -24,11 +40,12 @@ bool to_endpoint(const socket_addr* sa, char* buf_ptr, size_t buf_sz)
     return true;
 }
 
-int udp_address_to_socket_addr(int protocol, const uint8_t* udp_address, socket_addr& sa)
+//
+int socket_addr::from_udp_address(int protocol_type, const uint8_t* udp_address)
 {
-    // protocol: 1 byte
+    // protocol_type: 1 byte
     int type = (uint8_t)udp_address[0];
-    if (type != protocol)
+    if (type != protocol_type)
         return 0;
 
     // port: 2 bytes
@@ -36,26 +53,26 @@ int udp_address_to_socket_addr(int protocol, const uint8_t* udp_address, socket_
     ::memcpy(&port, udp_address+1, sizeof(uint16_t));
 
     // udp v4
-    if (protocol == protocol_type::UDP)
+    if (protocol_type == SOCKET_TYPE_UDP)
     {
-        ::memset(&sa.v4, 0, sizeof(sa.v4));
-        sa.s.sa_family = AF_INET;
-        sa.v4.sin_port = port;
-        
+        ::memset(&addr.v4, 0, sizeof(addr.v4));
+        addr.s.sa_family = AF_INET;
+        addr.v4.sin_port = port;
+
         // udp addr v4: 4 bytes
-        ::memcpy(&sa.v4.sin_addr, udp_address + 1 + sizeof(uint16_t), sizeof(sa.v4.sin_addr));
-        return sizeof(sa.v4);
+        ::memcpy(&addr.v4.sin_addr, udp_address + 1 + sizeof(uint16_t), sizeof(addr.v4.sin_addr));
+        return sizeof(addr.v4);
     }
     // udp v6
-    else if (protocol == protocol_type::UDPv6)
+    else if (protocol_type == SOCKET_TYPE_UDPv6)
     {
-        ::memset(&sa.v6, 0, sizeof(sa.v6));
-        sa.s.sa_family = AF_INET6;
-        sa.v6.sin6_port = port;
+        ::memset(&addr.v6, 0, sizeof(addr.v6));
+        addr.s.sa_family = AF_INET6;
+        addr.v6.sin6_port = port;
 
         // udp addr v6: 16 bytes
-        ::memcpy(&sa.v6.sin6_addr, udp_address + 1 + sizeof(uint16_t), sizeof(sa.v6.sin6_addr));
-        return sizeof(sa.v6);
+        ::memcpy(&addr.v6.sin6_addr, udp_address + 1 + sizeof(uint16_t), sizeof(addr.v6.sin6_addr));
+        return sizeof(addr.v6);
     }
 
     return 0;
@@ -63,48 +80,48 @@ int udp_address_to_socket_addr(int protocol, const uint8_t* udp_address, socket_
 
 /**
  * udp address specs:
- * 
- * for UDPv4: use 1 + 2 + 4 bytes
- *    1 byte     2 bytes       4 bytes
- * +----------+----------+----------------+
- * | protocol |  port    |  v4.sin_addr   |
- * +----------+----------+----------------+
- * 
- * for UDPv6: use 1 + 2 + 16 bytes
- *    1 byte     2 bytes      16 bytes
- * +----------+----------+----------------+
- * | protocol |  port    |  v6.sin_addr   |
- * +----------+----------+----------------+
+ *
+ * for UDPv4: 1 + 2 + 4 bytes
+ *      1 byte        2 bytes       4 bytes
+ * +---------------+----------+----------------+
+ * | protocol_type |  port    |  v4.sin_addr   |
+ * +---------------+----------+----------------+
+ *
+ * for UDPv6: 1 + 2 + 16 bytes
+ *      1 byte        2 bytes      16 bytes
+ * +---------------+----------+----------------+
+ * | protocol_type |  port    |  v6.sin_addr   |
+ * +---------------+----------+----------------+
  */
-int socket_addr_to_udp_address(int protocol, const socket_addr* sa, uint8_t* udp_address)
+int socket_addr::to_udp_address(int protocol_type, uint8_t* udp_address) const
 {
     // 1 byte
-    udp_address[0] = (uint8_t)protocol;
+    udp_address[0] = (uint8_t)protocol_type;
 
     int addr_sz = 1;
 
     // udp v4
-    if (protocol == protocol_type::UDP)
+    if (protocol_type == SOCKET_TYPE_UDP)
     {
         // 2 bytes
-        ::memcpy(udp_address + addr_sz, &sa->v4.sin_port, sizeof(sa->v4.sin_port));
-        addr_sz += sizeof(sa->v4.sin_port);
+        ::memcpy(udp_address + addr_sz, &addr.v4.sin_port, sizeof(addr.v4.sin_port));
+        addr_sz += sizeof(addr.v4.sin_port);
         // 4 bytes
-        ::memcpy(udp_address + addr_sz, &sa->v4.sin_addr, sizeof(sa->v4.sin_addr));
-        addr_sz += sizeof(sa->v4.sin_addr);
+        ::memcpy(udp_address + addr_sz, &addr.v4.sin_addr, sizeof(addr.v4.sin_addr));
+        addr_sz += sizeof(addr.v4.sin_addr);
     }
     // udp v6
     else
     {
         // 2 bytes
-        ::memcpy(udp_address + addr_sz, &sa->v6.sin6_port, sizeof(sa->v6.sin6_port));
-        addr_sz += sizeof(sa->v6.sin6_port);
+        ::memcpy(udp_address + addr_sz, &addr.v6.sin6_port, sizeof(addr.v6.sin6_port));
+        addr_sz += sizeof(addr.v6.sin6_port);
 
         // 16 bytes
-        ::memcpy(udp_address + addr_sz, &sa->v6.sin6_addr, sizeof(sa->v6.sin6_addr));
-        addr_sz += sizeof(sa->v6.sin6_addr);
+        ::memcpy(udp_address + addr_sz, &addr.v6.sin6_addr, sizeof(addr.v6.sin6_addr));
+        addr_sz += sizeof(addr.v6.sin6_addr);
     }
-    
+
     return addr_sz;
 }
 

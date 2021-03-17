@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <string>
+#include <ctime>
 
 namespace skynet { namespace service {
 
@@ -26,8 +27,22 @@ struct logger
 {
     FILE*                       handle;                     // 文件句柄
     char*                       filename;                   //
+    uint32_t                    start_time;                 //
     int                         close;                      // 是否输出到文件标识, 0代表文件句柄是标准输出, 1代表输出到文件
 };
+
+
+#define SIZETIMEFMT    250
+
+static int timestring(logger* inst, char tmp[SIZETIMEFMT])
+{
+    uint64_t now = timer_manager::instance()->now();
+    time_t ti = now / 100 + inst->start_time;
+    struct tm info;
+    (void)localtime_r(&ti, &info);
+    strftime(tmp, SIZETIMEFMT, "%D %T", &info);
+    return now % 100;
+}
 
 // 当工作线程分发这条消息包时，最终会调用logger服务的消息回调函数logger_cb
 // 不同服务类型的消息回调函数接口参数是一样的。
@@ -52,6 +67,12 @@ static int logger_cb(service_context* context, void* ud, int type, int session, 
         }
         break;
     case message_type::PTYPE_TEXT:
+        if (inst->filename)
+        {
+            char tmp[SIZETIMEFMT];
+            int csec = timestring((logger*)ud, tmp);
+            ::fprintf(inst->handle, "%s.%02d ", tmp, csec);
+        }
         fprintf(inst->handle, "[:%08x] ", source);
         fwrite(msg, sz, 1, inst->handle);
         fprintf(inst->handle, "\n");
@@ -61,7 +82,6 @@ static int logger_cb(service_context* context, void* ud, int type, int session, 
 
     return 0;
 }
-
 
 logger* logger_create()
 {
@@ -79,15 +99,17 @@ void logger_release(logger* inst)
     {
         ::fclose(inst->handle);
     }
-    // skynet_free(inst->filename);
-    // skynet_free(inst);
+     skynet_free(inst->filename);
+     skynet_free(inst);
 }
 
 int logger_init(struct logger* inst, service_context* ctx, const char* parm)
 {
+    const char * r = service_command::handle_command(ctx, "STARTTIME", NULL);
+    inst->start_time = strtoul(r, NULL, 10);
     if (parm)
     {
-        inst->handle = fopen(parm, "w");
+        inst->handle = fopen(parm, "a");
         if (inst->handle == nullptr)
         {
             return 1;

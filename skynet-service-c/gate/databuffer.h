@@ -45,30 +45,30 @@ static void messagepool_free(struct messagepool* pool)
         p = p->next;
         skynet_free(tmp);
     }
-    pool->pool = NULL;
-    pool->freelist = NULL;
+    pool->pool = nullptr;
+    pool->freelist = nullptr;
 }
 
 static inline void _return_message(struct databuffer* db, struct messagepool* mp)
 {
     struct message* m = db->head;
-    if (m->next == NULL)
+    if (m->next == nullptr)
     {
         assert(db->tail == m);
-        db->head = db->tail = NULL;
+        db->head = db->tail = nullptr;
     }
     else
     {
         db->head = m->next;
     }
     skynet_free(m->buffer);
-    m->buffer = NULL;
+    m->buffer = nullptr;
     m->size = 0;
     m->next = mp->freelist;
     mp->freelist = m;
 }
 
-static void databuffer_read(struct databuffer* db, struct messagepool* mp, void* buffer, int sz)
+static void databuffer_read(struct databuffer* db, struct messagepool* mp, char* buffer, int sz)
 {
     assert(db->size >= sz);
     db->size -= sz;
@@ -94,13 +94,13 @@ static void databuffer_read(struct databuffer* db, struct messagepool* mp, void*
             ::memcpy(buffer, current->buffer + db->offset, bsz);
             _return_message(db, mp);
             db->offset = 0;
-            buffer = (char*)buffer + bsz;
+            buffer = buffer + bsz;
             sz -= bsz;
         }
     }
 }
 
-static void databuffer_push(struct databuffer* db, struct messagepool* mp, void* data, int sz)
+static void databuffer_push(struct databuffer* db, struct messagepool* mp, char* data, int sz)
 {
     struct message* m;
     if (mp->freelist)
@@ -115,23 +115,23 @@ static void databuffer_push(struct databuffer* db, struct messagepool* mp, void*
         int i;
         for (i = 1; i < MESSAGEPOOL; i++)
         {
-            temp[i].buffer = NULL;
+            temp[i].buffer = nullptr;
             temp[i].size = 0;
             temp[i].next = &temp[i + 1];
         }
-        temp[MESSAGEPOOL - 1].next = NULL;
+        temp[MESSAGEPOOL - 1].next = nullptr;
         mpl->next = mp->pool;
         mp->pool = mpl;
         m = &temp[0];
         mp->freelist = &temp[1];
     }
-    m->buffer = (char*)data;
+    m->buffer = data;
     m->size = sz;
-    m->next = NULL;
+    m->next = nullptr;
     db->size += sz;
-    if (db->head == NULL)
+    if (db->head == nullptr)
     {
-        assert(db->tail == NULL);
+        assert(db->tail == nullptr);
         db->head = db->tail = m;
     }
     else

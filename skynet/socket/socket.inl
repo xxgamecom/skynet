@@ -12,8 +12,7 @@ inline bool socket::is_send_buffer_empty()
 
 inline bool socket::nomore_sending_data()
 {
-    return (is_send_buffer_empty() && dw_buffer == nullptr && (sending & 0xFFFF) == 0) ||
-           this->status == SOCKET_STATUS_HALF_CLOSE_WRITE;
+    return (is_send_buffer_empty() && dw_buffer == nullptr && (sending & 0xFFFF) == 0) || is_close_write();
 }
 
 inline bool socket::can_direct_write(int socket_id)
@@ -24,14 +23,24 @@ inline bool socket::can_direct_write(int socket_id)
            udp_connecting == 0;
 }
 
-inline void socket::close_read()
+inline void socket::shutdown_read()
 {
     this->status = SOCKET_STATUS_HALF_CLOSE_READ;
 }
 
-inline bool socket::is_half_close_read()
+inline void socket::shutdown_write()
+{
+    this->status = SOCKET_STATUS_HALF_CLOSE_WRITE;
+}
+
+inline bool socket::is_close_read()
 {
     return this->status == SOCKET_STATUS_HALF_CLOSE_READ;
+}
+
+inline bool socket::is_close_write()
+{
+    return this->status == SOCKET_STATUS_HALF_CLOSE_WRITE;
 }
 
 inline void socket::stat_recv(int n, uint64_t time)

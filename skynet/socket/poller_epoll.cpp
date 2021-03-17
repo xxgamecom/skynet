@@ -22,25 +22,25 @@ bool poller::init()
     return (poll_fd_ != INVALID_FD);
 }
 
-bool poller::add(int sock_fd, void* ud)
+bool poller::add(int socket_fd, void* ud)
 {
     epoll_event ev;
     ev.events = EPOLLIN;
     ev.data.ptr = ud;
-    return !(::epoll_ctl(poll_fd_, EPOLL_CTL_ADD, sock_fd, &ev) == -1);
+    return !(::epoll_ctl(poll_fd_, EPOLL_CTL_ADD, socket_fd, &ev) == -1);
 }
 
-void poller::del(int sock_fd)
+void poller::del(int socket_fd)
 {
-    ::epoll_ctl(poll_fd_, EPOLL_CTL_DEL, sock_fd , nullptr);
+    ::epoll_ctl(poll_fd_, EPOLL_CTL_DEL, socket_fd , nullptr);
 }
 
-int poller::enable(int sock_fd, void* ud, bool enable_read, bool enable_write)
+int poller::enable(int socket_fd, void* ud, bool enable_read, bool enable_write)
 {
     epoll_event ev;
     ev.events = (enable_read ? EPOLLIN : 0) | (enable_write ? EPOLLOUT : 0);
     ev.data.ptr = ud;
-    if (::epoll_ctl(poll_fd_, EPOLL_CTL_MOD, sock_fd, &ev) == -1)
+    if (::epoll_ctl(poll_fd_, EPOLL_CTL_MOD, socket_fd, &ev) == -1)
     {
         return 1;
     }

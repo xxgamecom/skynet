@@ -83,9 +83,6 @@ static int _cb(service_context* svc_ctx, void* ud, int type, int session, uint32
         case LUA_ERRERR:
             log(svc_ctx, "lua error in error : [%x to %s : %d]", source, self, session);
             break;
-        case LUA_ERRGCMM:
-            log(svc_ctx, "lua gc error : [%x to %s : %d]", source, self, session);
-            break;
     };
 
     lua_pop(L, 1);

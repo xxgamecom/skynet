@@ -43,34 +43,6 @@ enum socket_event
     SOCKET_EVENT_RST            = 8,                                        // only for internal use
 };
 
-// 协议类型
-enum protocol_type
-{
-    TCP                         = 0,
-    UDP                         = 1,
-    UDPv6                       = 2,
-    UNKNOWN                     = 255,
-};
-
-// 发送缓存
-struct write_buffer
-{
-    write_buffer*               next = nullptr;                             // 
-
-    const void*                 buffer = nullptr;                           //
-    char*                       ptr = nullptr;                              //
-    size_t                      sz = 0;                                     //
-    bool                        is_user_object = false;                     //
-    uint8_t                     udp_address[UDP_ADDRESS_SIZE] = { 0 };      //
-};
-
-// 发送缓存队列
-struct write_buffer_list
-{
-    write_buffer*               head = nullptr;                             // 写缓冲区的头指针
-    write_buffer*               tail = nullptr;                             // 写缓冲区的尾指针
-};
-
 // 
 struct socket_object_interface
 {

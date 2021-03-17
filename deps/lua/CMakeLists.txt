@@ -26,7 +26,6 @@ SET(LUA_CORE_SRC
 SET(LUA_LIB_SRC
     lauxlib.c
     lbaselib.c
-    lbitlib.c
     lcorolib.c
     ldblib.c
     liolib.c

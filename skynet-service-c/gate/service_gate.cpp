@@ -173,14 +173,14 @@ static void _forward(struct gate* g, struct connection* c, int size)
     }
     if (g->broker)
     {
-        void* temp = skynet_malloc(size);
+        char* temp = (char*)skynet_malloc(size);
         databuffer_read(&c->buffer, &g->mp, temp, size);
         service_manager::instance()->send(ctx, 0, g->broker, g->client_tag | message_type::TAG_DONT_COPY, fd, temp, size);
         return;
     }
     if (c->agent)
     {
-        void* temp = skynet_malloc(size);
+        char* temp = (char*)skynet_malloc(size);
         databuffer_read(&c->buffer, &g->mp, temp, size);
         service_manager::instance()->send(ctx, c->client, c->agent, g->client_tag | message_type::TAG_DONT_COPY, fd, temp, size);
     }
@@ -195,7 +195,7 @@ static void _forward(struct gate* g, struct connection* c, int size)
 
 static void do_dispatch_message(struct gate* g, struct connection* c, int id, void* data, int sz)
 {
-    databuffer_push(&c->buffer, &g->mp, data, sz);
+    databuffer_push(&c->buffer, &g->mp, (char*)data, sz);
     for (;;)
     {
         int size = databuffer_readheader(&c->buffer, &g->mp, g->header_size);

@@ -8,76 +8,116 @@
 
 namespace skynet {
 
-// socket status
+/**
+ * socket status
+ *
+ * - for acceptor
+ *   INVALID -> ALLOCED -> PREPARE_LISTEN -> LISTEN
+ *
+ * - for accept client connection
+ *   INVALID -> ALLOCED -> PREPARE_ACCEPT -> CONNECTED
+ *
+ * - for connect remote
+ *   INVALID -> ALLOCED -> CONNECTING -> CONNECTED
+ */
 enum socket_status
 {
-    SOCKET_STATUS_INVALID           = 0,                                // 空闲, 可被分配
-    SOCKET_STATUS_ALLOCED           = 1,                                // 被分配
-    SOCKET_STATUS_PLISTEN           = 2,                                // 等待监听 (监听套接字拥有)
-    SOCKET_STATUS_LISTEN            = 3,                                // 监听, 可接受客户端的连接 (监听套接字才拥有)
-    SOCKET_STATUS_CONNECTING        = 4,                                // 正在连接 (connect失败时状态, tcp会尝试重新connect)
-    SOCKET_STATUS_CONNECTED         = 5,                                // 已连接, 可以收发数据
-    SOCKET_STATUS_HALF_CLOSE_READ   = 6,                                //
-    SOCKET_STATUS_HALF_CLOSE_WRITE  = 7,                                //
-    SOCKET_STATUS_PACCEPT           = 8,                                // 等待连接（连接套接字才拥有）
-    SOCKET_STATUS_BIND              = 9,                                // 绑定阶段
+    SOCKET_STATUS_INVALID           = 0,                                        // socket is free (invalid), wait alloced
+    SOCKET_STATUS_ALLOCED           = 1,                                        // socket has been alloced
+    SOCKET_STATUS_PREPARE_LISTEN    = 2,                                        // prepare listen (only for acceptor)
+    SOCKET_STATUS_LISTEN            = 3,                                        // listen, can accept client connection (only for acceptor)
+    SOCKET_STATUS_CONNECTING        = 4,                                        // 正在连接 (connect失败时状态, tcp会尝试重新connect)
+    SOCKET_STATUS_CONNECTED         = 5,                                        // connected, can recv/send data
+    SOCKET_STATUS_HALF_CLOSE_READ   = 6,                                        //
+    SOCKET_STATUS_HALF_CLOSE_WRITE  = 7,                                        //
+    SOCKET_STATUS_PREPARE_ACCEPT    = 8,                                        // prepare accept (only for server accept client connection)
+    SOCKET_STATUS_BIND              = 9,                                        // bind stdin, stdout fd
 };
+
+// socket recv/send statistics
+struct socket_stat
+{
+    uint64_t                        recv_time = 0;                              // last recv time
+    uint64_t                        send_time = 0;                              // last send time
+    uint64_t                        recv = 0;                                   // total recv bytes
+    uint64_t                        send = 0;                                   // total send bytes
+};
+
+// 协议类型
+enum socket_type
+{
+    SOCKET_TYPE_TCP                 = 0,
+    SOCKET_TYPE_UDP                 = 1,
+    SOCKET_TYPE_UDPv6               = 2,
+    SOCKET_TYPE_UNKNOWN             = 255,
+};
+
+// 发送缓存
+struct write_buffer
+{
+    write_buffer*                   next = nullptr;                             //
+
+    const void*                     buffer = nullptr;                           //
+    char*                           ptr = nullptr;                              //
+    size_t                          sz = 0;                                     //
+    bool                            is_user_object = false;                     //
+    uint8_t                         udp_address[UDP_ADDRESS_SIZE] = { 0 };      //
+};
+
+// 发送缓存队列
+struct write_buffer_list
+{
+    write_buffer*                   head = nullptr;                             // 写缓冲区的头指针
+    write_buffer*                   tail = nullptr;                             // 写缓冲区的尾指针
+};
+
+// forward declear
+struct socket_info;
 
 // socket信息
 class socket final
 {
 public:
-    // socket recv/send statistics
-    struct statistics
-    {
-        uint64_t                    recv_time = 0;                      // last recv time
-        uint64_t                    send_time = 0;                      // last send time
-        uint64_t                    recv = 0;                           // total recv bytes
-        uint64_t                    send = 0;                           // total send bytes
-    };
+    uint64_t                        svc_handle = 0;                             // skynet service handle
+                                                                                // the received socket data will be transmitted to the service.
 
-public:
-    uint64_t                        svc_handle = 0;                     // skynet service handle
-                                                                        // the received socket data will be transmitted to the service.
+    write_buffer_list               wb_list_high;                               // high priority write buffer
+    write_buffer_list               wb_list_low;                                // low priority write buffer
+    int64_t                         wb_size = 0;                                // wait send data size
 
-    write_buffer_list               wb_list_high;                       // high priority write buffer
-    write_buffer_list               wb_list_low;                        // low priority write buffer
-    int64_t                         wb_size = 0;                        // wait send data size
-
-    statistics                      stat;                               // socket send/recv statistics info
+    socket_stat                     stat;                                       // socket statistics info
     
-    std::atomic<uint32_t>           sending { 0 };                      // divide into 2 parts:
-                                                                        // - high 16 bits: socket id
-                                                                        // - low 16 bits: actually sending count
+    std::atomic<uint32_t>           sending { 0 };                              // divide into 2 parts:
+                                                                                // - high 16 bits: socket id
+                                                                                // - low 16 bits: actually sending count
 
-    int                             socket_fd = INVALID_FD;             // socket fd
-    int                             socket_id = 0;                      // 应用层维护一个与fd对应的socket id
-    uint8_t                         protocol { protocol_type::UNKNOWN}; // socket的协议类型（TCP/UDP）
-    std::atomic<uint8_t>            status { SOCKET_STATUS_INVALID };      // socket status（read、write、listen...）
+    int                             socket_fd = INVALID_FD;                     // socket fd
+    int                             socket_id = 0;                              // 应用层维护一个与fd对应的socket id
+    uint8_t                         protocol_type { SOCKET_TYPE_UNKNOWN};       // socket protocol type（TCP/UDP）
+    std::atomic<uint8_t>            status { SOCKET_STATUS_INVALID };           // socket status（read、write、listen...）
+    bool                            reading = false;                            // half close read flag
+    bool                            writing = false;                            // half close write flag
+    bool                            closing = false;                            // closing flag
 
-    bool                            reading = false;                    //
-    bool                            writing = false;                    //
-    bool                            closing = false;                    //
-
-    std::atomic<uint16_t>           udp_connecting { 0 };               //
-    int64_t                         warn_size = 0;                      //
+    std::atomic<uint16_t>           udp_connecting { 0 };                       //
+    int64_t                         warn_size = 0;                              //
     
     //
     union
     {
-        int                         size;                               // 读缓存预估需要的大小
-        uint8_t                     udp_address[UDP_ADDRESS_SIZE];      //
+        int                         size;                                       // 读缓存预估需要的大小
+        uint8_t                     udp_address[UDP_ADDRESS_SIZE];              //
     } p { 0 };
     
     //
-    std::mutex                      dw_mutex;                           // 发送缓存保护
-    int                             dw_offset = 0;                      // 立刻发送缓冲区偏移
-    const void*                     dw_buffer = nullptr;                // 立刻发送缓冲区
-    size_t                          dw_size = 0;                        // 立刻发送缓冲区大小
+    std::mutex                      dw_mutex;                                   // 发送缓存保护
+    int                             dw_offset = 0;                              // 立刻发送缓冲区偏移
+    const void*                     dw_buffer = nullptr;                        // 立刻发送缓冲区
+    size_t                          dw_size = 0;                                // 立刻发送缓冲区大小
 
 public:
-    // 是否无效
     bool is_invalid(int socket_id);
+
     // 发送缓存为空
     bool is_send_buffer_empty();
     // 没有发送数据
@@ -85,10 +125,18 @@ public:
     //
     bool can_direct_write(int socket_id);
 
+    void shutdown_read();
+    void shutdown_write();
+
+    bool is_close_read();
+    bool is_close_write();
+
     //
-    void close_read();
+public:
     //
-    bool is_half_close_read();
+    void inc_sending_ref(int socket_id);
+    //
+    void dec_sending_ref(int socket_id);
 
     // stat
 public:
@@ -97,12 +145,9 @@ public:
     // send statistics
     void stat_send(int n, uint64_t time);
 
-    //
 public:
-    //
-    void inc_sending_ref(int socket_id);
-    //
-    void dec_sending_ref(int socket_id);
+    // query socket info
+    bool get_socket_info(socket_info& si) const;
 
 };
 

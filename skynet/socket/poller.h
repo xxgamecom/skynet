@@ -48,11 +48,11 @@ public:
     bool is_valid();
 
     // add/del socket event detect
-    bool add(int sock_fd, void* ud);
-    void del(int sock_fd);
+    bool add(int socket_fd, void* ud);
+    void del(int socket_fd);
 
     //
-    int enable(int sock_fd, void* ud, bool enable_read, bool enable_write);
+    int enable(int socket_fd, void* ud, bool enable_read, bool enable_write);
 
     /**
      * wait socket event

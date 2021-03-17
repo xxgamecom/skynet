@@ -140,7 +140,7 @@ struct ctrl_cmd_package
 };
 
 // forward declare
-union socket_addr;
+class socket_addr;
 
 // 准备 request_resume_pause 请求数据
 int prepare_ctrl_cmd_request_resume(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id);
@@ -166,7 +166,7 @@ int prepare_ctrl_cmd_request_trigger_write(ctrl_cmd_package& cmd, int socket_id)
 int prepare_ctrl_cmd_request_set_opt(ctrl_cmd_package& cmd, int socket_id);
 
 // udp
-int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int protocol, const socket_addr* sa);
+int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int socket_type, const socket_addr* sa);
 //
 int prepare_ctrl_cmd_request_udp(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int fd, int family);
 //
