@@ -399,38 +399,38 @@ static int l_redirect(lua_State* L)
     return send_message(L, src_svc_handle, 3);
 }
 
-static int l_error(lua_State* L)
+static int l_log(lua_State* L)
 {
     //
     service_context* svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     int n = lua_gettop(L);
-    // check arguments num
     if (n <= 1)
     {
         lua_settop(L, 1);
         const char* s = luaL_tolstring(L, 1, nullptr);
         log(svc_ctx, "%s", s);
-        return 0;
     }
-
-    //
-    luaL_Buffer b;
-    luaL_buffinit(L, &b);
-    for (int i = 1; i <= n; i++)
+    else
     {
-        // 将给定索引处的 Lua 值转换为一个相应格式的 C 字符串。 结果串不仅会压栈，还会由函数返回。
-        luaL_tolstring(L, i, nullptr);
-        // 把栈顶的值添加到缓冲器B, 弹出该值。
-        luaL_addvalue(&b);
-        if (i < n)
+        //
+        luaL_Buffer b;
+        luaL_buffinit(L, &b);
+        for (int i = 1; i <= n; i++)
         {
-            luaL_addchar(&b, ' ');
+            // 将给定索引处的 Lua 值转换为一个相应格式的 C 字符串。 结果串不仅会压栈，还会由函数返回。
+            luaL_tolstring(L, i, nullptr);
+            // 把栈顶的值添加到缓冲器B, 弹出该值。
+            luaL_addvalue(&b);
+            if (i < n)
+            {
+                luaL_addchar(&b, ' ');
+            }
         }
+        // 结束对缓冲器B的使用，把最终字符串留在栈顶。
+        luaL_pushresult(&b);
+        log(svc_ctx, "%s", lua_tostring(L, -1));
     }
-    // 结束对缓冲器B的使用，把最终字符串留在栈顶。
-    luaL_pushresult(&b);
-    log(svc_ctx, "%s", lua_tostring(L, -1));
 
     return 0;
 }
@@ -583,7 +583,7 @@ LUAMOD_API int luaopen_skynet_core(lua_State* L)
         { "command", skynet::luaclib::l_service_command },
         { "intcommand", skynet::luaclib::l_service_command_int },
         { "addresscommand", skynet::luaclib::l_service_command_address },
-        { "error", skynet::luaclib::l_error },
+        { "log", skynet::luaclib::l_log },
         { "callback", skynet::luaclib::l_callback },
         { "trace", skynet::luaclib::l_trace },
 

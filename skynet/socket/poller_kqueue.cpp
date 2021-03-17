@@ -13,7 +13,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 bool poller::init()
 {
@@ -61,15 +61,22 @@ void poller::del(int sock_fd)
     ::kevent(poll_fd_, &ke, 1, nullptr, 0, nullptr);
 }
 
-void poller::write(int sock_fd, void* ud, bool enable_write)
+int poller::enable(int sock_fd, void* ud, bool enable_read, bool enable_write)
 {
+    int ret = 0;
     struct kevent ke;
-
-    EV_SET(&ke, sock_fd, EVFILT_WRITE, enable_write ? EV_ENABLE : EV_DISABLE, 0, 0, ud);
-    if (::kevent(poll_fd_, &ke, 1, nullptr, 0, nullptr) == -1 || ke.flags & EV_ERROR)
+    EV_SET(&ke, sock_fd, EVFILT_READ, enable_read ? EV_ENABLE : EV_DISABLE, 0, 0, ud);
+    if (kevent(poll_fd_, &ke, 1, NULL, 0, NULL) == -1 || ke.flags & EV_ERROR)
     {
-        // todo: check error
+        ret |= 1;
     }
+    EV_SET(&ke, sock_fd, EVFILT_WRITE, enable_write ? EV_ENABLE : EV_DISABLE, 0, 0, ud);
+    if (kevent(poll_fd_, &ke, 1, NULL, 0, NULL) == -1 || ke.flags & EV_ERROR)
+    {
+        ret |= 1;
+    }
+
+    return ret;
 }
 
 int poller::wait(event* event_ptr, int max_events/* = MAX_WAIT_EVENT*/)
@@ -91,7 +98,7 @@ int poller::wait(event* event_ptr, int max_events/* = MAX_WAIT_EVENT*/)
     return n;
 }
 
-} }
+}
 
 #endif
 

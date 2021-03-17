@@ -2,7 +2,7 @@
 
 #include <mutex>
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 /**
  * 调用单次锁定
@@ -26,4 +26,4 @@ public:
     void unlock();
 };
 
-} }
+}

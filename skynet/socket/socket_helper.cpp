@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include <memory>
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 // return -1 means failed
 // or return AF_INET or AF_INET6
@@ -116,4 +116,4 @@ void socket_helper::nonblocking(int fd)
     ::fcntl(fd, F_SETFL, flag | O_NONBLOCK);
 }
 
-} }
+}

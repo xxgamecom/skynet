@@ -123,7 +123,7 @@ local function mongo_auth(mongoc)
 					mongoc.port	= port
 					mongoc.__sock:changehost(host, port)
 				else
-					skynet.error("WARNING: NO PRIMARY RETURN " .. rs_data.me)
+					skynet.log("WARNING: NO PRIMARY RETURN " .. rs_data.me)
 					-- determine the primary db using hosts
 					local pickserver = {}
 					if rawget(mongoc, "__pickserver") == nil then
@@ -137,7 +137,7 @@ local function mongo_auth(mongoc)
 					if #mongoc.__pickserver <= 0 then
 						error("CAN NOT DETERMINE THE PRIMARY DB")
 					end
-					skynet.error("INFO: TRY TO CONNECT " .. mongoc.__pickserver[1])
+					skynet.log("INFO: TRY TO CONNECT " .. mongoc.__pickserver[1])
 					local host, port = __parse_addr(mongoc.__pickserver[1])
 					table.remove(mongoc.__pickserver, 1)
 					mongoc.host	= host
@@ -261,7 +261,7 @@ function auth_method:auth_scram_sha1(username,password)
 	local rnonce = parsed_t['r']
 
 	if not string.sub(rnonce, 1, 12) == nonce then
-		skynet.error("Server returned an invalid nonce.")
+		skynet.log("Server returned an invalid nonce.")
 		return false
 	end
 	local without_proof = "c=biws,r=" .. rnonce
@@ -287,7 +287,7 @@ function auth_method:auth_scram_sha1(username,password)
 		parsed_t[k] = v
 	end
 	if parsed_t['v'] ~= server_sig then
-		skynet.error("Server returned an invalid signature.")
+		skynet.log("Server returned an invalid signature.")
 		return false
 	end
 	if not r.done then
@@ -296,7 +296,7 @@ function auth_method:auth_scram_sha1(username,password)
 			return false
 		end
 		if not r.done then
-			skynet.error("SASL conversation failed to complete.")
+			skynet.log("SASL conversation failed to complete.")
 			return false
 		end
 	end

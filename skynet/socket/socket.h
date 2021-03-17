@@ -6,7 +6,22 @@
 #include <atomic>
 #include <mutex>
 
-namespace skynet { namespace socket {
+namespace skynet {
+
+// socket status
+enum socket_status
+{
+    SOCKET_STATUS_INVALID           = 0,                                // 空闲, 可被分配
+    SOCKET_STATUS_ALLOCED           = 1,                                // 被分配
+    SOCKET_STATUS_PLISTEN           = 2,                                // 等待监听 (监听套接字拥有)
+    SOCKET_STATUS_LISTEN            = 3,                                // 监听, 可接受客户端的连接 (监听套接字才拥有)
+    SOCKET_STATUS_CONNECTING        = 4,                                // 正在连接 (connect失败时状态, tcp会尝试重新connect)
+    SOCKET_STATUS_CONNECTED         = 5,                                // 已连接, 可以收发数据
+    SOCKET_STATUS_HALF_CLOSE_READ   = 6,                                //
+    SOCKET_STATUS_HALF_CLOSE_WRITE  = 7,                                //
+    SOCKET_STATUS_PACCEPT           = 8,                                // 等待连接（连接套接字才拥有）
+    SOCKET_STATUS_BIND              = 9,                                // 绑定阶段
+};
 
 // socket信息
 class socket final
@@ -19,20 +34,6 @@ public:
         uint64_t                    send_time = 0;                      // last send time
         uint64_t                    recv = 0;                           // total recv bytes
         uint64_t                    send = 0;                           // total send bytes
-    };
-
-    // socket status
-    enum status
-    {
-        FREE                            = 0,                                // 空闲, 可被分配
-        ALLOCED                         = 1,                                // 被分配
-        PLISTEN                         = 2,                                // 等待监听 (监听套接字拥有)
-        LISTEN                          = 3,                                // 监听, 可接受客户端的连接 (监听套接字才拥有)
-        CONNECTING                      = 4,                                // 正在连接 (connect失败时状态, tcp会尝试重新connect)
-        CONNECTED                       = 5,                                // 已连接, 可以收发数据
-        HALF_CLOSE                      = 6,                                //
-        PACCEPT                         = 7,                                // 等待连接（连接套接字才拥有）
-        BIND                            = 8,                                // 绑定阶段
     };
 
 public:
@@ -52,7 +53,12 @@ public:
     int                             socket_fd = INVALID_FD;             // socket fd
     int                             socket_id = 0;                      // 应用层维护一个与fd对应的socket id
     uint8_t                         protocol { protocol_type::UNKNOWN}; // socket的协议类型（TCP/UDP）
-    std::atomic<uint8_t>            status { status::FREE };            // socket status（read、write、listen...）
+    std::atomic<uint8_t>            status { SOCKET_STATUS_INVALID };      // socket status（read、write、listen...）
+
+    bool                            reading = false;                    //
+    bool                            writing = false;                    //
+    bool                            closing = false;                    //
+
     std::atomic<uint16_t>           udp_connecting { 0 };               //
     int64_t                         warn_size = 0;                      //
     
@@ -70,12 +76,19 @@ public:
     size_t                          dw_size = 0;                        // 立刻发送缓冲区大小
 
 public:
+    // 是否无效
+    bool is_invalid(int socket_id);
     // 发送缓存为空
     bool is_send_buffer_empty();
     // 没有发送数据
     bool nomore_sending_data();
     //
     bool can_direct_write(int socket_id);
+
+    //
+    void close_read();
+    //
+    bool is_half_close_read();
 
     // stat
 public:
@@ -93,6 +106,6 @@ public:
 
 };
 
-} }
+}
 
 #include "socket.inl"

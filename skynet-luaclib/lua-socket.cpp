@@ -466,7 +466,7 @@ static int l_unpack(lua_State* L)
     {
         lua_pushlightuserdata(L, message->buffer);
     }
-    if (message->socket_event == skynet::skynet_socket_event::EVENT_UDP)
+    if (message->socket_event == skynet::SKYNET_SOCKET_EVENT_UDP)
     {
         int addrsz = 0;
         const char* addrstring = node_socket::instance()->udp_address(message, &addrsz);
@@ -620,13 +620,13 @@ static void concat_table(lua_State* L, int index, void* buffer, size_t tlen)
     lua_pop(L, 1);
 }
 
-static void get_buffer(lua_State* L, int index, socket::send_buffer* buf)
+static void get_buffer(lua_State* L, int index, send_buffer* buf)
 {
     switch (lua_type(L, index))
     {
     case LUA_TUSERDATA:
         // lua full useobject must be a raw pointer, it can't be a socket object or a memory object.
-        buf->type = socket::buffer_type::RAW_POINTER;
+        buf->type = BUFFER_TYPE_RAW_POINTER;
         buf->buffer = lua_touserdata(L, index);
         if (lua_isinteger(L, index + 1))
         {
@@ -646,11 +646,11 @@ static void get_buffer(lua_State* L, int index, socket::send_buffer* buf)
         }
         if (sz < 0)
         {
-            buf->type = socket::buffer_type::OBJECT;
+            buf->type = BUFFER_TYPE_OBJECT;
         }
         else
         {
-            buf->type = socket::buffer_type::MEMORY;
+            buf->type = BUFFER_TYPE_MEMORY;
         }
         buf->buffer = lua_touserdata(L, index);
         buf->sz = (size_t)sz;
@@ -662,13 +662,13 @@ static void get_buffer(lua_State* L, int index, socket::send_buffer* buf)
         size_t len = count_size(L, index);
         void* buffer = new char[len];
         concat_table(L, index, buffer, len);
-        buf->type = socket::buffer_type::MEMORY;
+        buf->type = BUFFER_TYPE_MEMORY;
         buf->buffer = buffer;
         buf->sz = len;
         break;
     }
     default:
-        buf->type = socket::buffer_type::RAW_POINTER;
+        buf->type = BUFFER_TYPE_RAW_POINTER;
         buf->buffer = luaL_checklstring(L, index, &buf->sz);
         break;
     }
@@ -679,7 +679,7 @@ static int l_send(lua_State* L)
     skynet::service_context* svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     int id = luaL_checkinteger(L, 1);
-    socket::send_buffer buf;
+    send_buffer buf;
     buf.socket_id = id;
     get_buffer(L, 2, &buf);
     int err = node_socket::instance()->sendbuffer(svc_ctx, &buf);
@@ -693,7 +693,7 @@ static int l_send_low(lua_State* L)
     skynet::service_context* svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     int id = luaL_checkinteger(L, 1);
-    socket::send_buffer buf;
+    send_buffer buf;
     buf.socket_id = id;
     get_buffer(L, 2, &buf);
     int err = node_socket::instance()->sendbuffer_low_priority(svc_ctx, &buf);
@@ -783,7 +783,7 @@ static int l_udp_send(lua_State* L)
      skynet::service_context* svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
      int id = luaL_checkinteger(L, 1);
      const char* address = luaL_checkstring(L, 2);
-     socket::send_buffer buf;
+     send_buffer buf;
      buf.socket_id = id;
      get_buffer(L, 3, &buf);
     // int err = node_socket::instance()->udp_sendbuffer(svc_ctx, address, &buf);
@@ -827,7 +827,7 @@ static int l_udp_address(lua_State* L)
 }
 
 //
-static void _get_socket_info(lua_State* L, socket::socket_info& si)
+static void _get_socket_info(lua_State* L, socket_info& si)
 {
     // create table 't' and push stack
     lua_newtable(L);
@@ -840,7 +840,7 @@ static void _get_socket_info(lua_State* L, socket::socket_info& si)
     lua_pushinteger(L, si.svc_handle);
     lua_setfield(L, -2, "address");
 
-    if (si.type == socket::socket_info_type::LISTEN)
+    if (si.type == SOCKET_INFO_TYPE_LISTEN)
     {
         // t['type'] = 'LISTEN'
         lua_pushstring(L, "LISTEN");
@@ -863,15 +863,15 @@ static void _get_socket_info(lua_State* L, socket::socket_info& si)
         return;
     }
 
-    if (si.type == socket::socket_info_type::TCP)
+    if (si.type == SOCKET_INFO_TYPE_TCP)
     {
         lua_pushstring(L, "TCP");
     }
-    else if (si.type == socket::socket_info_type::UDP)
+    else if (si.type == SOCKET_INFO_TYPE_UDP)
     {
         lua_pushstring(L, "UDP");
     }
-    else if (si.type == socket::socket_info_type::BIND)
+    else if (si.type == SOCKET_INFO_TYPE_BIND)
     {
         lua_pushstring(L, "BIND");
     }
@@ -936,7 +936,7 @@ static void _get_socket_info(lua_State* L, socket::socket_info& si)
 static int l_query_socket_info(lua_State* L)
 {
     // query socket info
-    std::list <socket::socket_info> si_list;
+    std::list <socket_info> si_list;
     node_socket::instance()->get_socket_info(si_list);
 
     // create table and push stack

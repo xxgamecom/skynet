@@ -10,8 +10,8 @@ using namespace skynet;
 
 static void* _poll(void* ud)
 {
-    socket::socket_server* ss = (socket::socket_server*)ud;
-    socket::socket_message result;
+    socket_server* ss = (socket_server*)ud;
+    socket_message result;
     for (;;)
     {
         bool is_more = false;
@@ -19,29 +19,29 @@ static void* _poll(void* ud)
         // DO NOT use any ctrl command (socket_server_close , etc. ) in this thread.
         switch (type)
         {
-        case socket::socket_event::EVENT_EXIT:
+        case SOCKET_EVENT_EXIT:
             return NULL;
-        case socket::socket_event::EVENT_DATA:
+        case SOCKET_EVENT_DATA:
             printf("message(%llu) [id=%d] size=%d\n", result.svc_handle, result.socket_id, result.ud);
             free(result.data);
             break;
-        case socket::socket_event::EVENT_CLOSE:
+        case SOCKET_EVENT_CLOSE:
             printf("close(%llu) [id=%d]\n", result.svc_handle, result.socket_id);
             break;
-        case socket::socket_event::EVENT_OPEN:
+        case SOCKET_EVENT_OPEN:
             printf("open(%llu) [id=%d] %s\n", result.svc_handle, result.socket_id, result.data);
             break;
-        case socket::socket_event::EVENT_ERROR:
+        case SOCKET_EVENT_ERROR:
             printf("error(%llu) [id=%d]\n", result.svc_handle, result.socket_id);
             break;
-        case socket::socket_event::EVENT_ACCEPT:
+        case SOCKET_EVENT_ACCEPT:
             printf("accept(%llu) [id=%d %s] from [%d]\n", result.svc_handle, result.ud, result.data, result.socket_id);
             break;
         }
     }
 }
 
-static void test(socket::socket_server* ss)
+static void test(socket_server* ss)
 {
     pthread_t pid;
     pthread_create(&pid, NULL, _poll, ss);
@@ -73,7 +73,7 @@ int main()
     sa.sa_handler = SIG_IGN;
     sigaction(SIGPIPE, &sa, 0);
 
-    socket::socket_server* ss = new socket::socket_server();
+    socket_server* ss = new socket_server();
     ss->init();
     test(ss);
     

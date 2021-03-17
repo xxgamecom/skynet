@@ -13,7 +13,7 @@
 #   define AGAIN_WOULDBLOCK EAGAIN
 #endif
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 //----------------------------------------------
 // common constants
@@ -32,14 +32,15 @@ namespace skynet { namespace socket {
 // socket event type
 enum socket_event
 {
-    EVENT_DATA                  = 0,                                        // socket 正常数据
-    EVENT_CLOSE                 = 1,                                        // socket close 数据
-    EVENT_OPEN                  = 2,                                        // socket open 数据 (connect)
-    EVENT_ACCEPT                = 3,                                        // socket accept 数据
-    EVENT_ERROR                 = 4,                                        // socket error 数据
-    EVENT_EXIT                  = 5,                                        // socket exit 数据
-    EVENT_UDP                   = 6,                                        // socket udp 数据
-    EVENT_WARNING               = 7,                                        // socket warning 数据
+    SOCKET_EVENT_DATA           = 0,                                        // socket 正常数据
+    SOCKET_EVENT_CLOSE          = 1,                                        // socket close 数据
+    SOCKET_EVENT_OPEN           = 2,                                        // socket open 数据 (connect)
+    SOCKET_EVENT_ACCEPT         = 3,                                        // socket accept 数据
+    SOCKET_EVENT_ERROR          = 4,                                        // socket error 数据
+    SOCKET_EVENT_EXIT           = 5,                                        // socket exit 数据
+    SOCKET_EVENT_UDP            = 6,                                        // socket udp 数据
+    SOCKET_EVENT_WARNING        = 7,                                        // socket warning 数据
+    SOCKET_EVENT_RST            = 8,                                        // only for internal use
 };
 
 // 协议类型
@@ -87,4 +88,4 @@ struct socket_message
     char*                       data = nullptr;                 // data ptr
 };
 
-} }
+}

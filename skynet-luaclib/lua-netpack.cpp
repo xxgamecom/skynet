@@ -402,33 +402,33 @@ static int l_filter(lua_State* L)
 
     switch (message->socket_event)
     {
-    case skynet::skynet_socket_event::EVENT_DATA:
+    case skynet::SKYNET_SOCKET_EVENT_DATA:
         // ignore listen socket id (message->socket_id)
         assert(size == -1);    // never padding string
         return filter_data(L, message->socket_id, (uint8_t*)buffer, message->ud);
-    case skynet::skynet_socket_event::EVENT_CONNECT:
+    case skynet::SKYNET_SOCKET_EVENT_CONNECT:
         // ignore listen fd connect
         return 1;
-    case skynet::skynet_socket_event::EVENT_CLOSE:
+    case skynet::SKYNET_SOCKET_EVENT_CLOSE:
         // no more data in fd (message->socket_id)
         close_uncomplete(L, message->socket_id);
         lua_pushvalue(L, lua_upvalueindex(TYPE_CLOSE));
         lua_pushinteger(L, message->socket_id);
         return 3;
-    case skynet::skynet_socket_event::EVENT_ACCEPT:
+    case skynet::SKYNET_SOCKET_EVENT_ACCEPT:
         lua_pushvalue(L, lua_upvalueindex(TYPE_OPEN));
         // ignore listen id (message->socket_id);
         lua_pushinteger(L, message->ud);
         pushstring(L, buffer, size);
         return 4;
-    case skynet::skynet_socket_event::EVENT_ERROR:
+    case skynet::SKYNET_SOCKET_EVENT_ERROR:
         // no more data in fd (message->socket_id)
         close_uncomplete(L, message->socket_id);
         lua_pushvalue(L, lua_upvalueindex(TYPE_ERROR));
         lua_pushinteger(L, message->socket_id);
         pushstring(L, buffer, size);
         return 4;
-    case skynet::skynet_socket_event::EVENT_WARNING:
+    case skynet::SKYNET_SOCKET_EVENT_WARNING:
         lua_pushvalue(L, lua_upvalueindex(TYPE_WARNING));
         lua_pushinteger(L, message->socket_id);
         lua_pushinteger(L, message->ud);

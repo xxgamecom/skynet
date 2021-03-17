@@ -10,7 +10,7 @@
  * config.logger = optstring("logger", nullptr);
  * config.logservice = optstring("logservice", "logger");
  * 
- * skynet输出日志通常是调用skynet_error这个api(lua层用skynet.error最后也是调用skynet_error)。
+ * skynet输出日志通常是调用skynet_error这个api(lua层用skynet.log最后也是调用skynet_error)。
  */
 
 #include "skynet.h"
@@ -31,7 +31,7 @@ struct logger
 
 // 当工作线程分发这条消息包时，最终会调用logger服务的消息回调函数logger_cb
 // 不同服务类型的消息回调函数接口参数是一样的。
-// skynet输出日志通常是调用skynet_error这个api(lua层用skynet.error最后也是调用skynet_error)。
+// skynet输出日志通常是调用skynet_error这个api(lua层用skynet.log最后也是调用skynet_error)。
 // 由于skynet_error发送的消息包的type是PTYPE_TEXT，会把消息包源地址以及消息包数据一起写到文件句柄里。
 // @param context ctx
 // @param ud ctx userdata

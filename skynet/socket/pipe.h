@@ -2,7 +2,7 @@
 
 #include "socket_server_def.h"
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 class pipe final
 {
@@ -36,7 +36,7 @@ public:
     int write(const char* data_ptr, int data_sz);
 };
 
-} }
+}
 
 #include "pipe.inl"
 

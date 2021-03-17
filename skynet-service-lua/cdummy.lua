@@ -62,7 +62,7 @@ function harbor.LINK(id)
 end
 
 function harbor.CONNECT(id)
-	skynet.error("Can't connect to other harbor in single node mode")
+	skynet.log("Can't connect to other harbor in single node mode")
 end
 
 skynet.start(function()

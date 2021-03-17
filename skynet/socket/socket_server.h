@@ -13,7 +13,7 @@
 #include "poller.h"
 #include "socket_server_ctrl_cmd.h"
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 struct socket_udp_address;
 
@@ -70,6 +70,8 @@ public:
      * @param socket_id
      */
     void start(uint64_t svc_handle, int socket_id);
+    //
+    void pause(uint64_t svc_handle, int socket_id);
     
     // 退出socket服务
     void exit();
@@ -140,7 +142,7 @@ public:
      */
     int poll_socket_event(socket_message* result, bool& is_more);
 
-    // if you send package with type buffer_type::OBJECT, use soi.
+    // if you send package with type BUFFER_TYPE_OBJECT, use soi.
     void userobject(socket_object_interface* soi);
 
     // 查询所有socket信息 (socket_info是一个链表)
@@ -157,12 +159,12 @@ public:
 
     // udp
 public:
-    /*
-    * 创建一个udp socket句柄，并绑定skynet服务的handle，udp不需要像tcp那样要调用start后才能接收消息
-    * 如果 port != 0, 绑定socket端口;
-    * 如果 addr == NULL, 绑定 ipv4 0.0.0.0;
-    * 如果想要使用ipv6，地址使用“::”，端口中port设为0
-    */
+    /**
+     * 创建一个udp socket句柄，并绑定skynet服务的handle，udp不需要像tcp那样要调用start后才能接收消息
+     * 如果 port != 0, 绑定socket端口;
+     * 如果 addr == NULL, 绑定 ipv4 0.0.0.0;
+     * 如果想要使用ipv6，地址使用“::”，端口中port设为0
+     */
     int udp(uint64_t svc_handle, const char* addr, int port);
 
     /**
@@ -181,7 +183,7 @@ public:
     /**
      * 获取消息内的IP地址 (UDP)
      * 
-     * @param msg 消息, 传入的消息必须为 socket_event::EVENT_UDP 类型
+     * @param msg 消息, 传入的消息必须为 SOCKET_EVENT_UDP 类型
      * @param addr_sz 地址所占字节数 
      */
     const socket_udp_address* udp_address(socket_message* msg, int* addr_sz);
@@ -207,10 +209,12 @@ private:
     int handle_ctrl_cmd_open_socket(request_open* cmd, socket_message* result);
     int handle_ctrl_cmd_close_socket(request_close* cmd, socket_message* result);
     int handle_ctrl_cmd_bind_socket(request_bind* cmd, socket_message* result);
-    int handle_ctrl_cmd_start_socket(request_start* cmd, socket_message* result);
+    int handle_ctrl_cmd_resume_socket(request_resume_pause* cmd, socket_message* result);
+    int handle_ctrl_cmd_pause_socket(request_resume_pause* cmd, socket_message* result);
     int handle_ctrl_cmd_setopt_socket(request_set_opt* cmd);
     int handle_ctrl_cmd_exit_socket(socket_message* result);
     int handle_ctrl_cmd_send_socket(request_send* cmd, socket_message* result, int priority, const uint8_t* udp_address);
+    int handle_ctrl_cmd_trigger_write(request_send* cmd, socket_message* result);
     int handle_ctrl_cmd_listen_socket(request_listen* cmd, socket_message* result);
     int handle_ctrl_cmd_add_udp_socket(request_udp* cmd);
     int handle_ctrl_cmd_set_udp_address(request_set_udp* cmd, socket_message* result);
@@ -262,6 +266,10 @@ private:
     void free_write_buffer_list(write_buffer_list* wb_list);    
 
 private:
+    void close_read(socket* socket_ptr, socket_message* result);
+    int close_write(socket* socket_ptr, socket_lock& sl, socket_message* result);
+    int enable_write(socket* socket_ptr, bool enable);
+    int enable_read(socket* socket_ptr, bool enable);
     //
     void force_close(socket* socket_ptr, socket_lock& sl, socket_message* result);
 
@@ -282,7 +290,7 @@ private:
     // return 0 when failed, or -1 when file limit
     int report_accept(socket* socket_ptr, socket_message* result);
     //
-    int report_connect(socket* socket_ptr, socket_message* result);
+    int report_connect(socket* socket_ptr, socket_lock& sl, socket_message* result);
 
     // 单个socket每次从内核尝试读取的数据字节数为sz
     // 比如，客户端发了一个1kb的数据，socket线程会从内核里依次读取64b，128b，256b，512b，64b数据，总共需读取5次，即会向gateserver服务发5条消息，一个TCP包被切割成5个数据块。
@@ -301,7 +309,7 @@ private:
     void _clear_closed_event(int socket_id);    
 };
 
-} }
+}
 
 #include "socket_server.inl"
 

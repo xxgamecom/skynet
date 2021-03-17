@@ -1,20 +1,38 @@
 #include "socket_server_ctrl_cmd.h"
 #include "socket_addr.h"
 
+#include "../log/log.h"
+
 #include <iostream>
 #include <netinet/tcp.h>
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 
-int prepare_ctrl_cmd_request_start(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id)
+int prepare_ctrl_cmd_request_resume(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id)
 {
     // cmd data
-    cmd.u.start.socket_id = socket_id;
-    cmd.u.start.svc_handle = svc_handle;
+    cmd.u.resume_pause.socket_id = socket_id;
+    cmd.u.resume_pause.svc_handle = svc_handle;
 
     // actually data len
-    int len = sizeof(cmd.u.start);
+    int len = sizeof(cmd.u.resume_pause);
+
+    // set header - cmd type & data len
+    cmd.header[6] = (uint8_t)'R';
+    cmd.header[7] = (uint8_t)len;
+
+    return len;
+}
+
+int prepare_ctrl_cmd_request_pause(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id)
+{
+    // cmd data
+    cmd.u.resume_pause.socket_id = socket_id;
+    cmd.u.resume_pause.svc_handle = svc_handle;
+
+    // actually data len
+    int len = sizeof(cmd.u.resume_pause);
 
     // set header - cmd type & data len
     cmd.header[6] = (uint8_t)'S';
@@ -64,7 +82,7 @@ int prepare_ctrl_cmd_request_open(ctrl_cmd_package& cmd, uint64_t svc_handle, in
     // request_open结构体尾部的host字段为地址数据, 整体长度不能超过256
     if (sizeof(cmd.u.open) + len >= 256)
     {
-        std::cerr << "socket-server : Invalid addr " << addr << "." << std::endl;
+        log(nullptr, "socket-server : Invalid addr %s.", addr);
         return -1;
     }
 
@@ -133,6 +151,23 @@ int prepare_ctrl_cmd_request_send(ctrl_cmd_package& cmd, int socket_id, const se
 
     // cmd header
     cmd.header[6] = (uint8_t)is_high ? 'D' : 'P';    // high/low priority
+    cmd.header[7] = (uint8_t)len;
+
+    return len;
+}
+
+// let socket thread enable write event
+int prepare_ctrl_cmd_request_trigger_write(ctrl_cmd_package& cmd, int socket_id)
+{
+    cmd.u.send.socket_id = socket_id;
+    cmd.u.send.sz = 0;
+    cmd.u.send.data_ptr = nullptr;
+
+    // actually length
+    int len = sizeof(cmd.u.send);
+
+    // cmd header
+    cmd.header[6] = 'W';
     cmd.header[7] = (uint8_t)len;
 
     return len;
@@ -207,6 +242,4 @@ int prepare_ctrl_cmd_request_send_udp(ctrl_cmd_package& cmd, int socket_id, cons
     return len;
 }
 
-
-
-} }
+}

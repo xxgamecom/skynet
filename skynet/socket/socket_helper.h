@@ -1,6 +1,6 @@
 #pragma once
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 // socket辅助工具
 class socket_helper final
@@ -21,5 +21,5 @@ public:
     static void nonblocking(int fd);
 };
 
-} }
+}
 

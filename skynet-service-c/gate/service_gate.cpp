@@ -227,7 +227,7 @@ static void dispatch_socket_message(struct gate* g, const skynet_socket_message*
     service_context* ctx = g->ctx;
     switch (message->socket_event)
     {
-    case skynet_socket_event::EVENT_DATA:
+    case SKYNET_SOCKET_EVENT_DATA:
     {
         int id = hashid_lookup(&g->hash, message->socket_id);
         if (id >= 0)
@@ -243,7 +243,7 @@ static void dispatch_socket_message(struct gate* g, const skynet_socket_message*
         }
         break;
     }
-    case skynet_socket_event::EVENT_CONNECT:
+    case SKYNET_SOCKET_EVENT_CONNECT:
     {
         if (message->socket_id == g->listen_id)
         {
@@ -258,8 +258,8 @@ static void dispatch_socket_message(struct gate* g, const skynet_socket_message*
         }
         break;
     }
-    case skynet_socket_event::EVENT_CLOSE:
-    case skynet_socket_event::EVENT_ERROR:
+    case SKYNET_SOCKET_EVENT_CLOSE:
+    case SKYNET_SOCKET_EVENT_ERROR:
     {
         int id = hashid_remove(&g->hash, message->socket_id);
         if (id >= 0)
@@ -272,8 +272,8 @@ static void dispatch_socket_message(struct gate* g, const skynet_socket_message*
         }
         break;
     }
-    case skynet_socket_event::EVENT_ACCEPT:
-        // report accept, then it will be get a skynet_socket_event::EVENT_CONNECT message
+    case SKYNET_SOCKET_EVENT_ACCEPT:
+        // report accept, then it will be get a SKYNET_SOCKET_EVENT_CONNECT message
         assert(g->listen_id == message->socket_id);
         if (hashid_full(&g->hash))
         {
@@ -293,7 +293,7 @@ static void dispatch_socket_message(struct gate* g, const skynet_socket_message*
             log(ctx, "socket open: %x", c->id);
         }
         break;
-    case skynet_socket_event::EVENT_WARNING:
+    case SKYNET_SOCKET_EVENT_WARNING:
         log(ctx, "fd (%d) send buffer (%d)K", message->socket_id, message->ud);
         break;
     }

@@ -3,7 +3,7 @@
 
 #include <cassert>
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 //
 void socket::inc_sending_ref(int socket_id)
@@ -42,7 +42,7 @@ void socket::inc_sending_ref(int socket_id)
 //
 void socket::dec_sending_ref(int socket_id)
 {
-    // notice: udp may inc sending while type == socket::status::ALLOCED
+    // notice: udp may inc sending while type == SOCKET_STATUS_ALLOCED
     if (this->socket_id == socket_id && protocol == protocol_type::TCP)
     {
         assert((sending & 0xFFFF) != 0);
@@ -50,5 +50,4 @@ void socket::dec_sending_ref(int socket_id)
     }
 }
 
-
-} }
+}

@@ -38,7 +38,7 @@ bin                                 // 编译输出目录 (编译后生成)
 │   └── sproto.so                   // sprote编译生成文件
 ├── skynet                          // skynet可执行文件
 ├── ...
-cmake-build                         // cmake编译目录
+cmake-build-skynet                  // skynet cmake编译目录
 ├── ...
 skynet                              // skynet源码目录
 ├── CMakeLists.txt                  // CMake文件
@@ -110,10 +110,10 @@ $ git clone https://github.com/xxgamecom/skynet
 
 # 3 创建cmake构建目录
 $ cd ../
-$ mkdir cmake-build && cd cmake-build
+$ mkdir cmake-build-skynet && cd cmake-build-skynet
 
 # 4 编译
-$ cmake ../skynet -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl
+$ cmake ../skynet
 $ make
 ```
 

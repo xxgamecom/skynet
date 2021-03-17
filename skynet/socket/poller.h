@@ -4,7 +4,7 @@
 
 #include <cstdbool>
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 // forward declare
 class socket;
@@ -51,15 +51,8 @@ public:
     bool add(int sock_fd, void* ud);
     void del(int sock_fd);
 
-    /**
-     * 在轮序句柄fd中修改sock注册类型
-     * 
-     * @param sock_fd socket fd
-     * @param ud      user data ptr
-     * @param enable_write true: enable write
-     *                     false: enable read
-     */
-    void write(int sock_fd, void* ud, bool enable_write);
+    //
+    int enable(int sock_fd, void* ud, bool enable_read, bool enable_write);
 
     /**
      * wait socket event
@@ -71,4 +64,4 @@ public:
     int wait(event* event_ptr, int max_events = MAX_WAIT_EVENT);
 };
 
-} }
+}

@@ -39,11 +39,11 @@ local function suspend(s)
 end
 
 -- read skynet_socket.h for these macro
--- skynet_socket_event::EVENT_DATA = 1
+-- SKYNET_SOCKET_EVENT_DATA = 1
 socket_message[1] = function(id, size, data)
     local s = socket_pool[id]
     if s == nil then
-        skynet.error("socket: drop package from " .. id)
+        skynet.log("socket: drop package from " .. id)
         driver.drop(data, size)
         return
     end
@@ -59,7 +59,7 @@ socket_message[1] = function(id, size, data)
         end
     else
         if s.buffer_limit and sz > s.buffer_limit then
-            skynet.error(string.format("socket buffer overflow: fd=%d size=%d", id , sz))
+            skynet.log(string.format("socket buffer overflow: fd=%d size=%d", id , sz))
             driver.clear(s.buffer,buffer_pool)
             driver.close(id)
             return
@@ -74,7 +74,7 @@ socket_message[1] = function(id, size, data)
     end
 end
 
--- skynet_socket_event::EVENT_CONNECT = 2
+-- SKYNET_SOCKET_EVENT_CONNECT = 2
 socket_message[2] = function(id, _ , addr)
     local s = socket_pool[id]
     if s == nil then
@@ -85,7 +85,7 @@ socket_message[2] = function(id, _ , addr)
     wakeup(s)
 end
 
--- skynet_socket_event::EVENT_CLOSE = 3
+-- SKYNET_SOCKET_EVENT_CLOSE = 3
 socket_message[3] = function(id)
     local s = socket_pool[id]
     if s == nil then
@@ -95,7 +95,7 @@ socket_message[3] = function(id)
     wakeup(s)
 end
 
--- skynet_socket_event::EVENT_ACCEPT = 4
+-- SKYNET_SOCKET_EVENT_ACCEPT = 4
 socket_message[4] = function(id, newid, addr)
     local s = socket_pool[id]
     if s == nil then
@@ -105,15 +105,15 @@ socket_message[4] = function(id, newid, addr)
     s.callback(newid, addr)
 end
 
--- skynet_socket_event::EVENT_ERROR = 5
+-- SKYNET_SOCKET_EVENT_ERROR = 5
 socket_message[5] = function(id, _, err)
     local s = socket_pool[id]
     if s == nil then
-        skynet.error("socket: error on unknown", id, err)
+        skynet.log("socket: error on unknown", id, err)
         return
     end
     if s.connected then
-        skynet.error("socket: error on", id, err)
+        skynet.log("socket: error on", id, err)
     elseif s.connecting then
         s.connecting = err
     end
@@ -127,7 +127,7 @@ end
 socket_message[6] = function(id, size, data, address)
     local s = socket_pool[id]
     if s == nil or s.callback == nil then
-        skynet.error("socket: drop udp package from " .. id)
+        skynet.log("socket: drop udp package from " .. id)
         driver.drop(data, size)
         return
     end
@@ -141,10 +141,10 @@ local function default_warning(id, size)
     if not s then
         return
     end
-    skynet.error(string.format("WARNING: %d K bytes need to send out (fd = %d)", size, id))
+    skynet.log(string.format("WARNING: %d K bytes need to send out (fd = %d)", size, id))
 end
 
--- skynet_socket_event::EVENT_WARNING
+-- SKYNET_SOCKET_EVENT_WARNING
 socket_message[7] = function(id, size)
     local s = socket_pool[id]
     if s then
@@ -213,7 +213,7 @@ function socket.shutdown(id)
     local s = socket_pool[id]
     if s then
         driver.clear(s.buffer,buffer_pool)
-        -- the framework would send skynet_socket_event::EVENT_CLOSE , need close(id) later
+        -- the framework would send SKYNET_SOCKET_EVENT_CLOSE , need close(id) later
         driver.shutdown(id)
     end
 end

@@ -310,7 +310,7 @@ local dns_server = {
 local function resolve(content)
 	if #content < DNS_HEADER_LEN then
 		-- drop
-		skynet.error("Recv an invalid package when dns query")
+		skynet.log("Recv an invalid package when dns query")
 		return
 	end
 	local answer_header,left = unpack_header(content)
@@ -356,7 +356,7 @@ local function resolve(content)
 	end
 
 	if question.name ~= resp.name then
-		skynet.error("Recv an invalid name when dns query")
+		skynet.log("Recv an invalid name when dns query")
 	end
 
 	local r = CACHE[resp.qtype][resp.name]
@@ -386,7 +386,7 @@ local function connect_server()
 	end
 
 	dns_server.fd = fd
-	skynet.error(string.format("Udp server open %s:%s (%d)", dns_server.address, dns_server.port, fd))
+	skynet.log(string.format("Udp server open %s:%s (%d)", dns_server.address, dns_server.port, fd))
 end
 
 local DNS_SERVER_RETIRE = 60 * 100
@@ -404,7 +404,7 @@ local function touch_server()
 			if fd then
 				dns_server.fd = nil
 				socket.close(fd)
-				skynet.error(string.format("Udp server close %s:%s (%d)", dns_server.address, dns_server.port, fd))
+				skynet.log(string.format("Udp server close %s:%s (%d)", dns_server.address, dns_server.port, fd))
 			end
 		else
 			skynet.timeout( 2 * DNS_SERVER_RETIRE, check_alive)
@@ -441,7 +441,7 @@ local function suspend(tid, name, qtype)
 		local req = request_pool[tid]
 		if req then
 			-- cancel tid
-			skynet.error(string.format("DNS query %s timeout", name))
+			skynet.log(string.format("DNS query %s timeout", name))
 			request_pool[tid] = nil
 			skynet.wakeup(req.co)
 		end

@@ -1,4 +1,4 @@
-namespace skynet { namespace socket {
+namespace skynet {
 
 inline int pipe::read_fd()
 {
@@ -10,4 +10,4 @@ inline int pipe::write_fd()
     return write_fd_;
 }
 
-} }
+}

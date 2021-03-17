@@ -13,7 +13,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 //  初始化
 bool poller::init()
@@ -35,12 +35,17 @@ void poller::del(int sock_fd)
     ::epoll_ctl(poll_fd_, EPOLL_CTL_DEL, sock_fd , nullptr);
 }
 
-void poller::write(int sock_fd, void* ud, bool enable_write)
+int poller::enable(int sock_fd, void* ud, bool enable_read, bool enable_write)
 {
     epoll_event ev;
-    ev.events = EPOLLIN | (enable_write ? EPOLLOUT : 0);
+    ev.events = (enable_read ? EPOLLIN : 0) | (enable_write ? EPOLLOUT : 0);
     ev.data.ptr = ud;
-    ::epoll_ctl(poll_fd_, EPOLL_CTL_MOD, sock_fd, &ev);
+    if (::epoll_ctl(poll_fd_, EPOLL_CTL_MOD, sock_fd, &ev) == -1)
+    {
+        return 1;
+    }
+
+    return 0;
 }
 
 int poller::wait(event* event_ptr, int max_events/* = MAX_WAIT_EVENT*/)
@@ -52,15 +57,16 @@ int poller::wait(event* event_ptr, int max_events/* = MAX_WAIT_EVENT*/)
         event_ptr[i].socket_ptr = (socket*)ev[i].data.ptr;
         uint32_t flag = ev[i].events;
         event_ptr[i].is_writeable = (flag & EPOLLOUT) != 0;
-        event_ptr[i].is_readable = (flag & (EPOLLIN | EPOLLHUP)) != 0;
+        event_ptr[i].is_readable = (flag & EPOLLIN) != 0;
         event_ptr[i].is_error = (flag & EPOLLERR) != 0;
-        event_ptr[i].is_eof = false;
+        event_ptr[i].is_eof = (flag & EPOLLHUP) != 0;
+
     }
 
     return n;
 }
 
-} }
+}
 
 #endif
 

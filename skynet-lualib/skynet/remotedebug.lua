@@ -45,7 +45,7 @@ local function remove_hook(dispatcher)
     raw_dispatcher = nil
     print = _G.print
 
-    skynet.error "Leave debug mode"
+    skynet.log "Leave debug mode"
 end
 
 local function gen_print(fd)
@@ -260,7 +260,7 @@ function M.start(import, fd, handle)
     local dispatcher = import.dispatch
     skynet_suspend = import.suspend
     assert(raw_dispatcher == nil, "Already in debug mode")
-    skynet.error "Enter debug mode"
+    skynet.log "Enter debug mode"
     local channel = debugchannel.connect(handle)
     raw_dispatcher = hook_dispatch(dispatcher, skynet.response(), fd, channel)
 end

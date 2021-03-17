@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 
 // cmd - open a socket connection
@@ -65,7 +65,7 @@ struct request_bind
 };
 
 // cmd - 
-struct request_start
+struct request_resume_pause
 {
     int                         socket_id = 0;                      //
     uint64_t                    svc_handle = 0;                     // skynet service handle
@@ -92,7 +92,8 @@ struct request_udp
  * 请求数据包
  * 
  * 控制包类型: type字段
- * S - Start socket
+ * R - Resume socket (Start)
+ * S - Pause socket
  * B - Bind socket
  * L - Listen socket
  * K - Close socket
@@ -101,6 +102,7 @@ struct request_udp
  * D - Send package (high)
  * P - Send package (low)
  * A - Send UDP package
+ * W - Trigger write
  * T - Set opt
  * U - Create UDP socket
  * C - Set udp address
@@ -127,7 +129,7 @@ struct ctrl_cmd_package
         request_close           close;
         request_listen          listen;
         request_bind            bind;
-        request_start           start;
+        request_resume_pause    resume_pause;
         request_set_opt         set_opt;
         request_udp             udp;
         request_set_udp         set_udp;
@@ -140,8 +142,10 @@ struct ctrl_cmd_package
 // forward declare
 union socket_addr;
 
-// 准备 request_start 请求数据
-int prepare_ctrl_cmd_request_start(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id);
+// 准备 request_resume_pause 请求数据
+int prepare_ctrl_cmd_request_resume(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id);
+// 准备 request_resume_pause 请求数据
+int prepare_ctrl_cmd_request_pause(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id);
 // 准备 request_close 请求数据
 int prepare_ctrl_cmd_request_close(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id);
 // 准备 request_close 请求数据
@@ -155,6 +159,8 @@ int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint64_t svc_handle, in
 int prepare_ctrl_cmd_request_listen(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int fd);
 //
 int prepare_ctrl_cmd_request_send(ctrl_cmd_package& cmd, int socket_id, const send_buffer* buf_ptr, bool is_high);
+// let socket thread enable write event
+int prepare_ctrl_cmd_request_trigger_write(ctrl_cmd_package& cmd, int socket_id);
 
 // 准备 request_set_opt 请求数据
 int prepare_ctrl_cmd_request_set_opt(ctrl_cmd_package& cmd, int socket_id);
@@ -166,5 +172,4 @@ int prepare_ctrl_cmd_request_udp(ctrl_cmd_package& cmd, uint64_t svc_handle, int
 //
 int prepare_ctrl_cmd_request_send_udp(ctrl_cmd_package& cmd, int socket_id, const send_buffer* buf_ptr, const uint8_t* udp_address, int addr_sz);
 
-
-} }
+}

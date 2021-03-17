@@ -499,7 +499,7 @@ function M.close(id, code ,reason)
     end, debug.traceback)
     _close_websocket(ws_obj)
     if not ok then
-        skynet.error(err)
+        skynet.log(err)
     end
 end
 

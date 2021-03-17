@@ -2,7 +2,7 @@
 
 #include <arpa/inet.h>
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 // socket address
 union socket_addr
@@ -21,6 +21,5 @@ int udp_address_to_socket_addr(int protocol, const uint8_t* udp_address, socket_
 // socket_addr to udp address, return udp address length
 int socket_addr_to_udp_address(int protocol, const socket_addr* sa, uint8_t* udp_address);
 
-} }
-
+}
 

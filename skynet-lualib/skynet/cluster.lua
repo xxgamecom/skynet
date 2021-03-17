@@ -8,7 +8,7 @@ local task_queue = {}
 local function request_sender(q, node)
     local ok, c = pcall(skynet.call, clusterd, "lua", "sender", node)
     if not ok then
-        skynet.error(c)
+        skynet.log(c)
         c = nil
     end
     -- run tasks in queue

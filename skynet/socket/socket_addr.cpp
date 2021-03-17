@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 bool to_endpoint(const socket_addr* sa, char* buf_ptr, size_t buf_sz)
 {
@@ -108,5 +108,4 @@ int socket_addr_to_udp_address(int protocol, const socket_addr* sa, uint8_t* udp
     return addr_sz;
 }
 
-
-} }
+}

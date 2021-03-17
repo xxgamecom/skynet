@@ -139,7 +139,7 @@ skynet.start(function()
 		elseif cmd == "namechange" then
 			register_name = new_register_name()
 		else
-			skynet.error(string.format("Invalid command %s from %s", cmd, skynet.address(source)))
+			skynet.log(string.format("Invalid command %s from %s", cmd, skynet.address(source)))
 		end
 	end)
 end)
