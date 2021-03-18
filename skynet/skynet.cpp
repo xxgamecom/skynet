@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
     if (argc <= 1)
     {
         std::cerr << "Need a config file. Please read skynet wiki : https://github.com/cloudwu/skynet/wiki/Config" << std::endl;
-        std::cerr << "usage: skynet config_filename" << std::endl;
+        std::cerr << "Usage: skynet <config_file>" << std::endl;
         return 1;
     }
     // config filename

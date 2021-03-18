@@ -85,7 +85,7 @@ void log(service_context* svc_ctx, const char* msg, ...)
     smsg.src_svc_handle = svc_ctx != nullptr ? svc_ctx->svc_handle_ : 0;
     smsg.session = 0;
     smsg.data = data_ptr;
-    smsg.sz = len | ((size_t)message_type::PTYPE_TEXT << MESSAGE_TYPE_SHIFT);
+    smsg.sz = len | ((size_t)message_protocol_type::PTYPE_TEXT << MESSAGE_TYPE_SHIFT);
     service_manager::instance()->push_service_message(log_svc_handle, &smsg);
 }
 

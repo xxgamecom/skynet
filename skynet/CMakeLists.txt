@@ -8,7 +8,7 @@ include(memory/CMakeLists.txt)
 include(utils/CMakeLists.txt)
 
 # source file list
-SET(SKYNET_HEADER skynet.h
+set(SKYNET_HEADER skynet.h
     ${SKYNET_MEMORY_HEADER}
     ${SKYNET_MQ_HEADER}
     ${SKYNET_LOG_HEADER}
@@ -18,7 +18,7 @@ SET(SKYNET_HEADER skynet.h
     ${SKYNET_NODE_HEADER}
     ${SKYNET_UTILS_HEADER}
 )
-SET(SKYNET_SRC skynet.cpp
+set(SKYNET_SRC skynet.cpp
     ${SKYNET_MEMORY_SRC}
     ${SKYNET_MQ_SRC}
     ${SKYNET_LOG_SRC}
@@ -29,9 +29,9 @@ SET(SKYNET_SRC skynet.cpp
     ${SKYNET_UTILS_SRC}
 )
 
-LIST(APPEND SKYNET_SRC ${SKYNET_HEADER})
+list(APPEND SKYNET_SRC ${SKYNET_HEADER})
 
 # target
-ADD_LIBRARY(skynet_o OBJECT ${SKYNET_SRC})
-ADD_EXECUTABLE(skynet $<TARGET_OBJECTS:skynet_o>)
-TARGET_LINK_LIBRARIES(skynet liblua)
+add_library(skynet_o OBJECT ${SKYNET_SRC})
+add_executable(skynet $<TARGET_OBJECTS:skynet_o>)
+target_link_libraries(skynet liblua)

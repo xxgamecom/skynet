@@ -1,6 +1,8 @@
 /.vscode
 /.idea
 /bin
+/cmake-buid*
+*.o
 *.pyc
 *.dSYM
 *.so

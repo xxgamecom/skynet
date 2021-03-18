@@ -424,7 +424,7 @@ static int traceback(lua_State* L)
 static void report_launcher_error(service_context* ctx)
 {
     // sizeof "ERROR" == 5
-    service_manager::instance()->send_by_name(ctx, 0, ".launcher", message_type::PTYPE_TEXT, 0, (void*)"ERROR", 5);
+    service_manager::instance()->send_by_name(ctx, 0, ".launcher", message_protocol_type::PTYPE_TEXT, 0, (void*)"ERROR", 5);
 }
 
 static const char* optstring(service_context* ctx, const char* key, const char* str)
@@ -461,9 +461,10 @@ static int init_cb(struct snlua* l, service_context* ctx, const char* args, size
 
     lua_settop(L, profile_lib-1);
 
-    // 将ctx设置到LUA_REGISTRYINDEX里，以便在Lua中能获取到ctx
+    // set service context to global register, it's upvalue
     lua_pushlightuserdata(L, ctx);
     lua_setfield(L, LUA_REGISTRYINDEX, "service_context");
+
     //
     luaL_requiref(L, "skynet.codecache", codecache, 0);
     lua_pop(L, 1);
@@ -623,7 +624,7 @@ int snlua_init(struct snlua* l, service_context* ctx, const char* args)
     uint32_t handle_id = strtoul(self + 1, nullptr, 16);
     // it must be first message
     // 给自己发送一条消息, 内容为 args 字符串
-    service_manager::instance()->send(ctx, 0, handle_id, message_type::TAG_DONT_COPY, 0, tmp, sz);
+    service_manager::instance()->send(ctx, 0, handle_id, MESSAGE_TAG_DONT_COPY, 0, tmp, sz);
 
     return 0;
 }

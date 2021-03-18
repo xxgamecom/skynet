@@ -92,7 +92,7 @@ static void forward_message(int type, bool padding, socket_message* result)
     // message.src_svc_handle = 0;
     // message.session = 0;
 //     message.data = sm;
-//     message.sz = sz | ((size_t)message_type::PTYPE_SOCKET << MESSAGE_TYPE_SHIFT);
+//     message.sz = sz | ((size_t)message_protocol_type::PTYPE_SOCKET << MESSAGE_TYPE_SHIFT);
     
 //     if (push_service_message((uint32_t)result->svc_handle, &message))
 //     {
@@ -220,8 +220,7 @@ int node_socket::udp_connect(service_context* ctx, int id, const char* addr, int
 
 int node_socket::udp_sendbuffer(service_context* ctx, const char* address, send_buffer* buffer)
 {
-//     return socket_server_->udp_send((const struct socket_udp_address*)address, buffer);
-    return 0;
+    return socket_server_->udp_send((const struct socket_udp_address*)address, buffer);
 }
 
 const char* node_socket::udp_address(skynet_socket_message* msg, int* addrsz)

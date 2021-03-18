@@ -135,7 +135,7 @@ static inline void dispatch_list(timer_node* current)
         msg.src_svc_handle = 0;
         msg.session = event->session;
         msg.data = nullptr;
-        msg.sz = (size_t)message_type::PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        msg.sz = (size_t)message_protocol_type::PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
         service_manager::instance()->push_service_message(event->svc_handle, &msg);
 
@@ -179,6 +179,17 @@ static void timer_update(timer* T)
     T->mutex.unlock();
 }
 
+// 获取当前系统时间 (tick: 1 tick = 10ms)
+// centisecond: 1/100 second
+// @param sec 当前秒数
+// @param cs 剩余滴答数
+static void systime(uint32_t* sec, uint32_t* cs)
+{
+    struct timespec ti;
+    ::clock_gettime(CLOCK_REALTIME, &ti);   // CLOCK_REALTIME: 系统实时时间, 随系统实时时间改变而改变, 即从UTC1970-1-1 0:0:0开始计时
+    *sec = (uint32_t)ti.tv_sec;                     // 秒数部分
+    *cs = (uint32_t)(ti.tv_nsec / 10000000);        // 百分之一秒部分, 转纳秒数为百分之一秒 = 纳秒 / 10000000
+}
 
 timer_manager* timer_manager::instance_ = nullptr;
 
@@ -195,15 +206,16 @@ void timer_manager::init()
     TI = create_timer();
 
     uint32_t current = 0;
-    time_helper::systime(&TI->start_time, &current);
+    systime(&TI->start_seconds, &current);
+
     TI->current = current;
-    TI->current_point = time_helper::get_time_tick();
+    TI->current_tick = time_helper::get_time_tick();
 }
 
 // 创建定时操作
 // @param handle
 // @param time <=0时, 说明是需要立即执行, 无需创建定时器节点
-//             >0时, 说明需要定时执行, 创建一个定时器节点, 后续定时触发操作
+//              >0时, 说明需要定时执行, 创建一个定时器节点, 后续定时触发操作
 // @param session
 int timer_manager::timeout(uint32_t handle, int time, int session)
 {
@@ -214,7 +226,7 @@ int timer_manager::timeout(uint32_t handle, int time, int session)
         msg.src_svc_handle = 0;
         msg.session = session;
         msg.data = nullptr;
-        msg.sz = (size_t)message_type::PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        msg.sz = (size_t)message_protocol_type::PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
         if (service_manager::instance()->push_service_message(handle, &msg))
         {
@@ -236,23 +248,22 @@ int timer_manager::timeout(uint32_t handle, int time, int session)
 // 刷新进程时间, 在定时器线程中定期执行, 执行频率: 2.5ms
 void timer_manager::update_time()
 {
-    // 当前时间
-    uint64_t cp = time_helper::get_time_tick();
-    // 
-    if (cp < TI->current_point)
+    // current ticks
+    uint64_t ct = time_helper::get_time_tick();
+
+    //
+    if (ct < TI->current_tick)
     {
-        log(nullptr, "time diff error: change from %lld to %lld", cp, TI->current_point);
-        TI->current_point = cp;
+        log(nullptr, "time diff error: change from %lld to %lld", ct, TI->current_tick);
+        TI->current_tick = ct;
     }
     //
-    else if (cp != TI->current_point)
+    else if (ct != TI->current_tick)
     {
         // 距离上次执行的时间差
-        uint32_t diff = (uint32_t)(cp - TI->current_point);
-        // 记录当前执行时间点
-        TI->current_point = cp;
-        // 更新当前时间
-        TI->current += diff;
+        uint32_t diff = (uint32_t)(ct - TI->current_tick);
+        TI->current_tick = ct;  // 记录当前执行时间点
+        TI->current += diff;    // 更新当前时间
         
         // 更新定时器
         for (int i = 0; i < diff; i++)
@@ -269,9 +280,9 @@ uint64_t timer_manager::now()
 }
 
 // 返回当前进程的启动 UTC 时间（秒）
-uint32_t timer_manager::start_time()
+uint32_t timer_manager::start_seconds()
 {
-    return TI->start_time;
+    return TI->start_seconds;
 }
 
 }

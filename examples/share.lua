@@ -38,7 +38,7 @@ skynet.start(function()
 	end
 
 	-- test lua serialization
-	local s = skynet.packstring(obj)
+	local s = skynet.pack_string(obj)
 	local nobj = skynet.unpack(s)
 	for k,v in pairs(nobj) do
 		skynet.log(string.format("nobj[%s]=%s", k,v))

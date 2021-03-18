@@ -22,7 +22,7 @@ local function read_package(fd)
 end
 
 local function pack_package(...)
-	local message = skynet.packstring(...)
+	local message = skynet.pack_string(...)
 	local size = #message
 	assert(size <= 255 , "too long")
 	return string.char(size) .. message

@@ -69,7 +69,7 @@ FILE* service_log::open_log_file(service_context* svc_ctx, uint32_t svc_handle)
     // log to logger service
     skynet::log(svc_ctx, "Open log file %s", tmp);
 
-    uint32_t start_time = timer_manager::instance()->start_time();
+    uint32_t start_time = timer_manager::instance()->start_seconds();
     uint64_t now = timer_manager::instance()->now();
     time_t ti = start_time + now / 100;
     ::fprintf(f, "open time: %u %s", (uint32_t)now, ::ctime(&ti));
@@ -88,7 +88,7 @@ void service_log::close_log_file(service_context* svc_ctx, FILE* f, uint32_t svc
 
 void service_log::log(FILE* f, uint32_t src_svc_handle, int type, int session, void* buffer, size_t sz)
 {
-    if (type == message_type::PTYPE_SOCKET)
+    if (type == message_protocol_type::PTYPE_SOCKET)
     {
         _log_socket(f, (skynet_socket_message*)buffer, sz);
     }

@@ -220,18 +220,18 @@ private:
     // 
     // @param socket_id
     // @param socket_fd socket句柄
-    // @param socket_type
+    // @param protocol_type
     // @param svc_handle skynet服务句柄
     // @param add 是否加入到event_poller中, 默认true
-    socket* new_socket(int socket_id, int socket_fd, int socket_type, uint64_t svc_handle, bool add = true);
+    socket* new_socket(int socket_id, int socket_fd, int protocol_type, uint64_t svc_handle, bool add = true);
 
     //
     void drop_udp(socket* socket_ptr, write_buffer_list* wb_list, write_buffer* wb);
 
     // return 0 when failed, or -1 when file limit
-    int report_accept(socket* socket_ptr, socket_message* result);
+    int handle_accept(socket* socket_ptr, socket_message* result);
     //
-    int report_connect(socket* socket_ptr, socket_lock& sl, socket_message* result);
+    int handle_connect(socket* socket_ptr, socket_lock& sl, socket_message* result);
 
     // 单个socket每次从内核尝试读取的数据字节数为sz
     // 比如，客户端发了一个1kb的数据，socket线程会从内核里依次读取64b，128b，256b，512b，64b数据，总共需读取5次，即会向gateserver服务发5条消息，一个TCP包被切割成5个数据块。

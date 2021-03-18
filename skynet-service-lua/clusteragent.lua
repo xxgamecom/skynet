@@ -80,7 +80,7 @@ local function dispatch_request(_,_,addr, session, msg, sz, padding, is_push)
         local addr = register_name["@" .. name]
         if addr then
             ok = true
-            msg = skynet.packstring(addr)
+            msg = skynet.pack_string(addr)
         else
             ok = false
             msg = "name not found"
@@ -92,7 +92,7 @@ local function dispatch_request(_,_,addr, session, msg, sz, padding, is_push)
         end
         if addr then
             if is_push then
-                skynet.rawsend(addr, "lua", msg, sz)
+                skynet.send_raw(addr, "lua", msg, sz)
                 return	-- no response
             else
                 if tracetag then

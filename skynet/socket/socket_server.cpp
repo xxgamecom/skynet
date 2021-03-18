@@ -49,8 +49,8 @@ enum
 // buffer priority
 enum priority_type
 {
-    HIGH                            = 0,
-    LOW                             = 1,
+    PRIORITY_TYPE_HIGH              = 0,
+    PRIORITY_TYPE_LOW               = 1,
 };
 
 socket_server::~socket_server()
@@ -116,33 +116,32 @@ void socket_server::fini()
     event_poller_.fini();
 }
 
-// @return -1 failed
-//         AF_INET
-//         AF_INET6
-static int do_bind(const char* host, int port, int socket_type, int* family)
+// @return -1 failed, socket fd
+//         family: AF_INET, AF_INET6
+static int do_bind(const char* host, int port, int protocol_type, int* family)
 {
     struct addrinfo ai_hints;
     memset(&ai_hints, 0, sizeof(ai_hints));
     ai_hints.ai_family = AF_UNSPEC;
     // tcp
-    if (socket_type == IPPROTO_TCP)
+    if (protocol_type == IPPROTO_TCP)
     {
         ai_hints.ai_socktype = SOCK_STREAM;
     }
-        // udp
+    // udp
     else
     {
-        assert(socket_type == IPPROTO_UDP);
+        assert(protocol_type == IPPROTO_UDP);
         ai_hints.ai_socktype = SOCK_DGRAM;
     }
-    ai_hints.ai_protocol = socket_type;
+    ai_hints.ai_protocol = protocol_type;
 
     // host: INADDR_ANY
     if (host == nullptr || host[0] == 0)
         host = "0.0.0.0";
     // port
     char portstr[16] = { 0 };
-    sprintf(portstr, "%d", port);
+    ::sprintf(portstr, "%d", port);
 
     struct addrinfo* ai_list = nullptr;
     int status = ::getaddrinfo(host, portstr, &ai_hints, &ai_list);
@@ -200,7 +199,6 @@ static int do_listen(const char* host, int port, int backlog)
 
     return listen_fd;
 }
-
 
 //
 int socket_server::listen(uint64_t svc_handle, const char* addr, int port, int backlog)
@@ -337,16 +335,15 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
         socket_lock sl(socket_ptr->dw_mutex);
 
         // 根据socket状态做相应的处理
-        int status = socket_ptr->status;
-        switch (status)
+        switch (socket_ptr->status)
         {
         // socket正在连接
         case SOCKET_STATUS_CONNECTING:
-            return report_connect(socket_ptr, sl, result);
+            return handle_connect(socket_ptr, sl, result);
         //
         case SOCKET_STATUS_LISTEN:
             {
-                int ok = report_accept(socket_ptr, result);
+                int ok = handle_accept(socket_ptr, result);
                 if (ok > 0)
                     return SOCKET_EVENT_ACCEPT;
                 if (ok < 0)
@@ -362,17 +359,17 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
             // 如果socket已连接且事件可读，通过forward_message_tcp接收数据
             if (event_ref.is_readable)
             {
-                int type;
+                int socket_event;
                 if (socket_ptr->protocol_type == SOCKET_TYPE_TCP)
                 {
-                    type = forward_message_tcp(socket_ptr, sl, result);
+                    socket_event = forward_message_tcp(socket_ptr, sl, result);
                 }
                 else
                 {
-                    type = forward_message_udp(socket_ptr, sl, result);
+                    socket_event = forward_message_udp(socket_ptr, sl, result);
 
                     // 尝试再次读取
-                    if (type == SOCKET_EVENT_UDP)
+                    if (socket_event == SOCKET_EVENT_UDP)
                     {
                         --event_next_index_;
                         return SOCKET_EVENT_UDP;
@@ -381,30 +378,30 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
 
                 // Try to dispatch write message next step if write flag set.
                 if (event_ref.is_writeable &&
-                    type != SOCKET_EVENT_CLOSE &&
-                    type != SOCKET_EVENT_ERROR)
+                    socket_event != SOCKET_EVENT_CLOSE &&
+                    socket_event != SOCKET_EVENT_ERROR)
                 {
                     event_ref.is_readable = false;
                     --event_next_index_;
                 }
 
                 //
-                if (type == -1)
+                if (socket_event == -1)
                     break;
                 
-                return type;
+                return socket_event;
             }
 
             // 如果socket已连接且事件可写，通过send_buffer发送数据。
             if (event_ref.is_writeable)
             {
-                int type = send_write_buffer(socket_ptr, sl, result);
+                int socket_event = send_write_buffer(socket_ptr, sl, result);
                 
                 // blocked, 稍后再发
-                if (type == -1)
+                if (socket_event == -1)
                     break;
                 
-                return type;
+                return socket_event;
             }
 
             // close when error
@@ -609,6 +606,8 @@ int socket_server::udp(uint64_t svc_handle, const char* addr, int port)
         if (fd < 0)
             return -1;
     }
+
+    //
     socket_helper::nonblocking(fd);
 
     int socket_id = socket_pool_.alloc_socket_id();
@@ -839,7 +838,7 @@ int socket_server::_recv_ctrl_cmd(socket_message* result)
     case 'D':
     case 'P': 
     {
-        int priority = (ctrl_cmd == 'D') ? priority_type::HIGH : priority_type::LOW;
+        int priority = (ctrl_cmd == 'D') ? PRIORITY_TYPE_HIGH : PRIORITY_TYPE_LOW;
         auto cmd = (request_send*)buf;
         int ret = handle_ctrl_cmd_send_socket(cmd, result, priority, nullptr);
         
@@ -851,7 +850,7 @@ int socket_server::_recv_ctrl_cmd(socket_message* result)
     case 'A': 
     {
         auto cmd = (request_send_udp*)buf;
-        return handle_ctrl_cmd_send_socket(&cmd->send, result, priority_type::HIGH, cmd->address);
+        return handle_ctrl_cmd_send_socket(&cmd->send, result, PRIORITY_TYPE_HIGH, cmd->address);
     }
     case 'C':
         return handle_ctrl_cmd_set_udp_address((request_set_udp*)buf, result);
@@ -1133,11 +1132,11 @@ int socket_server::handle_ctrl_cmd_exit_socket(socket_message* result)
 }
 
 /**
- * send data, can set data send priority: priority_type::HIGH | priority_type::LOW
+ * send data, can set data send priority: PRIORITY_TYPE_HIGH | PRIORITY_TYPE_LOW
  * 
  * 1) if socket send buffer is empty, write data to socket fd directly.
- * 2) if part of data is written, write the rest to the high priority list. (even the priority is priority_type::LOW)
- * 3) otherwish, 将数据添加到高优先级队列(priority_type::HIGH) 或 低优先级队列(priority_type::LOW).
+ * 2) if part of data is written, write the rest to the high priority list. (even the priority is PRIORITY_TYPE_LOW)
+ * 3) otherwish, 将数据添加到高优先级队列(PRIORITY_TYPE_HIGH) 或 低优先级队列(PRIORITY_TYPE_LOW).
  */
 int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message* result, int priority, const uint8_t* udp_address)
 {
@@ -1171,7 +1170,7 @@ int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message
         // tcp
         if (socket_ref.protocol_type == SOCKET_TYPE_TCP)
         {
-            // add to high priority list, even priority == priority_type::LOW
+            // add to high priority list, even priority == PRIORITY_TYPE_LOW
             append_sendbuffer(&socket_ref, cmd);
         }
         // udp
@@ -1197,7 +1196,7 @@ int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message
             int n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &sa.addr.s, sa_sz);
             if (n != so.sz)
             {
-                append_sendbuffer(&socket_ref, cmd, priority == priority_type::HIGH, udp_address);
+                append_sendbuffer(&socket_ref, cmd, priority == PRIORITY_TYPE_HIGH, udp_address);
             }
             else
             {
@@ -1227,7 +1226,7 @@ int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message
         // tcp
         if (socket_ref.protocol_type == SOCKET_TYPE_TCP)
         {
-            append_sendbuffer(&socket_ref, cmd, priority == priority_type::HIGH);
+            append_sendbuffer(&socket_ref, cmd, priority == PRIORITY_TYPE_HIGH);
         }
         // udp
         else
@@ -1237,7 +1236,7 @@ int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message
                 udp_address = socket_ref.p.udp_address;
             }
 
-            append_sendbuffer(&socket_ref, cmd, priority == priority_type::HIGH, udp_address);
+            append_sendbuffer(&socket_ref, cmd, priority == PRIORITY_TYPE_HIGH, udp_address);
         }
     }
 
@@ -1496,7 +1495,7 @@ void socket_server::drop_udp(socket* socket_ptr, write_buffer_list* wb_list, wri
     free_write_buffer(wb);
 }
 
-socket* socket_server::new_socket(int socket_id, int socket_fd, int socket_type, uint64_t svc_handle, bool reading/* = true*/)
+socket* socket_server::new_socket(int socket_id, int socket_fd, int protocol_type, uint64_t svc_handle, bool reading/* = true*/)
 {
     auto& socket_ref = socket_pool_.get_socket(socket_id);
     assert(socket_ref.status == SOCKET_STATUS_ALLOCED);
@@ -1515,7 +1514,7 @@ socket* socket_server::new_socket(int socket_id, int socket_fd, int socket_type,
     socket_ref.writing = false;
     socket_ref.closing = false;
     socket_ref.sending = socket_pool::socket_id_tag16(socket_id) << 16 | 0; // high 16 bits: socket id, low 16 bits: actually sending count
-    socket_ref.protocol_type = socket_type;
+    socket_ref.protocol_type = protocol_type;
     socket_ref.p.size = MIN_READ_BUFFER;
     socket_ref.svc_handle = svc_handle;
     socket_ref.wb_size = 0;
@@ -1699,12 +1698,12 @@ int socket_server::send_write_buffer(socket* socket_ptr, socket_lock& sl, socket
     }
 
     //
-    int type = do_send_write_buffer(socket_ptr, sl, result);
+    int socket_event = do_send_write_buffer(socket_ptr, sl, result);
 
     //
     sl.unlock();
 
-    return type;
+    return socket_event;
 }
 
 
@@ -1839,11 +1838,11 @@ int socket_server::do_send_write_buffer(socket* socket_ptr, socket_lock& sl, soc
     {
         if (ret == SOCKET_EVENT_ERROR)
         {
-            // HALFCLOSE_WRITE
+            // SOCKET_STATUS_HALF_CLOSE_WRITE
             return SOCKET_EVENT_ERROR;
         }
 
-        // EVENT_RST (ignore)
+        // SOCKET_EVENT_RST (ignore)
         return -1;
     }
 
@@ -1858,11 +1857,11 @@ int socket_server::do_send_write_buffer(socket* socket_ptr, socket_lock& sl, soc
             {
                 if (ret == SOCKET_EVENT_ERROR)
                 {
-                    // HALFCLOSE_WRITE
+                    // SOCKET_STATUS_HALF_CLOSE_WRITE
                     return SOCKET_EVENT_ERROR;
                 }
 
-                // EVENT_RST (ignore)
+                // SOCKET_EVENT_RST (ignore)
                 return -1;
             }
 
@@ -1909,10 +1908,7 @@ int socket_server::do_send_write_buffer(socket* socket_ptr, socket_lock& sl, soc
     return -1;
 }
 
-
-
-
-int socket_server::report_accept(socket* socket_ptr, socket_message* result)
+int socket_server::handle_accept(socket* socket_ptr, socket_message* result)
 {
     // wait accept
     socket_addr sa;
@@ -1974,8 +1970,7 @@ int socket_server::report_accept(socket* socket_ptr, socket_message* result)
     return 1;
 }
 
-
-int socket_server::report_connect(socket* socket_ptr, socket_lock& sl, socket_message* result)
+int socket_server::handle_connect(socket* socket_ptr, socket_lock& sl, socket_message* result)
 {
     // check socket error
     int error = 0;
@@ -2056,7 +2051,7 @@ static int read_socket(socket* s, stream_buffer* buffer)
     for (;;)
     {
         char* buf = reserve_buffer(buffer, rsz);
-        int n = (int)read(s->socket_fd, buf, rsz);
+        int n = (int)::read(s->socket_fd, buf, rsz);
         if (n <= 0)
         {
             if (buffer->sz == 0)

@@ -25,7 +25,7 @@ end
 local coroutine_yield = coroutine.yield
 local coroutine_create = coroutine.create
 
-local proto = {}
+local protocol_table = {} -- register protocol table
 local skynet = {
     -- read skynet.h
     PTYPE_TEXT = 0,
@@ -49,10 +49,10 @@ skynet.cache = require "skynet.codecache"
 function skynet.register_protocol(class)
     local name = class.name
     local id = class.id
-    assert(proto[name] == nil and proto[id] == nil)
+    assert(protocol_table[name] == nil and protocol_table[id] == nil)
     assert(type(name) == "string" and type(id) == "number" and id >=0 and id <=255)
-    proto[name] = class
-    proto[id] = class
+    protocol_table[name] = class
+    protocol_table[id] = class
 end
 
 local session_id_coroutine = {}
@@ -77,7 +77,7 @@ local function send_requests(self)
     for i = 1, #self do
         local req = self[i]
         local addr = req[1]
-        local p = proto[req[2]]
+        local p = protocol_table[req[2]]
         assert(p.unpack)
         local tag = session_coroutine_tracetag[running_thread]
         if tag then
@@ -108,7 +108,7 @@ end
             else
                 watching_session[session] = nil
                 local req = self._sessions[session]
-                local p = proto[req[2]]
+                local p = protocol_table[req[2]]
                 if succ then
                     self._resp[session] = tpack( p.unpack(msg, sz) )
                 else
@@ -349,6 +349,8 @@ end
 local co_create_for_timeout
 local timeout_traceback
 
+-- enable/disable trace coroutine timeout
+-- @param on enable/disable trace
 function skynet.trace_timeout(on)
     local function trace_coroutine(func, ti)
         local co
@@ -369,15 +371,27 @@ function skynet.trace_timeout(on)
     end
 end
 
-skynet.trace_timeout(false)	-- turn off by default
+-- turn off by default
+skynet.trace_timeout(false)
 
+-- timer function
+-- @param ti interval (tick) of timer
+-- @param func timer callback
+-- @return coroutine
 function skynet.timeout(ti, func)
-    local session = c.intcommand("TIMEOUT",ti)
+    -- call service command: set timer
+    local session = c.intcommand("TIMEOUT", ti)
     assert(session)
+
+    -- create coroutine
     local co = co_create_for_timeout(func, ti)
+
+    -- save coroutine
     assert(session_id_coroutine[session] == nil)
     session_id_coroutine[session] = co
-    return co	-- for debug
+
+    -- for debug
+    return co
 end
 
 local function suspend_sleep(session, token)
@@ -411,7 +425,7 @@ function skynet.yield()
 end
 
 function skynet.wait(token)
-    local session = c.genid()
+    local session = c.gen_session_id()
     token = token or coroutine.running()
     local ret, msg = suspend_sleep(session, token)
     sleep_session[token] = nil
@@ -474,16 +488,18 @@ function skynet.killthread(thread)
     return co
 end
 
+-- get self service handle
 function skynet.self()
     return c.addresscommand "REG"
 end
 
+--
 function skynet.localname(name)
     return c.addresscommand("QUERY", name)
 end
 
-skynet.now = c.now
-skynet.hpc = c.hpc	-- high performance counter
+skynet.now = c.now  --
+skynet.hpc = c.hpc  -- high performance counter
 
 local traceid = 0
 function skynet.trace(info)
@@ -507,19 +523,21 @@ function skynet.tracetag()
     return session_coroutine_tracetag[running_thread]
 end
 
+-- get the number of ticks since skynet node started.
 local starttime
-
 function skynet.starttime()
     if not starttime then
-        starttime = c.intcommand("STARTTIME")
+        starttime = c.intcommand("START_TIME")
     end
     return starttime
 end
 
+--
 function skynet.time()
     return skynet.now()/100 + (starttime or skynet.starttime())
 end
 
+-- exit service
 function skynet.exit()
     fork_queue = { h = 1, t = 0 }	-- no fork coroutine can be execute after skynet.exit
     skynet.send(".launcher","lua","REMOVE",skynet.self(), false)
@@ -560,24 +578,36 @@ function skynet.setenv(key, value)
     c.command("SETENV",key .. " " ..value)
 end
 
+-- send the message to service
+-- @param addr destination service handle (string | integer)
+-- @param typename message protocol type
 function skynet.send(addr, typename, ...)
-    local p = proto[typename]
-    return c.send(addr, p.id, 0 , p.pack(...))
+    local proto = protocol_table[typename]
+    return c.send(addr, proto.id, 0 , proto.pack(...))
 end
 
-function skynet.rawsend(addr, typename, msg, sz)
-    local p = proto[typename]
-    return c.send(addr, p.id, 0 , msg, sz)
+-- send the message to service
+-- @param addr destination service handle (string | integer)
+-- @param typename message protocol type
+-- @param msg message data
+-- @param sz message len
+function skynet.send_raw(addr, typename, msg, sz)
+    local proto = protocol_table[typename]
+    return c.send(addr, proto.id, 0 , msg, sz)
 end
 
-skynet.genid = assert(c.genid)
-
-skynet.redirect = function(dest,source,typename,...)
-    return c.redirect(dest, source, proto[typename].id, ...)
+-- redirect the message to service
+-- @param dest destination service handle (string | integer)
+-- @param source source service handle (string | integer)
+-- @param typename message protocol type
+skynet.redirect = function(dest, source, typename, ...)
+    local proto = protocol_table[typename]
+    return c.redirect(dest, source, proto.id, ...)
 end
 
+skynet.gen_session_id = assert(c.gen_session_id)
 skynet.pack = assert(c.pack)
-skynet.packstring = assert(c.packstring)
+skynet.pack_string = assert(c.pack_string)
 skynet.unpack = assert(c.unpack)
 skynet.tostring = assert(c.tostring)
 skynet.trash = assert(c.trash)
@@ -600,7 +630,7 @@ function skynet.call(addr, typename, ...)
         c.send(addr, skynet.PTYPE_TRACE, 0, tag)
     end
 
-    local p = proto[typename]
+    local p = protocol_table[typename]
     local session = c.send(addr, p.id , nil , p.pack(...))
     if session == nil then
         error("call to invalid address " .. skynet.address(addr))
@@ -614,7 +644,7 @@ function skynet.rawcall(addr, typename, msg, sz)
         c.trace(tag, "call", 2)
         c.send(addr, skynet.PTYPE_TRACE, 0, tag)
     end
-    local p = proto[typename]
+    local p = protocol_table[typename]
     local session = assert(c.send(addr, p.id , nil , msg, sz), "call to invalid address")
     return yield_call(addr, session)
 end
@@ -622,7 +652,7 @@ end
 function skynet.tracecall(tag, addr, typename, msg, sz)
     c.trace(tag, "tracecall begin")
     c.send(addr, skynet.PTYPE_TRACE, 0, tag)
-    local p = proto[typename]
+    local p = protocol_table[typename]
     local session = assert(c.send(addr, p.id , nil , msg, sz), "call to invalid address")
     local msg, sz = yield_call(addr, session)
     c.trace(tag, "tracecall end")
@@ -720,7 +750,7 @@ function skynet.wakeup(token)
 end
 
 function skynet.dispatch(typename, func)
-    local p = proto[typename]
+    local p = protocol_table[typename]
     if func then
         local ret = p.dispatch
         p.dispatch = func
@@ -784,7 +814,7 @@ local function raw_dispatch_message(prototype, msg, sz, session, source)
             suspend(co, coroutine_resume(co, true, msg, sz, session))
         end
     else
-        local p = proto[prototype]
+        local p = protocol_table[prototype]
         if p == nil then
             if prototype == skynet.PTYPE_TRACE then
                 -- trace next request
@@ -825,7 +855,7 @@ local function raw_dispatch_message(prototype, msg, sz, session, source)
             if session ~= 0 then
                 c.send(source, skynet.PTYPE_ERROR, session, "")
             else
-                unknown_request(session, source, msg, sz, proto[prototype].name)
+                unknown_request(session, source, msg, sz, protocol_table[prototype].name)
             end
         end
     end
@@ -898,7 +928,7 @@ skynet.tracelog = c.trace
 -- false: force off
 -- nil: optional (use skynet.trace() to trace one message)
 function skynet.traceproto(prototype, flag)
-    local p = assert(proto[prototype])
+    local p = assert(protocol_table[prototype])
     p.trace = flag
 end
 
@@ -927,9 +957,9 @@ do
 end
 
 skynet.init = skynet_require.init
--- skynet.pcall is deprecated, use pcall directly
-skynet.pcall = pcall
 
+-- initialize service
+-- @param start service init function
 function skynet.init_service(start)
     local function main()
         skynet_require.init_all()
@@ -939,14 +969,16 @@ function skynet.init_service(start)
     if not ok then
         skynet.log("init service failed: " .. tostring(err))
         skynet.send(".launcher","lua", "ERROR")
-        skynet.exit()
+        skynet.exit() -- exit service
     else
         skynet.send(".launcher","lua", "LAUNCHOK")
     end
 end
 
 function skynet.start(start_func)
+    -- set service message callback
     c.callback(skynet.dispatch_message)
+    -- init coroutine
     init_thread = skynet.timeout(0, function()
         skynet.init_service(start_func)
         init_thread = nil

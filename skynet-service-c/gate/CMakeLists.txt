@@ -3,8 +3,8 @@ INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/skynet")
 
 #
 set(SKYNET_GATE_HEADER
-    databuffer.h
-    hashid.h
+    data_buffer.h
+    hash_id.h
 )
 
 set(SKYNET_GATE_SRC

@@ -1,15 +1,11 @@
  #include "skynet.h"
- #include "databuffer.h"
- #include "hashid.h"
-
-// #include "skynet_socket.h"
+ #include "data_buffer.h"
+ #include "hash_id.h"
 
  #include <cstdlib>
  #include <string>
  #include <cassert>
  #include <cstdint>
-// #include <stdio.h>
-// #include <stdarg.h>
 
 namespace skynet { namespace service {
 
@@ -18,27 +14,27 @@ namespace skynet { namespace service {
 //
 struct connection
 {
-    int id;    // skynet_socket id
-    uint32_t agent;
-    uint32_t client;
-    char remote_name[32];
-    struct databuffer buffer;
+    int                 id;    // skynet socket id
+    uint32_t            agent;
+    uint32_t            client;
+    char                remote_name[32];
+    databuffer          buffer;
 };
 
 //
 struct gate
 {
-    service_context* ctx;
-    int listen_id;
-    uint32_t watchdog;
-    uint32_t broker;
-    int client_tag;
-    int header_size;
-    int max_connection;
-    struct hashid hash;
-    struct connection* conn;
+    service_context*    ctx;
+    int                 listen_id;
+    uint32_t            watchdog;
+    uint32_t            broker;
+    int                 client_tag;
+    int                 header_size;
+    int                 max_connection;
+    struct hashid       hash;
+    struct connection*  conn;
     // todo: save message pool ptr for release
-    struct messagepool mp;
+    struct messagepool  mp;
 };
 
 static void _parm(char* msg, int sz, int command_sz)
@@ -159,7 +155,7 @@ static void _report(struct gate* g, const char* data, ...)
     int n = vsnprintf(tmp, sizeof(tmp), data, ap);
     va_end(ap);
 
-    service_manager::instance()->send(ctx, 0, g->watchdog, message_type::PTYPE_TEXT, 0, tmp, n);
+    service_manager::instance()->send(ctx, 0, g->watchdog, message_protocol_type::PTYPE_TEXT, 0, tmp, n);
 }
 
 static void _forward(struct gate* g, struct connection* c, int size)
@@ -175,21 +171,21 @@ static void _forward(struct gate* g, struct connection* c, int size)
     {
         char* temp = (char*)skynet_malloc(size);
         databuffer_read(&c->buffer, &g->mp, temp, size);
-        service_manager::instance()->send(ctx, 0, g->broker, g->client_tag | message_type::TAG_DONT_COPY, fd, temp, size);
+        service_manager::instance()->send(ctx, 0, g->broker, g->client_tag | MESSAGE_TAG_DONT_COPY, fd, temp, size);
         return;
     }
     if (c->agent)
     {
         char* temp = (char*)skynet_malloc(size);
         databuffer_read(&c->buffer, &g->mp, temp, size);
-        service_manager::instance()->send(ctx, c->client, c->agent, g->client_tag | message_type::TAG_DONT_COPY, fd, temp, size);
+        service_manager::instance()->send(ctx, c->client, c->agent, g->client_tag | MESSAGE_TAG_DONT_COPY, fd, temp, size);
     }
     else if (g->watchdog)
     {
         char* tmp = (char*)skynet_malloc(size + 32);
         int n = snprintf(tmp, 32, "%d data ", c->id);
         databuffer_read(&c->buffer, &g->mp, tmp + n, size);
-        service_manager::instance()->send(ctx, 0, g->watchdog, message_type::PTYPE_TEXT | message_type::TAG_DONT_COPY, fd, tmp, size + n);
+        service_manager::instance()->send(ctx, 0, g->watchdog, message_protocol_type::PTYPE_TEXT | MESSAGE_TAG_DONT_COPY, fd, tmp, size + n);
     }
 }
 
@@ -307,11 +303,11 @@ static int _cb(service_context* ctx, void* ud, int type, int session, uint32_t s
     switch (type)
     {
         // 接收本地指令
-    case message_type::PTYPE_TEXT:
+    case message_protocol_type::PTYPE_TEXT:
         _ctrl(g, msg, (int)sz);
         break;
         //
-    case message_type::PTYPE_CLIENT:
+    case message_protocol_type::PTYPE_CLIENT:
     {
         if (sz <= 4)
         {
@@ -335,7 +331,7 @@ static int _cb(service_context* ctx, void* ud, int type, int session, uint32_t s
             break;
         }
     }
-    case message_type::PTYPE_SOCKET:
+    case message_protocol_type::PTYPE_SOCKET:
         // recv socket message from skynet_socket
         dispatch_socket_message(g, (const skynet_socket_message*)msg, (int)(sz - sizeof(struct skynet_socket_message)));
         break;
@@ -412,20 +408,21 @@ void gate_release(struct gate* g)
     skynet_free(g);
 }
 
-int gate_init(struct gate* g, service_context* ctx, char* parm)
+int gate_init(struct gate* g, service_context* ctx, char* param)
 {
-    if (parm == NULL)
+    if (param == nullptr)
         return 1;
+
     int max = 0;
-    int sz = strlen(parm) + 1;
+    int sz = ::strlen(param) + 1;
     char watchdog[sz];
     char binding[sz];
     int client_tag = 0;
     char header;
-    int n = sscanf(parm, "%c %s %s %d %d", &header, watchdog, binding, &client_tag, &max);
+    int n = ::sscanf(param, "%c %s %s %d %d", &header, watchdog, binding, &client_tag, &max);
     if (n < 4)
     {
-        log(ctx, "Invalid gate parm %s", parm);
+        log(ctx, "Invalid gate parm %s", param);
         return 1;
     }
     if (max <= 0)
@@ -441,7 +438,7 @@ int gate_init(struct gate* g, service_context* ctx, char* parm)
 
     if (client_tag == 0)
     {
-        client_tag = message_type::PTYPE_CLIENT;
+        client_tag = message_protocol_type::PTYPE_CLIENT;
     }
     if (watchdog[0] == '!')
     {
@@ -463,8 +460,7 @@ int gate_init(struct gate* g, service_context* ctx, char* parm)
     g->conn = (connection*)skynet_malloc(max * sizeof(struct connection));
     memset(g->conn, 0, max * sizeof(struct connection));
     g->max_connection = max;
-    int i;
-    for (i = 0; i < max; i++)
+    for (int i = 0; i < max; i++)
     {
         g->conn[i].id = -1;
     }
