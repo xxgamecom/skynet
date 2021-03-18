@@ -1,9 +1,22 @@
-# source file list
-AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet-service-c/gate" GATE_SRC)
+# include path
+INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/skynet")
+
+#
+set(SKYNET_GATE_HEADER
+    data_buffer.h
+    hash_id.h
+)
+
+set(SKYNET_GATE_SRC
+    service_gate.cpp
+)
+
+LIST(APPEND SKYNET_GATE_SRC ${SKYNET_GATE_HEADER})
 
 # target shared lib (gate.so)
 ADD_LIBRARY(gate MODULE 
-    ${GATE_SRC}
+    ${SKYNET_GATE_SRC}
+    $<TARGET_OBJECTS:skynet_o>
 )
 SET_TARGET_PROPERTIES(gate
     PROPERTIES

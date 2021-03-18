@@ -1,9 +1,21 @@
-# source file list
-AUX_SOURCE_DIRECTORY("${SKYNET_ROOT_PATH}/skynet-service-c/snlua" SNLUA_SRC)
+# include path
+INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/skynet")
+
+#
+set(SKYNET_SNLUA_HEADER
+
+)
+
+set(SKYNET_SNLUA_SRC
+    service_snlua.cpp
+)
+
+LIST(APPEND SKYNET_SNLUA_SRC ${SKYNET_SNLUA_HEADER})
 
 # target shared lib (snlua.so)
 ADD_LIBRARY(snlua MODULE 
-    ${SNLUA_SRC}
+    ${SKYNET_SNLUA_SRC}
+    $<TARGET_OBJECTS:skynet_o>
 )
 SET_TARGET_PROPERTIES(snlua
     PROPERTIES

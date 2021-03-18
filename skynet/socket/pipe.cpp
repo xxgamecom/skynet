@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 bool pipe::init()
 {
@@ -74,4 +74,4 @@ int pipe::write(const char* data_ptr, int data_sz)
     return ::write(write_fd_, data_ptr, data_sz);
 }
 
-} }
+}

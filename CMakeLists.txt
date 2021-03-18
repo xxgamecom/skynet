@@ -50,6 +50,7 @@ SET(EXECUTABLE_OUTPUT_PATH "${SKYNET_BIN_PATH}")
 
 # include path
 INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/deps/lua")
+INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/deps/asio/include")
 
 #------------------------------------------------------
 # build

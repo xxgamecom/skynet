@@ -2,21 +2,23 @@
 
 #include <cstdint>
 #include <memory>
+#include <list>
 
 #include "socket.h"
 #include "socket_lock.h"
 #include "socket_addr.h"
 #include "socket_info.h"
+#include "socket_pool.h"
 #include "buffer.h"
-#include "socket_server_ctrl_cmd.h"
 #include "pipe.h"
 #include "poller.h"
+#include "socket_server_ctrl_cmd.h"
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 struct socket_udp_address;
 
-// skynet socket全局的结构，包含socket池，epoll监听的事件列表等
+//
 class socket_server
 {
 private:
@@ -24,20 +26,14 @@ private:
     enum
     {
         ADDR_TMP_BUFFER_SIZE            = 128,                                          //
-
-        MAX_SOCKET_P                    = 16,                                           // 最大socket数量的2次幂
-        MAX_SOCKET                      = 1 << MAX_SOCKET_P,                            // MAX_SOCKET = 2^MAX_SOCKET_P = (0xFFFF)
-
-        MAX_UDP_PACKAGE                 = 65535,                                        // udp最大数据包
+        MAX_UDP_PACKAGE                 = 64 * 1024,                                    // udp最大数据包
     };
 
 private:
     volatile uint64_t                   time_ = 0;                                      // 
 
     pipe                                pipe_;                                          //
-    bool                                need_check_ctrl_cmd_ = true;                    // 是否需要检查控制命令    
-
-    std::atomic<int>                    alloc_socket_id_{ 0 };                          // 用于分配socket id
+    bool                                need_check_ctrl_cmd_ = true;                    // 是否需要检查控制命令
 
     //
     poller                              event_poller_;                                  // poller (epoll或kevent的句柄)
@@ -46,8 +42,8 @@ private:
     int                                 event_next_index_ = 0;                          // poller 的下一个未处理的事件索引
 
     //
-    socket_object_interface             soi_;                                           //    
-    socket                              socket_slot_[MAX_SOCKET];                       // socket列表
+    socket_object_interface             soi_;                                           //
+    socket_pool                         socket_pool_;                                   // socket pool
     uint8_t                             udp_recv_buf_[MAX_UDP_PACKAGE] = { 0 };         //
     char                                addr_tmp_buf_[ADDR_TMP_BUFFER_SIZE] = { 0 };    // 地址信息临时数据
 
@@ -62,66 +58,29 @@ public:
     void fini();
 
 public:
-    /**
-     * 开始socket服务（启动前要先通过socket_server::listen绑定端口）
-     * 
-     * @param svc_handle skynet服务句柄
-     * @param socket_id
-     */
-    void start(uint64_t svc_handle, int socket_id);
-    
-    // 退出socket服务
-    void exit();
-    
-    /**
-     * 关闭socket服务
-     * 
-     * @param svc_handle skynet服务句柄
-     * @param socket_id
-     */
-    void close(uint64_t svc_handle, int socket_id);
-
-    /**
-     * 停止socket服务
-     * 
-     * @param svc_handle skynet服务句柄
-     * @param socket_id
-     */
-    void shutdown(uint64_t svc_handle, int socket_id);
-
-        /**
-     * 绑定监听ip端口
-     * 
-     * @param svc_handle skynet服务句柄
-     * @param addr ip地址
-     * @param port 端口号
-     * @param backlog
-     * @return 返回一个id作为操作此端口监听的句柄
-     */
+    // bind & listen, return socket id
     int listen(uint64_t svc_handle, const char* addr, int port, int backlog);
-
-    /**
-     * 以非阻塞的方式连接服务器
-     * 
-     * @param svc_handle skynet服务句柄
-     * @param addr ip地址
-     * @param port 端口号
-     * @return 返回一个socket id作为操作此端口监听的句柄
-     */
+    // connect remote server (noblocked), return socket id
     int connect(uint64_t svc_handle, const char* addr, int port);
 
-    /**
-     * 并不对应bind函数，而是将stdin、stout这类IO加入到epoll中管理
-     * 
-     * @param svc_handle skynet服务句柄
-     * @param fd socket的文本描述
-     * @return 
-     */
+    // start socket server (must listen before)
+    void start(uint64_t svc_handle, int socket_id);
+    //
+    void pause(uint64_t svc_handle, int socket_id);
+    // 退出socket服务
+    void exit();
+
+    // 关闭socket服务
+    void close(uint64_t svc_handle, int socket_id);
+    // 停止socket服务
+    void shutdown(uint64_t svc_handle, int socket_id);
+    // for tcp
+    void nodelay(int socket_id);
+
+    // 将 stdin, stdout 这些IO加入到poller中 (not sockeet bind)
     int bind(uint64_t svc_handle, int fd);
 
-    /**
-     * 刷新时间
-     */
+    // 刷新时间
     void update_time(uint64_t time);
 
     /**
@@ -134,16 +93,8 @@ public:
      */
     int poll_socket_event(socket_message* result, bool& is_more);
 
-    /**
-     * for tcp
-     */
-    void nodelay(int socket_id);
-
-    // if you send package with type buffer_type::OBJECT, use soi.
-    void userobject(socket_object_interface* soi);
-
     // 查询所有socket信息 (socket_info是一个链表)
-    socket_info* get_socket_info();
+    void get_socket_info(std::list<socket_info>& si_list);
 
     /**
      * 发送数据 (低优先级)
@@ -156,13 +107,13 @@ public:
 
     // udp
 public:
-    /*
-    * 创建一个udp socket句柄，并绑定skynet服务的handle，udp不需要像tcp那样要调用start后才能接收消息
-    * 如果 port != 0, 绑定socket端口;
-    * 如果 addr == NULL, 绑定 ipv4 0.0.0.0;
-    * 如果想要使用ipv6，地址使用“::”，端口中port设为0
-    */
-    int socket_server_udp(uint64_t svc_handle, const char* addr, int port);
+    /**
+     * 创建一个udp socket句柄，并绑定skynet服务的handle，udp不需要像tcp那样要调用start后才能接收消息
+     * 如果 port != 0, 绑定socket端口;
+     * 如果 addr == NULL, 绑定 ipv4 0.0.0.0;
+     * 如果想要使用ipv6，地址使用“::”，端口中port设为0
+     */
+    int udp(uint64_t svc_handle, const char* addr, int port);
 
     /**
      * 设置默认的端口地址
@@ -180,16 +131,10 @@ public:
     /**
      * 获取消息内的IP地址 (UDP)
      * 
-     * @param msg 消息, 传入的消息必须为 socket_event::SOCKET_UDP 类型
+     * @param msg 消息, 传入的消息必须为 SOCKET_EVENT_UDP 类型
      * @param addr_sz 地址所占字节数 
      */
     const socket_udp_address* udp_address(socket_message* msg, int* addr_sz);
-
-public:
-    // 计算socket slot数组下标
-    inline static uint32_t calc_slot_index(int socket_id);
-    // 高16位
-    inline static uint16_t socket_id_tag16(int id);
 
     // ctrl cmd
 private:
@@ -206,23 +151,14 @@ private:
     int handle_ctrl_cmd_open_socket(request_open* cmd, socket_message* result);
     int handle_ctrl_cmd_close_socket(request_close* cmd, socket_message* result);
     int handle_ctrl_cmd_bind_socket(request_bind* cmd, socket_message* result);
-    int handle_ctrl_cmd_start_socket(request_start* cmd, socket_message* result);
+    int handle_ctrl_cmd_resume_socket(request_resume_pause* cmd, socket_message* result);
+    int handle_ctrl_cmd_pause_socket(request_resume_pause* cmd, socket_message* result);
     int handle_ctrl_cmd_setopt_socket(request_set_opt* cmd);
     int handle_ctrl_cmd_exit_socket(socket_message* result);
-    /**
-     * 发送数据
-     * 可以设置发送优先级: priority_type::HIGH 或 priority_type::LOW
-     * 
-     * 如果socket缓存为空, 直接将数据写入fd中.
-     * 如果是写入部分数据, 将剩余部分写入到 高优先级 列表中. (即使优先级为 priority_type::LOW 也是如此)
-     * 否则, 将数据添加到高优先级队列(priority_type::HIGH) 或 低优先级队列(priority_type::LOW).
-     */
     int handle_ctrl_cmd_send_socket(request_send* cmd, socket_message* result, int priority, const uint8_t* udp_address);
-    // 
+    int handle_ctrl_cmd_trigger_write(request_send* cmd, socket_message* result);
     int handle_ctrl_cmd_listen_socket(request_listen* cmd, socket_message* result);
-    //
     int handle_ctrl_cmd_add_udp_socket(request_udp* cmd);
-    //
     int handle_ctrl_cmd_set_udp_address(request_set_udp* cmd, socket_message* result);
 
     // send
@@ -272,27 +208,30 @@ private:
     void free_write_buffer_list(write_buffer_list* wb_list);    
 
 private:
+    void close_read(socket* socket_ptr, socket_message* result);
+    int close_write(socket* socket_ptr, socket_lock& sl, socket_message* result);
+
+    int enable_write(socket* socket_ptr, bool enable);
+    int enable_read(socket* socket_ptr, bool enable);
+
     //
     void force_close(socket* socket_ptr, socket_lock& sl, socket_message* result);
 
-    // 从socket池中分配一个socket, 返回一个socket id
-    int _alloc_socket_id();
-
     // 
     // @param socket_id
-    // @param sock_fd socket句柄
-    // @param protocol
+    // @param socket_fd socket句柄
+    // @param protocol_type
     // @param svc_handle skynet服务句柄
     // @param add 是否加入到event_poller中, 默认true
-    socket* new_socket(int socket_id, int sock_fd, int protocol, uint64_t svc_handle, bool add = true);
+    socket* new_socket(int socket_id, int socket_fd, int protocol_type, uint64_t svc_handle, bool add = true);
 
     //
     void drop_udp(socket* socket_ptr, write_buffer_list* wb_list, write_buffer* wb);
 
     // return 0 when failed, or -1 when file limit
-    int report_accept(socket* socket_ptr, socket_message* result);
+    int handle_accept(socket* socket_ptr, socket_message* result);
     //
-    int report_connect(socket* socket_ptr, socket_message* result);
+    int handle_connect(socket* socket_ptr, socket_lock& sl, socket_message* result);
 
     // 单个socket每次从内核尝试读取的数据字节数为sz
     // 比如，客户端发了一个1kb的数据，socket线程会从内核里依次读取64b，128b，256b，512b，64b数据，总共需读取5次，即会向gateserver服务发5条消息，一个TCP包被切割成5个数据块。
@@ -306,14 +245,10 @@ private:
     bool send_object_init(send_object* so, const void* object, size_t sz);
     void send_object_init(send_object* so, send_buffer* buf);
 
-    // 查询socket info
-    bool _query_socket_info(socket& socket_ref, socket_info& si);
-
-    // 清理关闭事件
     void _clear_closed_event(int socket_id);    
 };
 
-} }
+}
 
 #include "socket_server.inl"
 

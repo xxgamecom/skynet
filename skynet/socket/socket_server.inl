@@ -1,14 +1,13 @@
-namespace skynet { namespace socket {
+namespace skynet {
 
-// 计算socket slot数组下标
-inline uint32_t socket_server::calc_slot_index(int socket_id)
+inline void socket_server::update_time(uint64_t time)
 {
-    return (((uint32_t)socket_id) % MAX_SOCKET);
-}
-// 高16位
-inline uint16_t socket_server::socket_id_tag16(int socket_id)
-{
-    return ((socket_id >> MAX_SOCKET_P) & 0xFFFF);
+    time_ = time;
 }
 
-} }
+inline void socket_server::get_socket_info(std::list<socket_info>& si_list)
+{
+    socket_pool_.get_socket_info(si_list);
+}
+
+}

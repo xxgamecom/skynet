@@ -118,7 +118,7 @@ bool node_config::load(const std::string& config_file)
     bootstrap_ = skynet::node_env::instance()->get_string("bootstrap","snlua bootstrap");          // bootstrap服务
     pid_file_ = skynet::node_env::instance()->get_string("pid_file", nullptr);                     // enable/disable daemon mode
     logger_ = skynet::node_env::instance()->get_string("logger", nullptr);                         // log output file
-    log_service_ = skynet::node_env::instance()->get_string("log_service", "logger");              // skynet_error输出logger服务, 可以使用外部自定义的lua logger服务
+    log_service_ = skynet::node_env::instance()->get_string("log_service", "logger");              // skynet::log输出logger服务, 可以使用外部自定义的lua logger服务
     profile_ = skynet::node_env::instance()->get_boolean("profile", 1);                            // enable/disable statistics
 
     // close VM

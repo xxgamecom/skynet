@@ -4,7 +4,7 @@
 
 #include <cstdbool>
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 // forward declare
 class socket;
@@ -22,7 +22,7 @@ public:
     // poll event
     struct event
     {
-        socket*                     socket_ptr = nullptr;                   // 事件关联的socket对象
+        socket*                     socket_ptr = nullptr;                   // the socket object associated with the event
 
         bool                        is_readable = false;
         bool                        is_writeable = false;
@@ -48,18 +48,11 @@ public:
     bool is_valid();
 
     // add/del socket event detect
-    bool add(int sock_fd, void* ud);
-    void del(int sock_fd);
+    bool add(int socket_fd, void* ud);
+    void del(int socket_fd);
 
-    /**
-     * 在轮序句柄fd中修改sock注册类型
-     * 
-     * @param sock_fd socket fd
-     * @param ud      user data ptr
-     * @param enable_write true: enable write
-     *                     false: enable read
-     */
-    void write(int sock_fd, void* ud, bool enable_write);
+    //
+    int enable(int socket_fd, void* ud, bool enable_read, bool enable_write);
 
     /**
      * wait socket event
@@ -71,4 +64,4 @@ public:
     int wait(event* event_ptr, int max_events = MAX_WAIT_EVENT);
 };
 
-}}
+}

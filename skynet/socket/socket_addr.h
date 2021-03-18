@@ -1,26 +1,32 @@
 #pragma once
 
+#include <string>
 #include <arpa/inet.h>
 
-namespace skynet { namespace socket {
+namespace skynet {
 
-// socket address
-union socket_addr
+// endpoint
+class socket_addr
 {
-    struct sockaddr             s;
-    struct sockaddr_in          v4;
-    struct sockaddr_in6         v6;
+public:
+    union
+    {
+        struct sockaddr             s;
+        struct sockaddr_in          v4;
+        struct sockaddr_in6         v6;
+    } addr;
+
+public:
+    // ip:port string
+    std::string to_string() const;
+    // ip:string string
+    bool to_string(char* buf_ptr, size_t buf_sz) const;
+
+    // udp_address convert to socket_addr
+    int from_udp_address(int protocol_type, const uint8_t* udp_address);
+    // socket_addr convert to udp_address
+    int to_udp_address(int protocol_type, uint8_t* udp_address) const;
 };
 
-// socket_addr to endpoint info(ip:port)
-bool to_endpoint(const socket_addr* sa, char* buf_ptr, size_t buf_sz);
-
-// udp address to socket_addr, return socket_addr length
-int udp_address_to_socket_addr(int protocol, const uint8_t* udp_address, socket_addr& sa);
-
-// socket_addr to udp address, return udp address length
-int socket_addr_to_udp_address(int protocol, const socket_addr* sa, uint8_t* udp_address);
-
-} }
-
+}
 

@@ -21,7 +21,8 @@ if MODE == "agent" then
         print("--------------")
     end
 
-    function handle.message(id, msg)
+    function handle.message(id, msg, msg_type)
+        assert(msg_type == "binary" or msg_type == "text")
         websocket.write(id, msg)
     end
 
@@ -79,7 +80,7 @@ else
         local balance = 1
         local protocol = "ws"
         local id = socket.listen("0.0.0.0", 9948)
-        skynet.error(string.format("Listen websocket port 9948 protocol:%s", protocol))
+        skynet.log(string.format("Listen websocket port 9948 protocol:%s", protocol))
         socket.start(id, function(id, addr)
             print(string.format("accept client socket_id: %s addr:%s", id, addr))
             skynet.send(agent[balance], "lua", id, protocol, addr)

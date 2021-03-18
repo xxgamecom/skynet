@@ -6,9 +6,12 @@ set(SKYNET_SOCKET_HEADER
     socket/socket.h
     socket/socket.inl
     socket/socket_helper.h
+    socket/socket_helper.inl
     socket/socket_addr.h
     socket/socket_info.h
     socket/socket_lock.h
+    socket/socket_pool.h
+    socket/socket_pool.inl
     socket/socket_server_def.h
     socket/socket_server.h
     socket/socket_server.inl
@@ -23,8 +26,8 @@ set(SKYNET_SOCKET_SRC
     socket/socket.cpp
     socket/socket_helper.cpp
     socket/socket_addr.cpp
-    socket/socket_info.cpp
     socket/socket_lock.cpp
+    socket/socket_pool.cpp
     socket/socket_server.cpp
     socket/socket_server_ctrl_cmd.cpp
 )

@@ -37,7 +37,7 @@ local function read_package(fd)
 end
 
 local function pack_package(...)
-	local message = skynet.packstring(...)
+	local message = skynet.pack_string(...)
 	local size = #message
 	assert(size <= 255 , "too long")
 	return string.char(size) .. message
@@ -90,15 +90,15 @@ local function dispatch_slave(fd)
 			socket.write(fd, pack_package("N", name, address))
 		end
 	else
-		skynet.error("Invalid slave message type " .. t)
+		skynet.log("Invalid slave message type " .. t)
 	end
 end
 
 local function monitor_slave(slave_id, slave_address)
 	local fd = slave_node[slave_id].fd
-	skynet.error(string.format("Harbor %d (fd=%d) report %s", slave_id, fd, slave_address))
+	skynet.log(string.format("Harbor %d (fd=%d) report %s", slave_id, fd, slave_address))
 	while pcall(dispatch_slave, fd) do end
-	skynet.error("slave " ..slave_id .. " is down")
+	skynet.log("slave " ..slave_id .. " is down")
 	local message = pack_package("D", slave_id)
 	slave_node[slave_id].fd = 0
 	for k,v in pairs(slave_node) do
@@ -109,16 +109,16 @@ end
 
 skynet.start(function()
 	local master_addr = skynet.getenv "standalone"
-	skynet.error("master listen socket " .. tostring(master_addr))
+	skynet.log("master listen socket " .. tostring(master_addr))
 	local fd = socket.listen(master_addr)
 	socket.start(fd , function(id, addr)
-		skynet.error("connect from " .. addr .. " " .. id)
+		skynet.log("connect from " .. addr .. " " .. id)
 		socket.start(id)
 		local ok, slave, slave_addr = pcall(handshake, id)
 		if ok then
 			skynet.fork(monitor_slave, slave, slave_addr)
 		else
-			skynet.error(string.format("disconnect fd = %d, error = %s", id, slave))
+			skynet.log(string.format("disconnect fd = %d, error = %s", id, slave))
 			socket.close(id)
 		end
 	end)

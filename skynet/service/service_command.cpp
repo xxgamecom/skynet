@@ -72,7 +72,7 @@ static void _handle_exit(service_context* svc_ctx, uint32_t svc_handle)
 
     if (node::instance()->get_monitor_exit() != 0)
     {
-        service_manager::instance()->send(svc_ctx, svc_handle, node::instance()->get_monitor_exit(), message_type::PTYPE_CLIENT, 0, nullptr, 0);
+        service_manager::instance()->send(svc_ctx, svc_handle, node::instance()->get_monitor_exit(), message_protocol_type::PTYPE_CLIENT, 0, nullptr, 0);
     }
 
     service_manager::instance()->unregister_service(svc_handle);
@@ -107,11 +107,10 @@ static const char* cmd_reg(service_context* svc_ctx, const char* param)
     {
         return service_manager::instance()->set_handle_by_name(param + 1, svc_ctx->svc_handle_);
     }
-    else
-    {
-        log(svc_ctx, "Can't register global name %s in C", param);
-        return nullptr;
-    }
+
+    log(svc_ctx, "Can't register global name %s in C", param);
+
+    return nullptr;
 }
 
 // skynet cmd: query, 通过名字查找对应的handle
@@ -231,7 +230,7 @@ static const char* cmd_set_env(service_context* svc_ctx, const char* param)
 // get skynet node start time (seconds)
 static const char* cmd_start_time(service_context* svc_ctx, const char* param)
 {
-    uint32_t start_seconds = timer_manager::instance()->start_time();
+    uint32_t start_seconds = timer_manager::instance()->start_seconds();
     ::sprintf(svc_ctx->cmd_result_, "%u", start_seconds);
     return svc_ctx->cmd_result_;
 }

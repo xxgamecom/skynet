@@ -5,22 +5,26 @@
 
 namespace skynet {
 
-// 到期时间较小的定时器 (滴答数较小 0~256), 即即将触发的定时器, 保持在 2^8 个定时器链表里
-#define TIME_NEAR_SHIFT         8
-#define TIME_NEAR               (1 << TIME_NEAR_SHIFT)          // 2^8
+enum
+{
+    // 到期时间较小的定时器 (滴答数较小 0~256), 即即将触发的定时器, 保持在 2^8 个定时器链表里
+    TIME_NEAR_SHIFT             = 8,
+    TIME_NEAR                   = (1 << TIME_NEAR_SHIFT),       // 2^8
 
-// 到期时间较大的定时器 (滴答数较大 >256), 表示定时器较远, 可以不用关注, 划分为4个等级, 2^8~2^(8+6)-1, 2^(8+6)-1~2^(8+6+6)-1, ... 
-// 每个等级只需要 2^6 个定时器链表保存
-#define TIME_LEVEL_SHIFT        6                               //
-#define TIME_LEVEL              (1 << TIME_LEVEL_SHIFT)         // 2^6
-#define TIME_NEAR_MASK          (TIME_NEAR-1)                   // 2^8 - 1
-#define TIME_LEVEL_MASK         (TIME_LEVEL-1)                  // 2^6 - 1
+    // 到期时间较大的定时器 (滴答数较大 >256), 表示定时器较远, 可以不用关注, 划分为4个等级, 2^8~2^(8+6)-1, 2^(8+6)-1~2^(8+6+6)-1, ...
+    // 每个等级只需要 2^6 个定时器链表保存
+    TIME_LEVEL_SHIFT            = 6,                            //
+    TIME_LEVEL                  = (1 << TIME_LEVEL_SHIFT),      // 2^6
+    TIME_NEAR_MASK              = (TIME_NEAR-1),                // 2^8 - 1
+    TIME_LEVEL_MASK             = (TIME_LEVEL-1),               // 2^6 - 1
+};
+
 
 // 定时器节点
 struct timer_node
 {
     timer_node*                 next = nullptr;                 // next timer node ptr
-    uint32_t                    expire;                         // expire ticks (the number of ticks since skynet node startup)
+    uint32_t                    expire = 0;                     // expire ticks (the number of ticks since skynet node startup)
 };
 
 // 定时器链表
@@ -42,9 +46,9 @@ struct timer
     std::mutex                  mutex;
     
     uint32_t                    time = 0;                       // 启动到现在走过的滴答数，等同于current
-    uint32_t                    start_time = 0;                 // 节点开始运行的时间点，timestamp，秒数
-    uint64_t                    current = 0;                    // 节点已经运行的时间, 滴答数
-    uint64_t                    current_point = 0;              // 当前时间, 滴答数
+    uint32_t                    start_seconds = 0;              // the number of seconds since the skynet node started. (seconds)
+    uint64_t                    current = 0;                    // the number of ticks since the skynet node started. (1 ticks = 10ms)
+    uint64_t                    current_tick = 0;               // the number of ticks 当前时间, 滴答数
 };
 
 

@@ -78,7 +78,7 @@ void node_thread::start(int work_thread_num)
     // worker thread monitor array
     monitor_data_ptr->svc_monitors.reset(new service_monitor[work_thread_num], std::default_delete<service_monitor[]>());
 
-    // start mointer, timer, socket threads
+    // start monitor, timer, socket threads
     threads[0] = std::make_shared<std::thread>(node_thread::thread_monitor, monitor_data_ptr);
     threads[1] = std::make_shared<std::thread>(node_thread::thread_timer, monitor_data_ptr);
     threads[2] = std::make_shared<std::thread>(node_thread::thread_socket, monitor_data_ptr);
@@ -184,7 +184,7 @@ void node_thread::thread_timer(std::shared_ptr<monitor_data> monitor_data_ptr)
             msg.src_svc_handle = 0;
             msg.session = 0;
             msg.data = nullptr;
-            msg.sz = (size_t)message_type::PTYPE_SYSTEM << MESSAGE_TYPE_SHIFT;
+            msg.sz = (size_t)message_protocol_type::PTYPE_SYSTEM << MESSAGE_TYPE_SHIFT;
             uint32_t logger_svc_handle = service_manager::instance()->find_by_name("logger");
             if (logger_svc_handle != 0)
             {

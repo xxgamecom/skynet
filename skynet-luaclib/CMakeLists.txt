@@ -1,44 +1,33 @@
-# lpeg
-ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-lpeg)
+# include path
+include_directories("${SKYNET_ROOT_PATH}/skynet")
 
-# lua-bson
-ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-bson)
+#
+set(SKYNET_LUACLIB_HEADER
+    lua-seri.h
+    lua-skynet_core.h
+    lua-skynet_netpack.h
+    lua-skynet_socket.h
+)
 
-# lua-md5
-ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-md5)
+set(SKYNET_LUACLIB_SRC
+    lua-seri.cpp
+    lua-skynet_core.cpp
+    lua-skynet_netpack.cpp
+    lua-skynet_socket.cpp
+)
 
-# lua-codec
-ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-codec)
+list(APPEND SKYNET_LUACLIB_SRC ${SKYNET_LUACLIB_HEADER})
 
-# lua-curl
-ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-curl)
-
-# lua-iconv
-ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-iconv)
-
-# lua-cjson
-ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-cjson)
-
-# lua-lfs
-ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-lfs)
-
-# lua-snapshot
-ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-snapshot)
-
-# lua-httpsc
-ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-httpsc)
-
-# lua-epoll
-if (LINUX)
-    ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-epoll)
-endif()
-
-# lua-pbc
-ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-pbc)
-ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-pbc/binding)
-
-# sproto support
-ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/sproto)
-
-# lua-skynet
-ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib/lua-skynet)
+# target shared lib (skynet.so)
+add_library(libskynet MODULE
+    ${SKYNET_LUACLIB_SRC}
+    $<TARGET_OBJECTS:skynet_o>
+)
+set_target_properties(libskynet
+    PROPERTIES
+    PREFIX ""
+    OUTPUT_NAME "skynet"
+    ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_LUACLIB_BIN_PATH}"
+    LIBRARY_OUTPUT_DIRECTORY "${SKYNET_LUACLIB_BIN_PATH}"
+)
+target_link_libraries(libskynet liblua)

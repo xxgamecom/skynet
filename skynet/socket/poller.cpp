@@ -3,7 +3,7 @@
 
 #include <unistd.h>
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 poller::~poller()
 {
@@ -22,4 +22,4 @@ bool poller::is_valid()
     return poll_fd_ != INVALID_FD;
 }
 
-} }
+}

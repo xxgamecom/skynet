@@ -10,7 +10,7 @@ void add_node(timer* T, timer_node* node)
 
     if ((time | TIME_NEAR_MASK) == (current_time | TIME_NEAR_MASK))
     {
-        link(&T->near[time&TIME_NEAR_MASK], node);
+        link(&T->near[time & TIME_NEAR_MASK], node);
     }
     else
     {

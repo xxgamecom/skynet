@@ -1,6 +1,6 @@
 #include "socket_lock.h"
 
-namespace skynet { namespace socket {
+namespace skynet {
 
 socket_lock::socket_lock(std::mutex& mutex_ref)
 :
@@ -47,4 +47,4 @@ void socket_lock::unlock()
     }
 }
 
-} }
+}
