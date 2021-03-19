@@ -1,9 +1,10 @@
 /.vscode
 /.idea
 /bin
-/cmake-build-debug/
+/cmake-build-debug
 *.o
 *.pyc
 *.dSYM
 *.so
+*.a
 .DS_Store
