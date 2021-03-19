@@ -2,8 +2,8 @@ local skynet = require "skynet"
 local gateserver = require "snax.gateserver"
 
 local watchdog
-local connection = {}	-- fd -> connection : { fd , client, agent , ip, mode }
-local forwarding = {}	-- agent -> connection
+local connection = {}    -- fd -> connection : { fd , client, agent , ip, mode }
+local forwarding = {}    -- agent -> connection
 
 skynet.register_protocol {
     name = "client",
@@ -26,7 +26,7 @@ function handler.message(fd, msg, sz)
     else
         skynet.send(watchdog, "lua", "socket", "data", fd, skynet.tostring(msg, sz))
         -- skynet.tostring will copy msg to a string, so we must free msg here.
-        skynet.trash(msg,sz)
+        skynet.trash(msg, sz)
     end
 end
 

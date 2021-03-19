@@ -1,15 +1,15 @@
-local driver = require "skynet.socketdriver"
+local socketdriver = require "skynet.socketdriver"
 local skynet = require "skynet"
 local skynet_core = require "skynet.core"
 local assert = assert
 
 local BUFFER_LIMIT = 128 * 1024
-local socket = {}	-- api
-local socket_pool = setmetatable( -- store all socket object
+local socket = {}    -- api
+local socket_pool = setmetatable(-- store all socket object
         {},
         { __gc = function(p)
-            for id,v in pairs(p) do
-                driver.close(id)
+            for id, v in pairs(p) do
+                socketdriver.close(id)
                 p[id] = nil
             end
         end
@@ -31,13 +31,13 @@ local function pause_socket(s, size)
         return
     end
     if size then
-        skynet.log(string.format("Pause socket (%d) size : %d" , s.id, size))
+        skynet.log(string.format("Pause socket (%d) size : %d", s.id, size))
     else
-        skynet.log(string.format("Pause socket (%d)" , s.id))
+        skynet.log(string.format("Pause socket (%d)", s.id))
     end
-    driver.pause(s.id)
+    socketdriver.pause(s.id)
     s.pause = true
-    skynet.yield()	-- there are subsequent socket messages in mqueue, maybe.
+    skynet.yield()    -- there are subsequent socket messages in mqueue, maybe.
 end
 
 local function suspend(s)
@@ -45,7 +45,7 @@ local function suspend(s)
     s.co = coroutine.running()
     if s.pause then
         skynet.log(string.format("Resume socket (%d)", s.id))
-        driver.start(s.id)
+        socketdriver.start(s.id)
         skynet.wait(s.co)
         s.pause = nil
     else
@@ -60,15 +60,15 @@ end
 
 -- read skynet_socket.h for these macro
 -- SKYNET_SOCKET_TYPE_DATA = 1
-socket_message[1] = function(id, size, data)
-    local s = socket_pool[id]
+socket_message[1] = function(socket_id, size, data)
+    local s = socket_pool[socket_id]
     if s == nil then
-        skynet.log("socket: drop package from " .. id)
-        driver.drop(data, size)
+        skynet.log("socket: drop package from " .. socket_id)
+        socketdriver.drop(data, size)
         return
     end
 
-    local sz = driver.push(s.buffer, s.pool, data, size)
+    local sz = socketdriver.push(s.buffer, s.pool, data, size)
     local rr = s.read_required
     local rrt = type(rr)
     if rrt == "number" then
@@ -82,13 +82,13 @@ socket_message[1] = function(id, size, data)
         end
     else
         if s.buffer_limit and sz > s.buffer_limit then
-            skynet.log(string.format("socket buffer overflow: fd=%d size=%d", id , sz))
-            driver.close(id)
+            skynet.log(string.format("socket buffer overflow: fd=%d size=%d", socket_id, sz))
+            socketdriver.close(socket_id)
             return
         end
         if rrt == "string" then
             -- read line
-            if driver.readline(s.buffer,nil,rr) then
+            if socketdriver.readline(s.buffer, nil, rr) then
                 s.read_required = nil
                 if sz > BUFFER_LIMIT then
                     pause_socket(s, sz)
@@ -102,23 +102,24 @@ socket_message[1] = function(id, size, data)
 end
 
 -- SKYNET_SOCKET_TYPE_CONNECT = 2
-socket_message[2] = function(id, _ , addr)
+socket_message[2] = function(id, _, addr)
     local s = socket_pool[id]
     if s == nil then
         return
     end
     -- log remote addr
-    if not s.connected then	-- resume may also post connect message
+    if not s.connected then
+        -- resume may also post connect message
         s.connected = true
         wakeup(s)
     end
 end
 
 -- SKYNET_SOCKET_TYPE_CLOSE = 3
-socket_message[3] = function(id)
-    local s = socket_pool[id]
+socket_message[3] = function(socket_id)
+    local s = socket_pool[socket_id]
     if s == nil then
-        driver.close(id)
+        socketdriver.close(socket_id)
         return
     end
     s.connected = false
@@ -129,7 +130,7 @@ end
 socket_message[4] = function(id, newid, addr)
     local s = socket_pool[id]
     if s == nil then
-        driver.close(newid)
+        socketdriver.close(newid)
         return
     end
     s.callback(newid, addr)
@@ -139,7 +140,7 @@ end
 socket_message[5] = function(id, _, err)
     local s = socket_pool[id]
     if s == nil then
-        driver.shutdown(id)
+        socketdriver.shutdown(id)
         skynet.log("socket: error on unknown", id, err)
         return
     end
@@ -153,7 +154,7 @@ socket_message[5] = function(id, _, err)
         s.connecting = err
     end
     s.connected = false
-    driver.shutdown(id)
+    socketdriver.shutdown(id)
 
     wakeup(s)
 end
@@ -163,7 +164,7 @@ socket_message[6] = function(id, size, data, address)
     local s = socket_pool[id]
     if s == nil or s.callback == nil then
         skynet.log("socket: drop udp package from " .. id)
-        driver.drop(data, size)
+        socketdriver.drop(data, size)
         return
     end
     local str = skynet.tostring(data, size)
@@ -190,22 +191,22 @@ end
 
 skynet.register_protocol {
     name = "socket",
-    id = skynet.PTYPE_SOCKET,	-- PTYPE_SOCKET = 6
-    unpack = driver.unpack,
-    dispatch = function (_, _, t, ...)
+    id = skynet.PTYPE_SOCKET, -- PTYPE_SOCKET = 6
+    unpack = socketdriver.unpack,
+    dispatch = function(_, _, t, ...)
         socket_message[t](...)
     end
 }
 
-local function connect(id, func)
-    local newbuffer
+local function connect(socket_id, func)
+    local new_buffer
     if func == nil then
-        newbuffer = driver.buffer()
+        new_buffer = socketdriver.new_buffer()
     end
     local s = {
-        id = id,
-        buffer = newbuffer,
-        pool = newbuffer and {},
+        id = socket_id,
+        buffer = new_buffer,
+        pool = new_buffer and {},
         connected = false,
         connecting = true,
         read_required = false,
@@ -213,26 +214,27 @@ local function connect(id, func)
         callback = func,
         protocol = "TCP",
     }
-    assert(not socket_pool[id], "socket is not closed")
-    socket_pool[id] = s
+    assert(not socket_pool[socket_id], "socket is not closed")
+    socket_pool[socket_id] = s
     suspend(s)
     local err = s.connecting
     s.connecting = nil
     if s.connected then
-        return id
+        return socket_id
     else
-        socket_pool[id] = nil
+        socket_pool[socket_id] = nil
         return nil, err
     end
 end
 
+-- connect remote server
 function socket.open(addr, port)
-    local id = driver.connect(addr,port)
-    return connect(id)
+    local socket_id = socketdriver.connect(addr, port)
+    return connect(socket_id)
 end
 
 function socket.bind(os_fd)
-    local id = driver.bind(os_fd)
+    local id = socketdriver.bind(os_fd)
     return connect(id)
 end
 
@@ -240,13 +242,14 @@ function socket.stdin()
     return socket.bind(0)
 end
 
-function socket.start(id, func)
-    driver.start(id)
-    return connect(id, func)
+---
+function socket.start(socket_id, func)
+    socketdriver.start(socket_id)
+    return connect(socket_id, func)
 end
 
-function socket.pause(id)
-    local s = socket_pool[id]
+function socket.pause(socket_id)
+    local s = socket_pool[socket_id]
     if s == nil or s.pause then
         return
     end
@@ -257,13 +260,13 @@ function socket.shutdown(id)
     local s = socket_pool[id]
     if s then
         -- the framework would send SKYNET_SOCKET_TYPE_CLOSE , need close(id) later
-        driver.shutdown(id)
+        socketdriver.shutdown(id)
     end
 end
 
 function socket.close_fd(id)
-    assert(socket_pool[id] == nil,"Use socket.close instead")
-    driver.close(id)
+    assert(socket_pool[id] == nil, "Use socket.close instead")
+    socketdriver.close(id)
 end
 
 function socket.close(id)
@@ -271,7 +274,7 @@ function socket.close(id)
     if s == nil then
         return
     end
-    driver.close(id)
+    socketdriver.close(id)
     if s.connected then
         if s.co then
             -- reading this socket on another coroutine, so don't shutdown (clear the buffer) immediately
@@ -293,7 +296,7 @@ function socket.read(id, sz)
     assert(s)
     if sz == nil then
         -- read some bytes
-        local ret = driver.readall(s.buffer, s.pool)
+        local ret = socketdriver.readall(s.buffer, s.pool)
         if ret ~= "" then
             return ret
         end
@@ -304,7 +307,7 @@ function socket.read(id, sz)
         assert(not s.read_required)
         s.read_required = 0
         suspend(s)
-        ret = driver.readall(s.buffer, s.pool)
+        ret = socketdriver.readall(s.buffer, s.pool)
         if ret ~= "" then
             return ret
         else
@@ -312,22 +315,24 @@ function socket.read(id, sz)
         end
     end
 
-    local ret = driver.pop(s.buffer, s.pool, sz)
+    -- get free buffer node
+    local ret = socketdriver.pop(s.buffer, s.pool, sz)
     if ret then
         return ret
     end
     if not s.connected then
-        return false, driver.readall(s.buffer, s.pool)
+        return false, socketdriver.readall(s.buffer, s.pool)
     end
 
     assert(not s.read_required)
     s.read_required = sz
     suspend(s)
-    ret = driver.pop(s.buffer, s.pool, sz)
+    -- get free buffer node
+    ret = socketdriver.pop(s.buffer, s.pool, sz)
     if ret then
         return ret
     else
-        return false, driver.readall(s.buffer, s.pool)
+        return false, socketdriver.readall(s.buffer, s.pool)
     end
 end
 
@@ -335,34 +340,34 @@ function socket.readall(id)
     local s = socket_pool[id]
     assert(s)
     if not s.connected then
-        local r = driver.readall(s.buffer, s.pool)
+        local r = socketdriver.readall(s.buffer, s.pool)
         return r ~= "" and r
     end
     assert(not s.read_required)
     s.read_required = true
     suspend(s)
     assert(s.connected == false)
-    return driver.readall(s.buffer, s.pool)
+    return socketdriver.readall(s.buffer, s.pool)
 end
 
-function socket.readline(id, sep)
+function socket.readline(socket_id, sep)
     sep = sep or "\n"
-    local s = socket_pool[id]
+    local s = socket_pool[socket_id]
     assert(s)
-    local ret = driver.readline(s.buffer, s.pool, sep)
+    local ret = socketdriver.readline(s.buffer, s.pool, sep)
     if ret then
         return ret
     end
     if not s.connected then
-        return false, driver.readall(s.buffer, s.pool)
+        return false, socketdriver.readall(s.buffer, s.pool)
     end
     assert(not s.read_required)
     s.read_required = sep
     suspend(s)
     if s.connected then
-        return driver.readline(s.buffer, s.pool, sep)
+        return socketdriver.readline(s.buffer, s.pool, sep)
     else
-        return false, driver.readall(s.buffer, s.pool)
+        return false, socketdriver.readall(s.buffer, s.pool)
     end
 end
 
@@ -377,9 +382,9 @@ function socket.block(id)
     return s.connected
 end
 
-socket.write = assert(driver.send)
-socket.lwrite = assert(driver.lsend)
-socket.header = assert(driver.header)
+socket.write = assert(socketdriver.send)
+socket.lwrite = assert(socketdriver.lsend)
+socket.header = assert(socketdriver.header)
 
 function socket.invalid(id)
     return socket_pool[id] == nil
@@ -388,7 +393,7 @@ end
 function socket.disconnected(id)
     local s = socket_pool[id]
     if s then
-        return not(s.connected or s.connecting)
+        return not (s.connected or s.connecting)
     end
 end
 
@@ -397,7 +402,7 @@ function socket.listen(host, port, backlog)
         host, port = string.match(host, "([^:]+):(.+)$")
         port = tonumber(port)
     end
-    return driver.listen(host, port, backlog)
+    return socketdriver.listen(host, port, backlog)
 end
 
 function socket.lock(id)
@@ -421,7 +426,7 @@ function socket.unlock(id)
     local s = socket_pool[id]
     assert(s)
     local lock_set = assert(s.lock)
-    table.remove(lock_set,1)
+    table.remove(lock_set, 1)
     local co = lock_set[1]
     if co then
         skynet.wakeup(co)
@@ -457,7 +462,7 @@ local function create_udp_object(id, cb)
 end
 
 function socket.udp(callback, host, port)
-    local id = driver.udp(host, port)
+    local id = socketdriver.udp(host, port)
     create_udp_object(id, callback)
     return id
 end
@@ -472,12 +477,12 @@ function socket.udp_connect(id, addr, port, callback)
     else
         create_udp_object(id, callback)
     end
-    driver.udp_connect(id, addr, port)
+    socketdriver.udp_connect(id, addr, port)
 end
 
-socket.sendto = assert(driver.udp_send)
-socket.udp_address = assert(driver.udp_address)
-socket.netstat = assert(driver.info)
+socket.sendto = assert(socketdriver.udp_send)
+socket.udp_address = assert(socketdriver.udp_address)
+socket.netstat = assert(socketdriver.info)
 
 function socket.warning(id, callback)
     local obj = socket_pool[id]

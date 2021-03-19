@@ -1,27 +1,29 @@
 # include path
-INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/skynet")
+include_directories("${SKYNET_ROOT_PATH}/skynet")
 
 #
 set(SKYNET_GATE_HEADER
-    data_buffer.h
     hash_id.h
+    data_buffer.h
 )
 
 set(SKYNET_GATE_SRC
+    hash_id.cpp
+    data_buffer.cpp
     service_gate.cpp
 )
 
-LIST(APPEND SKYNET_GATE_SRC ${SKYNET_GATE_HEADER})
+list(APPEND SKYNET_GATE_SRC ${SKYNET_GATE_HEADER})
 
 # target shared lib (gate.so)
-ADD_LIBRARY(gate MODULE 
+add_library(gate MODULE
     ${SKYNET_GATE_SRC}
     $<TARGET_OBJECTS:skynet_o>
 )
-SET_TARGET_PROPERTIES(gate
+set_target_properties(gate
     PROPERTIES
     PREFIX ""
     ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_CSERVICE_BIN_PATH}"
     LIBRARY_OUTPUT_DIRECTORY "${SKYNET_CSERVICE_BIN_PATH}"
 )
-TARGET_LINK_LIBRARIES(gate liblua)
+target_link_libraries(gate liblua)

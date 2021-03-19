@@ -31,7 +31,7 @@ public:
 
     // functions without service_context
 public:
-    static int l_to_string(lua_State* L);
+    static int l_tostring(lua_State* L);
     static int l_pack(lua_State* L);
     static int l_unpack(lua_State* L);
     static int l_pack_string(lua_State* L);

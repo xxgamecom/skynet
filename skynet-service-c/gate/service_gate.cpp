@@ -1,6 +1,5 @@
- #include "skynet.h"
- #include "data_buffer.h"
- #include "hash_id.h"
+#include "skynet.h"
+#include "gate_mod.h"
 
  #include <cstdlib>
  #include <string>
@@ -9,192 +8,170 @@
 
 namespace skynet { namespace service {
 
-#define BACKLOG 128
+#define DEFAULT_BACKLOG 128
 
-//
-struct connection
+static void _param(char* msg, int sz, int cmd_sz)
 {
-    int                 id;    // skynet socket id
-    uint32_t            agent;
-    uint32_t            client;
-    char                remote_name[32];
-    databuffer          buffer;
-};
-
-//
-struct gate
-{
-    service_context*    ctx;
-    int                 listen_id;
-    uint32_t            watchdog;
-    uint32_t            broker;
-    int                 client_tag;
-    int                 header_size;
-    int                 max_connection;
-    struct hashid       hash;
-    struct connection*  conn;
-    // todo: save message pool ptr for release
-    struct messagepool  mp;
-};
-
-static void _parm(char* msg, int sz, int command_sz)
-{
-    while (command_sz < sz)
+    while (cmd_sz < sz)
     {
-        if (msg[command_sz] != ' ')
+        if (msg[cmd_sz] != ' ')
             break;
-        ++command_sz;
+        ++cmd_sz;
     }
     int i;
-    for (i = command_sz; i < sz; i++)
+    for (i = cmd_sz; i < sz; i++)
     {
-        msg[i - command_sz] = msg[i];
+        msg[i - cmd_sz] = msg[i];
     }
-    msg[i - command_sz] = '\0';
+    msg[i - cmd_sz] = '\0';
 }
 
-static void _forward_agent(struct gate* g, int fd, uint32_t agentaddr, uint32_t clientaddr)
+static void _forward_agent(gate_mod* mod_ptr, int fd, uint32_t agent_svc_handle, uint32_t client_svc_handle)
 {
-    int id = hashid_lookup(&g->hash, fd);
-    if (id >= 0)
+    int socket_id = hashid_lookup(&mod_ptr->hash, fd);
+    if (socket_id >= 0)
     {
-        struct connection* agent = &g->conn[id];
-        agent->agent = agentaddr;
-        agent->client = clientaddr;
+        connection* agent_ptr = &mod_ptr->conn[socket_id];
+        agent_ptr->agent_svc_handle = agent_svc_handle;
+        agent_ptr->client_svc_handle = client_svc_handle;
     }
 }
 
-static void _ctrl(struct gate* g, const void* msg, int sz)
+static void _handle_ctrl_cmd(gate_mod* mod_ptr, const void* msg, int sz)
 {
-    service_context* ctx = g->ctx;
-    char tmp[sz + 1];
-    memcpy(tmp, msg, sz);
-    tmp[sz] = '\0';
-    char* command = tmp;
-    int i;
     if (sz == 0)
         return;
+
+    service_context* ctx = mod_ptr->ctx;
+
+    char tmp[sz + 1];
+    ::memcpy(tmp, msg, sz);
+    tmp[sz] = '\0';
+
+    int i;
+    char* cmd = tmp;
     for (i = 0; i < sz; i++)
     {
-        if (command[i] == ' ')
+        if (cmd[i] == ' ')
         {
             break;
         }
     }
-    if (::memcmp(command, "kick", i) == 0)
+    if (::memcmp(cmd, "kick", i) == 0)
     {
-        _parm(tmp, sz, i);
-        int uid = ::strtol(command, NULL, 10);
-        int id = hashid_lookup(&g->hash, uid);
-        if (id >= 0)
+        _param(tmp, sz, i);
+        int uid = ::strtol(cmd, NULL, 10);
+        int socket_id = hashid_lookup(&mod_ptr->hash, uid);
+        if (socket_id >= 0)
         {
             node_socket::instance()->close(ctx, uid);
         }
         return;
     }
-    if (::memcmp(command, "forward", i) == 0)
+    if (::memcmp(cmd, "forward", i) == 0)
     {
-        _parm(tmp, sz, i);
+        _param(tmp, sz, i);
+
         char* client = tmp;
         char* idstr = ::strsep(&client, " ");
-        if (client == NULL)
-        {
+        if (client == nullptr)
             return;
-        }
+
         int id = ::strtol(idstr, NULL, 10);
         char* agent = ::strsep(&client, " ");
-        if (client == NULL)
-        {
+        if (client == nullptr)
             return;
-        }
-        uint32_t agent_handle = ::strtoul(agent + 1, NULL, 16);
-        uint32_t client_handle = ::strtoul(client + 1, NULL, 16);
-        _forward_agent(g, id, agent_handle, client_handle);
+
+        uint32_t agent_svc_handle = ::strtoul(agent + 1, NULL, 16);
+        uint32_t client_svc_handle = ::strtoul(client + 1, NULL, 16);
+        _forward_agent(mod_ptr, id, agent_svc_handle, client_svc_handle);
         return;
     }
-    if (memcmp(command, "broker", i) == 0)
+    if (::memcmp(cmd, "broker", i) == 0)
     {
-        _parm(tmp, sz, i);
-        g->broker = service_manager::instance()->query_by_name(ctx, command);
+        _param(tmp, sz, i);
+        mod_ptr->broker_svc_handle = service_manager::instance()->query_by_name(ctx, cmd);
         return;
     }
-    if (::memcmp(command, "start", i) == 0)
+    if (::memcmp(cmd, "start", i) == 0)
     {
-        _parm(tmp, sz, i);
-        int uid = ::strtol(command, NULL, 10);
-        int id = hashid_lookup(&g->hash, uid);
-        if (id >= 0)
+        _param(tmp, sz, i);
+        int uid = ::strtol(cmd, NULL, 10);
+        int socket_id = hashid_lookup(&mod_ptr->hash, uid);
+        if (socket_id >= 0)
         {
             node_socket::instance()->start(ctx, uid);
         }
         return;
     }
-    if (::memcmp(command, "close", i) == 0)
+    if (::memcmp(cmd, "close", i) == 0)
     {
-        if (g->listen_id >= 0)
+        if (mod_ptr->listen_id >= 0)
         {
-            node_socket::instance()->close(ctx, g->listen_id);
-            g->listen_id = -1;
+            node_socket::instance()->close(ctx, mod_ptr->listen_id);
+            mod_ptr->listen_id = -1;
         }
         return;
     }
-    log(ctx, "[gate] Unkown command : %s", command);
+
+    log(ctx, "[gate] Unknown command : %s", cmd);
 }
 
-static void _report(struct gate* g, const char* data, ...)
+static void _report(gate_mod* mod_ptr, const char* data, ...)
 {
-    if (g->watchdog == 0)
+    if (mod_ptr->watchdog_svc_handle == 0)
     {
         return;
     }
 
-    service_context* ctx = g->ctx;
+    service_context* ctx = mod_ptr->ctx;
     va_list ap;
     va_start(ap, data);
     char tmp[1024];
     int n = vsnprintf(tmp, sizeof(tmp), data, ap);
     va_end(ap);
 
-    service_manager::instance()->send(ctx, 0, g->watchdog, message_protocol_type::PTYPE_TEXT, 0, tmp, n);
+    service_manager::instance()->send(ctx, 0, mod_ptr->watchdog_svc_handle, message_protocol_type::PTYPE_TEXT, 0, tmp, n);
 }
 
-static void _forward(struct gate* g, struct connection* c, int size)
+static void _forward(gate_mod* mod_ptr, connection* c, int size)
 {
-    service_context* ctx = g->ctx;
-    int fd = c->id;
-    if (fd <= 0)
-    {
-        // socket error
+    int socket_id = c->socket_id;
+
+    // socket error
+    if (socket_id <= 0)
         return;
-    }
-    if (g->broker)
+
+    service_context* ctx = mod_ptr->ctx;
+
+    if (mod_ptr->broker_svc_handle != 0)
     {
         char* temp = (char*)skynet_malloc(size);
-        databuffer_read(&c->buffer, &g->mp, temp, size);
-        service_manager::instance()->send(ctx, 0, g->broker, g->client_tag | MESSAGE_TAG_DONT_COPY, fd, temp, size);
+        data_buffer_read(&c->buffer, &mod_ptr->mp, temp, size);
+        service_manager::instance()->send(ctx, 0, mod_ptr->broker_svc_handle, mod_ptr->client_msg_tag | MESSAGE_TAG_DONT_COPY, socket_id, temp, size);
         return;
     }
-    if (c->agent)
+    if (c->agent_svc_handle != 0)
     {
         char* temp = (char*)skynet_malloc(size);
-        databuffer_read(&c->buffer, &g->mp, temp, size);
-        service_manager::instance()->send(ctx, c->client, c->agent, g->client_tag | MESSAGE_TAG_DONT_COPY, fd, temp, size);
+        data_buffer_read(&c->buffer, &mod_ptr->mp, temp, size);
+        service_manager::instance()->send(ctx, c->client_svc_handle, c->agent_svc_handle, mod_ptr->client_msg_tag | MESSAGE_TAG_DONT_COPY, socket_id, temp, size);
     }
-    else if (g->watchdog)
+    else if (mod_ptr->watchdog_svc_handle != 0)
     {
         char* tmp = (char*)skynet_malloc(size + 32);
-        int n = snprintf(tmp, 32, "%d data ", c->id);
-        databuffer_read(&c->buffer, &g->mp, tmp + n, size);
-        service_manager::instance()->send(ctx, 0, g->watchdog, message_protocol_type::PTYPE_TEXT | MESSAGE_TAG_DONT_COPY, fd, tmp, size + n);
+        int n = snprintf(tmp, 32, "%d data ", c->socket_id);
+        data_buffer_read(&c->buffer, &mod_ptr->mp, tmp + n, size);
+        service_manager::instance()->send(ctx, 0, mod_ptr->watchdog_svc_handle, message_protocol_type::PTYPE_TEXT | MESSAGE_TAG_DONT_COPY, socket_id, tmp, size + n);
     }
 }
 
-static void do_dispatch_message(struct gate* g, struct connection* c, int id, void* data, int sz)
+static void do_dispatch_message(gate_mod* mod_ptr, connection* c, int id, void* data, int sz)
 {
-    databuffer_push(&c->buffer, &g->mp, (char*)data, sz);
+    data_buffer_push(&c->buffer, &mod_ptr->mp, (char*)data, sz);
     for (;;)
     {
-        int size = databuffer_readheader(&c->buffer, &g->mp, g->header_size);
+        int size = data_buffer_readheader(&c->buffer, &mod_ptr->mp, mod_ptr->header_size);
         if (size < 0)
         {
             return;
@@ -203,33 +180,34 @@ static void do_dispatch_message(struct gate* g, struct connection* c, int id, vo
         {
             if (size >= 0x1000000)
             {
-                service_context* ctx = g->ctx;
-                databuffer_clear(&c->buffer, &g->mp);
+                service_context* ctx = mod_ptr->ctx;
+                data_buffer_clear(&c->buffer, &mod_ptr->mp);
                 node_socket::instance()->close(ctx, id);
                 log(ctx, "Recv socket message > 16M");
                 return;
             }
             else
             {
-                _forward(g, c, size);
-                databuffer_reset(&c->buffer);
+                _forward(mod_ptr, c, size);
+                data_buffer_reset(&c->buffer);
             }
         }
     }
 }
 
-static void dispatch_socket_message(struct gate* g, const skynet_socket_message* message, int sz)
+static void dispatch_socket_message(gate_mod* mod_ptr, const skynet_socket_message* message, int sz)
 {
-    service_context* ctx = g->ctx;
+    service_context* ctx = mod_ptr->ctx;
+
     switch (message->socket_event)
     {
     case SKYNET_SOCKET_EVENT_DATA:
     {
-        int id = hashid_lookup(&g->hash, message->socket_id);
-        if (id >= 0)
+        int socket_id = hashid_lookup(&mod_ptr->hash, message->socket_id);
+        if (socket_id >= 0)
         {
-            struct connection* c = &g->conn[id];
-            do_dispatch_message(g, c, message->socket_id, message->buffer, message->ud);
+            connection* c = &mod_ptr->conn[socket_id];
+            do_dispatch_message(mod_ptr, c, message->socket_id, message->buffer, message->ud);
         }
         else
         {
@@ -241,13 +219,12 @@ static void dispatch_socket_message(struct gate* g, const skynet_socket_message*
     }
     case SKYNET_SOCKET_EVENT_CONNECT:
     {
-        if (message->socket_id == g->listen_id)
-        {
-            // start listening
+        // start listening
+        if (message->socket_id == mod_ptr->listen_id)
             break;
-        }
-        int id = hashid_lookup(&g->hash, message->socket_id);
-        if (id < 0)
+
+        int socket_id = hashid_lookup(&mod_ptr->hash, message->socket_id);
+        if (socket_id < 0)
         {
             log(ctx, "Close unknown connection %d", message->socket_id);
             node_socket::instance()->close(ctx, message->socket_id);
@@ -257,36 +234,36 @@ static void dispatch_socket_message(struct gate* g, const skynet_socket_message*
     case SKYNET_SOCKET_EVENT_CLOSE:
     case SKYNET_SOCKET_EVENT_ERROR:
     {
-        int id = hashid_remove(&g->hash, message->socket_id);
-        if (id >= 0)
+        int socket_id = hashid_remove(&mod_ptr->hash, message->socket_id);
+        if (socket_id >= 0)
         {
-            struct connection* c = &g->conn[id];
-            databuffer_clear(&c->buffer, &g->mp);
+            connection* c = &mod_ptr->conn[socket_id];
+            data_buffer_clear(&c->buffer, &mod_ptr->mp);
             ::memset(c, 0, sizeof(*c));
-            c->id = -1;
-            _report(g, "%d close", message->socket_id);
+            c->socket_id = -1;
+            _report(mod_ptr, "%d close", message->socket_id);
         }
         break;
     }
     case SKYNET_SOCKET_EVENT_ACCEPT:
         // report accept, then it will be get a SKYNET_SOCKET_EVENT_CONNECT message
-        assert(g->listen_id == message->socket_id);
-        if (hashid_full(&g->hash))
+        assert(mod_ptr->listen_id == message->socket_id);
+        if (hashid_full(&mod_ptr->hash))
         {
             node_socket::instance()->close(ctx, message->ud);
         }
         else
         {
-            struct connection* c = &g->conn[hashid_insert(&g->hash, message->ud)];
+            connection* c = &mod_ptr->conn[hashid_insert(&mod_ptr->hash, message->ud)];
             if (sz >= sizeof(c->remote_name))
             {
                 sz = sizeof(c->remote_name) - 1;
             }
-            c->id = message->ud;
+            c->socket_id = message->ud;
             ::memcpy(c->remote_name, message + 1, sz);
             c->remote_name[sz] = '\0';
-            _report(g, "%d open %d %s:0", c->id, c->id, c->remote_name);
-            log(ctx, "socket open: %x", c->id);
+            _report(mod_ptr, "%d open %d %s:0", c->socket_id, c->socket_id, c->remote_name);
+            log(ctx, "socket open: %x", c->socket_id);
         }
         break;
     case SKYNET_SOCKET_EVENT_WARNING:
@@ -296,17 +273,15 @@ static void dispatch_socket_message(struct gate* g, const skynet_socket_message*
 }
 
 // 处理事件的回调函数
-static int _cb(service_context* ctx, void* ud, int type, int session, uint32_t source, const void* msg, size_t sz)
+static int _gate_cb(service_context* ctx, void* ud, int msg_ptype, int session, uint32_t source, const void* msg, size_t sz)
 {
-    gate* g = (gate*)ud;
+    gate_mod* mod_ptr = (gate_mod*)ud;
 
-    switch (type)
+    switch (msg_ptype)
     {
-        // 接收本地指令
-    case message_protocol_type::PTYPE_TEXT:
-        _ctrl(g, msg, (int)sz);
+    case message_protocol_type::PTYPE_TEXT: // 接收本地指令
+        _handle_ctrl_cmd(mod_ptr, msg, (int)sz);
         break;
-        //
     case message_protocol_type::PTYPE_CLIENT:
     {
         if (sz <= 4)
@@ -314,11 +289,12 @@ static int _cb(service_context* ctx, void* ud, int type, int session, uint32_t s
             log(ctx, "Invalid client message from %x", source);
             break;
         }
+
         // The last 4 bytes in msg are the id of socket, write following bytes to it
         const uint8_t* idbuf = (uint8_t*)msg + sz - 4;
         uint32_t uid = idbuf[0] | idbuf[1] << 8 | idbuf[2] << 16 | idbuf[3] << 24;
-        int id = hashid_lookup(&g->hash, uid);
-        if (id >= 0)
+        int socket_id = hashid_lookup(&mod_ptr->hash, uid);
+        if (socket_id >= 0)
         {
             // don't send id (last 4 bytes)
             skynet_socket_send(ctx, uid, (void*)msg, sz - 4);
@@ -333,21 +309,24 @@ static int _cb(service_context* ctx, void* ud, int type, int session, uint32_t s
     }
     case message_protocol_type::PTYPE_SOCKET:
         // recv socket message from skynet_socket
-        dispatch_socket_message(g, (const skynet_socket_message*)msg, (int)(sz - sizeof(struct skynet_socket_message)));
+        dispatch_socket_message(mod_ptr, (const skynet_socket_message*)msg, (int)(sz - sizeof(struct skynet_socket_message)));
         break;
     }
+
     return 0;
 }
 
-static int start_listen(struct gate* g, char* listen_addr)
+//
+static int start_listen(gate_mod* mod_ptr, char* listen_addr)
 {
-    service_context* ctx = g->ctx;
+    service_context* ctx = mod_ptr->ctx;
+
     char* portstr = strrchr(listen_addr, ':');
     const char* host = "";
     int port;
-    if (portstr == NULL)
+    if (portstr == nullptr)
     {
-        port = strtol(listen_addr, NULL, 10);
+        port = ::strtol(listen_addr, NULL, 10);
         if (port <= 0)
         {
             log(ctx, "Invalid gate address %s", listen_addr);
@@ -356,7 +335,7 @@ static int start_listen(struct gate* g, char* listen_addr)
     }
     else
     {
-        port = strtol(portstr + 1, NULL, 10);
+        port = ::strtol(portstr + 1, NULL, 10);
         if (port <= 0)
         {
             log(ctx, "Invalid gate address %s", listen_addr);
@@ -365,12 +344,15 @@ static int start_listen(struct gate* g, char* listen_addr)
         portstr[0] = '\0';
         host = listen_addr;
     }
-    g->listen_id = node_socket::instance()->listen(ctx, host, port, BACKLOG);
-    if (g->listen_id < 0)
+
+    mod_ptr->listen_id = node_socket::instance()->listen(ctx, host, port, DEFAULT_BACKLOG);
+    if (mod_ptr->listen_id < 0)
     {
         return 1;
     }
-    node_socket::instance()->start(ctx, g->listen_id);
+
+    node_socket::instance()->start(ctx, mod_ptr->listen_id);
+
     return 0;
 }
 
@@ -378,37 +360,37 @@ static int start_listen(struct gate* g, char* listen_addr)
 // mod interface
 //-------------------------------------------
 
-struct gate* gate_create(void)
+gate_mod* gate_create()
 {
-    gate* g = (gate*)skynet_malloc(sizeof(*g));
-    ::memset(g, 0, sizeof(*g));
-    g->listen_id = -1;
+    gate_mod* mod_ptr = (gate_mod*)skynet_malloc(sizeof(*mod_ptr));
+    ::memset(mod_ptr, 0, sizeof(*mod_ptr));
+    mod_ptr->listen_id = -1;
 
-    return g;
+    return mod_ptr;
 }
 
-void gate_release(struct gate* g)
+void gate_release(gate_mod* mod_ptr)
 {
-    service_context* ctx = g->ctx;
-    for (int i = 0; i < g->max_connection; i++)
+    service_context* ctx = mod_ptr->ctx;
+    for (int i = 0; i < mod_ptr->max_connection; i++)
     {
-        struct connection* c = &g->conn[i];
-        if (c->id >= 0)
+        connection* c = &mod_ptr->conn[i];
+        if (c->socket_id >= 0)
         {
-            node_socket::instance()->close(ctx, c->id);
+            node_socket::instance()->close(ctx, c->socket_id);
         }
     }
-    if (g->listen_id >= 0)
+    if (mod_ptr->listen_id >= 0)
     {
-        node_socket::instance()->close(ctx, g->listen_id);
+        node_socket::instance()->close(ctx, mod_ptr->listen_id);
     }
-    messagepool_free(&g->mp);
-    hashid_clear(&g->hash);
-    skynet_free(g->conn);
-    skynet_free(g);
+    messagepool_free(&mod_ptr->mp);
+    hashid_clear(&mod_ptr->hash);
+    skynet_free(mod_ptr->conn);
+    skynet_free(mod_ptr);
 }
 
-int gate_init(struct gate* g, service_context* ctx, char* param)
+int gate_init(gate_mod* mod_ptr, service_context* ctx, char* param)
 {
     if (param == nullptr)
         return 1;
@@ -417,9 +399,9 @@ int gate_init(struct gate* g, service_context* ctx, char* param)
     int sz = ::strlen(param) + 1;
     char watchdog[sz];
     char binding[sz];
-    int client_tag = 0;
+    int client_msg_tag = 0;
     char header;
-    int n = ::sscanf(param, "%c %s %s %d %d", &header, watchdog, binding, &client_tag, &max);
+    int n = ::sscanf(param, "%c %s %s %d %d", &header, watchdog, binding, &client_msg_tag, &max);
     if (n < 4)
     {
         log(ctx, "Invalid gate parm %s", param);
@@ -436,41 +418,41 @@ int gate_init(struct gate* g, service_context* ctx, char* param)
         return 1;
     }
 
-    if (client_tag == 0)
+    if (client_msg_tag == 0)
     {
-        client_tag = message_protocol_type::PTYPE_CLIENT;
+        client_msg_tag = message_protocol_type::PTYPE_CLIENT;
     }
     if (watchdog[0] == '!')
     {
-        g->watchdog = 0;
+        mod_ptr->watchdog_svc_handle = 0;
     }
     else
     {
-        g->watchdog = service_manager::instance()->query_by_name(ctx, watchdog);
-        if (g->watchdog == 0)
+        mod_ptr->watchdog_svc_handle = service_manager::instance()->query_by_name(ctx, watchdog);
+        if (mod_ptr->watchdog_svc_handle == 0)
         {
             log(ctx, "Invalid watchdog %s", watchdog);
             return 1;
         }
     }
 
-    g->ctx = ctx;
+    mod_ptr->ctx = ctx;
 
-    hashid_init(&g->hash, max);
-    g->conn = (connection*)skynet_malloc(max * sizeof(struct connection));
-    memset(g->conn, 0, max * sizeof(struct connection));
-    g->max_connection = max;
+    hashid_init(&mod_ptr->hash, max);
+    mod_ptr->conn = (connection*)skynet_malloc(max * sizeof(connection));
+    ::memset(mod_ptr->conn, 0, max * sizeof(connection));
+    mod_ptr->max_connection = max;
     for (int i = 0; i < max; i++)
     {
-        g->conn[i].id = -1;
+        mod_ptr->conn[i].socket_id = -1;
     }
 
-    g->client_tag = client_tag;
-    g->header_size = header == 'S' ? 2 : 4;
+    mod_ptr->client_msg_tag = client_msg_tag;
+    mod_ptr->header_size = header == 'S' ? 2 : 4;
 
-    ctx->set_callback(g, _cb);
+    ctx->set_callback(mod_ptr, _gate_cb);
 
-    return start_listen(g, binding);
+    return start_listen(mod_ptr, binding);
 }
 
 } }

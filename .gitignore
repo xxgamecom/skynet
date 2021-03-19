@@ -1,7 +1,7 @@
 /.vscode
 /.idea
 /bin
-/cmake-build-*/
+/cmake-build-debug/
 *.o
 *.pyc
 *.dSYM

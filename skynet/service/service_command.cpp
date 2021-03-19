@@ -440,17 +440,17 @@ static cmd_func CMD_FUNCS[] = {
     { nullptr, nullptr }
 };
 
-const char* service_command::handle_command(service_context* svc_ctx, const char* cmd , const char* param)
+const char* service_command::handle_command(service_context* svc_ctx, const char* cmd , const char* param/* = nullptr*/)
 {
-    for (auto& inst : CMD_FUNCS)
+    for (auto& cmd_data : CMD_FUNCS)
     {
         // end
-        if (inst.name == nullptr)
+        if (cmd_data.name == nullptr)
             break;
 
         // 
-        if (::strcmp(cmd, inst.name) == 0)
-            return inst.func(svc_ctx, param);
+        if (::strcmp(cmd, cmd_data.name) == 0)
+            return cmd_data.func(svc_ctx, param);
     }
 
     return nullptr;

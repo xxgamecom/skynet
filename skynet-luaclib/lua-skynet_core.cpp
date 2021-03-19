@@ -20,14 +20,6 @@ namespace skynet { namespace luaclib {
 #define KNRM  "\x1B[0m"
 #define KRED  "\x1B[31m"
 
-#define MAX_LEVEL 3
-
-struct source_info
-{
-    const char* source;
-    int line;
-};
-
 //
 static const char* _get_dst_svc_handle_string(lua_State* L, int index)
 {
@@ -49,7 +41,7 @@ static const char* _get_dst_svc_handle_string(lua_State* L, int index)
  */
 static int _send_message(lua_State* L, int src_svc_handle, int message_type_idx)
 {
-    service_context* svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     // arg 1 - destination service handle (integer | string)
     uint32_t dst_svc_handle = (uint32_t)lua_tointeger(L, 1);
@@ -128,14 +120,15 @@ static int _send_message(lua_State* L, int src_svc_handle, int message_type_idx)
 /**
  * send the message to service
  *
- * lua layer:
- * c.send(addr, proto.id, session, proto.pack(...))
- *
  * arguments:
- *  destination service handle  - uint32 | string
- *  message protocol type       - integer
- *  session                     - integer
- *  message                     - string | lightuserdata (message_ptr, integer len)
+ * 1 destination service handle  - uint32 | string
+ * 2 message protocol type       - integer
+ * 3 session                     - integer
+ * 4 message                     - string | lightuserdata (message_ptr, integer len)
+ *
+ * lua examples:
+ * c.send(addr, proto.id, session, proto.pack(...))
+ * ...
  */
 int skynet_core::l_send(lua_State* L)
 {
@@ -145,153 +138,181 @@ int skynet_core::l_send(lua_State* L)
 /**
  * redirect the message to service
  *
- * lua layer:
- * c.redirect(dest, source, proto.id, ...)
- *
  * arguments:
- *  destination service handle  - uint32 | string
- *  source service handle       - integer
- *  message protocol type       - integer
- *  session                     - integer
- *  message                     - string | lightuserdata (message_ptr, integer len)
+ * 1 destination service handle  - uint32 | string
+ * 2 source service handle       - integer
+ * 3 message protocol type       - integer
+ * 4 session                     - integer
+ * 5 message                     - string | lightuserdata (message_ptr, integer len)
+ *
+ * lua examples:
+ * c.redirect(dest, source, proto.id, ...)
+ * ...
  */
 int skynet_core::l_redirect(lua_State* L)
 {
-    uint32_t src_svc_handle = (uint32_t)luaL_checkinteger(L, 2);
+    auto src_svc_handle = (uint32_t)luaL_checkinteger(L, 2);
     return _send_message(L, src_svc_handle, 3);
 }
 
-// exec service command
+/**
+ * exec service command
+ *
+ * arguments:
+ * 1 service cmd        - string
+ * 2 service cmd param  - string
+ *
+ * lua examples:
+ * c.command("KILL", name)
+ * c.command("LAUNCH", table.concat({...}, " "))
+ * ...
+ */
 int skynet_core::l_service_command(lua_State* L)
 {
-    service_context* svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     // cmd
     const char* cmd = luaL_checkstring(L, 1);
 
-    // has 2 arguments, get the command param
-    const char* param = nullptr;
+    // cmd param
+    const char* cmd_param = nullptr;
     if (lua_gettop(L) == 2)
     {
-        param = luaL_checkstring(L, 2);
+        cmd_param = luaL_checkstring(L, 2);
     }
 
-    const char* result = service_command::handle_command(svc_ctx, cmd, param);
-    if (result != nullptr)
-    {
-        lua_pushstring(L, result);
-        return 1;
-    }
+    // handle service command
+    const char* result = service_command::handle_command(svc_ctx, cmd, cmd_param);
+    if (result == nullptr)
+        return 0;
 
-    return 0;
+    // return result
+    lua_pushstring(L, result);
+
+    return 1;
 }
 
-// exec service command
+/**
+ * exec service command
+ *
+ * arguments:
+ * 1 service cmd        - string
+ * 2 service cmd param  - string
+ *
+ * lua examples:
+ * c.intcommand("TIMEOUT", timeout)
+ * c.intcommand("STAT", "mqlen")
+ * ...
+ */
 int skynet_core::l_service_command_int(lua_State* L)
 {
-    //
-    service_context* svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    // service_context upvalue
+    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
-    // get the service command
+    // cmd
     const char* cmd = luaL_checkstring(L, 1);
 
-    // get the service commmand param
-    const char* param = nullptr;
-    char tmp[64] = { 0 };    // for integer param
+    // cmd param
+    std::string cmd_param;
     if (lua_gettop(L) == 2)
     {
         if (lua_isnumber(L, 2))
         {
-            int32_t n = (int32_t)luaL_checkinteger(L, 2);
-            ::sprintf(tmp, "%d", n);
-            param = tmp;
+            cmd_param = std::to_string((int32_t)luaL_checkinteger(L, 2));
         }
         else
         {
-            param = luaL_checkstring(L, 2);
+            cmd_param = luaL_checkstring(L, 2);
         }
     }
 
     // exec service command
-    const char* result = service_command::handle_command(svc_ctx, cmd, param);
-    if (result != nullptr)
+    const char* result = service_command::handle_command(svc_ctx, cmd, cmd_param.c_str());
+    if (result == nullptr)
+        return 0;
+
+    // return result
+    char* endptr = nullptr;
+    lua_Integer r = ::strtoll(result, &endptr, 0);
+    if (endptr == nullptr || *endptr != '\0')
     {
-        char* endptr = nullptr;
-        lua_Integer r = ::strtoll(result, &endptr, 0);
+        // may be real number
+        double n = ::strtod(result, &endptr);
         if (endptr == nullptr || *endptr != '\0')
         {
-            // may be real number
-            double n = ::strtod(result, &endptr);
-            if (endptr == nullptr || *endptr != '\0')
-            {
-                return luaL_error(L, "Invalid result %s", result);
-            }
-            else
-            {
-                lua_pushnumber(L, n);
-            }
-        }
-        else
-        {
-            lua_pushinteger(L, r);
+            return luaL_error(L, "Invalid service cmd result %s", result);
         }
 
-        return 1;
+        lua_pushnumber(L, n);
+    }
+    else
+    {
+        lua_pushinteger(L, r);
     }
 
-    return 0;
+    return 1;
 }
 
-// exec service command (address related)
+/**
+ * exec service command (address related)
+ *
+ * arguments:
+ * 1 service cmd        - string
+ * 2 service cmd param  - string
+ *
+ * examples:
+ * c.addresscommand "REG"
+ * c.addresscommand("QUERY", name)
+ */
 int skynet_core::l_service_command_address(lua_State* L)
 {
-    // get the service context
-    service_context* svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    // service context upvalue
+    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
-    // get command
+    // cmd
     const char* cmd = luaL_checkstring(L, 1);
 
-    // has 2 arguments, get the command param
-    const char* param = nullptr;
+    // cmd param
+    std::string cmd_param;
     if (lua_gettop(L) == 2)
     {
-        param = luaL_checkstring(L, 2);
+        cmd_param = luaL_checkstring(L, 2);
     }
 
     // exec service command
-    const char* result = service_command::handle_command(svc_ctx, cmd, param);
-    if (result != nullptr && result[0] == ':')
-    {
-        uint32_t addr = 0;
-        for (int i = 1; result[i]; i++)
-        {
-            int c = result[i];
-            if (c >= '0' && c <= '9')
-            {
-                c = c - '0';
-            }
-            else if (c >= 'a' && c <= 'f')
-            {
-                c = c - 'a' + 10;
-            }
-            else if (c >= 'A' && c <= 'F')
-            {
-                c = c - 'A' + 10;
-            }
-            else
-            {
-                return 0;
-            }
-            addr = addr * 16 + c;
-        }
-        lua_pushinteger(L, addr);
-        return 1;
-    }
+    const char* result = service_command::handle_command(svc_ctx, cmd, cmd_param.c_str());
+    if (result == nullptr || result[0] != ':')
+        return 0;
 
-    return 0;
+    // return result
+    uint32_t addr = 0;
+    for (int i = 1; result[i]; i++)
+    {
+        int c = result[i];
+        if (c >= '0' && c <= '9')
+        {
+            c = c - '0';
+        }
+        else if (c >= 'a' && c <= 'f')
+        {
+            c = c - 'a' + 10;
+        }
+        else if (c >= 'A' && c <= 'F')
+        {
+            c = c - 'A' + 10;
+        }
+        else
+        {
+            return 0;
+        }
+        addr = addr * 16 + c;
+    }
+    lua_pushinteger(L, addr);
+
+    return 1;
 }
 
-static int traceback(lua_State* L)
+static int _traceback(lua_State* L)
 {
     const char* msg = lua_tostring(L, 1);
     if (msg != nullptr)
@@ -320,7 +341,7 @@ static int _cb(service_context* svc_ctx, void* ud, int type, int session, uint32
     int top = lua_gettop(L);
     if (top == 0)
     {
-        lua_pushcfunction(L, traceback);
+        lua_pushcfunction(L, _traceback);
         lua_rawgetp(L, LUA_REGISTRYINDEX, (void*)_cb);
     }
     else
@@ -342,7 +363,7 @@ static int _cb(service_context* svc_ctx, void* ud, int type, int session, uint32
         return 0;
     }
 
-    const char* self = service_command::handle_command(svc_ctx, "REG", nullptr);
+    const char* self = service_command::handle_command(svc_ctx, "REG");
     switch (r)
     {
     case LUA_ERRRUN:
@@ -377,25 +398,31 @@ static int _forward_cb(service_context* svc_ctx, void* ud, int type, int session
 /**
  * set service message callback
  *
- * set lua callback: skynet.dispatch_messsage(type, msg, sz, session, source)
+ * arguments:
+ * 1 callback function      - function
+ * 2 message forward mode   - boolean
+ *
+ * lua examples:
+ * c.callback(skynet.dispatch_message)
+ * c.callback(function(ptype, msg, sz, ...) ... end, true)
  */
 int skynet_core::l_set_service_callback(lua_State* L)
 {
-    //
-    service_context* svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    // service context upvalue
+    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
-    // check second argument (forward mode)
+    // forward mode check (arg 2)
     int forward = lua_toboolean(L, 2);
-    // check first argument (must function)
+
+    // callback function check (must function) (arg 1)
     luaL_checktype(L, 1, LUA_TFUNCTION);
 
     // add _cb to global register table
     lua_settop(L, 1);
-    lua_rawsetp(L, LUA_REGISTRYINDEX, (void*)_cb);
+    lua_rawsetp(L, LUA_REGISTRYINDEX, (const void*)_cb);
 
-    // push vm main thread to stack top
+    // push vm main thread to stack top & get lua thread
     lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_MAINTHREAD);
-    // to lua thread
     lua_State* gL = lua_tothread(L, -1);
 
     // forward mode
@@ -411,29 +438,53 @@ int skynet_core::l_set_service_callback(lua_State* L)
     return 0;
 }
 
-// generate a new session id
+/**
+ * generate a new session id
+ *
+ * lua examples:
+ * c.gen_session_id()
+ */
 int skynet_core::l_gen_session_id(lua_State* L)
 {
-    service_context* svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    // service context upvalue
+    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     // gen session id
     int session_id = service_manager::instance()->send(svc_ctx, 0, 0, MESSAGE_TAG_ALLOC_SESSION, 0, nullptr, 0);
-    lua_pushinteger(L, session_id);
 
+    // return session id
+    lua_pushinteger(L, session_id);
     return 1;
 }
 
+/**
+ * log
+ *
+ * arguments:
+ * args num <= 1
+ * 1 log message    - string
+ * args num > 1
+ * 1
+ *
+ * lua examples:
+ * skynet.log("Server start")
+ * skynet.log(string.format("socket accept from %s", msg))
+ * skynet.log(addr, "connected")
+ * ...
+ */
 int skynet_core::l_log(lua_State* L)
 {
+    // service context upvalue
+    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+
     //
-    service_context* svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    const char* log_msg = nullptr;
 
     int n = lua_gettop(L);
     if (n <= 1)
     {
         lua_settop(L, 1);
-        const char* s = luaL_tolstring(L, 1, nullptr);
-        log(svc_ctx, "%s", s);
+        log_msg = luaL_tolstring(L, 1, nullptr);
     }
     else
     {
@@ -442,82 +493,120 @@ int skynet_core::l_log(lua_State* L)
         luaL_buffinit(L, &b);
         for (int i = 1; i <= n; i++)
         {
-            // 将给定索引处的 Lua 值转换为一个相应格式的 C 字符串。 结果串不仅会压栈，还会由函数返回。
+            // convert to string and push to stack top
             luaL_tolstring(L, i, nullptr);
-            // 把栈顶的值添加到缓冲器B, 弹出该值。
+            // add to buffer
             luaL_addvalue(&b);
+
+            // add seperate char ' '
             if (i < n)
             {
                 luaL_addchar(&b, ' ');
             }
         }
-        // 结束对缓冲器B的使用，把最终字符串留在栈顶。
+
+        // end buffer, push the string to stack top
         luaL_pushresult(&b);
-        log(svc_ctx, "%s", lua_tostring(L, -1));
+        log_msg = lua_tostring(L, -1);
+    }
+
+    // do log
+    if (log_msg != nullptr)
+    {
+        log(svc_ctx, "%s", log_msg);
     }
 
     return 0;
 }
 
-/*
-    string tag
-    string userstring
-    thread co (default nil/current L)
-    integer level (default nil)
+/**
+ * debug trace, output trace message
+ *
+ * arguments:
+ * 1 tag            - string
+ * 2 user string    - string
+ * 3 co             - thread, default nil | current L
+ * 4 trace level    - integer, default nil
+ *
+ * lua examples:
+ * c.trace(tag, "error")
+ * c.trace(tag, "call", 2)
  */
+
+#define MAX_TRACE_LEVEL 3
+
+struct source_info
+{
+    const char* source;
+    int line;
+};
+
 int skynet_core::l_trace(lua_State* L)
 {
-    service_context* svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    //
+    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+
+    //
     const char* tag = luaL_checkstring(L, 1);
     const char* user = luaL_checkstring(L, 2);
-    if (!lua_isnoneornil(L, 3))
+
+    // only 2 arguments
+    if (lua_isnoneornil(L, 3))
     {
-        lua_State* co = L;
-        int level;
-        if (lua_isthread(L, 3))
-        {
-            co = lua_tothread(L, 3);
-            level = luaL_optinteger(L, 4, 1);
-        }
-        else
-        {
-            level = luaL_optinteger(L, 3, 1);
-        }
-        struct source_info si[MAX_LEVEL];
-        lua_Debug d;
-        int index = 0;
-        do
-        {
-            if (!lua_getstack(co, level, &d))
-                break;
-            lua_getinfo(co, "Sl", &d);
-            level++;
-            si[index].source = d.source;
-            si[index].line = d.currentline;
-            if (d.currentline >= 0)
-                ++index;
-        } while (index < MAX_LEVEL);
-        switch (index)
-        {
-        case 1:
-            log(svc_ctx, "<TRACE %s> %" PRId64 " %s : %s:%d", tag, time_helper::get_time_ns(), user, si[0].source, si[0].line);
-            break;
-        case 2:
-            log(svc_ctx, "<TRACE %s> %" PRId64 " %s : %s:%d %s:%d", tag, time_helper::get_time_ns(), user,
-            si[0].source, si[0].line, si[1].source, si[1].line);
-            break;
-        case 3:
-            log(svc_ctx, "<TRACE %s> %" PRId64 " %s : %s:%d %s:%d %s:%d", tag, time_helper::get_time_ns(), user,
-            si[0].source, si[0].line, si[1].source, si[1].line, si[2].source, si[2].line);
-            break;
-        default:
-            log(svc_ctx, "<TRACE %s> %" PRId64 " %s", tag, time_helper::get_time_ns(), user);
-            break;
-        }
+        log(svc_ctx, "<TRACE %s> %lld %s", tag, time_helper::get_time_ns(), user);
         return 0;
     }
 
-    log(svc_ctx, "<TRACE %s> %" PRId64 " %s", tag, time_helper::get_time_ns(), user);
+    // arg 3, 4: co, level
+    lua_State* co = L;
+    int level;
+    if (lua_isthread(L, 3))
+    {
+        co = lua_tothread(L, 3);
+        level = luaL_optinteger(L, 4, 1);
+    }
+    else
+    {
+        level = luaL_optinteger(L, 3, 1);
+    }
+
+    //
+    struct source_info si[MAX_TRACE_LEVEL];
+    lua_Debug d;
+    int index = 0;
+    do
+    {
+        // get call stack info
+        if (lua_getstack(co, level, &d) == 0)
+            break;
+
+        // get call info
+        lua_getinfo(co, "Sl", &d);
+        level++;
+        si[index].source = d.source;
+        si[index].line = d.currentline;
+        if (d.currentline >= 0)
+            ++index;
+    } while (index < MAX_TRACE_LEVEL);
+
+    //
+    switch (index)
+    {
+    case 1:
+        log(svc_ctx, "<TRACE %s> %lld %s : %s:%d", tag, time_helper::get_time_ns(), user, si[0].source, si[0].line);
+        break;
+    case 2:
+        log(svc_ctx, "<TRACE %s> %lld %s : %s:%d %s:%d", tag, time_helper::get_time_ns(), user,
+            si[0].source, si[0].line, si[1].source, si[1].line);
+        break;
+    case 3:
+        log(svc_ctx, "<TRACE %s> %lld %s : %s:%d %s:%d %s:%d", tag, time_helper::get_time_ns(), user,
+            si[0].source, si[0].line, si[1].source, si[1].line, si[2].source, si[2].line);
+        break;
+    default:
+        log(svc_ctx, "<TRACE %s> %lld %s", tag, time_helper::get_time_ns(), user);
+        break;
+    }
 
     return 0;
 }
@@ -526,13 +615,28 @@ int skynet_core::l_trace(lua_State* L)
 // without service_context
 //----------------------------------------------
 
-
-int skynet_core::l_to_string(lua_State* L)
+/**
+ * convert userdata to string, TODO: change name to l_unpack ?
+ *
+ * arguments:
+ * 1 message            - userdata
+ * 2 message size       - integer
+ *
+ * lua examples:
+ * 1) c.tostring(msg, sz)
+ * 2) skynet.tostring = assert(c.tostring)
+ * 3) skynet.register_protocol {
+ *        unpack = skynet.tostring,
+ *        ...
+ *    }
+ */
+int skynet_core::l_tostring(lua_State* L)
 {
-    // is invalid or nil, just return
+    // check first arguments
     if (lua_isnoneornil(L, 1) != 0)
         return 0;
 
+    //
     char* msg = (char*)lua_touserdata(L, 1);
     int msg_sz = luaL_checkinteger(L, 2);
     lua_pushlstring(L, msg, msg_sz);
@@ -540,120 +644,170 @@ int skynet_core::l_to_string(lua_State* L)
     return 1;
 }
 
+/**
+ *
+ */
 int skynet_core::l_pack(lua_State* L)
 {
     return luaseri_pack(L);
 }
 
+/**
+ *
+ */
 int skynet_core::l_unpack(lua_State* L)
 {
     return luaseri_unpack(L);
 }
 
+/**
+ * serialize object to string
+ *
+ * arguments:
+ * 1 obj            - userdata
+ * 2
+ *
+ * outputs:
+ * 1 string
+ *
+ * lua examples:
+ * 1) msg = skynet.pack_string(addr)
+ * 2) skynet.pack_string = assert(c.pack_string)
+ * 3) function pack_package(...)
+ *        local message = skynet.pack_string(...)
+ *        local size = #message
+ *        assert(size <= 255 , "too long")
+ *        return string.char(size) .. message
+ *    end
+ */
 int skynet_core::l_pack_string(lua_State* L)
 {
     luaseri_pack(L);
-    char* str = (char*) lua_touserdata(L, -2);
+
+    char* str = (char*)lua_touserdata(L, -2);
     int sz = lua_tointeger(L, -1);
     lua_pushlstring(L, str, sz);
-    // skynet_free(str);
-    delete[] str;
+
+    // TODO: delete
+    skynet_free(str);
 
     return 1;
 }
 
-// 释放消息
+/**
+ * release message
+ *
+ * arguments:
+ * 1 message        - string | lightuserdata
+ * 2 message size   - integer
+ *
+ * lua examples:
+ * skynet.trash = assert(c.trash)
+ * c.trash(msg, sz)
+ */
 int skynet_core::l_trash(lua_State* L)
 {
     int t = lua_type(L, 1);
-    switch (t)
-    {
-    case LUA_TSTRING:
-        break;
-    case LUA_TLIGHTUSERDATA:
+    if (t == LUA_TSTRING)
+        return 0;
+
+    if (t == LUA_TLIGHTUSERDATA)
     {
         void* msg = lua_touserdata(L, 1);
         luaL_checkinteger(L, 2);
-        // skynet_free(msg);
-        delete[] msg;
+
+        // TODO: delete
+        skynet_free(msg);
     }
-        break;
-    default:
+    else
+    {
         luaL_error(L, "skynet.trash invalid param %s", lua_typename(L, t));
-        break;
     }
 
     return 0;
 }
 
+/**
+ * get the number of tick since skynet node stared
+ *
+ * outputs:
+ * integer
+ *
+ * lua examples:
+ * skynet.now = c.now
+ */
 int skynet_core::l_now(lua_State* L)
 {
-    uint64_t ti = timer_manager::instance()->now();
-    lua_pushinteger(L, ti);
+    lua_pushinteger(L, timer_manager::instance()->now());
     return 1;
 }
 
+/**
+ * high performance counter (nanoseconds)
+ *
+ * outputs:
+ * integer
+ *
+ * lua examples:
+ * skynet.hpc = c.hpc
+ */
 int skynet_core::l_hpc(lua_State* L)
 {
     lua_pushinteger(L, time_helper::get_time_ns());
     return 1;
 }
 
-} }
+}}
 
 /**
  * skynet luaclib - skynet.core
  */
+
+// need service_context upvalue
+static const luaL_Reg core_funcs_1[] = {
+    { "send",           skynet::luaclib::skynet_core::l_send },
+    { "redirect",       skynet::luaclib::skynet_core::l_redirect },
+    { "command",        skynet::luaclib::skynet_core::l_service_command },
+    { "intcommand",     skynet::luaclib::skynet_core::l_service_command_int },
+    { "addresscommand", skynet::luaclib::skynet_core::l_service_command_address },
+    { "callback",       skynet::luaclib::skynet_core::l_set_service_callback },
+    { "gen_session_id", skynet::luaclib::skynet_core::l_gen_session_id },
+    { "log",            skynet::luaclib::skynet_core::l_log },
+    { "trace",          skynet::luaclib::skynet_core::l_trace },
+
+    { nullptr,          nullptr },
+};
+
+// without service_context upvalue
+static const luaL_Reg core_funcs_2[] = {
+    { "tostring",    skynet::luaclib::skynet_core::l_tostring },
+    { "pack",        skynet::luaclib::skynet_core::l_pack },
+    { "unpack",      skynet::luaclib::skynet_core::l_unpack },
+    { "pack_string", skynet::luaclib::skynet_core::l_pack_string },
+    { "trash",       skynet::luaclib::skynet_core::l_trash },
+    { "now",         skynet::luaclib::skynet_core::l_now },
+    { "hpc",         skynet::luaclib::skynet_core::l_hpc },
+
+    { nullptr,       nullptr },
+};
+
 LUAMOD_API int luaopen_skynet_core(lua_State* L)
 {
     luaL_checkversion(L);
 
-    // service_context functions
-    luaL_Reg l[] = {
-        { "send",           skynet::luaclib::skynet_core::l_send },
-        { "redirect",       skynet::luaclib::skynet_core::l_redirect },
-        { "command",        skynet::luaclib::skynet_core::l_service_command },
-        { "intcommand",     skynet::luaclib::skynet_core::l_service_command_int },
-        { "addresscommand", skynet::luaclib::skynet_core::l_service_command_address },
-        { "callback",       skynet::luaclib::skynet_core::l_set_service_callback },
-        { "gen_session_id", skynet::luaclib::skynet_core::l_gen_session_id },
-        { "log",            skynet::luaclib::skynet_core::l_log },
-        { "trace",          skynet::luaclib::skynet_core::l_trace },
-
-        { nullptr, nullptr },
-    };
-    int l_sz = sizeof(l) / sizeof(l[0]) - 1;
-
-    // functions without service_context
-    luaL_Reg l2[] = {
-        { "tostring",    skynet::luaclib::skynet_core::l_to_string },
-        { "pack",        skynet::luaclib::skynet_core::l_pack },
-        { "unpack",      skynet::luaclib::skynet_core::l_unpack },
-        { "pack_string", skynet::luaclib::skynet_core::l_pack_string },
-        { "trash",       skynet::luaclib::skynet_core::l_trash },
-        { "now",         skynet::luaclib::skynet_core::l_now },
-        { "hpc",         skynet::luaclib::skynet_core::l_hpc },
-
-        { nullptr, nullptr },
-    };
-    int l2_sz = sizeof(l2) / sizeof(l2[0]) - 1;
-
-    lua_createtable(L, 0, l_sz + l2_sz);
+    lua_createtable(L, 0, sizeof(core_funcs_1) / sizeof(core_funcs_1[0]) + sizeof(core_funcs_2) / sizeof(core_funcs_2[0]) - 2);
 
     // get service_context from global register (see: service_snlua::init_cb()), push it to stack top.
     // can use it by lua_upvalueindex(1)
     lua_getfield(L, LUA_REGISTRYINDEX, "service_context");
-    skynet::service_context* svc_ctx = (skynet::service_context*)lua_touserdata(L, -1);
+    auto svc_ctx = (skynet::service_context*)lua_touserdata(L, -1);
     if (svc_ctx == nullptr)
-    {
         return luaL_error(L, "Init skynet service context first");
-    }
 
     // shared service_context
-    luaL_setfuncs(L, l, 1);
-
+    luaL_setfuncs(L, core_funcs_1, 1);
     // without service_context
-    luaL_setfuncs(L, l2, 0);
+    luaL_setfuncs(L, core_funcs_2, 0);
 
     return 1;
 }

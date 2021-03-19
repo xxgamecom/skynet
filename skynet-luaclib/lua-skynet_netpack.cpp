@@ -11,15 +11,12 @@ extern "C" {
 #include <cstdint>
 #include <string>
 
-// #include <assert.h>
-// #include <stdlib.h>
 
 namespace skynet { namespace luaclib {
 
 
-#define QUEUESIZE       1024
-#define HASHSIZE        4096
-#define SMALLSTRING     2048
+#define QUEUESIZE           1024
+#define HASHSIZE            4096
 
 #define TYPE_DATA           1
 #define TYPE_MORE           2
@@ -38,7 +35,7 @@ namespace skynet { namespace luaclib {
  */
 struct netpack
 {
-    int                     id = 0;                     // socket id
+    int                     socket_id = 0;              // socket id
     int                     size = 0;                   // data size
     void*                   buf_ptr = nullptr;          // data
 };
@@ -53,7 +50,7 @@ struct uncomplete
 };
 
 // 
-struct queue
+struct msg_queue
 {
     int                     cap = 0;                    //
     int                     head = 0;                   //
@@ -66,31 +63,31 @@ static void clear_list(uncomplete* uc)
 {
     while (uc != nullptr)
     {
-        delete[] uc->pack.buf_ptr;
+        skynet_free(uc->pack.buf_ptr);
         uncomplete* tmp = uc;
         uc = uc->next;
-        delete tmp;
+        skynet_free(tmp);
     }
 }
 
-static inline int hash_fd(int fd)
+static inline int hash_socket_id(int socket_id)
 {
-    int a = fd >> 24;
-    int b = fd >> 12;
-    int c = fd;
+    int a = socket_id >> 24;
+    int b = socket_id >> 12;
+    int c = socket_id;
     return (int)(((uint32_t)(a + b + c)) % HASHSIZE);
 }
 
-static uncomplete* find_uncomplete(queue* q, int fd)
+static uncomplete* _find_uncomplete(msg_queue* q, int socket_id)
 {
     if (q == nullptr)
         return nullptr;
 
-    int h = hash_fd(fd);
+    int h = hash_socket_id(socket_id);
     uncomplete* uc = q->hash[h];
     if (uc == nullptr)
         return nullptr;
-    if (uc->pack.id == fd)
+    if (uc->pack.socket_id == socket_id)
     {
         q->hash[h] = uc->next;
         return uc;
@@ -99,7 +96,7 @@ static uncomplete* find_uncomplete(queue* q, int fd)
     while (last->next)
     {
         uc = last->next;
-        if (uc->pack.id == fd)
+        if (uc->pack.socket_id == socket_id)
         {
             last->next = uc->next;
             return uc;
@@ -110,12 +107,12 @@ static uncomplete* find_uncomplete(queue* q, int fd)
     return nullptr;
 }
 
-static queue* get_queue(lua_State* L)
+static msg_queue* get_queue(lua_State* L)
 {
-    queue* q = (queue*)lua_touserdata(L, 1);
+    msg_queue* q = (msg_queue*)lua_touserdata(L, 1);
     if (q == nullptr)
     {
-        q = (queue*)lua_newuserdatauv(L, sizeof(queue), 0);
+        q = (msg_queue*)lua_newuserdatauv(L, sizeof(msg_queue), 0);
         q->cap = QUEUESIZE;
         q->head = 0;
         q->tail = 0;
@@ -130,9 +127,9 @@ static queue* get_queue(lua_State* L)
     return q;
 }
 
-static void expand_queue(lua_State* L, queue* q)
+static void expand_queue(lua_State* L, msg_queue* q)
 {
-    queue* nq = (queue*)lua_newuserdatauv(L, sizeof(queue) + q->cap * sizeof(netpack), 0);
+    msg_queue* nq = (msg_queue*)lua_newuserdatauv(L, sizeof(msg_queue) + q->cap * sizeof(netpack), 0);
     nq->cap = q->cap + QUEUESIZE;
     nq->head = 0;
     nq->tail = q->cap;
@@ -147,19 +144,19 @@ static void expand_queue(lua_State* L, queue* q)
     lua_replace(L, 1);
 }
 
-static void push_data(lua_State* L, int fd, void* buffer, int size, int clone)
+static void push_data(lua_State* L, int socket_id, void* buffer, int size, int clone)
 {
     if (clone)
     {
-        void* tmp = new char[size];
+        void* tmp = skynet_malloc(size);
         ::memcpy(tmp, buffer, size);
         buffer = tmp;
     }
-    queue* q = get_queue(L);
+    msg_queue* q = get_queue(L);
     netpack* np = &q->queue[q->tail];
     if (++q->tail >= q->cap)
         q->tail -= q->cap;
-    np->id = fd;
+    np->socket_id = socket_id;
     np->buf_ptr = buffer;
     np->size = size;
     if (q->head == q->tail)
@@ -168,78 +165,80 @@ static void push_data(lua_State* L, int fd, void* buffer, int size, int clone)
     }
 }
 
-static struct uncomplete* save_uncomplete(lua_State* L, int fd)
+static struct uncomplete* save_uncomplete(lua_State* L, int socket_id)
 {
-    queue* q = get_queue(L);
-    int h = hash_fd(fd);
-    uncomplete* uc = new uncomplete;
+    msg_queue* q = get_queue(L);
+    int h = hash_socket_id(socket_id);
+    uncomplete* uc = (uncomplete*)skynet_malloc(sizeof(uncomplete));
     ::memset(uc, 0, sizeof(*uc));
     uc->next = q->hash[h];
-    uc->pack.id = fd;
+    uc->pack.socket_id = socket_id;
     q->hash[h] = uc;
 
     return uc;
 }
 
-static inline int read_size(uint8_t* buffer)
+static inline int _read_size(uint8_t* buffer)
 {
     return (int)buffer[0] << 8 | (int)buffer[1];
 }
 
-static void push_more(lua_State* L, int fd, uint8_t* buffer, int size)
+static void _push_more(lua_State* L, int socket_id, uint8_t* buffer, int size)
 {
     if (size == 1)
     {
-        uncomplete* uc = save_uncomplete(L, fd);
+        uncomplete* uc = save_uncomplete(L, socket_id);
         uc->read = -1;
         uc->header = *buffer;
         return;
     }
 
-    int pack_size = read_size(buffer);
+    int pack_size = _read_size(buffer);
     buffer += 2;
     size -= 2;
 
     if (size < pack_size)
     {
-        uncomplete* uc = save_uncomplete(L, fd);
+        uncomplete* uc = save_uncomplete(L, socket_id);
         uc->read = size;
         uc->pack.size = pack_size;
-        uc->pack.buf_ptr = new char[pack_size];
+        uc->pack.buf_ptr = skynet_malloc(pack_size);
         ::memcpy(uc->pack.buf_ptr, buffer, size);
         return;
     }
-    push_data(L, fd, buffer, pack_size, 1);
+    push_data(L, socket_id, buffer, pack_size, 1);
 
     buffer += pack_size;
     size -= pack_size;
     if (size > 0)
     {
-        push_more(L, fd, buffer, size);
+        _push_more(L, socket_id, buffer, size);
     }
 }
 
-static void close_uncomplete(lua_State* L, int fd)
+static void _close_uncomplete(lua_State* L, int socket_id)
 {
-    queue* q = (queue*)lua_touserdata(L, 1);
-    uncomplete* uc = find_uncomplete(q, fd);
+    msg_queue* q = (msg_queue*)lua_touserdata(L, 1);
+    uncomplete* uc = _find_uncomplete(q, socket_id);
     if (uc != nullptr)
     {
-        delete[] uc->pack.buf_ptr;
-        delete uc;
+        skynet_free(uc->pack.buf_ptr);
+        skynet_free(uc);
     }
 }
 
 // 
-static int filter_data_(lua_State* L, int fd, uint8_t* buffer, int size)
+static int filter_data_(lua_State* L, int socket_id, uint8_t* buffer, int size)
 {
-    queue* q = (queue*)lua_touserdata(L, 1);
-    uncomplete* uc = find_uncomplete(q, fd);
+    auto q = (msg_queue*)lua_touserdata(L, 1);
+    uncomplete* uc = _find_uncomplete(q, socket_id);
     if (uc != nullptr)
-    {   // 之前收到该包的部分数据块
+    {
+        // 之前收到该包的部分数据块
         // fill uncomplete
         if (uc->read < 0)
-        {   // 之前只收到一个字节,加上该数据块的第一个字节，表示整个包的长度
+        {
+            // 之前只收到一个字节,加上该数据块的第一个字节，表示整个包的长度
             // read size
             assert(uc->read == -1);
             int pack_size = *buffer;
@@ -247,7 +246,7 @@ static int filter_data_(lua_State* L, int fd, uint8_t* buffer, int size)
             ++buffer;
             --size;
             uc->pack.size = pack_size;
-            uc->pack.buf_ptr = new char[pack_size];
+            uc->pack.buf_ptr = skynet_malloc(pack_size);
             uc->read = 0;
         }
         int need = uc->pack.size - uc->read;    // 包还差多少字节
@@ -255,27 +254,27 @@ static int filter_data_(lua_State* L, int fd, uint8_t* buffer, int size)
         {
             ::memcpy((char*)uc->pack.buf_ptr + uc->read, buffer, size);
             uc->read += size;
-            int h = hash_fd(fd);
+            int h = hash_socket_id(socket_id);
             uc->next = q->hash[h];
             q->hash[h] = uc;
             return 1;
         }
-        memcpy((char*)uc->pack.buf_ptr + uc->read, buffer, need);
+        ::memcpy((char*)uc->pack.buf_ptr + uc->read, buffer, need);
         buffer += need;
         size -= need;
         if (size == 0)
         {
             lua_pushvalue(L, lua_upvalueindex(TYPE_DATA));
-            lua_pushinteger(L, fd);
+            lua_pushinteger(L, socket_id);
             lua_pushlightuserdata(L, uc->pack.buf_ptr);
             lua_pushinteger(L, uc->pack.size);
-            delete uc;
+            skynet_free(uc);
             return 5;
         }
         // more data
-        push_data(L, fd, uc->pack.buf_ptr, uc->pack.size, 0);
-        delete uc;
-        push_more(L, fd, buffer, size);
+        push_data(L, socket_id, uc->pack.buf_ptr, uc->pack.size, 0);
+        skynet_free(uc);
+        _push_more(L, socket_id, buffer, size);
         lua_pushvalue(L, lua_upvalueindex(TYPE_MORE));
         return 2;
     }
@@ -283,22 +282,22 @@ static int filter_data_(lua_State* L, int fd, uint8_t* buffer, int size)
     {
         if (size == 1)
         {
-            struct uncomplete* uc = save_uncomplete(L, fd);
+            struct uncomplete* uc = save_uncomplete(L, socket_id);
             uc->read = -1;
             uc->header = *buffer;
             return 1;
         }
-        int pack_size = read_size(buffer);    // 需要数据包的字节数
+        int pack_size = _read_size(buffer);    // 需要数据包的字节数
         buffer += 2;
         size -= 2;
 
         // 说明还有未获得的数据包
         if (size < pack_size)
         {
-            struct uncomplete* uc = save_uncomplete(L, fd);    // 保存这个数据包
+            struct uncomplete* uc = save_uncomplete(L, socket_id);    // 保存这个数据包
             uc->read = size;
             uc->pack.size = pack_size;
-            uc->pack.buf_ptr = new char[pack_size];
+            uc->pack.buf_ptr = skynet_malloc(pack_size);
             memcpy(uc->pack.buf_ptr, buffer, size);
             return 1;
         }
@@ -307,8 +306,8 @@ static int filter_data_(lua_State* L, int fd, uint8_t* buffer, int size)
         {
             // just one package
             lua_pushvalue(L, lua_upvalueindex(TYPE_DATA));
-            lua_pushinteger(L, fd);
-            void* result = new char[pack_size];
+            lua_pushinteger(L, socket_id);
+            void* result = skynet_malloc(pack_size);
             memcpy(result, buffer, size);
             lua_pushlightuserdata(L, result);
             lua_pushinteger(L, size);
@@ -316,25 +315,26 @@ static int filter_data_(lua_State* L, int fd, uint8_t* buffer, int size)
         }
         // more data
         // 说明不止同一个数据包,还有额外的
-        push_data(L, fd, buffer, pack_size, 1);    // 保存第一个包到q->queue中
+        push_data(L, socket_id, buffer, pack_size, 1);    // 保存第一个包到q->queue中
         buffer += pack_size;
         size -= pack_size;
-        push_more(L, fd, buffer, size);    // 处理余下的包
+        _push_more(L, socket_id, buffer, size);    // 处理余下的包
         lua_pushvalue(L, lua_upvalueindex(TYPE_MORE));
         return 2;
     }
 }
 
-static inline int filter_data(lua_State* L, int fd, uint8_t* buffer, int size)
+//
+static inline int _filter_data(lua_State* L, int socket_id, uint8_t* buffer, int size)
 {
-    int ret = filter_data_(L, fd, buffer, size);
+    int ret = filter_data_(L, socket_id, buffer, size);
     // buffer is the data of socket message, it malloc at socket_server.c : function forward_message .
     // it should be free before return,
-    delete[] buffer;
+    skynet_free(buffer);
     return ret;
 }
 
-static void pushstring(lua_State* L, const char* msg, int size)
+static void _pushstring(lua_State* L, const char* msg, int size)
 {
     if (msg != nullptr)
     {
@@ -352,7 +352,7 @@ static void pushstring(lua_State* L, const char* msg, int size)
     lightuserdata/integer
  */
 
-static const char* tolstring(lua_State* L, size_t* sz, int index)
+static const char* _tolstring(lua_State* L, size_t* sz, int index)
 {
     const char* ptr;
     if (lua_isuserdata(L, index))
@@ -368,60 +368,95 @@ static const char* tolstring(lua_State* L, size_t* sz, int index)
     return ptr;
 }
 
-static inline void write_size(uint8_t* buffer, int len)
-{
-    buffer[0] = (len >> 8) & 0xff;
-    buffer[1] = len & 0xff;
-}
-
-/*
-    userdata queue
-    return
-        integer fd
-        lightuserdata msg
-        integer size
+/**
+ *
+ * arguments:
+ * 1 message queue          - userdata (msg_queue)
+ *
+ * outputs:
+ * 1 socket id              - integer
+ * 2 buffer                 - lightuserdata
+ * 3 buffer size            - integer
+ *
+ * lua examples:
+ * local fd, msg, sz = netpack.pop(msg_queue)
  */
 int skynet_netpack::l_pop(lua_State* L)
 {
-    queue* q = (queue*)lua_touserdata(L, 1);
+    // get msg_queue
+    msg_queue* q = (msg_queue*)lua_touserdata(L, 1);
+    // msg_queue is empty
     if (q == nullptr || q->head == q->tail)
         return 0;
 
+    //
     netpack* np = &q->queue[q->head];
     if (++q->head >= q->cap)
     {
         q->head = 0;
     }
-    lua_pushinteger(L, np->id);
+    lua_pushinteger(L, np->socket_id);
     lua_pushlightuserdata(L, np->buf_ptr);
     lua_pushinteger(L, np->size);
 
     return 3;
 }
 
+/**
+ * pack message
+ *
+ * arguments:
+ * 1 message                - string | lightuserdata
+ *
+ * outputs:
+ * 1 packed buffer          - lightuserdata
+ * 2 packed size            - integer
+ *
+ * lua examples:
+ * socketdriver.send(fd, netpack.pack(result))
+ */
 int skynet_netpack::l_pack(lua_State* L)
 {
+    //
     size_t len;
-    const char* ptr = tolstring(L, &len, 1);
+    const char* ptr = _tolstring(L, &len, 1);
     if (len >= 0x10000)
     {
         return luaL_error(L, "Invalid size (too long) of data : %d", (int)len);
     }
 
-    uint8_t* buffer = new uint8_t[len + 2];
-    write_size(buffer, len);
+    uint8_t* buffer = (uint8_t*)skynet_malloc(len + 2);
+
+    // size
+    buffer[0] = (len >> 8) & 0xff;
+    buffer[1] = len & 0xff;
+
+    // data
     ::memcpy(buffer + 2, ptr, len);
 
+    // return packed buffer
     lua_pushlightuserdata(L, buffer);
+    // return packed buffer size
     lua_pushinteger(L, len + 2);
 
     return 2;
 }
 
-
+/**
+ * clear message queue
+ *
+ * arguments:
+ * 1 message queue              - userdata (msg_queue)
+ *
+ * lua examples:
+ * local CMD = setmetatable({}, { __gc = function()
+ *     netpack.clear(msg_queue)
+ * end })
+ */
 int skynet_netpack::l_clear(lua_State* L)
 {
-    queue* q = (queue*)lua_touserdata(L, 1);
+    //
+    msg_queue* q = (msg_queue*)lua_touserdata(L, 1);
     if (q == nullptr)
         return 0;
 
@@ -437,13 +472,26 @@ int skynet_netpack::l_clear(lua_State* L)
     for (int i = q->head; i < q->tail; i++)
     {
         netpack* np = &q->queue[i % q->cap];
-        delete[] np->buf_ptr;
+        skynet_free(np->buf_ptr);
     }
     q->head = q->tail = 0;
 
     return 0;
 }
 
+/**
+ * convert to string message
+ *
+ * arguments:
+ * 1 message                - userdata
+ * 2 message size           - integer
+ *
+ * outputs:
+ * 1 string message         - string
+ *
+ * lua examples:
+ * local message = netpack.tostring(msg, sz)
+ */
 int skynet_netpack::l_tostring(lua_State* L)
 {
     void* ptr = lua_touserdata(L, 1);
@@ -455,71 +503,83 @@ int skynet_netpack::l_tostring(lua_State* L)
     else
     {
         lua_pushlstring(L, (const char*)ptr, size);
-        delete ptr;
+        skynet_free(ptr);
     }
 
     return 1;
 }
 
-/*
-    userdata queue
-    lightuserdata msg
-    integer size
-    return
-        userdata queue
-        integer type
-        integer fd
-        string msg | lightuserdata/integer
+/**
+ * filter skynet socket message (skynet_socket_message)
+ *
+ * arguments:
+ * 1 skynet socket message      - userdata (skynet_socket_message)
+ * 2 message                    - lightuserdata
+ * 3 message size               - integer
+ *
+ * outputs:
+ * 1 queue                      - userdata
+ * 2 type                       - integer
+ * 3 fd                         - integer
+ * 4 msg                        - string | lightuserdata
+ *
+ * lua examples:
+ * netpack.filter( msg_queue, msg, sz)
  */
 int skynet_netpack::l_filter(lua_State* L)
 {
-    skynet_socket_message* message = (skynet_socket_message*)lua_touserdata(L, 2);
+    // message
+    auto msg_ptr = (skynet_socket_message*)lua_touserdata(L, 2);
+
+    // message size
     int size = luaL_checkinteger(L, 3);
-    char* buffer = message->buffer;
-    if (buffer == nullptr)
+
+    char* data_ptr = msg_ptr->buffer;
+    if (data_ptr == nullptr)
     {
-        buffer = (char*)(message + 1);
-        size -= sizeof(*message);
+        data_ptr = (char*)(msg_ptr + 1);
+        size -= sizeof(*msg_ptr);
     }
     else
     {
         size = -1;
     }
 
+    // clean
     lua_settop(L, 1);
 
-    switch (message->socket_event)
+    switch (msg_ptr->socket_event)
     {
     case SKYNET_SOCKET_EVENT_DATA:
         // ignore listen socket id (message->socket_id)
         assert(size == -1);    // never padding string
-        return filter_data(L, message->socket_id, (uint8_t*)buffer, message->ud);
+        return _filter_data(L, msg_ptr->socket_id, (uint8_t*)data_ptr, msg_ptr->ud);
     case SKYNET_SOCKET_EVENT_CONNECT:
-        // ignore listen fd connect
+        // ignore listen socket id connect
         return 1;
     case SKYNET_SOCKET_EVENT_CLOSE:
         // no more data in fd (message->socket_id)
-        close_uncomplete(L, message->socket_id);
+        _close_uncomplete(L, msg_ptr->socket_id);
         lua_pushvalue(L, lua_upvalueindex(TYPE_CLOSE));
-        lua_pushinteger(L, message->socket_id);
+        lua_pushinteger(L, msg_ptr->socket_id);
         return 3;
     case SKYNET_SOCKET_EVENT_ACCEPT:
         lua_pushvalue(L, lua_upvalueindex(TYPE_OPEN));
         // ignore listen id (message->socket_id);
-        lua_pushinteger(L, message->ud);
-        pushstring(L, buffer, size);
+        lua_pushinteger(L, msg_ptr->ud);
+        _pushstring(L, data_ptr, size);
         return 4;
     case SKYNET_SOCKET_EVENT_ERROR:
         // no more data in fd (message->socket_id)
-        close_uncomplete(L, message->socket_id);
+        _close_uncomplete(L, msg_ptr->socket_id);
         lua_pushvalue(L, lua_upvalueindex(TYPE_ERROR));
-        lua_pushinteger(L, message->socket_id);
-        pushstring(L, buffer, size);
+        lua_pushinteger(L, msg_ptr->socket_id);
+        _pushstring(L, data_ptr, size);
         return 4;
     case SKYNET_SOCKET_EVENT_WARNING:
         lua_pushvalue(L, lua_upvalueindex(TYPE_WARNING));
-        lua_pushinteger(L, message->socket_id);
-        lua_pushinteger(L, message->ud);
+        lua_pushinteger(L, msg_ptr->socket_id);
+        lua_pushinteger(L, msg_ptr->ud);
         return 4;
     }
 
@@ -532,19 +592,21 @@ int skynet_netpack::l_filter(lua_State* L)
 /**
  * skynet luaclib - skynet.netpack
  */
+
+static const luaL_Reg netpack_funcs[] = {
+    { "pop",      skynet::luaclib::skynet_netpack::l_pop },
+    { "pack",     skynet::luaclib::skynet_netpack::l_pack },
+    { "clear",    skynet::luaclib::skynet_netpack::l_clear },
+    { "tostring", skynet::luaclib::skynet_netpack::l_tostring },
+
+    { nullptr, nullptr },
+};
+
 LUAMOD_API int luaopen_skynet_netpack(lua_State* L)
 {
     luaL_checkversion(L);
 
-    luaL_Reg l[] = {
-        { "pop",      skynet::luaclib::skynet_netpack::l_pop },
-        { "pack",     skynet::luaclib::skynet_netpack::l_pack },
-        { "clear",    skynet::luaclib::skynet_netpack::l_clear },
-        { "tostring", skynet::luaclib::skynet_netpack::l_tostring },
-
-        { nullptr, nullptr },
-    };
-    luaL_newlib(L, l);
+    luaL_newlib(L, netpack_funcs);
 
     // the order is same with macros : TYPE_* (defined top)
     lua_pushliteral(L, "data");

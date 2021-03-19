@@ -4,7 +4,7 @@
 
 #define LUA_LIB
 
-// #include "skynet_malloc.h"
+#include "skynet.h"
 
 extern "C" {
 #include <lua.h>
@@ -64,7 +64,7 @@ struct read_block
 
 inline static struct block* blk_alloc(void)
 {
-    struct block* b = (block*)malloc(sizeof(struct block));
+    struct block* b = (block*)skynet_malloc(sizeof(struct block));
     b->next = NULL;
     return b;
 }
@@ -111,7 +111,7 @@ static void wb_free(struct write_block* wb)
     while (blk)
     {
         struct block* next = blk->next;
-        free(blk);
+        skynet_free(blk);
         blk = next;
     }
     wb->head = NULL;
@@ -616,7 +616,7 @@ static void unpack_one(lua_State* L, struct read_block* rb)
 
 static void seri(lua_State* L, struct block* b, int len)
 {
-    uint8_t* buffer = (uint8_t*)malloc(len);
+    uint8_t* buffer = (uint8_t*)skynet_malloc(len);
     uint8_t* ptr = buffer;
     int sz = len;
     while (len > 0)
