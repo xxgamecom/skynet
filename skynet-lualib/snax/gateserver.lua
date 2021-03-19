@@ -4,11 +4,11 @@ local socketdriver = require "skynet.socketdriver"
 
 local gateserver = {}
 
-local socket	-- listen socket
-local queue		-- message queue
-local maxclient	-- max client
+local socket    -- listen socket
+local msg_queue	-- message queue
+local maxclient -- max client
 local client_number = 0
-local CMD = setmetatable({}, { __gc = function() netpack.clear(queue) end })
+local CMD = setmetatable({}, { __gc = function() netpack.clear(msg_queue) end })
 local nodelay = false
 
 local connection = {}
@@ -66,14 +66,14 @@ function gateserver.start(handler)
     MSG.data = dispatch_msg
 
     local function dispatch_queue()
-        local fd, msg, sz = netpack.pop(queue)
+        local fd, msg, sz = netpack.pop(msg_queue)
         if fd then
             -- may dispatch even the handler.message blocked
-            -- If the handler.message never block, the queue should be empty, so only fork once and then exit.
+            -- If the handler.message never block, the msg_queue should be empty, so only fork once and then exit.
             skynet.fork(dispatch_queue)
             dispatch_msg(fd, msg, sz)
 
-            for fd, msg, sz in netpack.pop, queue do
+            for fd, msg, sz in netpack.pop, msg_queue do
                 dispatch_msg(fd, msg, sz)
             end
         end
@@ -129,10 +129,10 @@ function gateserver.start(handler)
         name = "socket",
         id = skynet.PTYPE_SOCKET,	-- PTYPE_SOCKET = 6
         unpack = function ( msg, sz )
-            return netpack.filter( queue, msg, sz)
+            return netpack.filter( msg_queue, msg, sz)
         end,
         dispatch = function (_, _, q, type, ...)
-            queue = q
+            msg_queue = q
             if type then
                 MSG[type](...)
             end

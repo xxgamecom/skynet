@@ -17,8 +17,8 @@ struct send_buffer
 {
     int                             socket_id = 0;                  // socket id
     int                             type = BUFFER_TYPE_MEMORY;      // buffer type
-    const void*                     buffer = nullptr;               // data
-    size_t                          sz = 0;                         // data size
+    const void*                     data_ptr = nullptr;             // data
+    size_t                          data_size = 0;                  // data size
 };
 
 //

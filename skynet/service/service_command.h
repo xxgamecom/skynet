@@ -17,7 +17,7 @@ class service_command final
 {
 public:
     // handle skynet command
-    static const char* handle_command(service_context* svc_ctx, const char* cmd, const char* param);
+    static const char* handle_command(service_context* svc_ctx, const char* cmd, const char* param = nullptr);
 };
 
 }

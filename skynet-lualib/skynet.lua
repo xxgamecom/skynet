@@ -187,7 +187,7 @@ end
         self._error = send_requests(self)
         self._resp = {}
         if timeout then
-            self._timeout = c.intcommand("TIMEOUT",timeout)
+            self._timeout = c.intcommand("TIMEOUT", timeout)
             session_id_coroutine[self._timeout] = self._thread
         end
 
@@ -761,7 +761,7 @@ function skynet.dispatch(typename, func)
 end
 
 local function unknown_request(session, address, msg, sz, prototype)
-    skynet.log(string.format("Unknown request (%s): %s", prototype, c.tostring(msg,sz)))
+    skynet.log(string.format("Unknown request (%s): %s", prototype, c.tostring(msg, sz)))
     error(string.format("Unknown session : %d from %x", session, address))
 end
 

@@ -91,7 +91,7 @@ public:
 static inline void sendbuffer_init_(send_buffer* buf, int socket_id, const void* buffer, int sz)
 {
     buf->socket_id = socket_id;
-    buf->buffer = buffer;
+    buf->data_ptr = buffer;
     if (sz < 0)
     {
         buf->type = BUFFER_TYPE_OBJECT;
@@ -100,7 +100,7 @@ static inline void sendbuffer_init_(send_buffer* buf, int socket_id, const void*
     {
         buf->type = BUFFER_TYPE_MEMORY;
     }
-    buf->sz = (size_t) sz;
+    buf->data_size = (size_t) sz;
 }
 
 static inline int skynet_socket_send(service_context* ctx, int id, void* buffer, int sz)

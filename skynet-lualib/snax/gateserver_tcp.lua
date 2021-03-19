@@ -4,12 +4,12 @@ local socketdriver = require "skynet.socketdriver"
 
 local gateserver = {}
 local smallstring = 65536
-local socket    -- listen socket
-local queue        -- message queue
-local maxclient    -- max client
+local socket        -- listen socket id
+local msg_queue     -- message queue
+local maxclient     -- max client
 local client_number = 0
 local CMD = setmetatable({}, { __gc = function()
-    netpack.clear(queue)
+    netpack.clear(msg_queue)
 end })
 local nodelay = false
 
@@ -71,14 +71,14 @@ function gateserver.start(handler)
     MSG.data = dispatch_msg
 
     local function dispatch_queue()
-        local fd, msg, sz = netpack.pop(queue)
+        local fd, msg, sz = netpack.pop(msg_queue)
         if fd then
             -- may dispatch even the handler.message blocked
-            -- If the handler.message never block, the queue should be empty, so only fork once and then exit.
+            -- If the handler.message never block, the msg_queue should be empty, so only fork once and then exit.
             skynet.fork(dispatch_queue)
             dispatch_msg(fd, msg, sz)
 
-            for fd, msg, sz in netpack.pop, queue do
+            for fd, msg, sz in netpack.pop, msg_queue do
                 dispatch_msg(fd, msg, sz)
             end
         end
@@ -118,15 +118,15 @@ function gateserver.start(handler)
         end
     end
 
-    function MSG.error(fd, msg)
-        if fd == socket then
-            socketdriver.close(fd)
+    function MSG.error(socket_id, msg)
+        if socket_id == socket then
+            socketdriver.close(socket_id)
             skynet.log(msg)
         else
             if handler.error then
-                handler.error(fd, msg)
+                handler.error(socket_id, msg)
             end
-            close_fd(fd)
+            close_fd(socket_id)
         end
     end
 
@@ -140,10 +140,10 @@ function gateserver.start(handler)
         name = "socket",
         id = skynet.PTYPE_SOCKET, -- PTYPE_SOCKET = 6
         unpack = function(msg, sz)
-            return netpack.filter(queue, msg, sz)
+            return netpack.filter(msg_queue, msg, sz)
         end,
         dispatch = function(_, _, q, type, ...)
-            queue = q
+            msg_queue = q
             if type then
                 MSG[type](...)
             end

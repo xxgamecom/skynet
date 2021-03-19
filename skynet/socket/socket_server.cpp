@@ -486,7 +486,7 @@ int socket_server::send(send_buffer* buf)
                 {
                     log(nullptr, "socket-server : set udp (%d) address first.", socket_id);
 
-                    so.free_func((void*)buf->buffer);
+                    so.free_func((void*)buf->data_ptr);
                     return -1;
                 }
                 n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &sa.addr.s, sa_sz);
@@ -502,7 +502,7 @@ int socket_server::send(send_buffer* buf)
             // 写完
             if (n == so.sz)
             {
-                so.free_func((void*)buf->buffer);
+                so.free_func((void*)buf->data_ptr);
                 return 0;
             }
 
@@ -666,7 +666,7 @@ int socket_server::udp_send(const socket_udp_address* addr, send_buffer* buf)
                 socklen_t sa_sz = sa.from_udp_address(socket_ref.protocol_type, udp_address);
                 if (sa_sz == 0)
                 {
-                    so.free_func((void*)buf->buffer);
+                    so.free_func((void*)buf->data_ptr);
                     return -1;
                 }
 
@@ -675,7 +675,7 @@ int socket_server::udp_send(const socket_udp_address* addr, send_buffer* buf)
                 {
                     // sendto succ
                     socket_ref.stat_send(send_n, time_);
-                    so.free_func((void*)buf->buffer);
+                    so.free_func((void*)buf->data_ptr);
                     return 0;
                 }
             }
@@ -1404,10 +1404,10 @@ void socket_server::force_close(socket* socket_ptr, socket_lock& sl, socket_mess
     if (socket_ptr->dw_buffer != nullptr)
     {
         send_buffer tmp;
-        tmp.buffer = socket_ptr->dw_buffer;
-        tmp.sz = socket_ptr->dw_size;
+        tmp.data_ptr = socket_ptr->dw_buffer;
+        tmp.data_size = socket_ptr->dw_size;
         tmp.socket_id = socket_ptr->socket_id;
-        tmp.type = (tmp.sz == USER_OBJECT) ? BUFFER_TYPE_OBJECT : BUFFER_TYPE_MEMORY;
+        tmp.type = (tmp.data_size == USER_OBJECT) ? BUFFER_TYPE_OBJECT : BUFFER_TYPE_MEMORY;
         free_send_buffer(&tmp);
         socket_ptr->dw_buffer = nullptr;
     }
@@ -1547,7 +1547,7 @@ void socket_server::free_send_buffer(send_buffer* buf_ptr)
     if (buf_ptr == nullptr)
         return;
 
-    char* buffer = (char*)buf_ptr->buffer;
+    char* buffer = (char*)buf_ptr->data_ptr;
     if (buf_ptr->type == BUFFER_TYPE_MEMORY)
     {
         delete[] buffer;
@@ -1572,20 +1572,20 @@ const void* socket_server::clone_send_buffer(send_buffer* buf_ptr, size_t *sz)
     
     if (buf_ptr->type == BUFFER_TYPE_MEMORY)
     {
-        *sz = buf_ptr->sz;
-        return buf_ptr->buffer;
+        *sz = buf_ptr->data_size;
+        return buf_ptr->data_ptr;
     }
     else if (buf_ptr->type == BUFFER_TYPE_OBJECT)
     {
         *sz = USER_OBJECT;
-        return buf_ptr->buffer;
+        return buf_ptr->data_ptr;
     }
     // It's a raw pointer, we need make a copy
     else if (buf_ptr->type == BUFFER_TYPE_RAW_POINTER)
     {
-        *sz = buf_ptr->sz;
+        *sz = buf_ptr->data_size;
         void* tmp = new char[*sz];
-        ::memcpy(tmp, buf_ptr->buffer, *sz);
+        ::memcpy(tmp, buf_ptr->data_ptr, *sz);
         return tmp;
     }
     // never get here
@@ -2239,16 +2239,16 @@ void socket_server::send_object_init(send_object* so, send_buffer* buf_ptr)
 
     if (buf_ptr->type == BUFFER_TYPE_MEMORY)
     {
-        send_object_init(so, (void*)buf_ptr->buffer, buf_ptr->sz);
+        send_object_init(so, (void*)buf_ptr->data_ptr, buf_ptr->data_size);
     }
     else if (buf_ptr->type == BUFFER_TYPE_OBJECT)
     {
-        send_object_init(so, (void*)buf_ptr->buffer, USER_OBJECT);
+        send_object_init(so, (void*)buf_ptr->data_ptr, USER_OBJECT);
     }
     else if (buf_ptr->type == BUFFER_TYPE_RAW_POINTER)
     {
-        so->buffer = (void*)buf_ptr->buffer;
-        so->sz = buf_ptr->sz;
+        so->buffer = (void*)buf_ptr->data_ptr;
+        so->sz = buf_ptr->data_size;
         so->free_func = [](void* ptr) { (void)ptr; };
     }
     // never get here
