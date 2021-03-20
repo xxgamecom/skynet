@@ -5,9 +5,6 @@ include_directories("${SKYNET_ROOT_PATH}/skynet")
 set(SKYNET_LUACLIB_HEADER
     lsha1.h
     lua-seri.h
-    lua-skynet_core.h
-    lua-skynet_netpack.h
-    lua-skynet_socket.h
 )
 
 set(SKYNET_LUACLIB_SRC

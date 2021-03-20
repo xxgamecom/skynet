@@ -10,7 +10,6 @@ extern "C" {
 #include <string>
 #include <cstdint>
 #include <cstdlib>
-#include <stdio.h>
 
 #define OP_REPLY                1
 #define OP_MSG                  1000

@@ -1,7 +1,5 @@
 #pragma once
 
-namespace skynet { namespace service {
-
 struct hash_id_node
 {
     int                         id = 0;
@@ -29,4 +27,3 @@ int hash_id_insert(hash_id* hi, int id);
 
 int hash_id_full(hash_id* hi);
 
-} }

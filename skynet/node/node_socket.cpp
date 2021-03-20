@@ -213,9 +213,9 @@ int node_socket::udp(service_context* ctx, const char* addr, int port)
     return socket_server_->udp(src_svc_handle, addr, port);
 }
 
-int node_socket::udp_connect(service_context* ctx, int id, const char* addr, int port)
+int node_socket::udp_connect(service_context* ctx, int socket_id, const char* addr, int port)
 {
-    return socket_server_->udp_connect(id, addr, port);
+    return socket_server_->udp_connect(socket_id, addr, port);
 }
 
 int node_socket::udp_sendbuffer(service_context* ctx, const char* address, send_buffer* buffer)

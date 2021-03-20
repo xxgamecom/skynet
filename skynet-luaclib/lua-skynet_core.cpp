@@ -1,7 +1,5 @@
 #define LUA_LIB
 
-#include "lua-skynet_core.h"
-
 #include "skynet.h"
 #include "lua-seri.h"
 
@@ -130,7 +128,7 @@ static int _send_message(lua_State* L, int src_svc_handle, int message_type_idx)
  * c.send(addr, proto.id, session, proto.pack(...))
  * ...
  */
-int skynet_core::l_send(lua_State* L)
+static int l_send(lua_State* L)
 {
     return _send_message(L, 0, 2);
 }
@@ -149,7 +147,7 @@ int skynet_core::l_send(lua_State* L)
  * c.redirect(dest, source, proto.id, ...)
  * ...
  */
-int skynet_core::l_redirect(lua_State* L)
+static int l_redirect(lua_State* L)
 {
     auto src_svc_handle = (uint32_t)luaL_checkinteger(L, 2);
     return _send_message(L, src_svc_handle, 3);
@@ -167,7 +165,7 @@ int skynet_core::l_redirect(lua_State* L)
  * c.command("LAUNCH", table.concat({...}, " "))
  * ...
  */
-int skynet_core::l_service_command(lua_State* L)
+static int l_service_command(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -204,7 +202,7 @@ int skynet_core::l_service_command(lua_State* L)
  * c.intcommand("STAT", "mqlen")
  * ...
  */
-int skynet_core::l_service_command_int(lua_State* L)
+static int l_service_command_int(lua_State* L)
 {
     // service_context upvalue
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
@@ -264,7 +262,7 @@ int skynet_core::l_service_command_int(lua_State* L)
  * c.addresscommand "REG"
  * c.addresscommand("QUERY", name)
  */
-int skynet_core::l_service_command_address(lua_State* L)
+static int l_service_command_address(lua_State* L)
 {
     // service context upvalue
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
@@ -406,7 +404,7 @@ static int _forward_cb(service_context* svc_ctx, void* ud, int type, int session
  * c.callback(skynet.dispatch_message)
  * c.callback(function(ptype, msg, sz, ...) ... end, true)
  */
-int skynet_core::l_set_service_callback(lua_State* L)
+static int l_set_service_callback(lua_State* L)
 {
     // service context upvalue
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
@@ -444,7 +442,7 @@ int skynet_core::l_set_service_callback(lua_State* L)
  * lua examples:
  * c.gen_session_id()
  */
-int skynet_core::l_gen_session_id(lua_State* L)
+static int l_gen_session_id(lua_State* L)
 {
     // service context upvalue
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
@@ -472,7 +470,7 @@ int skynet_core::l_gen_session_id(lua_State* L)
  * skynet.log(addr, "connected")
  * ...
  */
-int skynet_core::l_log(lua_State* L)
+static int l_log(lua_State* L)
 {
     // service context upvalue
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
@@ -541,7 +539,7 @@ struct source_info
     int line;
 };
 
-int skynet_core::l_trace(lua_State* L)
+static int l_trace(lua_State* L)
 {
     //
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
@@ -630,7 +628,7 @@ int skynet_core::l_trace(lua_State* L)
  *        ...
  *    }
  */
-int skynet_core::l_tostring(lua_State* L)
+static int l_tostring(lua_State* L)
 {
     // check first arguments
     if (lua_isnoneornil(L, 1) != 0)
@@ -647,7 +645,7 @@ int skynet_core::l_tostring(lua_State* L)
 /**
  *
  */
-int skynet_core::l_pack(lua_State* L)
+static int l_pack(lua_State* L)
 {
     return luaseri_pack(L);
 }
@@ -655,7 +653,7 @@ int skynet_core::l_pack(lua_State* L)
 /**
  *
  */
-int skynet_core::l_unpack(lua_State* L)
+static int l_unpack(lua_State* L)
 {
     return luaseri_unpack(L);
 }
@@ -680,7 +678,7 @@ int skynet_core::l_unpack(lua_State* L)
  *        return string.char(size) .. message
  *    end
  */
-int skynet_core::l_pack_string(lua_State* L)
+static int l_pack_string(lua_State* L)
 {
     luaseri_pack(L);
 
@@ -705,7 +703,7 @@ int skynet_core::l_pack_string(lua_State* L)
  * skynet.trash = assert(c.trash)
  * c.trash(msg, sz)
  */
-int skynet_core::l_trash(lua_State* L)
+static int l_trash(lua_State* L)
 {
     int t = lua_type(L, 1);
     if (t == LUA_TSTRING)
@@ -736,7 +734,7 @@ int skynet_core::l_trash(lua_State* L)
  * lua examples:
  * skynet.now = c.now
  */
-int skynet_core::l_now(lua_State* L)
+static int l_now(lua_State* L)
 {
     lua_pushinteger(L, timer_manager::instance()->now());
     return 1;
@@ -751,13 +749,13 @@ int skynet_core::l_now(lua_State* L)
  * lua examples:
  * skynet.hpc = c.hpc
  */
-int skynet_core::l_hpc(lua_State* L)
+static int l_hpc(lua_State* L)
 {
     lua_pushinteger(L, time_helper::get_time_ns());
     return 1;
 }
 
-}}
+} }
 
 /**
  * skynet luaclib - skynet.core
@@ -765,28 +763,28 @@ int skynet_core::l_hpc(lua_State* L)
 
 // need service_context upvalue
 static const luaL_Reg core_funcs_1[] = {
-    { "send",           skynet::luaclib::skynet_core::l_send },
-    { "redirect",       skynet::luaclib::skynet_core::l_redirect },
-    { "command",        skynet::luaclib::skynet_core::l_service_command },
-    { "intcommand",     skynet::luaclib::skynet_core::l_service_command_int },
-    { "addresscommand", skynet::luaclib::skynet_core::l_service_command_address },
-    { "callback",       skynet::luaclib::skynet_core::l_set_service_callback },
-    { "gen_session_id", skynet::luaclib::skynet_core::l_gen_session_id },
-    { "log",            skynet::luaclib::skynet_core::l_log },
-    { "trace",          skynet::luaclib::skynet_core::l_trace },
+    { "send",           skynet::luaclib::l_send },
+    { "redirect",       skynet::luaclib::l_redirect },
+    { "command",        skynet::luaclib::l_service_command },
+    { "intcommand",     skynet::luaclib::l_service_command_int },
+    { "addresscommand", skynet::luaclib::l_service_command_address },
+    { "callback",       skynet::luaclib::l_set_service_callback },
+    { "gen_session_id", skynet::luaclib::l_gen_session_id },
+    { "log",            skynet::luaclib::l_log },
+    { "trace",          skynet::luaclib::l_trace },
 
     { nullptr,          nullptr },
 };
 
 // without service_context upvalue
 static const luaL_Reg core_funcs_2[] = {
-    { "tostring",    skynet::luaclib::skynet_core::l_tostring },
-    { "pack",        skynet::luaclib::skynet_core::l_pack },
-    { "unpack",      skynet::luaclib::skynet_core::l_unpack },
-    { "pack_string", skynet::luaclib::skynet_core::l_pack_string },
-    { "trash",       skynet::luaclib::skynet_core::l_trash },
-    { "now",         skynet::luaclib::skynet_core::l_now },
-    { "hpc",         skynet::luaclib::skynet_core::l_hpc },
+    { "tostring",    skynet::luaclib::l_tostring },
+    { "pack",        skynet::luaclib::l_pack },
+    { "unpack",      skynet::luaclib::l_unpack },
+    { "pack_string", skynet::luaclib::l_pack_string },
+    { "trash",       skynet::luaclib::l_trash },
+    { "now",         skynet::luaclib::l_now },
+    { "hpc",         skynet::luaclib::l_hpc },
 
     { nullptr,       nullptr },
 };

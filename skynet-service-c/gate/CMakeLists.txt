@@ -5,11 +5,14 @@ include_directories("${SKYNET_ROOT_PATH}/skynet")
 set(SKYNET_GATE_HEADER
     hash_id.h
     data_buffer.h
+    gate_mod.h
+    gate_ctrl_cmd.h
 )
 
 set(SKYNET_GATE_SRC
     hash_id.cpp
     data_buffer.cpp
+    gate_ctrl_cmd.cpp
     service_gate.cpp
 )
 

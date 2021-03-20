@@ -1,15 +1,15 @@
 #define LUA_LIB
 
+#include "skynet.h"
+
 extern "C" {
 #include <lua.h>
 #include <lauxlib.h>
 }
 
-#include <string.h>
-#include <assert.h>
+#include <string>
+#include <cassert>
 #include <unistd.h>
-
-#include "skynet.h"
 
 /*
     uint32_t/string addr 

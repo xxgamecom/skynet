@@ -1,5 +1,7 @@
 #pragma once
 
+namespace skynet { namespace service {
+
 #define MESSAGE_POOL_SIZE 1023
 
 struct message
@@ -42,3 +44,4 @@ void data_buffer_reset(data_buffer* db);
 
 void data_buffer_clear(data_buffer* db, message_pool* mp);
 
+} }

@@ -1,6 +1,5 @@
 #define LUA_LIB
 
-#include "lua-skynet_socket.h"
 #include "skynet.h"
 
 extern "C" {
@@ -114,7 +113,7 @@ static void _pop_lstring(lua_State* L, socket_buffer* sb, int sz, int skip)
 
 static int _free_pool(lua_State* L)
 {
-    buffer_node* pool = (buffer_node*)lua_touserdata(L, 1);
+    auto pool = (buffer_node*)lua_touserdata(L, 1);
     int sz = lua_rawlen(L, 1) / sizeof(*pool);
     for (int i = 0; i < sz; i++)
     {
@@ -158,7 +157,7 @@ static int _new_pool(lua_State* L, int sz)
  * lua examples:
  * new_buffer = socketdriver.new_buffer()
  */
-int skynet_socket::l_new_socket_buffer(lua_State* L)
+static int l_new_socket_buffer(lua_State* L)
 {
     auto sb = (socket_buffer*)lua_newuserdatauv(L, sizeof(socket_buffer), 0);
     sb->size = 0;
@@ -194,7 +193,7 @@ int skynet_socket::l_new_socket_buffer(lua_State* L)
  * lua examples:
  * local sz = socketdriver.push(s.buffer, s.pool, data, size)
  */
-int skynet_socket::l_push_socket_buffer(lua_State* L)
+static int l_push_socket_buffer(lua_State* L)
 {
     // socket buffer
     auto sb = (socket_buffer*)lua_touserdata(L, 1);
@@ -277,7 +276,7 @@ int skynet_socket::l_push_socket_buffer(lua_State* L)
  * lua examples:
  * ret = socketdriver.pop(s.buffer, s.pool, sz)
  */
-int skynet_socket::l_pop_socket_buffer(lua_State* L)
+static int l_pop_socket_buffer(lua_State* L)
 {
     auto sb = (socket_buffer*)lua_touserdata(L, 1);
     if (sb == nullptr)
@@ -315,7 +314,7 @@ int skynet_socket::l_pop_socket_buffer(lua_State* L)
  * lua examples:
  *
  */
-int skynet_socket::l_clear_socket_buffer(lua_State* L)
+static int l_clear_socket_buffer(lua_State* L)
 {
     // socket buffer
     auto sb = (socket_buffer*)lua_touserdata(L, 1);
@@ -351,7 +350,7 @@ int skynet_socket::l_clear_socket_buffer(lua_State* L)
  * lua examples:
  * socketdriver.drop(data, size)
  */
-int skynet_socket::l_drop(lua_State* L)
+static int l_drop(lua_State* L)
 {
     // msg, size
     void* msg = lua_touserdata(L, 1);
@@ -376,7 +375,7 @@ int skynet_socket::l_drop(lua_State* L)
  * lua examples:
  * local ret = socketdriver.readall(s.buffer, s.pool)
  */
-int skynet_socket::l_read_all(lua_State* L)
+static int l_read_all(lua_State* L)
 {
     // socket buffer
     auto sb = (socket_buffer*)lua_touserdata(L, 1);
@@ -440,7 +439,7 @@ static bool _check_sep(buffer_node* node, int from, const char* sep, int sep_len
  * lua examples:
  * socketdriver.readline(s.buffer, s.pool, sep)
  */
-int skynet_socket::l_read_line(lua_State* L)
+static int l_read_line(lua_State* L)
 {
     // socket buffer
     auto sb = (socket_buffer*)lua_touserdata(L, 1);
@@ -502,7 +501,7 @@ int skynet_socket::l_read_line(lua_State* L)
  * lua examples:
  * socket.header = assert(socketdriver.header)
  */
-int skynet_socket::l_header(lua_State* L)
+static int l_header(lua_State* L)
 {
     size_t len;
     const uint8_t* s = (const uint8_t*)luaL_checklstring(L, 1, &len);
@@ -527,7 +526,7 @@ int skynet_socket::l_header(lua_State* L)
  * convert string to memory data
  *
  */
-int skynet_socket::l_str2p(lua_State* L)
+static int l_str2p(lua_State* L)
 {
     //
     size_t sz = 0;
@@ -561,10 +560,10 @@ int skynet_socket::l_str2p(lua_State* L)
  * lua examples:
  * local _, fd = socketdriver.unpack(msg, sz)
  */
-int skynet_socket::l_unpack(lua_State* L)
+static int l_unpack(lua_State* L)
 {
     // message
-    skynet_socket_message* msg = (skynet_socket_message*)lua_touserdata(L, 1);
+    auto msg = (skynet_socket_message*)lua_touserdata(L, 1);
     // message size
     int size = luaL_checkinteger(L, 2);
 
@@ -711,7 +710,7 @@ static void _get_socket_info(lua_State* L, socket_info& si)
  *     ...
  * }
  */
-int skynet_socket::l_query_socket_info(lua_State* L)
+static int l_query_socket_info(lua_State* L)
 {
     // query socket info
     std::list <socket_info> si_list;
@@ -805,7 +804,7 @@ static const char* _address_port(lua_State* L, char* tmp, const char* addr, int 
  * local socket_id = socketdriver.connect(addr, port)   --
  * local socket_id = socketdriver.connect(addr)         -- addr include ip & port
  */
-int skynet_socket::l_connect(lua_State* L)
+static int l_connect(lua_State* L)
 {
     // addr
     size_t addr_sz = 0;
@@ -843,7 +842,7 @@ int skynet_socket::l_connect(lua_State* L)
  * lua examples:
  * socketdriver.close(socket_id)
  */
-int skynet_socket::l_close(lua_State* L)
+static int l_close(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -862,7 +861,7 @@ int skynet_socket::l_close(lua_State* L)
  * lua examples:
  * socketdriver.shutdown(socket_id)
  */
-int skynet_socket::l_shutdown(lua_State* L)
+static int l_shutdown(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -884,7 +883,7 @@ int skynet_socket::l_shutdown(lua_State* L)
  * socketdriver.listen(address, port)
  * socketdriver.listen(address, port, backlog)
  */
-int skynet_socket::l_listen(lua_State* L)
+static int l_listen(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -1008,7 +1007,7 @@ static void _get_message(lua_State* L, int msg_index, send_buffer& sb)
  * socket.write = assert(socketdriver.send)
  * socketdriver.send(fd, content)
  */
-int skynet_socket::l_send(lua_State* L)
+static int l_send(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -1032,7 +1031,7 @@ int skynet_socket::l_send(lua_State* L)
 /**
  *
  */
-int skynet_socket::l_send_low(lua_State* L)
+static int l_send_low(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -1070,7 +1069,7 @@ int skynet_socket::l_send_low(lua_State* L)
  *    return socket.bind(0)
  * end
  */
-int skynet_socket::l_bind(lua_State* L)
+static int l_bind(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -1097,7 +1096,7 @@ int skynet_socket::l_bind(lua_State* L)
  *     return connect(id, func)
  * end
  */
-int skynet_socket::l_start(lua_State* L)
+static int l_start(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -1110,7 +1109,7 @@ int skynet_socket::l_start(lua_State* L)
 /**
  * pause socket, for traffic ctrl
  */
-int skynet_socket::l_pause(lua_State* L)
+static int l_pause(lua_State* L)
 {
     auto ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -1125,7 +1124,7 @@ int skynet_socket::l_pause(lua_State* L)
 /**
  *
  */
-int skynet_socket::l_nodelay(lua_State* L)
+static int l_nodelay(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -1140,7 +1139,7 @@ int skynet_socket::l_nodelay(lua_State* L)
 /**
  *
  */
-int skynet_socket::l_udp(lua_State* L)
+static int l_udp(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -1164,9 +1163,9 @@ int skynet_socket::l_udp(lua_State* L)
     return 1;
 }
 
-int skynet_socket::l_udp_connect(lua_State* L)
+static int l_udp_connect(lua_State* L)
 {
-    service_context* svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     int id = luaL_checkinteger(L, 1);
 
@@ -1189,7 +1188,7 @@ int skynet_socket::l_udp_connect(lua_State* L)
     return 0;
 }
 
-int skynet_socket::l_udp_send(lua_State* L)
+static int l_udp_send(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -1211,7 +1210,7 @@ int skynet_socket::l_udp_send(lua_State* L)
     return 1;
 }
 
-int skynet_socket::l_udp_address(lua_State* L)
+static int l_udp_address(lua_State* L)
 {
     size_t sz = 0;
     const uint8_t* addr = (const uint8_t*)luaL_checklstring(L, 1, &sz);
@@ -1254,37 +1253,37 @@ int skynet_socket::l_udp_address(lua_State* L)
 
 // functions without service_context
 static const luaL_Reg socket_funcs_1[] = {
-    { "new_buffer", skynet::luaclib::skynet_socket::l_new_socket_buffer },
-    { "push",       skynet::luaclib::skynet_socket::l_push_socket_buffer },
-    { "pop",        skynet::luaclib::skynet_socket::l_pop_socket_buffer },
-    { "clear",      skynet::luaclib::skynet_socket::l_clear_socket_buffer },
-    { "drop",       skynet::luaclib::skynet_socket::l_drop },
-    { "readall",    skynet::luaclib::skynet_socket::l_read_all },
-    { "readline",   skynet::luaclib::skynet_socket::l_read_line },
-    { "str2p",      skynet::luaclib::skynet_socket::l_str2p },
-    { "header",     skynet::luaclib::skynet_socket::l_header },
-    { "info",       skynet::luaclib::skynet_socket::l_query_socket_info },
-    { "unpack",     skynet::luaclib::skynet_socket::l_unpack },
+    { "new_buffer", skynet::luaclib::l_new_socket_buffer },
+    { "push",       skynet::luaclib::l_push_socket_buffer },
+    { "pop",        skynet::luaclib::l_pop_socket_buffer },
+    { "clear",      skynet::luaclib::l_clear_socket_buffer },
+    { "drop",       skynet::luaclib::l_drop },
+    { "readall",    skynet::luaclib::l_read_all },
+    { "readline",   skynet::luaclib::l_read_line },
+    { "str2p",      skynet::luaclib::l_str2p },
+    { "header",     skynet::luaclib::l_header },
+    { "info",       skynet::luaclib::l_query_socket_info },
+    { "unpack",     skynet::luaclib::l_unpack },
 
     { nullptr,      nullptr },
 };
 
 // need service_context upvalue
 static const luaL_Reg socket_funcs_2[] = {
-    { "connect",     skynet::luaclib::skynet_socket::l_connect },
-    { "close",       skynet::luaclib::skynet_socket::l_close },
-    { "shutdown",    skynet::luaclib::skynet_socket::l_shutdown },
-    { "listen",      skynet::luaclib::skynet_socket::l_listen },
-    { "send",        skynet::luaclib::skynet_socket::l_send },
-    { "lsend",       skynet::luaclib::skynet_socket::l_send_low },
-    { "bind",        skynet::luaclib::skynet_socket::l_bind },
-    { "start",       skynet::luaclib::skynet_socket::l_start },
-    { "pause",       skynet::luaclib::skynet_socket::l_pause },
-    { "nodelay",     skynet::luaclib::skynet_socket::l_nodelay },
-    { "udp",         skynet::luaclib::skynet_socket::l_udp },
-    { "udp_connect", skynet::luaclib::skynet_socket::l_udp_connect },
-    { "udp_send",    skynet::luaclib::skynet_socket::l_udp_send },
-    { "udp_address", skynet::luaclib::skynet_socket::l_udp_address },
+    { "connect",     skynet::luaclib::l_connect },
+    { "close",       skynet::luaclib::l_close },
+    { "shutdown",    skynet::luaclib::l_shutdown },
+    { "listen",      skynet::luaclib::l_listen },
+    { "send",        skynet::luaclib::l_send },
+    { "lsend",       skynet::luaclib::l_send_low },
+    { "bind",        skynet::luaclib::l_bind },
+    { "start",       skynet::luaclib::l_start },
+    { "pause",       skynet::luaclib::l_pause },
+    { "nodelay",     skynet::luaclib::l_nodelay },
+    { "udp",         skynet::luaclib::l_udp },
+    { "udp_connect", skynet::luaclib::l_udp_connect },
+    { "udp_send",    skynet::luaclib::l_udp_send },
+    { "udp_address", skynet::luaclib::l_udp_address },
 
     { nullptr, nullptr },
 };
@@ -1299,7 +1298,9 @@ LUAMOD_API int luaopen_skynet_socketdriver(lua_State* L)
     lua_getfield(L, LUA_REGISTRYINDEX, "service_context");
     auto svc_ctx = (skynet::service_context*)lua_touserdata(L, -1);
     if (svc_ctx == nullptr)
+    {
         return luaL_error(L, "Init skynet service context first");
+    }
 
     luaL_setfuncs(L, socket_funcs_2, 1);
 
