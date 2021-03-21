@@ -3,9 +3,9 @@
 namespace skynet { namespace service {
 
 // forward declare
-struct gate_mod;
+class gate_service;
 
 //
-void handle_ctrl_cmd(gate_mod* mod_ptr, const char* msg, int sz);
+void handle_ctrl_cmd(gate_service* gate_svc_ptr, const char* msg, int sz);
 
 } }

@@ -52,7 +52,7 @@ static int codecache(lua_State* L)
 
 static const char* _get_env(service_context* ctx, const char* key, const char* default_value)
 {
-    const char* ret = service_command::handle_command(ctx, "GETENV", key);
+    const char* ret = service_command::exec(ctx, "GETENV", key);
     if (ret == nullptr)
     {
         return default_value;
@@ -104,7 +104,7 @@ snlua_service::~snlua_service() noexcept
 bool snlua_service::init(service_context* svc_ctx, const char* param)
 {
     //
-//    svc_ctx->set_callback(this, callback);
+//    svc_ctx->set_callback(callback);
 
     // copy param
     int param_sz = ::strlen(param);
@@ -112,7 +112,7 @@ bool snlua_service::init(service_context* svc_ctx, const char* param)
     ::memcpy(tmp_param, param, param_sz);
 
     // query self service handle
-    std::string self_svc_handle_string = service_command::handle_command(svc_ctx, "REG");
+    std::string self_svc_handle_string = service_command::exec(svc_ctx, "REG");
     uint32_t self_svc_handle = std::stoi(self_svc_handle_string.substr(1), nullptr, 16);
 
     // send param to self, it must be first message
@@ -157,11 +157,9 @@ void snlua_service::signal(int signal)
     }
 }
 
-int snlua_service::callback(service_context* svc_ctx, void* ud, int msg_ptype, int session, uint32_t src_svc_handle, const void* msg, size_t sz)
+int snlua_service::callback(service_context* svc_ctx, int msg_ptype, int session, uint32_t src_svc_handle, const void* msg, size_t sz)
 {
     assert(msg_ptype == 0 && session == 0);
-
-    auto svc_ptr = (snlua_service*)ud;
 
     // reset service message callback
     svc_ctx->set_callback(nullptr, nullptr);
@@ -171,7 +169,7 @@ int snlua_service::callback(service_context* svc_ctx, void* ud, int msg_ptype, i
     int err = init_lua_cb(svc_ctx, (const char*)msg, sz);
     if (err != 0)
     {
-        service_command::handle_command(svc_ctx, "EXIT");
+        service_command::exec(svc_ctx, "EXIT");
     }
 
     return 0;
@@ -231,7 +229,7 @@ int snlua_service::init_lua_cb(service_context* svc_ctx, const char* args, size_
     lua_setglobal(L, "LUA_SERVICE");
 
     // preload, lua服务运行前执行, 设置全局变量LUA_PRELOAD
-    const char* preload = service_command::handle_command(svc_ctx, "GETENV", "preload");
+    const char* preload = service_command::exec(svc_ctx, "GETENV", "preload");
     lua_pushstring(L, preload);
     lua_setglobal(L, "LUA_PRELOAD");
 
@@ -254,7 +252,7 @@ int snlua_service::init_lua_cb(service_context* svc_ctx, const char* args, size_
     r = lua_pcall(L, 1, 0, 1);
     if (r != LUA_OK)
     {
-        service_command::handle_command(svc_ctx, "lua loader error : %s", lua_tostring(L, -1));
+        service_command::exec(svc_ctx, "lua loader error : %s", lua_tostring(L, -1));
         report_launcher_error(svc_ctx);
         return 1;
     }

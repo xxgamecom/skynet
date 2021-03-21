@@ -50,7 +50,7 @@ public:
     //
     void signal(int signal) override;
     // service message callback
-    int callback(service_context* svc_ctx, void* ud, int msg_ptype, int session_id, uint32_t src_svc_handle, const void* msg, size_t sz) override;
+    int callback(service_context* svc_ctx, int msg_ptype, int session_id, uint32_t src_svc_handle, const void* msg, size_t sz) override;
 
 public:
     // init lua service message callback

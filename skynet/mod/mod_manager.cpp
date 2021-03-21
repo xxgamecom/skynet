@@ -113,7 +113,7 @@ service_mod_info* mod_manager::_try_load_dll(const std::string& mod_name)
         }
 
         // mod file path
-        std::string mod_path = path.substr(0, pos) + mod_name;
+        std::string mod_path = path.substr(0, pos) + mod_name + path.substr(pos + 1);
 
         // load success
         if (mod_info_ptr->dll_loader_.load(mod_path))
@@ -122,7 +122,7 @@ service_mod_info* mod_manager::_try_load_dll(const std::string& mod_name)
 
     if (!mod_info_ptr->dll_loader_.is_loaded())
     {
-        std::cerr << "try open c service mod(" << mod_name << ") failed : " << mod_info_ptr->dll_loader_.error() << std::endl;
+        std::cerr << "try open c service mod (" << mod_name << ") failed : " << mod_info_ptr->dll_loader_.error() << std::endl;
         delete mod_info_ptr;
         return nullptr;
     }

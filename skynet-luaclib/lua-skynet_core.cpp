@@ -180,7 +180,7 @@ static int l_service_command(lua_State* L)
     }
 
     // handle service command
-    const char* result = service_command::handle_command(svc_ctx, cmd, cmd_param);
+    const char* result = service_command::exec(svc_ctx, cmd, cmd_param);
     if (result == nullptr)
         return 0;
 
@@ -225,7 +225,7 @@ static int l_service_command_int(lua_State* L)
     }
 
     // exec service command
-    const char* result = service_command::handle_command(svc_ctx, cmd, cmd_param.c_str());
+    const char* result = service_command::exec(svc_ctx, cmd, cmd_param.c_str());
     if (result == nullptr)
         return 0;
 
@@ -278,7 +278,7 @@ static int l_service_command_address(lua_State* L)
     }
 
     // exec service command
-    const char* result = service_command::handle_command(svc_ctx, cmd, cmd_param.c_str());
+    const char* result = service_command::exec(svc_ctx, cmd, cmd_param.c_str());
     if (result == nullptr || result[0] != ':')
         return 0;
 
@@ -327,12 +327,12 @@ static int _traceback(lua_State* L)
 
 /**
  * service message callback
- * 最终会调用Lua层的dispatch_message，参数依次是：type, msg, sz, session, source。
+ * 最终会调用Lua层的dispatch_message，参数依次是：type, msg, sz, session, src_svc_handle。
  * 所以，snlua类型的服务收到消息时最终会调用Lua层的消息回调函数skynet.dispatch_message。
  *
  * @return 0 need delete msg, 1 don't delete msg
  */
-static int _cb(service_context* svc_ctx, void* ud, int type, int session, uint32_t source, const void* msg, size_t sz)
+static int _cb(service_context* svc_ctx, void* ud, int type, int session, uint32_t src_svc_handle, const void* msg, size_t sz)
 {
     lua_State* L = (lua_State*)ud;
 
@@ -352,7 +352,7 @@ static int _cb(service_context* svc_ctx, void* ud, int type, int session, uint32
     lua_pushlightuserdata(L, (void*)msg);
     lua_pushinteger(L, sz);
     lua_pushinteger(L, session);
-    lua_pushinteger(L, source);
+    lua_pushinteger(L, src_svc_handle);
 
     int trace = 1;
     int r = lua_pcall(L, 5, 0, trace);
@@ -361,17 +361,17 @@ static int _cb(service_context* svc_ctx, void* ud, int type, int session, uint32
         return 0;
     }
 
-    const char* self = service_command::handle_command(svc_ctx, "REG");
+    const char* self = service_command::exec(svc_ctx, "REG");
     switch (r)
     {
     case LUA_ERRRUN:
-        log(svc_ctx, "lua call [%x to %s : %d msgsz = %d] error : " KRED "%s" KNRM, source, self, session, sz, lua_tostring(L, -1));
+        log(svc_ctx, "lua call [%x to %s : %d msgsz = %d] error : " KRED "%s" KNRM, src_svc_handle, self, session, sz, lua_tostring(L, -1));
         break;
     case LUA_ERRMEM:
-        log(svc_ctx, "lua memory error : [%x to %s : %d]", source, self, session);
+        log(svc_ctx, "lua memory error : [%x to %s : %d]", src_svc_handle, self, session);
         break;
     case LUA_ERRERR:
-        log(svc_ctx, "lua error in error : [%x to %s : %d]", source, self, session);
+        log(svc_ctx, "lua error in error : [%x to %s : %d]", src_svc_handle, self, session);
         break;
     };
 
@@ -385,9 +385,9 @@ static int _cb(service_context* svc_ctx, void* ud, int type, int session, uint32
  *
  * @return always return 1, means don't delete msg
  */
-static int _forward_cb(service_context* svc_ctx, void* ud, int type, int session, uint32_t source, const void* msg, size_t sz)
+static int _forward_cb(service_context* svc_ctx, void* ud, int type, int session, uint32_t src_svc_handle, const void* msg, size_t sz)
 {
-    _cb(svc_ctx, ud, type, session, source, msg, sz);
+    _cb(svc_ctx, ud, type, session, src_svc_handle, msg, sz);
 
     // don't delete msg in forward mode.
     return 1;
@@ -426,11 +426,11 @@ static int l_set_service_callback(lua_State* L)
     // forward mode
     if (forward)
     {
-        svc_ctx->set_callback(gL, _forward_cb);
+        svc_ctx->set_callback(_forward_cb, gL);
     }
     else
     {
-        svc_ctx->set_callback(gL, _cb);
+        svc_ctx->set_callback(_cb, gL);
     }
 
     return 0;

@@ -15,11 +15,18 @@ static int _time_string(uint32_t time_secs, char tmp[SIZETIMEFMT])
     return now % 100;
 }
 
-bool logger_service::init(skynet::service_context* svc_ctx, const char* param)
+bool logger_service::init(service_context* svc_ctx, const char* param)
 {
     //
-    const char* r = service_command::handle_command(svc_ctx, "START_TIME");
-    start_seconds_ = ::strtoul(r, NULL, 10);
+    const char* result = service_command::exec(svc_ctx, "START_TIME");
+    try
+    {
+        start_seconds_ = std::stoul(result);
+    }
+    catch (...)
+    {
+        return false;
+    }
 
     // log to file
     if (param != nullptr)
@@ -43,7 +50,7 @@ bool logger_service::init(skynet::service_context* svc_ctx, const char* param)
 
     if (log_handle_ != 0)
     {
-//        svc_ctx->set_callback(mod_ptr, logger_cb);
+//        svc_ctx->set_callback(callback);
         return true;
     }
 
@@ -64,7 +71,8 @@ void logger_service::signal(int signal)
 {
 
 }
-int logger_service::callback(skynet::service_context* svc_ctx, void* ud, int msg_ptype, int session_id, uint32_t src_svc_handle, const void* msg, size_t sz)
+
+int logger_service::callback(service_context* svc_ctx, int msg_ptype, int session_id, uint32_t src_svc_handle, const void* msg, size_t sz)
 {
     switch (msg_ptype)
     {

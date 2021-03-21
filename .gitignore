@@ -1,6 +1,7 @@
 *.o
 *.pyc
 *.dSYM
+*.dylib
 *.so
 *.a
 .DS_Store

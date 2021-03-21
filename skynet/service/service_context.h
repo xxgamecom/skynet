@@ -29,8 +29,8 @@ public:
     cservice*                   svc_ptr_ = nullptr;         // c service instance
 
     // callback
-    void*                       cb_ud_ = nullptr;           // callback function argument, 调用callback函数时, 回传给callback的 user data, 一般是instance指针
-    skynet_cb                   cb_ = nullptr;              // callback function
+    void*                       cb_ud_ = nullptr;           // service message callback function argument, 调用callback函数时, 回传给callback的 user data, 一般是instance指针
+    skynet_cb                   msg_callback_ = nullptr;    // service message callback function
 
     //
     mq_private*                 queue_ = nullptr;           // service private queue
@@ -63,7 +63,7 @@ public:
     //
     void grab();
 
-    void set_callback(void* ud, skynet_cb cb);
+    void set_callback(skynet_cb cb, void* cb_ud = nullptr);
 };
 
 }

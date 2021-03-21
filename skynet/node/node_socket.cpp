@@ -7,9 +7,6 @@
 
 #include <iostream>
 #include <cassert>
-#include <cstdlib>
-#include <cstring>
-#include <cstdbool>
 #include <mutex>
 
 namespace skynet {
@@ -18,8 +15,8 @@ node_socket* node_socket::instance_ = nullptr;
 
 node_socket* node_socket::instance()
 {
-    std::once_flag oc;
-    std::call_once(oc, [&]() { return new node_socket; });
+    static std::once_flag oc;
+    std::call_once(oc, [&]() { instance_ = new node_socket; });
 
     return instance_;
 }

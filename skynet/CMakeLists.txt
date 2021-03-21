@@ -8,8 +8,7 @@ include(node/CMakeLists.txt)
 include(memory/CMakeLists.txt)
 include(utils/CMakeLists.txt)
 
-# source file list
-set(SKYNET_HEADER skynet.h
+set(SKYNET_CORE_HEADER skynet.h
     ${SKYNET_MEMORY_HEADER}
     ${SKYNET_MQ_HEADER}
     ${SKYNET_LOG_HEADER}
@@ -20,7 +19,7 @@ set(SKYNET_HEADER skynet.h
     ${SKYNET_NODE_HEADER}
     ${SKYNET_UTILS_HEADER}
 )
-set(SKYNET_SRC skynet.cpp
+set(SKYNET_CORE_SRC
     ${SKYNET_MEMORY_SRC}
     ${SKYNET_MQ_SRC}
     ${SKYNET_LOG_SRC}
@@ -31,10 +30,25 @@ set(SKYNET_SRC skynet.cpp
     ${SKYNET_NODE_SRC}
     ${SKYNET_UTILS_SRC}
 )
+list(APPEND SKYNET_CORE_SRC ${SKYNET_CORE_HEADER})
 
-list(APPEND SKYNET_SRC ${SKYNET_HEADER})
+#----------------------------------------------------
+# target shared lib (skynet_core.dylib)
+#----------------------------------------------------
 
-# target
-add_library(skynet_o OBJECT ${SKYNET_SRC})
-add_executable(skynet $<TARGET_OBJECTS:skynet_o>)
-target_link_libraries(skynet liblua)
+add_library(skynet_core SHARED ${SKYNET_CORE_SRC})
+set_target_properties(skynet_core
+    PROPERTIES
+    PREFIX ""
+    OUTPUT_NAME "skynet_core"
+    ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH}"
+    LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH}"
+)
+target_link_libraries(skynet_core liblua)
+
+#----------------------------------------------------
+# target executable (skynet)
+#----------------------------------------------------
+
+add_executable(skynet skynet.cpp)
+target_link_libraries(skynet liblua skynet_core)

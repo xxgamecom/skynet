@@ -18,10 +18,10 @@ inline void service_context::grab()
     ++ref_;
 }
 
-inline void service_context::set_callback(void* ud, skynet_cb cb)
+inline void service_context::set_callback(skynet_cb msg_callback, void* cb_ud/* = nullptr*/)
 {
-    cb_ = cb;
-    cb_ud_ = ud;
+    msg_callback_ = msg_callback;
+    cb_ud_ = cb_ud;
 }
 
 }

@@ -73,7 +73,7 @@ service_context* service_manager::create_service(const char* svc_name, const cha
     svc_ctx->svc_mod_ptr_ = mod_ptr;
     svc_ctx->svc_ptr_ = svc_ptr;
     svc_ctx->ref_ = 2;        // 初始化完成会调用 service_manager::instance()->release_service() 将引用计数-1，ref变成1而不会被释放掉
-    svc_ctx->cb_ = nullptr;
+    svc_ctx->msg_callback_ = nullptr;
     svc_ctx->cb_ud_ = nullptr;
     svc_ctx->session_id_ = 0;
     svc_ctx->log_fd_ = nullptr;

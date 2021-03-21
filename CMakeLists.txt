@@ -63,7 +63,7 @@ OPTION(BUILD_SKYNET_DEPS "Build skynet deps" ON)
 OPTION(BUILD_SKYNET "Build skynet" ON)
 OPTION(BUILD_SKYNET_LUACLIB "Build skynet luaclib" ON)
 OPTION(BUILD_SKYNET_CSERVICE "Build skynet c service" ON)
-OPTION(BUILD_SKYNET_TESTS "Build skynet tests" ON)
+OPTION(BUILD_SKYNET_TESTS "Build skynet tests" OFF)
 
 # build deps
 if (BUILD_SKYNET_DEPS)
