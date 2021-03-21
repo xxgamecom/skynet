@@ -23,7 +23,7 @@ public:
 
     // timer_manager
 private:
-    timer*                      TI = nullptr;                   //
+    timer*                      TI_ = nullptr;                  // todo: test move to cpp, and static
 
 public:
     //

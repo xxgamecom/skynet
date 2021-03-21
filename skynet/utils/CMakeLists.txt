@@ -1,7 +1,5 @@
 set(SKYNET_UTILS_HEADER
     utils/daemon_helper.h
-    utils/dll_helper.h
-    utils/dll_helper.inl
     utils/signal_helper.h
     utils/time_helper.h
     utils/string_helper.h

@@ -1,6 +1,7 @@
 #include "service_manager.h"
 #include "service_context.h"
-#include "service_mod_manager.h"
+
+#include "../mod/mod_manager.h"
 
 #include "../node/node.h"
 
@@ -51,23 +52,28 @@ bool service_manager::init()
 
 service_context* service_manager::create_service(const char* svc_name, const char* svc_args)
 {
-    // query c service
-    service_mod* mod = service_mod_manager::instance()->query(svc_name);
-    if (mod == nullptr)
-        return nullptr;
+    // query c service mod info
+    auto mod_ptr = mod_manager::instance()->query(svc_name);
+    if (mod_ptr == nullptr)
+    {
+        // not exists, try load
+        mod_ptr = mod_manager::instance()->load(svc_name);
+        if (mod_ptr == nullptr)
+            return nullptr;
+    }
 
     // create service mod own data block (如: struct snlua, struct logger,  struct gate)
-    void* inst = mod->instance_create();
-    if (inst == nullptr)
+    cservice* svc_ptr = mod_ptr->create_func_();
+    if (svc_ptr == nullptr)
         return nullptr;
 
     // create service context
-    service_context* svc_ctx = new service_context;
+    auto svc_ctx = new service_context;
 
-    svc_ctx->mod_ = mod;
-    svc_ctx->instance_ = inst;
+    svc_ctx->svc_mod_ptr_ = mod_ptr;
+    svc_ctx->svc_ptr_ = svc_ptr;
     svc_ctx->ref_ = 2;        // 初始化完成会调用 service_manager::instance()->release_service() 将引用计数-1，ref变成1而不会被释放掉
-    svc_ctx->cb_ = nullptr;
+    svc_ctx->msg_callback_ = nullptr;
     svc_ctx->cb_ud_ = nullptr;
     svc_ctx->session_id_ = 0;
     svc_ctx->log_fd_ = nullptr;
@@ -92,11 +98,8 @@ service_context* service_manager::create_service(const char* svc_name, const cha
     // increase service count
     ++svc_count_;
 
-    // init mod data
-    int r = mod->instance_init(inst, svc_ctx, svc_args);
-
-    // service mod initialize success
-    if (r == 0)
+    // initialize service mod success
+    if (svc_ptr->init(svc_ctx, svc_args))
     {
         service_context* ret = release_service(svc_ctx);
         if (ret != nullptr)
@@ -109,7 +112,7 @@ service_context* service_manager::create_service(const char* svc_name, const cha
 
         return ret;
     }
-        // service mod initialize failed
+    // service mod initialize failed
     else
     {
         log(svc_ctx, "FAILED launch %s", svc_name);
@@ -428,7 +431,7 @@ service_context* service_manager::release_service(service_context* svc_ctx)
             ::fclose(svc_ctx->log_fd_);
         }
 
-        svc_ctx->mod_->instance_release(svc_ctx->instance_);
+        svc_ctx->svc_mod_ptr_->release_func_(svc_ctx->svc_ptr_);
         svc_ctx->queue_->mark_release();
 
         delete svc_ctx;
@@ -445,7 +448,7 @@ service_context* service_manager::release_service(service_context* svc_ctx)
 // @param svc_ctx            源服务的ctx，可以为NULL，drop_message时这个参数为NULL
 // @param src_svc_handle         源服务地址，通常设置为0即可，api里会设置成ctx->handle，当context为NULL时，需指定source
 // @param dst_svc_handle     目的服务地址
-// @param type             消息类型， skynet定义了多种消息，PTYPE_TEXT，PTYPE_CLIENT，PTYPE_RESPONSE等（详情见skynet.h）
+// @param msg_ptype             消息类型， skynet定义了多种消息，PTYPE_TEXT，PTYPE_CLIENT，PTYPE_RESPONSE等（详情见skynet.h）
 // @param session         如果在type里设上allocsession的tag(MESSAGE_TAG_ALLOC_SESSION)，api会忽略掉传入的session参数，重新生成一个新的唯一的
 // @param msg             消息包数据
 // @param msg_sz             消息包长度

@@ -1,29 +1,32 @@
 #pragma once
 
-struct hashid_node
+namespace skynet { namespace service {
+
+struct hash_id_node
 {
     int                         id = 0;
-    hashid_node*                next = nullptr;
+    hash_id_node*               next = nullptr;
 };
 
-struct hashid
+struct hash_id
 {
     int                         hashmod = 0;
     int                         cap = 0;
     int                         count = 0;
-    hashid_node*                id = nullptr;
-    hashid_node**               hash = nullptr;
+    hash_id_node*               hash_id_nodes = nullptr;
+    hash_id_node**              hash = nullptr;
 };
 
-void hashid_init(hashid* hi, int max);
+void hash_id_init(hash_id* hi, int max);
 
-void hashid_clear(hashid* hi);
+void hash_id_clear(hash_id* hi);
 
-int hashid_lookup(hashid* hi, int id);
+int hash_id_lookup(hash_id* hi, int id);
 
-int hashid_remove(hashid* hi, int id);
+int hash_id_remove(hash_id* hi, int id);
 
-int hashid_insert(hashid* hi, int id);
+int hash_id_insert(hash_id* hi, int id);
 
-int hashid_full(hashid* hi);
+int hash_id_full(hash_id* hi);
 
+} }

@@ -5,54 +5,55 @@
 #include <cstdlib>
 #include <string>
 
-void hashid_init(hashid* hi, int max)
+namespace skynet { namespace service {
+
+void hash_id_init(hash_id* hi, int max)
 {
-    int hashcap = 16;
-    while (hashcap < max)
-    {
-        hashcap *= 2;
-    }
-    hi->hashmod = hashcap - 1;
+    int hash_cap = 16;
+    while (hash_cap < max)
+        hash_cap *= 2;
+
+    hi->hashmod = hash_cap - 1;
     hi->cap = max;
     hi->count = 0;
-    hi->id = (hashid_node*)skynet_malloc(max * sizeof(hashid_node));
+    hi->hash_id_nodes = (hash_id_node*)skynet_malloc(max * sizeof(hash_id_node));
     for (int i = 0; i < max; i++)
     {
-        hi->id[i].id = -1;
-        hi->id[i].next = nullptr;
+        hi->hash_id_nodes[i].id = -1;
+        hi->hash_id_nodes[i].next = nullptr;
     }
-    hi->hash = (hashid_node**)skynet_malloc(hashcap * sizeof(hashid_node*));
-    ::memset(hi->hash, 0, hashcap * sizeof(hashid_node*));
+    hi->hash = (hash_id_node**)skynet_malloc(hash_cap * sizeof(hash_id_node*));
+    ::memset(hi->hash, 0, hash_cap * sizeof(hash_id_node*));
 }
 
-void hashid_clear(hashid* hi)
+void hash_id_clear(hash_id* hi)
 {
-    skynet_free(hi->id);
+    skynet_free(hi->hash_id_nodes);
     skynet_free(hi->hash);
-    hi->id = nullptr;
+    hi->hash_id_nodes = nullptr;
     hi->hash = nullptr;
     hi->hashmod = 1;
     hi->cap = 0;
     hi->count = 0;
 }
 
-int hashid_lookup(hashid* hi, int id)
+int hash_id_lookup(hash_id* hi, int id)
 {
     int h = id & hi->hashmod;
-    struct hashid_node* c = hi->hash[h];
-    while (c)
+    hash_id_node* c = hi->hash[h];
+    while (c != nullptr)
     {
         if (c->id == id)
-            return c - hi->id;
+            return c - hi->hash_id_nodes;
         c = c->next;
     }
     return -1;
 }
 
-int hashid_remove(hashid* hi, int id)
+int hash_id_remove(hash_id* hi, int id)
 {
     int h = id & hi->hashmod;
-    struct hashid_node* c = hi->hash[h];
+    hash_id_node* c = hi->hash[h];
     if (c == nullptr)
         return -1;
     if (c->id == id)
@@ -64,7 +65,7 @@ int hashid_remove(hashid* hi, int id)
     {
         if (c->next->id == id)
         {
-            struct hashid_node* temp = c->next;
+            hash_id_node* temp = c->next;
             c->next = temp->next;
             c = temp;
             goto _clear;
@@ -76,18 +77,18 @@ _clear:
     c->id = -1;
     c->next = nullptr;
     --hi->count;
-    return c - hi->id;
+    return c - hi->hash_id_nodes;
 }
 
-int hashid_insert(hashid* hi, int id)
+int hash_id_insert(hash_id* hi, int id)
 {
-    hashid_node* c = nullptr;
+    hash_id_node* c = nullptr;
     for (int i = 0; i < hi->cap; i++)
     {
         int index = (i + id) % hi->cap;
-        if (hi->id[index].id == -1)
+        if (hi->hash_id_nodes[index].id == -1)
         {
-            c = &hi->id[index];
+            c = &hi->hash_id_nodes[index];
             break;
         }
     }
@@ -102,11 +103,12 @@ int hashid_insert(hashid* hi, int id)
     }
     hi->hash[h] = c;
 
-    return c - hi->id;
+    return c - hi->hash_id_nodes;
 }
 
-int hashid_full(hashid* hi)
+int hash_id_full(hash_id* hi)
 {
     return hi->count == hi->cap;
 }
 
+} }

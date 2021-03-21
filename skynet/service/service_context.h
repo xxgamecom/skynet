@@ -6,7 +6,9 @@
 
 namespace skynet {
 
-class service_mod;
+// forward declare
+struct service_mod_info;
+class cservice;
 class mq_private;
 class service_context;
 
@@ -22,13 +24,13 @@ typedef int (*skynet_cb)(service_context* svc_ctx, void* ud, int type, int sessi
 class service_context
 {
 public:
-    // mod info
-    void*                       instance_ = nullptr;        // service mod own data block
-    service_mod*                mod_ = nullptr;             // 保存module的指针，方便之后调用create,init,signal,release
+    // c service mod
+    service_mod_info*           svc_mod_ptr_ = nullptr;     // c service mod
+    cservice*                   svc_ptr_ = nullptr;         // c service instance
 
     // callback
-    void*                       cb_ud_ = nullptr;           // callback function argument, 调用callback函数时, 回传给callback的 user data, 一般是instance指针
-    skynet_cb                   cb_ = nullptr;              // callback function
+    void*                       cb_ud_ = nullptr;           // service message callback function argument, 调用callback函数时, 回传给callback的 user data, 一般是instance指针
+    skynet_cb                   msg_callback_ = nullptr;    // service message callback function
 
     //
     mq_private*                 queue_ = nullptr;           // service private queue
@@ -61,7 +63,7 @@ public:
     //
     void grab();
 
-    void set_callback(void* ud, skynet_cb cb);
+    void set_callback(skynet_cb cb, void* cb_ud = nullptr);
 };
 
 }

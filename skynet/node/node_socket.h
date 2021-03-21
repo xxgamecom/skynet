@@ -77,7 +77,7 @@ public:
 
     //
     int udp(service_context* ctx, const char* addr, int port);
-    int udp_connect(service_context* ctx, int id, const char* addr, int port);
+    int udp_connect(service_context* ctx, int socket_id, const char* addr, int port);
     int udp_sendbuffer(service_context* ctx, const char* address, send_buffer* buffer);
     const char* udp_address(skynet_socket_message*, int* addrsz);
 
@@ -103,24 +103,24 @@ static inline void sendbuffer_init_(send_buffer* buf, int socket_id, const void*
     buf->data_size = (size_t) sz;
 }
 
-static inline int skynet_socket_send(service_context* ctx, int id, void* buffer, int sz)
+static inline int skynet_socket_send(service_context* ctx, int socket_id, void* buffer, int sz)
 {
     send_buffer tmp;
-    sendbuffer_init_(&tmp, id, buffer, sz);
+    sendbuffer_init_(&tmp, socket_id, buffer, sz);
     return node_socket::instance()->sendbuffer(ctx, &tmp);
 }
 
-static inline int skynet_socket_send_low_priority(service_context* ctx, int id, void* buffer, int sz)
+static inline int skynet_socket_send_low_priority(service_context* ctx, int socket_id, void* buffer, int sz)
 {
     send_buffer tmp;
-    sendbuffer_init_(&tmp, id, buffer, sz);
+    sendbuffer_init_(&tmp, socket_id, buffer, sz);
     return node_socket::instance()->sendbuffer_low_priority(ctx, &tmp);
 }
 
-static inline int skynet_socket_udp_send(service_context* ctx, int id, const char* address, const void* buffer, int sz)
+static inline int skynet_socket_udp_send(service_context* ctx, int socket_id, const char* address, const void* buffer, int sz)
 {
     send_buffer tmp;
-    sendbuffer_init_(&tmp, id, buffer, sz);
+    sendbuffer_init_(&tmp, socket_id, buffer, sz);
     return node_socket::instance()->udp_sendbuffer(ctx, address, &tmp);
 }
 

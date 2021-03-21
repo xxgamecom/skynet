@@ -3,24 +3,22 @@ INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/skynet")
 
 #
 set(SKYNET_LOGGER_HEADER
-    logger_mod.h
+    logger_service.h
 )
 
 set(SKYNET_LOGGER_SRC
-    service_logger.cpp
+    logger_service.cpp
+    mod.cpp
 )
 
 LIST(APPEND SKYNET_LOGGER_SRC ${SKYNET_LOGGER_HEADER})
 
-# target shared lib (logger.so)
-ADD_LIBRARY(logger MODULE 
-    ${SKYNET_LOGGER_SRC}
-    $<TARGET_OBJECTS:skynet_o>
-)
+# target module lib (logger.so)
+ADD_LIBRARY(logger MODULE ${SKYNET_LOGGER_SRC})
 SET_TARGET_PROPERTIES(logger
     PROPERTIES
     PREFIX ""
     ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_CSERVICE_BIN_PATH}"
     LIBRARY_OUTPUT_DIRECTORY "${SKYNET_CSERVICE_BIN_PATH}"
 )
-TARGET_LINK_LIBRARIES(logger liblua)
+TARGET_LINK_LIBRARIES(logger liblua skynet_core)

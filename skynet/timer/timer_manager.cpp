@@ -24,6 +24,8 @@
 #include "timer_manager.h"
 #include "timer.h"
 
+#include "../memory/skynet_malloc.h"
+
 #include "../mq/mq_msg.h"
 #include "../mq/mq_private.h"
 
@@ -34,6 +36,7 @@
 
 #include "../utils/time_helper.h"
 
+#include <iostream>
 #include <ctime>
 #include <cassert>
 
@@ -56,7 +59,7 @@ struct timer_event
 // create a timer
 static timer* create_timer()
 {
-    timer* r = (timer*)::malloc(sizeof(timer));
+    timer* r = (timer*)skynet_malloc(sizeof(timer));
 
     for (int i = 0; i < TIME_NEAR; i++)
     {
@@ -79,7 +82,7 @@ static timer* create_timer()
 // add a timer
 static void timer_add(timer* t, void* arg, size_t sz, int time)
 {
-     timer_node* node = (timer_node*)::malloc(sizeof(timer_node) + sz);
+     timer_node* node = (timer_node*)skynet_malloc(sizeof(timer_node) + sz);
      ::memcpy(node + 1, arg, sz);
 
      //
@@ -141,7 +144,7 @@ static inline void dispatch_list(timer_node* current)
 
         timer_node* temp = current;
         current = current->next;
-        ::free(temp);
+        skynet_free(temp);
     } while (current != nullptr);
 }
 
@@ -196,20 +199,23 @@ timer_manager* timer_manager::instance_ = nullptr;
 timer_manager* timer_manager::instance()
 {
     static std::once_flag oc;
-    std::call_once(oc, [&]() { instance_ = new timer_manager; });
+    std::call_once(oc, [&]() {
+        instance_ = new timer_manager;
+        std::cout << "new timer_manager instance " << &instance_ << std::endl;
+    });
 
     return instance_;
 }
 
 void timer_manager::init()
 {
-    TI = create_timer();
+    TI_ = create_timer();
 
     uint32_t current = 0;
-    systime(&TI->start_seconds, &current);
+    systime(&TI_->start_seconds, &current);
 
-    TI->current = current;
-    TI->current_tick = time_helper::get_time_tick();
+    TI_->current = current;
+    TI_->current_tick = time_helper::get_time_tick();
 }
 
 // 创建定时操作
@@ -239,7 +245,7 @@ int timer_manager::timeout(uint32_t handle, int time, int session)
         timer_event event;
         event.svc_handle = handle;
         event.session = session;
-        timer_add(TI, &event, sizeof(event), time);
+        timer_add(TI_, &event, sizeof(event), time);
     }
 
     return session;
@@ -252,23 +258,23 @@ void timer_manager::update_time()
     uint64_t ct = time_helper::get_time_tick();
 
     //
-    if (ct < TI->current_tick)
+    if (ct < TI_->current_tick)
     {
-        log(nullptr, "time diff error: change from %lld to %lld", ct, TI->current_tick);
-        TI->current_tick = ct;
+        log(nullptr, "time diff error: change from %lld to %lld", ct, TI_->current_tick);
+        TI_->current_tick = ct;
     }
     //
-    else if (ct != TI->current_tick)
+    else if (ct != TI_->current_tick)
     {
         // 距离上次执行的时间差
-        uint32_t diff = (uint32_t)(ct - TI->current_tick);
-        TI->current_tick = ct;  // 记录当前执行时间点
-        TI->current += diff;    // 更新当前时间
+        uint32_t diff = (uint32_t)(ct - TI_->current_tick);
+        TI_->current_tick = ct;  // 记录当前执行时间点
+        TI_->current += diff;    // 更新当前时间
         
         // 更新定时器
         for (int i = 0; i < diff; i++)
         {
-            timer_update(TI);
+            timer_update(TI_);
         }
     }
 }
@@ -276,13 +282,13 @@ void timer_manager::update_time()
 // 返回当前进程启动后经过的时间 (0.01 秒)
 uint64_t timer_manager::now()
 {
-    return TI->current;
+    return TI_->current;
 }
 
 // 返回当前进程的启动 UTC 时间（秒）
 uint32_t timer_manager::start_seconds()
 {
-    return TI->start_seconds;
+    return TI_->start_seconds;
 }
 
 }

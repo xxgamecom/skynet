@@ -1,5 +1,10 @@
+--[[
+
+gate agent service
+
+]]
+
 local skynet = require "skynet"
-local sc = require "skynet.socketchannel"
 local socket = require "skynet.socket"
 local cluster = require "skynet.cluster.core"
 local ignoreret = skynet.ignoreret
@@ -43,15 +48,15 @@ local register_name = new_register_name()
 
 local tracetag
 
-local function dispatch_request(_,_,addr, session, msg, sz, padding, is_push)
-    ignoreret()	-- session is fd, don't call skynet.ret
+local function dispatch_request(_, _, addr, session, msg, sz, padding, is_push)
+    ignoreret()    -- session is fd, don't call skynet.ret
     if session == nil then
         -- trace
         tracetag = addr
         return
     end
     if padding then
-        local req = large_request[session] or { addr = addr , is_push = is_push, tracetag = tracetag }
+        local req = large_request[session] or { addr = addr, is_push = is_push, tracetag = tracetag }
         tracetag = nil
         large_request[session] = req
         cluster.append(req, msg, sz)
@@ -62,7 +67,7 @@ local function dispatch_request(_,_,addr, session, msg, sz, padding, is_push)
             tracetag = req.tracetag
             large_request[session] = nil
             cluster.append(req, msg, sz)
-            msg,sz = cluster.concat(req)
+            msg, sz = cluster.concat(req)
             addr = req.addr
             is_push = req.is_push
         end
@@ -93,13 +98,13 @@ local function dispatch_request(_,_,addr, session, msg, sz, padding, is_push)
         if addr then
             if is_push then
                 skynet.send_raw(addr, "lua", msg, sz)
-                return	-- no response
+                return    -- no response
             else
                 if tracetag then
-                    ok , msg, sz = pcall(skynet.tracecall, tracetag, addr, "lua", msg, sz)
+                    ok, msg, sz = pcall(skynet.tracecall, tracetag, addr, "lua", msg, sz)
                     tracetag = nil
                 else
-                    ok , msg, sz = pcall(skynet.rawcall, addr, "lua", msg, sz)
+                    ok, msg, sz = pcall(skynet.rawcall, addr, "lua", msg, sz)
                 end
             end
         else
@@ -132,7 +137,7 @@ skynet.start(function()
     -- fd can write, but don't read fd, the data package will forward from gate though client protocol.
     skynet.call(gate, "lua", "forward", fd)
 
-    skynet.dispatch("lua", function(_,source, cmd, ...)
+    skynet.dispatch("lua", function(_, source, cmd, ...)
         if cmd == "exit" then
             socket.close(fd)
             skynet.exit()

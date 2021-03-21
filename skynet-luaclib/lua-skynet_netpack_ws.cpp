@@ -1,6 +1,5 @@
 #define LUA_LIB
 
-#include "lua-skynet_netpack_ws.h"
 #include "skynet.h"
 
 extern "C" {
@@ -17,8 +16,8 @@ extern "C" {
 
 namespace skynet { namespace luaclib {
 
-#define QUEUESIZE 1024
-#define HASHSIZE 4096
+#define QUEUE_SIZE 1024
+#define HASH_SIZE 4096
 
 #define HEADERSIZE 1024
 #define WEBSOCKET_HEADER_LEN  2
@@ -65,8 +64,8 @@ struct queue
     int cap = 0;
     int head = 0;
     int tail = 0;
-    struct uncomplete* hash[HASHSIZE];
-    struct netpack queue[QUEUESIZE];
+    struct uncomplete* hash[HASH_SIZE];
+    struct netpack queue[QUEUE_SIZE];
 };
 
 /*
@@ -123,7 +122,7 @@ static int l_clear(lua_State* L)
         return 0;
     }
     int i;
-    for (i = 0; i < HASHSIZE; i++)
+    for (i = 0; i < HASH_SIZE; i++)
     {
         clear_list(q->hash[i]);
         q->hash[i] = nullptr;
@@ -147,7 +146,7 @@ static inline int hash_socket_id(int socket_id)
     int a = socket_id >> 24;
     int b = socket_id >> 12;
     int c = socket_id;
-    return (int)(((uint32_t)(a + b + c)) % HASHSIZE);
+    return (int)(((uint32_t)(a + b + c)) % HASH_SIZE);
 }
 
 static struct uncomplete* find_uncomplete(struct queue* q, int socket_id)
@@ -183,11 +182,11 @@ static struct queue* get_queue(lua_State* L)
     if (q == nullptr)
     {
         q = (queue*)lua_newuserdatauv(L, sizeof(struct queue), 0);
-        q->cap = QUEUESIZE;
+        q->cap = QUEUE_SIZE;
         q->head = 0;
         q->tail = 0;
         int i;
-        for (i = 0; i < HASHSIZE; i++)
+        for (i = 0; i < HASH_SIZE; i++)
         {
             q->hash[i] = nullptr;
         }
@@ -199,7 +198,7 @@ static struct queue* get_queue(lua_State* L)
 static void expand_queue(lua_State* L, struct queue* q)
 {
     struct queue* nq = (queue*)lua_newuserdatauv(L, sizeof(struct queue) + q->cap * sizeof(struct netpack), 0);
-    nq->cap = q->cap + QUEUESIZE;
+    nq->cap = q->cap + QUEUE_SIZE;
     nq->head = 0;
     nq->tail = q->cap;
     memcpy(nq->hash, q->hash, sizeof(nq->hash));

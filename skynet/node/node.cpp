@@ -15,7 +15,8 @@
 #include "../service/service_context.h"
 #include "../service/service_monitor.h"
 #include "../service/service_manager.h"
-#include "../service/service_mod_manager.h"
+
+#include "../mod/mod_manager.h"
 
 #include "../utils/daemon_helper.h"
 #include "../utils/time_helper.h"
@@ -93,7 +94,7 @@ void node::start()
     //
     mq_global::instance()->init();
     //
-    service_mod_manager::instance()->init(config_.cservice_path_);
+    mod_manager::instance()->init(config_.cservice_path_);
     //
     timer_manager::instance()->init();
     //
@@ -185,10 +186,14 @@ mq_private* node::dispatch_message(service_monitor& svc_monitor, mq_private* q, 
             // tell service monitor, that the service start handle messages.
             svc_monitor.process_begin(msg.src_svc_handle , svc_handle);
 
-            if (svc_ctx->cb_ == nullptr)
+            if (svc_ctx->msg_callback_ == nullptr)
+            {
                 delete[] msg.data;
+            }
             else
+            {
                 _do_dispatch_message(svc_ctx, &msg);
+            }
 
             // tell service monitor, that the service has handle messages.
             svc_monitor.process_end();
@@ -268,7 +273,7 @@ void node::_do_dispatch_message(service_context* svc_ctx, skynet_message* msg)
         svc_ctx->cpu_start_ = time_helper::thread_time();
 
         // message callback
-        reserve_msg = svc_ctx->cb_(svc_ctx, svc_ctx->cb_ud_, type, msg->session, msg->src_svc_handle, msg->data, sz);
+        reserve_msg = svc_ctx->msg_callback_(svc_ctx, svc_ctx->cb_ud_, type, msg->session, msg->src_svc_handle, msg->data, sz);
 
         uint64_t cost_time = time_helper::thread_time() - svc_ctx->cpu_start_;
         svc_ctx->cpu_cost_ += cost_time;
@@ -276,7 +281,7 @@ void node::_do_dispatch_message(service_context* svc_ctx, skynet_message* msg)
     else
     {
         // message callback
-        reserve_msg = svc_ctx->cb_(svc_ctx, svc_ctx->cb_ud_, type, msg->session, msg->src_svc_handle, msg->data, sz);
+        reserve_msg = svc_ctx->msg_callback_(svc_ctx, svc_ctx->cb_ud_, type, msg->session, msg->src_svc_handle, msg->data, sz);
     }
 
     //

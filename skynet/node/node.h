@@ -7,7 +7,7 @@
  * 1. cmd_launch 创建一个新服务，
  * 2. cmd_exit 服务自身退出，
  * 3. cmd_kill 杀掉一个服务等，
- * 上层统一调用 service_command::handle_command 接口即可执行这些操作。
+ * 上层统一调用 service_command::exec 接口即可执行这些操作。
  *
  * 对ctx操作，通常会先调用 service_context::grab 将引用计数+1，
  * 操作完调用 service_manager::instance()->release_service() 将引用计数-1，
