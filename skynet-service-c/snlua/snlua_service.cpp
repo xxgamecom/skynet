@@ -96,7 +96,7 @@ snlua_service::snlua_service()
     trap_ = 0;
 }
 
-snlua_service::~snlua_service() noexcept
+snlua_service::~snlua_service()
 {
     fini();
 }
@@ -104,7 +104,7 @@ snlua_service::~snlua_service() noexcept
 bool snlua_service::init(service_context* svc_ctx, const char* param)
 {
     //
-//    svc_ctx->set_callback(callback);
+    svc_ctx->set_callback(snlua_cb, this);
 
     // copy param
     int param_sz = ::strlen(param);
@@ -157,16 +157,18 @@ void snlua_service::signal(int signal)
     }
 }
 
-int snlua_service::callback(service_context* svc_ctx, int msg_ptype, int session, uint32_t src_svc_handle, const void* msg, size_t sz)
+int snlua_service::snlua_cb(service_context* svc_ctx, void* ud, int msg_ptype, int session, uint32_t src_svc_handle, const void* msg, size_t sz)
 {
     assert(msg_ptype == 0 && session == 0);
+
+    auto svc_ptr = (snlua_service*)ud;
 
     // reset service message callback
     svc_ctx->set_callback(nullptr, nullptr);
 
     // 设置各项资源路径参数, 并加载 loader.lua
     // 在init_cb里进行Lua层的初始化，比如初始化LUA_PATH，LUA_CPATH，LUA_SERVICE等全局变量
-    int err = init_lua_cb(svc_ctx, (const char*)msg, sz);
+    int err = init_lua_cb(svc_ptr, svc_ctx, (const char*)msg, sz);
     if (err != 0)
     {
         service_command::exec(svc_ctx, "EXIT");
@@ -175,10 +177,10 @@ int snlua_service::callback(service_context* svc_ctx, int msg_ptype, int session
     return 0;
 }
 
-int snlua_service::init_lua_cb(service_context* svc_ctx, const char* args, size_t sz)
+int snlua_service::init_lua_cb(snlua_service* svc_ptr, service_context* svc_ctx, const char* args, size_t sz)
 {
-    lua_State* L = L_;
-    svc_ctx_ = svc_ctx;
+    lua_State* L = svc_ptr->L_;
+    svc_ptr->svc_ctx_ = svc_ctx;
 
     //
     lua_gc(L, LUA_GCSTOP, 0);
@@ -264,7 +266,7 @@ int snlua_service::init_lua_cb(service_context* svc_ctx, const char* args, size_
     if (lua_getfield(L, LUA_REGISTRYINDEX, "memlimit") == LUA_TNUMBER)
     {
         size_t limit = lua_tointeger(L, -1);
-        mem_limit_ = limit;
+        svc_ptr->mem_limit_ = limit;
         log(svc_ctx, "Set memory limit to %.2f M", (float)limit / (1024 * 1024));
         lua_pushnil(L);
         lua_setfield(L, LUA_REGISTRYINDEX, "memlimit");

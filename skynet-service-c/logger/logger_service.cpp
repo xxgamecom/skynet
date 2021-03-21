@@ -50,7 +50,7 @@ bool logger_service::init(service_context* svc_ctx, const char* param)
 
     if (log_handle_ != 0)
     {
-//        svc_ctx->set_callback(callback);
+        svc_ctx->set_callback(logger_cb, this);
         return true;
     }
 
@@ -72,27 +72,29 @@ void logger_service::signal(int signal)
 
 }
 
-int logger_service::callback(service_context* svc_ctx, int msg_ptype, int session_id, uint32_t src_svc_handle, const void* msg, size_t sz)
+int logger_service::logger_cb(service_context* svc_ctx, void* ud, int msg_ptype, int session_id, uint32_t src_svc_handle, const void* msg, size_t sz)
 {
+    auto svc_ptr = (logger_service*)ud;
+
     switch (msg_ptype)
     {
     case message_protocol_type::PTYPE_SYSTEM:
-        if (!log_filename_.empty())
+        if (!svc_ptr->log_filename_.empty())
         {
-            log_handle_ = ::freopen(log_filename_.c_str(), "a", log_handle_);
+            svc_ptr->log_handle_ = ::freopen(svc_ptr->log_filename_.c_str(), "a", svc_ptr->log_handle_);
         }
         break;
     case message_protocol_type::PTYPE_TEXT:
-        if (!log_filename_.empty())
+        if (!svc_ptr->log_filename_.empty())
         {
             char tmp[SIZETIMEFMT];
-            int ticks = _time_string(start_seconds_, tmp);
-            ::fprintf(log_handle_, "%s.%02d ", tmp, ticks);
+            int ticks = _time_string(svc_ptr->start_seconds_, tmp);
+            ::fprintf(svc_ptr->log_handle_, "%s.%02d ", tmp, ticks);
         }
-        ::fprintf(log_handle_, "[:%08x] ", src_svc_handle);
-        ::fwrite(msg, sz, 1, log_handle_);
-        ::fprintf(log_handle_, "\n");
-        ::fflush(log_handle_);
+        ::fprintf(svc_ptr->log_handle_, "[:%08x] ", src_svc_handle);
+        ::fwrite(msg, sz, 1, svc_ptr->log_handle_);
+        ::fprintf(svc_ptr->log_handle_, "\n");
+        ::fflush(svc_ptr->log_handle_);
         break;
     }
 
