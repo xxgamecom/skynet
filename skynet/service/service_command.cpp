@@ -1,8 +1,9 @@
 #include "service_command.h"
 #include "service_context.h"
 #include "service_manager.h"
-#include "service_mod.h"
 #include "service_log.h"
+
+#include "../mod/service_mod_manager.h"
 
 #include "../node/node.h"
 #include "../node/node_env.h"
@@ -403,7 +404,7 @@ static const char* cmd_signal(service_context* context, const char* param)
     }
 
     // NOTICE: the signal function should be thread safe
-    svc_ctx->mod_->instance_signal(svc_ctx->instance_, sig);
+    svc_ctx->csvc_ptr_->signal(sig);
 
     service_manager::instance()->release_service(svc_ctx);
 

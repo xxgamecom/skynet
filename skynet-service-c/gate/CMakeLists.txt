@@ -7,6 +7,7 @@ set(SKYNET_GATE_HEADER
     data_buffer.h
     gate_mod.h
     gate_ctrl_cmd.h
+    gate_service.h
 )
 
 set(SKYNET_GATE_SRC
@@ -14,6 +15,8 @@ set(SKYNET_GATE_SRC
     data_buffer.cpp
     gate_ctrl_cmd.cpp
     service_gate.cpp
+    gate_service.cpp
+    service.cpp
 )
 
 list(APPEND SKYNET_GATE_SRC ${SKYNET_GATE_HEADER})

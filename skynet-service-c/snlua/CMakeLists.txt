@@ -5,11 +5,13 @@ INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/skynet")
 set(SKYNET_SNLUA_HEADER
     snlua_mod.h
     profile.h
+    snlua_service.h
 )
 
 set(SKYNET_SNLUA_SRC
     profile.cpp
-    service_snlua.cpp
+    snlua_service.cpp
+    service.cpp
 )
 
 LIST(APPEND SKYNET_SNLUA_SRC ${SKYNET_SNLUA_HEADER})

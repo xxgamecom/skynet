@@ -15,7 +15,8 @@
 #include "../service/service_context.h"
 #include "../service/service_monitor.h"
 #include "../service/service_manager.h"
-#include "../service/service_mod_manager.h"
+
+#include "../mod/service_mod_manager.h"
 
 #include "../utils/daemon_helper.h"
 #include "../utils/time_helper.h"

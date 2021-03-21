@@ -1,6 +1,7 @@
 #include "service_manager.h"
 #include "service_context.h"
-#include "service_mod_manager.h"
+
+#include "../mod/service_mod_manager.h"
 
 #include "../node/node.h"
 
@@ -52,20 +53,24 @@ bool service_manager::init()
 service_context* service_manager::create_service(const char* svc_name, const char* svc_args)
 {
     // query c service
-    service_mod* mod = service_mod_manager::instance()->query(svc_name);
+    service_mod_info* mod = service_mod_manager::instance()->query(svc_name);
+    // not exists, try load
+    if (mod == nullptr)
+        mod = service_mod_manager::instance()->load(svc_name);
+    // load failed
     if (mod == nullptr)
         return nullptr;
 
     // create service mod own data block (如: struct snlua, struct logger,  struct gate)
-    void* inst = mod->instance_create();
-    if (inst == nullptr)
+    service::cservice_mod* svc_mod_ptr = mod->create_func_();
+    if (svc_mod_ptr == nullptr)
         return nullptr;
 
     // create service context
     service_context* svc_ctx = new service_context;
 
     svc_ctx->mod_ = mod;
-    svc_ctx->instance_ = inst;
+    svc_ctx->csvc_ptr_ = svc_mod_ptr;
     svc_ctx->ref_ = 2;        // 初始化完成会调用 service_manager::instance()->release_service() 将引用计数-1，ref变成1而不会被释放掉
     svc_ctx->cb_ = nullptr;
     svc_ctx->cb_ud_ = nullptr;
@@ -93,8 +98,7 @@ service_context* service_manager::create_service(const char* svc_name, const cha
     ++svc_count_;
 
     // init mod data
-    int r = mod->instance_init(inst, svc_ctx, svc_args);
-
+    int r = svc_mod_ptr->init(svc_ctx, svc_args);
     // service mod initialize success
     if (r == 0)
     {
@@ -428,7 +432,7 @@ service_context* service_manager::release_service(service_context* svc_ctx)
             ::fclose(svc_ctx->log_fd_);
         }
 
-        svc_ctx->mod_->instance_release(svc_ctx->instance_);
+        svc_ctx->mod_->release_func_(svc_ctx->csvc_ptr_);
         svc_ctx->queue_->mark_release();
 
         delete svc_ctx;
