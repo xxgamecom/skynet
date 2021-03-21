@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../mod/cservice_mod_i.h"
+#include "../mod/cservice_i.h"
 #include "../mod/dll_loader.h"
 
 #include <cassert>
@@ -29,13 +29,13 @@ public:
  * C service mod manager
  * manage c service mod, such as snlua, logger, gate etc.
  */
-class service_mod_manager final
+class mod_manager final
 {
     // singleton
 private:
-    static service_mod_manager* instance_;
+    static mod_manager* instance_;
 public:
-    static service_mod_manager* instance();
+    static mod_manager* instance();
 
 private:
     std::string                                 search_path_ = "";          // c service mod .so file search path.

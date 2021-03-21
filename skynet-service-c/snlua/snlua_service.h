@@ -21,7 +21,7 @@ namespace skynet { namespace service {
  * skynet绝大部分服务类型是snlua，它是运行Lua脚本的服务，
  * 在用skynet框架上开发游戏服务器时，大部分逻辑都是snlua服务，90%以上只需写Lua代码即可
  */
-class snlua_service : public cservice_mod
+class snlua_service : public cservice
 {
 public:
     enum
@@ -42,7 +42,7 @@ public:
     snlua_service();
     virtual ~snlua_service();
 
-    // cservice_mod impl
+    // cservice impl
 public:
     //
     bool init(service_context* svc_ctx, const char* param) override;

@@ -36,10 +36,10 @@ namespace skynet { namespace service {
 typedef int (*cservice_callback)(service_context* svc_ctx, void* ud, int type, int session, uint32_t source , const void* msg, size_t sz);
 
 // c service mod interface
-class cservice_mod
+class cservice
 {
 public:
-    virtual ~cservice_mod() = default;
+    virtual ~cservice() = default;
 
     // interface
 public:
@@ -58,8 +58,8 @@ public:
 // c service mod interface
 //----------------------------------------------------
 
-typedef skynet::service::cservice_mod* (*create_cservice_proc)();
-typedef void (*release_cservice_proc)(skynet::service::cservice_mod* svc_ptr);
+typedef skynet::service::cservice* (*create_cservice_proc)();
+typedef void (*release_cservice_proc)(skynet::service::cservice* svc_ptr);
 
 #define CREATE_CSERVICE_PROC   ("create_service")
 #define RELEASE_CSERVICE_PROC  ("release_service")

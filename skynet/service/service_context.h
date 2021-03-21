@@ -12,7 +12,7 @@ class mq_private;
 class service_context;
 
 namespace service {
-class cservice_mod;
+class cservice;
 }
 
 //
@@ -27,9 +27,9 @@ typedef int (*skynet_cb)(service_context* svc_ctx, void* ud, int type, int sessi
 class service_context
 {
 public:
-    // mod info
-    service::cservice_mod*      csvc_ptr_ = nullptr;        // c service mod instance
-    service_mod_info*           mod_ = nullptr;             // 保存module的指针，方便之后调用create,init,signal,release
+    // c service mod
+    service_mod_info*           svc_mod_ptr_ = nullptr;     // c service mod
+    service::cservice*          svc_ptr_ = nullptr;         // c service instance
 
     // callback
     void*                       cb_ud_ = nullptr;           // callback function argument, 调用callback函数时, 回传给callback的 user data, 一般是instance指针

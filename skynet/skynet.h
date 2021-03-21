@@ -44,6 +44,6 @@
 #include "utils/time_helper.h"
 
 // mod api
-// cservice_mod interface
-#include "mod/cservice_mod_i.h"
+// cservice interface
+#include "mod/cservice_i.h"
 

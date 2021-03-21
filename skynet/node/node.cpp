@@ -16,7 +16,7 @@
 #include "../service/service_monitor.h"
 #include "../service/service_manager.h"
 
-#include "../mod/service_mod_manager.h"
+#include "../mod/mod_manager.h"
 
 #include "../utils/daemon_helper.h"
 #include "../utils/time_helper.h"
@@ -94,7 +94,7 @@ void node::start()
     //
     mq_global::instance()->init();
     //
-    service_mod_manager::instance()->init(config_.cservice_path_);
+    mod_manager::instance()->init(config_.cservice_path_);
     //
     timer_manager::instance()->init();
     //

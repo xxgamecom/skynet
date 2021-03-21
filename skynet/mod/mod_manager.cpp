@@ -1,4 +1,4 @@
-#include "service_mod_manager.h"
+#include "mod_manager.h"
 
 #include <iostream>
 #include <algorithm>
@@ -11,27 +11,27 @@ namespace skynet {
 // singleton
 //
 
-service_mod_manager* service_mod_manager::instance_ = nullptr;
+mod_manager* mod_manager::instance_ = nullptr;
 
-service_mod_manager* service_mod_manager::instance()
+mod_manager* mod_manager::instance()
 {
     static std::once_flag once;
-    std::call_once(once, [&]() { instance_ = new service_mod_manager; });
+    std::call_once(once, [&]() { instance_ = new mod_manager; });
     
     return instance_;
 }
 
 //
-// service_mod_manager
+// mod_manager
 //
 
-bool service_mod_manager::init(std::string search_path)
+bool mod_manager::init(std::string search_path)
 {
     search_path_ = std::move(search_path);
     return true;
 }
 
-void service_mod_manager::fini()
+void mod_manager::fini()
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -45,7 +45,7 @@ void service_mod_manager::fini()
     service_mod_map_.clear();
 }
 
-service_mod_info* service_mod_manager::query(std::string mod_name)
+service_mod_info* mod_manager::query(std::string mod_name)
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -60,7 +60,7 @@ service_mod_info* service_mod_manager::query(std::string mod_name)
 }
 
 // load c service mod
-service_mod_info* service_mod_manager::load(std::string mod_name)
+service_mod_info* mod_manager::load(std::string mod_name)
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -86,7 +86,7 @@ service_mod_info* service_mod_manager::load(std::string mod_name)
     return mod_info_ptr;
 }
 
-service_mod_info* service_mod_manager::_try_load_dll(const std::string& mod_name)
+service_mod_info* mod_manager::_try_load_dll(const std::string& mod_name)
 {
     auto mod_info_ptr = new service_mod_info;
     mod_info_ptr->name_ = mod_name;

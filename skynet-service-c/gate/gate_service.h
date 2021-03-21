@@ -5,12 +5,12 @@
 namespace skynet { namespace service {
 
 //
-class gate_service : public cservice_mod
+class gate_service : public cservice
 {
 public:
     virtual ~gate_service() = default;
 
-    // cservice_mod impl
+    // cservice impl
 public:
     bool init(service_context* svc_ctx, const char* param) override;
     void signal(int signal) override;
