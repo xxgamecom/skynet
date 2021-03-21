@@ -3,11 +3,12 @@ INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/skynet")
 
 #
 set(SKYNET_LOGGER_HEADER
-    logger_mod.h
+    logger_service.h
 )
 
 set(SKYNET_LOGGER_SRC
-    service_logger.cpp
+    logger_service.cpp
+    mod.cpp
 )
 
 LIST(APPEND SKYNET_LOGGER_SRC ${SKYNET_LOGGER_HEADER})

@@ -8,6 +8,11 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
     return false;
 }
 
+void gate_service::fini()
+{
+
+}
+
 void gate_service::signal(int signal)
 {
 

@@ -98,10 +98,7 @@ snlua_service::snlua_service()
 
 snlua_service::~snlua_service() noexcept
 {
-    if (L_ != nullptr)
-    {
-        lua_close(L_);
-    }
+    fini();
 }
 
 bool snlua_service::init(service_context* svc_ctx, const char* param)
@@ -122,6 +119,15 @@ bool snlua_service::init(service_context* svc_ctx, const char* param)
     service_manager::instance()->send(svc_ctx, 0, self_svc_handle, MESSAGE_TAG_DONT_COPY, 0, tmp_param, param_sz);
 
     return true;
+}
+
+void snlua_service::fini()
+{
+    if (L_ != nullptr)
+    {
+        lua_close(L_);
+        L_ = nullptr;
+    }
 }
 
 void snlua_service::signal(int signal)

@@ -30,7 +30,7 @@ class service_context;
 // mod interface
 #define CSERVICE_MOD_API     extern "C"
 
-namespace skynet { namespace service {
+namespace skynet {
 
 // c service callback prototype
 typedef int (*cservice_callback)(service_context* svc_ctx, void* ud, int type, int session, uint32_t source , const void* msg, size_t sz);
@@ -45,6 +45,8 @@ public:
 public:
     // initialize c service mod
     virtual bool init(service_context* svc_ctx, const char* param) = 0;
+    // clean c service mod
+    virtual void fini() = 0;
     // signal c service mod
     virtual void signal(int signal) = 0;
     // snlua service message callback
@@ -52,14 +54,14 @@ public:
 
 };
 
-} }
+}
 
 //----------------------------------------------------
 // c service mod interface
 //----------------------------------------------------
 
-typedef skynet::service::cservice* (*create_cservice_proc)();
-typedef void (*release_cservice_proc)(skynet::service::cservice* svc_ptr);
+typedef skynet::cservice* (*create_cservice_proc)();
+typedef void (*release_cservice_proc)(skynet::cservice* svc_ptr);
 
 #define CREATE_CSERVICE_PROC   ("create_service")
 #define RELEASE_CSERVICE_PROC  ("release_service")

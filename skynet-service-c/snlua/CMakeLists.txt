@@ -11,7 +11,7 @@ set(SKYNET_SNLUA_HEADER
 set(SKYNET_SNLUA_SRC
     profile.cpp
     snlua_service.cpp
-    service.cpp
+    mod.cpp
 )
 
 LIST(APPEND SKYNET_SNLUA_SRC ${SKYNET_SNLUA_HEADER})

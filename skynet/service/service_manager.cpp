@@ -53,7 +53,7 @@ bool service_manager::init()
 service_context* service_manager::create_service(const char* svc_name, const char* svc_args)
 {
     // query c service mod info
-    service_mod_info* mod_ptr = mod_manager::instance()->query(svc_name);
+    auto mod_ptr = mod_manager::instance()->query(svc_name);
     if (mod_ptr == nullptr)
     {
         // not exists, try load
@@ -63,7 +63,7 @@ service_context* service_manager::create_service(const char* svc_name, const cha
     }
 
     // create service mod own data block (如: struct snlua, struct logger,  struct gate)
-    service::cservice* svc_ptr = mod_ptr->create_func_();
+    cservice* svc_ptr = mod_ptr->create_func_();
     if (svc_ptr == nullptr)
         return nullptr;
 
@@ -98,10 +98,8 @@ service_context* service_manager::create_service(const char* svc_name, const cha
     // increase service count
     ++svc_count_;
 
-    // init mod data
-    int r = svc_ptr->init(svc_ctx, svc_args);
-    // service mod initialize success
-    if (r == 0)
+    // initialize service mod success
+    if (svc_ptr->init(svc_ctx, svc_args))
     {
         service_context* ret = release_service(svc_ctx);
         if (ret != nullptr)
@@ -114,7 +112,7 @@ service_context* service_manager::create_service(const char* svc_name, const cha
 
         return ret;
     }
-        // service mod initialize failed
+    // service mod initialize failed
     else
     {
         log(svc_ctx, "FAILED launch %s", svc_name);

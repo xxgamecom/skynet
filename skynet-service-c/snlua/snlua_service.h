@@ -46,6 +46,7 @@ public:
 public:
     //
     bool init(service_context* svc_ctx, const char* param) override;
+    void fini() override;
     //
     void signal(int signal) override;
     // service message callback

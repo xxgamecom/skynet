@@ -16,7 +16,7 @@ set(SKYNET_GATE_SRC
     gate_ctrl_cmd.cpp
     service_gate.cpp
     gate_service.cpp
-    service.cpp
+    mod.cpp
 )
 
 list(APPEND SKYNET_GATE_SRC ${SKYNET_GATE_HEADER})
