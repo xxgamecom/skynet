@@ -78,13 +78,13 @@ int logger_service::logger_cb(service_context* svc_ctx, void* ud, int msg_ptype,
 
     switch (msg_ptype)
     {
-    case message_protocol_type::PTYPE_SYSTEM:
+    case message_protocol_type::MSG_PTYPE_SYSTEM:
         if (!svc_ptr->log_filename_.empty())
         {
             svc_ptr->log_handle_ = ::freopen(svc_ptr->log_filename_.c_str(), "a", svc_ptr->log_handle_);
         }
         break;
-    case message_protocol_type::PTYPE_TEXT:
+    case message_protocol_type::MSG_PTYPE_TEXT:
         if (!svc_ptr->log_filename_.empty())
         {
             char tmp[SIZETIMEFMT];

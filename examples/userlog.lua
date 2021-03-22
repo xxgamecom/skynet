@@ -4,7 +4,7 @@ require "skynet.manager"
 -- register protocol text before skynet.start would be better.
 skynet.register_protocol {
 	name = "text",
-	id = skynet.PTYPE_TEXT,
+	id = skynet.MSG_PTYPE_TEXT,
 	unpack = skynet.tostring,
 	dispatch = function(_, address, msg)
 		print(string.format(":%08x(%.2f): %s", address, skynet.time(), msg))
@@ -13,7 +13,7 @@ skynet.register_protocol {
 
 skynet.register_protocol {
 	name = "SYSTEM",
-	id = skynet.PTYPE_SYSTEM,
+	id = skynet.MSG_PTYPE_SYSTEM,
 	unpack = function(...) return ... end,
 	dispatch = function()
 		-- reopen signal

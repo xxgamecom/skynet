@@ -84,7 +84,7 @@ static void report_launcher_error(service_context* ctx)
 {
     // sizeof "ERROR" == 5
     service_manager::instance()->send_by_name(ctx, 0, ".launcher",
-        message_protocol_type::PTYPE_TEXT, 0, (void*)"ERROR", 5);
+        message_protocol_type::MSG_PTYPE_TEXT, 0, (void*)"ERROR", 5);
 }
 
 snlua_service::snlua_service()
@@ -143,7 +143,7 @@ void snlua_service::signal(int signal)
             if (!trap_.compare_exchange_strong(zero, 1))
                 return;
 
-            //
+            // set debug hook
             lua_sethook(active_L_, signal_hook, LUA_MASKCOUNT, 1);
 
             // finish set ( mod_ptr->trap 1 -> -1 )
@@ -185,15 +185,15 @@ int snlua_service::init_lua_cb(snlua_service* svc_ptr, service_context* svc_ctx,
     //
     lua_gc(L, LUA_GCSTOP, 0);
 
-    // 注册表["LUA_NOENV"] = true, 通知库忽略环境变量
-    lua_pushboolean(L, 1);  /* signal for libraries to ignore env. vars. */
+    // signal for libraries to ignore env. vars.
+    lua_pushboolean(L, 1);
     lua_setfield(L, LUA_REGISTRYINDEX, "LUA_NOENV");
 
     //
     luaL_openlibs(L);
 
     // skynet.profile
-    luaL_requiref(L, "skynet.profile", init_profile, 0);
+    luaL_requiref(L, "skynet.profile", open_skynet_profile, 0);
     int profile_lib = lua_gettop(L);
 
     // replace coroutine.resume / coroutine.wrap

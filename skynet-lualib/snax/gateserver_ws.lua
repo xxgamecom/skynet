@@ -264,7 +264,7 @@ function gateserver.start(handler)
 
     skynet.register_protocol({
         name = "socket",
-        id = skynet.PTYPE_SOCKET, -- PTYPE_SOCKET = 6
+        id = skynet.MSG_PTYPE_SOCKET, -- MSG_PTYPE_SOCKET = 6
         unpack = function(msg, sz)
             local _, fd = socketdriver.unpack(msg, sz)
             if (connection[fd] == nil) then

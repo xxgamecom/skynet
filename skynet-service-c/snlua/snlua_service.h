@@ -29,7 +29,7 @@ public:
         MEMORY_WARNING_REPORT       = 32 * 1024 * 1024,                     //
     };
 
-private:
+public:
     lua_State*                      L_ = nullptr;                           //
     service_context*                svc_ctx_ = nullptr;                     //
     uint64_t                        mem_ = 0;                               // used memory

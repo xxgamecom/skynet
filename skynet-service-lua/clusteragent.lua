@@ -130,7 +130,7 @@ end
 skynet.start(function()
     skynet.register_protocol {
         name = "client",
-        id = skynet.PTYPE_CLIENT,
+        id = skynet.MSG_PTYPE_CLIENT,
         unpack = cluster.unpackrequest,
         dispatch = dispatch_request,
     }

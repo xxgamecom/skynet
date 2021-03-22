@@ -32,19 +32,19 @@ local protocol_table = {}
 
 local skynet = {
     --- message protocol type
-    PTYPE_TEXT = 0,
-    PTYPE_RESPONSE = 1,
-    PTYPE_MULTICAST = 2,
-    PTYPE_CLIENT = 3,
-    PTYPE_SYSTEM = 4,
-    PTYPE_HARBOR = 5,
-    PTYPE_SOCKET = 6,
-    PTYPE_ERROR = 7,
-    PTYPE_QUEUE = 8, -- used in deprecated mqueue, use skynet.queue instead
-    PTYPE_DEBUG = 9,
-    PTYPE_LUA = 10,
-    PTYPE_SNAX = 11,
-    PTYPE_TRACE = 12, -- use for debug trace
+    MSG_PTYPE_TEXT = 0,
+    MSG_PTYPE_RESPONSE = 1,
+    MSG_PTYPE_MULTICAST = 2,
+    MSG_PTYPE_CLIENT = 3,
+    MSG_PTYPE_SYSTEM = 4,
+    MSG_PTYPE_HARBOR = 5,
+    MSG_PTYPE_SOCKET = 6,
+    MSG_PTYPE_ERROR = 7,
+    MSG_PTYPE_QUEUE = 8, -- used in deprecated mqueue, use skynet.queue instead
+    MSG_PTYPE_DEBUG = 9,
+    MSG_PTYPE_LUA = 10,
+    MSG_PTYPE_SNAX = 11,
+    MSG_PTYPE_TRACE = 12, -- use for debug trace
 }
 
 --- code cache
@@ -89,7 +89,7 @@ do
             local tag = session_coroutine_tracetag[running_thread]
             if tag then
                 skynet_core.trace(tag, "call", 4)
-                skynet_core.send(addr, skynet.PTYPE_TRACE, 0, tag)
+                skynet_core.send(addr, skynet.MSG_PTYPE_TRACE, 0, tag)
             end
             local session = skynet_core.send(addr, p.id, nil, p.pack(tunpack(req, 3, req.n)))
             if session == nil then
@@ -325,7 +325,7 @@ function suspend(co, result, command)
                 -- only call response error
                 local tag = session_coroutine_tracetag[co]
                 if tag then skynet_core.trace(tag, "error") end
-                skynet_core.send(addr, skynet.PTYPE_ERROR, session, "")
+                skynet_core.send(addr, skynet.MSG_PTYPE_ERROR, session, "")
             end
             session_coroutine_id[co] = nil
         end
@@ -476,7 +476,7 @@ function skynet.killthread(thread)
     if addr then
         session_coroutine_address[co] = nil
         session_coroutine_tracetag[co] = nil
-        skynet_core.send(addr, skynet.PTYPE_ERROR, session_coroutine_id[co], "")
+        skynet_core.send(addr, skynet.MSG_PTYPE_ERROR, session_coroutine_id[co], "")
         session_coroutine_id[co] = nil
     end
     if watching_session[session] then
@@ -552,7 +552,7 @@ function skynet.exit()
     for co, session in pairs(session_coroutine_id) do
         local address = session_coroutine_address[co]
         if session~=0 and address then
-            skynet_core.send(address, skynet.PTYPE_ERROR, session, "")
+            skynet_core.send(address, skynet.MSG_PTYPE_ERROR, session, "")
         end
     end
     for session, co in pairs(session_id_coroutine) do
@@ -569,7 +569,7 @@ function skynet.exit()
         tmp[address] = true
     end
     for address in pairs(tmp) do
-        skynet_core.send(address, skynet.PTYPE_ERROR, 0, "")
+        skynet_core.send(address, skynet.MSG_PTYPE_ERROR, 0, "")
     end
     skynet_core.command("EXIT")
     -- quit service
@@ -636,7 +636,7 @@ function skynet.call(addr, typename, ...)
     local tag = session_coroutine_tracetag[running_thread]
     if tag then
         skynet_core.trace(tag, "call", 2)
-        skynet_core.send(addr, skynet.PTYPE_TRACE, 0, tag)
+        skynet_core.send(addr, skynet.MSG_PTYPE_TRACE, 0, tag)
     end
 
     local p = protocol_table[typename]
@@ -651,7 +651,7 @@ function skynet.rawcall(addr, typename, msg, sz)
     local tag = session_coroutine_tracetag[running_thread]
     if tag then
         skynet_core.trace(tag, "call", 2)
-        skynet_core.send(addr, skynet.PTYPE_TRACE, 0, tag)
+        skynet_core.send(addr, skynet.MSG_PTYPE_TRACE, 0, tag)
     end
     local p = protocol_table[typename]
     local session = assert(skynet_core.send(addr, p.id , nil , msg, sz), "call to invalid address")
@@ -660,7 +660,7 @@ end
 
 function skynet.tracecall(tag, addr, typename, msg, sz)
     skynet_core.trace(tag, "tracecall begin")
-    skynet_core.send(addr, skynet.PTYPE_TRACE, 0, tag)
+    skynet_core.send(addr, skynet.MSG_PTYPE_TRACE, 0, tag)
     local p = protocol_table[typename]
     local session = assert(skynet_core.send(addr, p.id , nil , msg, sz), "call to invalid address")
     local msg, sz = yield_call(addr, session)
@@ -684,12 +684,12 @@ function skynet.ret(msg, sz)
     if not co_session then
         error "No session"
     end
-    local ret = skynet_core.send(co_address, skynet.PTYPE_RESPONSE, co_session, msg, sz)
+    local ret = skynet_core.send(co_address, skynet.MSG_PTYPE_RESPONSE, co_session, msg, sz)
     if ret then
         return true
     elseif ret == false then
         -- If the package is too large, returns false. so we should report error back
-        skynet_core.send(co_address, skynet.PTYPE_ERROR, co_session, "")
+        skynet_core.send(co_address, skynet.MSG_PTYPE_ERROR, co_session, "")
     end
     return false
 end
@@ -726,13 +726,13 @@ function skynet.response(pack)
         local ret
         if unresponse[response] then
             if ok then
-                ret = skynet_core.send(co_address, skynet.PTYPE_RESPONSE, co_session, pack(...))
+                ret = skynet_core.send(co_address, skynet.MSG_PTYPE_RESPONSE, co_session, pack(...))
                 if ret == false then
                     -- If the package is too large, returns false. so we should report error back
-                    skynet_core.send(co_address, skynet.PTYPE_ERROR, co_session, "")
+                    skynet_core.send(co_address, skynet.MSG_PTYPE_ERROR, co_session, "")
                 end
             else
-                ret = skynet_core.send(co_address, skynet.PTYPE_ERROR, co_session, "")
+                ret = skynet_core.send(co_address, skynet.MSG_PTYPE_ERROR, co_session, "")
             end
             unresponse[response] = nil
             ret = ret ~= nil
@@ -809,7 +809,7 @@ end
 local trace_source = {}
 
 local function raw_dispatch_message(prototype, msg, sz, session, source)
-    -- skynet.PTYPE_RESPONSE = 1, read skynet.h
+    -- skynet.MSG_PTYPE_RESPONSE = 1, read skynet.h
     if prototype == 1 then
         local co = session_id_coroutine[session]
         if co == "BREAK" then
@@ -825,11 +825,11 @@ local function raw_dispatch_message(prototype, msg, sz, session, source)
     else
         local p = protocol_table[prototype]
         if p == nil then
-            if prototype == skynet.PTYPE_TRACE then
+            if prototype == skynet.MSG_PTYPE_TRACE then
                 -- trace next request
                 trace_source[source] = skynet_core.tostring(msg,sz)
             elseif session ~= 0 then
-                skynet_core.send(source, skynet.PTYPE_ERROR, session, "")
+                skynet_core.send(source, skynet.MSG_PTYPE_ERROR, session, "")
             else
                 unknown_request(session, source, msg, sz, prototype)
             end
@@ -862,7 +862,7 @@ local function raw_dispatch_message(prototype, msg, sz, session, source)
         else
             trace_source[source] = nil
             if session ~= 0 then
-                skynet_core.send(source, skynet.PTYPE_ERROR, session, "")
+                skynet_core.send(source, skynet.MSG_PTYPE_ERROR, session, "")
             else
                 unknown_request(session, source, msg, sz, protocol_table[prototype].name)
             end
@@ -926,10 +926,6 @@ function skynet.address(addr)
     end
 end
 
-function skynet.harbor(addr)
-    return skynet_core.harbor(addr)
-end
-
 skynet.log = skynet_core.error
 skynet.tracelog = skynet_core.trace
 
@@ -947,19 +943,19 @@ do
 
     REG {
         name = "lua",
-        id = skynet.PTYPE_LUA,
+        id = skynet.MSG_PTYPE_LUA,
         pack = skynet.pack,
         unpack = skynet.unpack,
     }
 
     REG {
         name = "response",
-        id = skynet.PTYPE_RESPONSE,
+        id = skynet.MSG_PTYPE_RESPONSE,
     }
 
     REG {
         name = "error",
-        id = skynet.PTYPE_ERROR,
+        id = skynet.MSG_PTYPE_ERROR,
         unpack = function(...) return ... end,
         dispatch = _error_dispatch,
     }
