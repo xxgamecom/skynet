@@ -23,12 +23,12 @@ set(SKYNET_LUACLIB_SRC
 list(APPEND SKYNET_LUACLIB_SRC ${SKYNET_LUACLIB_HEADER})
 
 # target module lib (skynet.so)
-add_library(libskynet MODULE ${SKYNET_LUACLIB_SRC})
-set_target_properties(libskynet
+add_library(skynet_luaclib MODULE ${SKYNET_LUACLIB_SRC})
+set_target_properties(skynet_luaclib
     PROPERTIES
     PREFIX ""
     OUTPUT_NAME "skynet"
     ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_LUACLIB}"
     LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_LUACLIB}"
 )
-target_link_libraries(libskynet liblua skynet_core)
+target_link_libraries(skynet_luaclib liblua skynet_core)

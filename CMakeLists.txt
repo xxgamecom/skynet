@@ -40,7 +40,7 @@ message(STATUS "CMAKE_MODULE_PATH         : " ${CMAKE_MODULE_PATH})
 # rebuild: delete build dir if you hope a full clean rebuild
 message(STATUS "SKYNET_BUILD_DIR          : " ${PROJECT_BINARY_DIR})
 
-# use jemalloc
+# macosx not use jemalloc
 if (MACOSX)
     add_definitions(-DDONT_USE_JEMALLOC)
 endif()
@@ -92,10 +92,16 @@ if (BUILD_SKYNET_TESTS)
     add_subdirectory(${SKYNET_ROOT_PATH}/tests)
 endif()
 
-# copy lualib to bin/lualib
-#add_custom_command(TARGET skynet POST_BUILD         # Adds a post-build event to MyTest
-#    COMMAND ${CMAKE_COMMAND} -E copy_if_different   # which executes "cmake - E copy_if_different..."
-#    "${SKYNET_ROOT_PATH}/lualib"                    # <--this is in-file
-#    $<TARGET_FILE_DIR:${SKYNET_BIN_PATH}/lualib>)   # <--this is out-file path
+#------------------------------------------------------
+# after build
+#------------------------------------------------------
 
-# copy lua service to bin/service-lua
+# after build: copy skynet-lualib to bin/lualib
+execute_process(COMMAND ${CMAKE_COMMAND} -E
+    copy_directory "${SKYNET_ROOT_PATH}/skynet-lualib/" "${SKYNET_BIN_PATH_LUALIB}"
+)
+
+# after build: copy skynet-service-lua to bin/service-lua
+execute_process(COMMAND ${CMAKE_COMMAND} -E
+    copy_directory "${SKYNET_ROOT_PATH}/skynet-service-lua/" "${SKYNET_BIN_PATH_SERVICE_LUA}"
+)
