@@ -44,11 +44,14 @@ set_target_properties(skynet_core
     ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH}"
     LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH}"
 )
-target_link_libraries(skynet_core liblua)
+target_link_libraries(skynet_core pthread m dl liblua)
 
 #----------------------------------------------------
 # target executable (skynet)
 #----------------------------------------------------
 
 add_executable(skynet skynet.cpp)
-target_link_libraries(skynet liblua skynet_core)
+target_link_libraries(skynet pthread m dl liblua skynet_core)
+
+#$(SKYNET_BUILD_PATH)/skynet : $(foreach v, $(SKYNET_SRC), skynet-src/$(v)) $(LUA_LIB) $(MALLOC_STATICLIB)
+#    $(CC) $(CFLAGS) -o $@ $^ -Iskynet-src -I$(JEMALLOC_INC) $(LDFLAGS) $(EXPORT) $(SKYNET_LIBS) $(SKYNET_DEFINES)

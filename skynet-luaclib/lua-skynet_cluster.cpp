@@ -678,6 +678,10 @@ static int l_nodename(lua_State* L)
  * skynet luaclib - skynet.cluster.core
  */
 
+#if __cplusplus
+extern "C" {
+#endif
+
 static const luaL_Reg cluster_funcs[] = {
     { "packrequest",    l_packrequest },
     { "packpush",       l_packpush },
@@ -699,3 +703,7 @@ LUAMOD_API int luaopen_skynet_cluster_core(lua_State* L)
     luaL_newlib(L, cluster_funcs);
     return 1;
 }
+
+#if __cplusplus
+}
+#endif

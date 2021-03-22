@@ -934,6 +934,10 @@ static int l_getms(lua_State* L)
  * skynet luaclib - skynet.netpack.ws
  */
 
+#if __cplusplus
+extern "C" {
+#endif
+
 static const luaL_Reg netpack_funcs[] = {
     { "pop",      skynet::luaclib::l_pop },
     { "pack",     skynet::luaclib::l_pack },
@@ -958,8 +962,12 @@ LUAMOD_API int luaopen_skynet_netpack_ws(lua_State* L)
     lua_pushliteral(L, "close");
     lua_pushliteral(L, "warning");
 
-     lua_pushcclosure(L, skynet::luaclib::l_filter, 6);
-     lua_setfield(L, -2, "filter");
+    lua_pushcclosure(L, skynet::luaclib::l_filter, 6);
+    lua_setfield(L, -2, "filter");
 
     return 1;
 }
+
+#if __cplusplus
+}
+#endif

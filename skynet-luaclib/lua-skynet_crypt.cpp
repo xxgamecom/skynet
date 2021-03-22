@@ -1120,6 +1120,10 @@ static int l_xor_str(lua_State* L)
  * skynet luaclib - skynet.crypt
  */
 
+#if __cplusplus
+extern "C" {
+#endif
+
 static const luaL_Reg crypt_funcs[] = {
     { "hashkey",      l_hash_key },
     { "randomkey",    l_random_key },
@@ -1151,7 +1155,7 @@ LUAMOD_API int luaopen_skynet_crypt(lua_State* L)
     std::call_once(oc, [&]() {
         ::srandom((random() << 8) ^ (time(NULL) << 16) ^ getpid());
     });
-    
+
     luaL_newlib(L, crypt_funcs);
 
     padding_mode_table(L);
@@ -1159,3 +1163,7 @@ LUAMOD_API int luaopen_skynet_crypt(lua_State* L)
 
     return 1;
 }
+
+#if __cplusplus
+}
+#endif

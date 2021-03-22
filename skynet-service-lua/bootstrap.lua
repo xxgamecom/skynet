@@ -1,17 +1,24 @@
+--
+-- bootstrap service
+--
+-- config file param:
+-- bootstrap = "snlua bootstrap"
+--
+
 local skynet = require "skynet"
 local skynet_service = require "skynet.service"
 require "skynet.manager" -- import skynet.launch, ...
 
 skynet.start(function()
-    --
+    -- launcher service
     local launcher = assert(skynet.launch("snlua", "launcher"))
     skynet.name(".launcher", launcher)
 
-    -- new global service: DATACENTER
+    -- datacenterd service
     local datacenter = skynet.newservice("datacenterd")
     skynet.name("DATACENTER", datacenter)
 
-    -- new service service_mgr
+    -- service_mgr service
     skynet.newservice("service_mgr")
 
     -- enable ssl

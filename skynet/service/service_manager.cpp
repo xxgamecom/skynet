@@ -15,6 +15,7 @@
 
 namespace skynet {
 
+// TODO: delete harbor
 // high 8 bits: remote service id
 #define HANDLE_MASK                 0x00FFFFFF      // handle mask, high 8bits is harbor id
 #define HANDLE_REMOTE_SHIFT         24              // remote service id offset (harbor id)

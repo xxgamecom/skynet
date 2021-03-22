@@ -588,13 +588,17 @@ static int l_filter(lua_State* L)
  * skynet luaclib - skynet.netpack
  */
 
+#if __cplusplus
+extern "C" {
+#endif
+
 static const luaL_Reg netpack_funcs[] = {
     { "pop",      skynet::luaclib::l_pop },
     { "pack",     skynet::luaclib::l_pack },
     { "clear",    skynet::luaclib::l_clear },
     { "tostring", skynet::luaclib::l_tostring },
 
-    { nullptr, nullptr },
+    { nullptr,    nullptr },
 };
 
 LUAMOD_API int luaopen_skynet_netpack(lua_State* L)
@@ -617,3 +621,7 @@ LUAMOD_API int luaopen_skynet_netpack(lua_State* L)
 
     return 1;
 }
+
+#if __cplusplus
+}
+#endif

@@ -216,18 +216,18 @@ int snlua_service::init_lua_cb(snlua_service* svc_ptr, service_context* svc_ctx,
     lua_gc(L, LUA_GCGEN, 0, 0);
 
     // lualib path
-    const char* path = _get_env(svc_ctx, "lua_path", "./lualib/?.lua;./lualib/?/init.lua");
-    lua_pushstring(L, path);
+    const char* path_lualib = _get_env(svc_ctx, "lua_path", "./lualib/?.lua;./lualib/?/init.lua");
+    lua_pushstring(L, path_lualib);
     lua_setglobal(L, "LUA_PATH");
 
     // luaclib path
-    const char* cpath = _get_env(svc_ctx, "lua_cpath", "./luaclib/?.so");
-    lua_pushstring(L, cpath);
+    const char* path_luaclib = _get_env(svc_ctx, "lua_cpath", "./luaclib/?.so");
+    lua_pushstring(L, path_luaclib);
     lua_setglobal(L, "LUA_CPATH");
 
     // lua service path
-    const char* service = _get_env(svc_ctx, "luaservice", "./service/?.lua");
-    lua_pushstring(L, service);
+    const char* path_service_lua = _get_env(svc_ctx, "luaservice", "./service/?.lua");
+    lua_pushstring(L, path_service_lua);
     lua_setglobal(L, "LUA_SERVICE");
 
     // preload, lua服务运行前执行, 设置全局变量LUA_PRELOAD
@@ -254,7 +254,7 @@ int snlua_service::init_lua_cb(snlua_service* svc_ptr, service_context* svc_ctx,
     r = lua_pcall(L, 1, 0, 1);
     if (r != LUA_OK)
     {
-        service_command::exec(svc_ctx, "lua loader error : %s", lua_tostring(L, -1));
+        log(svc_ctx, "lua loader error : %s", lua_tostring(L, -1));
         report_launcher_error(svc_ctx);
         return 1;
     }

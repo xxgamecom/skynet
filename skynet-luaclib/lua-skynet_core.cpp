@@ -757,10 +757,14 @@ static int l_hpc(lua_State* L)
 
 } }
 
+
+#if __cplusplus
+extern "C" {
+#endif
+
 /**
  * skynet luaclib - skynet.core
  */
-
 // need service_context upvalue
 static const luaL_Reg core_funcs_1[] = {
     { "send",           skynet::luaclib::l_send },
@@ -809,3 +813,7 @@ LUAMOD_API int luaopen_skynet_core(lua_State* L)
 
     return 1;
 }
+
+#if __cplusplus
+}
+#endif
