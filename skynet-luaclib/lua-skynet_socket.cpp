@@ -1251,6 +1251,10 @@ static int l_udp_address(lua_State* L)
  * skynet luaclib - skynet.socketdriver
  */
 
+#if __cplusplus
+extern "C" {
+#endif
+
 // functions without service_context
 static const luaL_Reg socket_funcs_1[] = {
     { "new_buffer", skynet::luaclib::l_new_socket_buffer },
@@ -1285,7 +1289,7 @@ static const luaL_Reg socket_funcs_2[] = {
     { "udp_send",    skynet::luaclib::l_udp_send },
     { "udp_address", skynet::luaclib::l_udp_address },
 
-    { nullptr, nullptr },
+    { nullptr,       nullptr },
 };
 
 LUAMOD_API int luaopen_skynet_socketdriver(lua_State* L)
@@ -1306,3 +1310,7 @@ LUAMOD_API int luaopen_skynet_socketdriver(lua_State* L)
 
     return 1;
 }
+
+#if __cplusplus
+}
+#endif

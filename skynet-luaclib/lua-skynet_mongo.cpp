@@ -582,6 +582,10 @@ static int reply_length(lua_State* L)
  * skynet luaclib - skynet.mongo.driver
  */
 
+#if __cplusplus
+extern "C" {
+#endif
+
 static const luaL_Reg mongo_funcs[] = {
     { "query",  op_query },
     { "reply",  op_reply },
@@ -600,3 +604,7 @@ LUAMOD_API int luaopen_skynet_mongo_driver(lua_State* L)
     luaL_newlib(L, mongo_funcs);
     return 1;
 }
+
+#if __cplusplus
+}
+#endif

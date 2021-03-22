@@ -3,7 +3,6 @@ INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/skynet")
 
 #
 set(SKYNET_SNLUA_HEADER
-    snlua_mod.h
     profile.h
     snlua_service.h
 )

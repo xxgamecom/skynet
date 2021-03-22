@@ -689,13 +689,17 @@ static int l_filter(lua_State* L)
  * skynet luaclib - skynet.netpack.tcp
  */
 
+#if __cplusplus
+extern "C" {
+#endif
+
 static const luaL_Reg netpack_funcs[] = {
     { "pop",      skynet::luaclib::l_pop },
     { "pack",     skynet::luaclib::l_pack },
     { "clear",    skynet::luaclib::l_clear },
     { "tostring", skynet::luaclib::l_tostring },
 
-    { nullptr, nullptr },
+    { nullptr,    nullptr },
 };
 
 LUAMOD_API int luaopen_skynet_netpack_tcp(lua_State* L)
@@ -704,17 +708,21 @@ LUAMOD_API int luaopen_skynet_netpack_tcp(lua_State* L)
 
     luaL_newlib(L, netpack_funcs);
 
-     // the order is same with macros : TYPE_* (defined top)
-     lua_pushliteral(L, "data");
-     lua_pushliteral(L, "more");
-     lua_pushliteral(L, "error");
-     lua_pushliteral(L, "open");
-     lua_pushliteral(L, "close");
-     lua_pushliteral(L, "warning");
+    // the order is same with macros : TYPE_* (defined top)
+    lua_pushliteral(L, "data");
+    lua_pushliteral(L, "more");
+    lua_pushliteral(L, "error");
+    lua_pushliteral(L, "open");
+    lua_pushliteral(L, "close");
+    lua_pushliteral(L, "warning");
 
-     //
-     lua_pushcclosure(L, skynet::luaclib::l_filter, 6);
-     lua_setfield(L, -2, "filter");
+    //
+    lua_pushcclosure(L, skynet::luaclib::l_filter, 6);
+    lua_setfield(L, -2, "filter");
 
     return 1;
 }
+
+#if __cplusplus
+}
+#endif

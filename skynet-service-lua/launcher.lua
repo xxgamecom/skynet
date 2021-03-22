@@ -1,17 +1,16 @@
---[[
-
-launcher service
-
-]]
+--
+-- launcher service
+--
 
 local skynet = require "skynet"
 local skynet_core = require "skynet.core"
-require "skynet.manager"    -- import manager apis
+require "skynet.manager"
 
 local string = string
 
-local services = {}
 local command = {}
+
+local services = {}
 local instance = {} -- for confirm (function command.LAUNCH / command.ERROR / command.LAUNCHOK)
 local launch_session = {} -- for command.QUERY, service_address -> session
 
@@ -21,9 +20,10 @@ end
 
 local NORET = {}
 
+--
 function command.LIST()
     local list = {}
-    for k,v in pairs(services) do
+    for k, v in pairs(services) do
         list[skynet.address(k)] = v
     end
     return list
