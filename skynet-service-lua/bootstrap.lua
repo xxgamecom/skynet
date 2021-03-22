@@ -7,14 +7,6 @@ skynet.start(function()
     local launcher = assert(skynet.launch("snlua", "launcher"))
     skynet.name(".launcher", launcher)
 
-    -- no service slave, use cdummy instead
-    -- TODO: delete cslave.lua & cdummy.lua
-    local ok, slave = pcall(skynet.newservice, "cdummy")
-    if not ok then
-        skynet.abort()
-    end
-    skynet.name(".cslave", slave)
-
     -- new global service: DATACENTER
     local datacenter = skynet.newservice("datacenterd")
     skynet.name("DATACENTER", datacenter)
