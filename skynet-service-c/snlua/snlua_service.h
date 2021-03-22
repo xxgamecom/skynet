@@ -29,7 +29,7 @@ public:
         MEMORY_WARNING_REPORT       = 32 * 1024 * 1024,                     //
     };
 
-private:
+public:
     lua_State*                      L_ = nullptr;                           //
     service_context*                svc_ctx_ = nullptr;                     //
     uint64_t                        mem_ = 0;                               // used memory
@@ -46,17 +46,18 @@ public:
 public:
     //
     bool init(service_context* svc_ctx, const char* param) override;
+    //
     void fini() override;
     //
     void signal(int signal) override;
-    // service message callback
-    int callback(service_context* svc_ctx, int msg_ptype, int session_id, uint32_t src_svc_handle, const void* msg, size_t sz) override;
 
 public:
+    // service message callback
+    static int snlua_cb(service_context* svc_ctx, void* ud, int msg_ptype, int session_id, uint32_t src_svc_handle, const void* msg, size_t sz);
     // init lua service message callback
     // 设置一些虚拟机环境变量 (主要是路径资源之类的)
     // 在init_cb里进行Lua层的初始化，比如初始化LUA_PATH，LUA_CPATH，LUA_SERVICE等全局变量
-    int init_lua_cb(service_context* svc_ctx, const char* args, size_t sz);
+    static int init_lua_cb(snlua_service* svc_ptr, service_context* svc_ctx, const char* args, size_t sz);
 
     // lua memory alloc
     static void* lalloc(void* ud, void* ptr, size_t osize, size_t nsize);

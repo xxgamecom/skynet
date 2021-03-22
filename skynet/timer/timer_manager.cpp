@@ -36,7 +36,6 @@
 
 #include "../utils/time_helper.h"
 
-#include <iostream>
 #include <ctime>
 #include <cassert>
 
@@ -52,6 +51,7 @@ struct timer_event
 {
     uint32_t            svc_handle;                 // source service handle, which service set the timer.
                                                     // it also the target of sending timeout messages.
+
     int                 session;                    // a self increasing id. todo: check this, this means context call session_id?
                                                     // when overflowing, restart with 1, so don't set a timer that takes a long time.
 };
@@ -59,7 +59,7 @@ struct timer_event
 // create a timer
 static timer* create_timer()
 {
-    timer* r = (timer*)skynet_malloc(sizeof(timer));
+    auto r = new timer;
 
     for (int i = 0; i < TIME_NEAR; i++)
     {
@@ -138,7 +138,7 @@ static inline void dispatch_list(timer_node* current)
         msg.src_svc_handle = 0;
         msg.session = event->session;
         msg.data = nullptr;
-        msg.sz = (size_t)message_protocol_type::PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        msg.sz = (size_t)message_protocol_type::MSG_PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
         service_manager::instance()->push_service_message(event->svc_handle, &msg);
 
@@ -173,10 +173,9 @@ static void timer_update(timer* T)
 
     // try to dispatch timeout 0 (rare condition)
     timer_execute(T);
-
     // shift time first, and then dispatch timer message
     timer_shift(T);
-
+    //
     timer_execute(T);
 
     T->mutex.unlock();
@@ -199,10 +198,7 @@ timer_manager* timer_manager::instance_ = nullptr;
 timer_manager* timer_manager::instance()
 {
     static std::once_flag oc;
-    std::call_once(oc, [&]() {
-        instance_ = new timer_manager;
-        std::cout << "new timer_manager instance " << &instance_ << std::endl;
-    });
+    std::call_once(oc, [&]() { instance_ = new timer_manager; });
 
     return instance_;
 }
@@ -232,7 +228,7 @@ int timer_manager::timeout(uint32_t handle, int time, int session)
         msg.src_svc_handle = 0;
         msg.session = session;
         msg.data = nullptr;
-        msg.sz = (size_t)message_protocol_type::PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        msg.sz = (size_t)message_protocol_type::MSG_PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
         if (service_manager::instance()->push_service_message(handle, &msg))
         {

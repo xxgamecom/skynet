@@ -1,14 +1,31 @@
-include "config.path"
+--
+-- path
+--
 
--- preload = "./examples/preload.lua"	-- run preload.lua before every lua service run
-thread = 8
+root = "./"
+cservice_path = root.."service-c/?.so"
+luaservice = root.."service-lua/?.lua;"..root.."test/?.lua;"..root.."examples/?.lua;"..root.."test/?/init.lua"
+lua_path = root.."lualib/?.lua;"..root.."lualib/?/init.lua"
+lua_cpath = root .. "luaclib/?.so"
+lualoader = root .. "lualib/loader.lua"
+snax = root.."examples/?.lua;"..root.."test/?.lua"
+
+--
+-- skynet node config
+--
+
+-- preload = "./examples/preload.lua"   -- run preload.lua before every lua service run
+bootstrap = "snlua bootstrap"       -- the service for bootstrap
+thread = 8                          -- the number of service work thread
+-- pid_file = "./skynet.pid"        -- daemon mode
+
+-- logger
 logger = nil
 log_path = "."
+
 address = "127.0.0.1:2526"
 master = "127.0.0.1:2013"
-start = "main"	-- main script
-bootstrap = "snlua bootstrap"	-- The service for bootstrap
-standalone = "0.0.0.0:2013"
 -- snax_interface_g = "snax_g"
-cservice_path = root.."cservice/?.so"
--- pid_file = "./skynet.pid"
+
+-- main script
+start = "main"

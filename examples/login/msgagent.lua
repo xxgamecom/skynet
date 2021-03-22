@@ -2,7 +2,7 @@ local skynet = require "skynet"
 
 skynet.register_protocol {
 	name = "client",
-	id = skynet.PTYPE_CLIENT,
+	id = skynet.MSG_PTYPE_CLIENT,
 	unpack = skynet.tostring,
 }
 

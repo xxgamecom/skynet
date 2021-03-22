@@ -1,5 +1,5 @@
 #include "profile.h"
-#include "snlua_mod.h"
+#include "snlua_service.h"
 
 extern "C" {
 #include <lua.h>
@@ -8,10 +8,8 @@ extern "C" {
 }
 
 #if defined(__APPLE__)
-
 #include <mach/task.h>
 #include <mach/mach.h>
-
 #endif
 
 namespace skynet { namespace service {
@@ -46,10 +44,10 @@ static double get_time()
 #endif
 }
 
-static void switchL(lua_State* L, snlua_mod* mod_ptr)
+static void switchL(lua_State* L, snlua_service* svc_ptr)
 {
-    mod_ptr->activeL = L;
-    if (mod_ptr->trap)
+    svc_ptr->active_L_ = L;
+    if (svc_ptr->trap_)
     {
         lua_sethook(L, signal_hook, LUA_MASKCOUNT, 1);
     }
@@ -59,19 +57,19 @@ static int lua_resumeX(lua_State* L, lua_State* from, int nargs, int* nresults)
 {
     void* ud = nullptr;
     lua_getallocf(L, &ud);
-    auto mod_ptr = (snlua_mod*)ud;
+    auto svc_ptr = (snlua_service*)ud;
 
     //
-    switchL(L, mod_ptr);
+    switchL(L, svc_ptr);
 
     int err = lua_resume(L, from, nargs, nresults);
-    if (mod_ptr->trap)
+    if (svc_ptr->trap_)
     {
-        // wait for lua_sethook. (mod_ptr->trap == -1)
-        while (mod_ptr->trap >= 0);
+        // wait for lua_sethook. (svc_ptr->trap_ == -1)
+        while (svc_ptr->trap_ >= 0);
     }
 
-    switchL(from, mod_ptr);
+    switchL(from, svc_ptr);
 
     return err;
 }
@@ -91,10 +89,10 @@ static inline double diff_time(double start)
 
 // coroutine lib, add profile
 
-/*
-** Resumes a coroutine. Returns the number of results for non-error
-** cases or -1 for errors.
-*/
+/**
+ * Resumes a coroutine.
+ * Returns the number of results for non-error cases or -1 for errors.
+ */
 static int auxresume(lua_State* L, lua_State* co, int narg)
 {
     int status, nres;
@@ -317,17 +315,17 @@ void signal_hook(lua_State* L, lua_Debug* ar)
 {
     void* ud = nullptr;
     lua_getallocf(L, &ud);
-    auto mod_ptr = (snlua_mod*)ud;
+    auto svc_ptr = (snlua_service*)ud;
 
     lua_sethook(L, nullptr, 0, 0);
-    if (mod_ptr->trap)
+    if (svc_ptr->trap_ != 0)
     {
-        mod_ptr->trap = 0;
+        svc_ptr->trap_ = 0;
         luaL_error(L, "signal 0");
     }
 }
 
-int init_profile(lua_State* L)
+int open_skynet_profile(lua_State* L)
 {
     luaL_Reg profile_funcs[] = {
         { "start",  l_start },
@@ -354,8 +352,6 @@ int init_profile(lua_State* L)
 
     return 1;
 }
-
-/// end of coroutine
 
 } }
 

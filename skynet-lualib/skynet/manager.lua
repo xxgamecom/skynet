@@ -20,33 +20,13 @@ function skynet.abort()
     skynet_core.command("ABORT")
 end
 
-local function globalname(name, handle)
-    local c = string.sub(name,1,1)
-    assert(c ~= ':')
-    if c == '.' then
-        return false
-    end
-
-    assert(#name <= 16)	-- GLOBALNAME_LENGTH is 16, defined in skynet_harbor.h
-    assert(tonumber(name) == nil)	-- global name can't be number
-
-    local harbor = require "skynet.harbor"
-
-    harbor.globalname(name, handle)
-
-    return true
-end
-
+-- register service name
 function skynet.register(name)
-    if not globalname(name) then
-        skynet_core.command("REG", name)
-    end
+    skynet_core.command("REG", name)
 end
 
 function skynet.name(name, handle)
-    if not globalname(name, handle) then
-        skynet_core.command("NAME", name .. " " .. skynet.address(handle))
-    end
+    skynet_core.command("NAME", name .. " " .. skynet.address(handle))
 end
 
 local dispatch_message = skynet.dispatch_message

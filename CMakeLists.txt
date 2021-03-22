@@ -1,46 +1,48 @@
-PROJECT(skynet++ C CXX)
-CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
+project(skynet++ C CXX)
+cmake_minimum_required(VERSION 3.12)
 
 # skynet++ root & parent path
-SET(SKYNET_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-GET_FILENAME_COMPONENT(SKYNET_PARENT_DIR ${SKYNET_ROOT_PATH} DIRECTORY)
+set(SKYNET_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+get_filename_component(SKYNET_PARENT_DIR ${SKYNET_ROOT_PATH} DIRECTORY)
 
-# skynet++ bin & lib path
-SET(SKYNET_BIN_PATH ${SKYNET_PARENT_DIR}/bin)
-SET(SKYNET_LUACLIB_BIN_PATH ${SKYNET_PARENT_DIR}/bin/luaclib)
-SET(SKYNET_CSERVICE_BIN_PATH ${SKYNET_PARENT_DIR}/bin/cservice)
-SET(SKYNET_TESTS_BIN_PATH ${SKYNET_PARENT_DIR}/bin/tests)
+# skynet++ bin, lib, service path
+set(SKYNET_BIN_PATH             ${SKYNET_PARENT_DIR}/bin)
+set(SKYNET_BIN_PATH_LUACLIB     ${SKYNET_PARENT_DIR}/bin/luaclib)
+set(SKYNET_BIN_PATH_LUALIB      ${SKYNET_PARENT_DIR}/bin/lualib)
+set(SKYNET_BIN_PATH_SERVICE_C   ${SKYNET_PARENT_DIR}/bin/service-c)
+set(SKYNET_BIN_PATH_SERVICE_LUA ${SKYNET_PARENT_DIR}/bin/service-lua)
+set(SKYNET_BIN_PATH_TESTS       ${SKYNET_PARENT_DIR}/bin/tests)
 
 
 # cmake module path
-SET(CMAKE_MODULE_PATH ${SKYNET_ROOT_PATH}/cmake/modules/)
+set(CMAKE_MODULE_PATH ${SKYNET_ROOT_PATH}/cmake/modules/)
 
 # disallow build in-source
-INCLUDE(DisallowBuildInSource)
+include(DisallowBuildInSource)
 
 #------------------------------------------------------
 # compiler
 #------------------------------------------------------
 
 # set common compiler define & options
-INCLUDE(ConfigDefine)
+include(ConfigDefine)
 
 #
-MESSAGE(STATUS "PROJECT_NAME             : " ${PROJECT_NAME})
-MESSAGE(STATUS "SKYNET_BUILD_TYPE        : " ${CMAKE_BUILD_TYPE})
-MESSAGE(STATUS "SKYNET_ROOT_PATH         : " ${SKYNET_ROOT_PATH})
-MESSAGE(STATUS "SKYNET_BIN_PATH          : " ${SKYNET_BIN_PATH})
-MESSAGE(STATUS "SKYNET_LUACLIB_BIN_PATH  : " ${SKYNET_LUACLIB_BIN_PATH})
-MESSAGE(STATUS "SKYNET_CSERVICE_BIN_PATH : " ${SKYNET_CSERVICE_BIN_PATH})
-MESSAGE(STATUS "SKYNET_TESTS_BIN_PATH    : " ${SKYNET_TESTS_BIN_PATH})
-MESSAGE(STATUS "CMAKE_MODULE_PATH        : " ${CMAKE_MODULE_PATH})
+message(STATUS "PROJECT_NAME              : " ${PROJECT_NAME})
+message(STATUS "SKYNET_BUILD_TYPE         : " ${CMAKE_BUILD_TYPE})
+message(STATUS "SKYNET_ROOT_PATH          : " ${SKYNET_ROOT_PATH})
+message(STATUS "SKYNET_BIN_PATH           : " ${SKYNET_BIN_PATH})
+message(STATUS "SKYNET_BIN_PATH_LUACLIB   : " ${SKYNET_BIN_PATH_LUACLIB})
+message(STATUS "SKYNET_BIN_PATH_SERVICE_C : " ${SKYNET_BIN_PATH_SERVICE_C})
+message(STATUS "SKYNET_BIN_PATH_TESTS     : " ${SKYNET_BIN_PATH_TESTS})
+message(STATUS "CMAKE_MODULE_PATH         : " ${CMAKE_MODULE_PATH})
 
 # rebuild: delete build dir if you hope a full clean rebuild
-MESSAGE(STATUS "SKYNET_BUILD_DIR         : " ${PROJECT_BINARY_DIR})
+message(STATUS "SKYNET_BUILD_DIR          : " ${PROJECT_BINARY_DIR})
 
-# use jemalloc
+# macosx not use jemalloc
 if (MACOSX)
-    ADD_DEFINITIONS(-DDONT_USE_JEMALLOC)
+    add_definitions(-DDONT_USE_JEMALLOC)
 endif()
 
 #------------------------------------------------------
@@ -48,44 +50,58 @@ endif()
 #------------------------------------------------------
 
 # output path
-SET(EXECUTABLE_OUTPUT_PATH "${SKYNET_BIN_PATH}")
+set(EXECUTABLE_OUTPUT_PATH "${SKYNET_BIN_PATH}")
 
 # include path
-INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/deps/lua")
-INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/deps/asio/include")
+include_directories("${SKYNET_ROOT_PATH}/deps/lua")
+include_directories("${SKYNET_ROOT_PATH}/deps/asio/include")
 
 #------------------------------------------------------
 # build
 #------------------------------------------------------
 
 # build options
-OPTION(BUILD_SKYNET_DEPS "Build skynet deps" ON)
-OPTION(BUILD_SKYNET "Build skynet" ON)
-OPTION(BUILD_SKYNET_LUACLIB "Build skynet luaclib" ON)
-OPTION(BUILD_SKYNET_CSERVICE "Build skynet c service" ON)
-OPTION(BUILD_SKYNET_TESTS "Build skynet tests" OFF)
+option(BUILD_SKYNET_DEPS "Build skynet deps" ON)
+option(BUILD_SKYNET "Build skynet" ON)
+option(BUILD_SKYNET_LUACLIB "Build skynet luaclib" ON)
+option(BUILD_SKYNET_CSERVICE "Build skynet c service" ON)
+option(BUILD_SKYNET_TESTS "Build skynet tests" OFF)
 
 # build deps
 if (BUILD_SKYNET_DEPS)
-    ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/deps)
+    add_subdirectory(${SKYNET_ROOT_PATH}/deps)
 endif()
 
 # build skynet
 if (BUILD_SKYNET)
-    ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet)
+    add_subdirectory(${SKYNET_ROOT_PATH}/skynet)
 endif()
 
 # build skynet-luaclib
 if (BUILD_SKYNET_LUACLIB)
-    ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-luaclib)
+    add_subdirectory(${SKYNET_ROOT_PATH}/skynet-luaclib)
 endif()
 
 # build skynet-service-c
 if (BUILD_SKYNET_CSERVICE)
-    ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/skynet-service-c)
+    add_subdirectory(${SKYNET_ROOT_PATH}/skynet-service-c)
 endif()
 
 # build skynet tests
 if (BUILD_SKYNET_TESTS)
-    ADD_SUBDIRECTORY(${SKYNET_ROOT_PATH}/tests)
+    add_subdirectory(${SKYNET_ROOT_PATH}/tests)
 endif()
+
+#------------------------------------------------------
+# after build
+#------------------------------------------------------
+
+# after build: copy skynet-lualib to bin/lualib
+execute_process(COMMAND ${CMAKE_COMMAND} -E
+    copy_directory "${SKYNET_ROOT_PATH}/skynet-lualib/" "${SKYNET_BIN_PATH_LUALIB}"
+)
+
+# after build: copy skynet-service-lua to bin/service-lua
+execute_process(COMMAND ${CMAKE_COMMAND} -E
+    copy_directory "${SKYNET_ROOT_PATH}/skynet-service-lua/" "${SKYNET_BIN_PATH_SERVICE_LUA}"
+)

@@ -26,18 +26,18 @@ struct skynet_message
 // 
 enum message_protocol_type
 {
-    PTYPE_TEXT                      = 0,                        // internal use, text message, 内部服务最为常用的文本消息类型
-    PTYPE_RESPONSE                  = 1,                        // 响应消息
-    PTYPE_MULTICAST                 = 2,                        // 组播消息
-    PTYPE_CLIENT                    = 3,                        // 用来处理客户端的请求消息, 是 gate 给外部连接定义出来的消息类型
-    PTYPE_SYSTEM                    = 4,                        // 系统消息
-    PTYPE_HARBOR                    = 5,                        // 跨节点消息
-    PTYPE_SOCKET                    = 6,                        // 套接字消息, 不一定是客户端的消息, 也可以能是服务之间的消息
-    PTYPE_ERROR                     = 7,                        // 错误消息, 一般服务退出的时候会发送error消息给关联的服务
-    PTYPE_RESERVED_QUEUE            = 8,                        //
-    PTYPE_RESERVED_DEBUG            = 9,                        //
-    PTYPE_RESERVED_LUA              = 10,                       // lua类型消息, 最常用
-    PTYPE_RESERVED_SNAX             = 11,                       // snax服务消息
+    MSG_PTYPE_TEXT                  = 0,                        // internal use, text message, 内部服务最为常用的文本消息类型
+    MSG_PTYPE_RESPONSE              = 1,                        // 响应消息
+    MSG_PTYPE_MULTICAST             = 2,                        // 组播消息
+    MSG_PTYPE_CLIENT                = 3,                        // 用来处理客户端的请求消息, 是 gate 给外部连接定义出来的消息类型
+    MSG_PTYPE_SYSTEM                = 4,                        // 系统消息
+    MSG_PTYPE_HARBOR                = 5,                        // 跨节点消息
+    MSG_PTYPE_SOCKET                = 6,                        // 套接字消息, 不一定是客户端的消息, 也可以能是服务之间的消息
+    MSG_PTYPE_ERROR                 = 7,                        // 错误消息, 一般服务退出的时候会发送error消息给关联的服务
+    MSG_PTYPE_RESERVED_QUEUE        = 8,                        //
+    MSG_PTYPE_RESERVED_DEBUG        = 9,                        //
+    MSG_PTYPE_RESERVED_LUA          = 10,                       // lua类型消息, 最常用
+    MSG_PTYPE_RESERVED_SNAX         = 11,                       // snax服务消息
 };
 
 // message tag

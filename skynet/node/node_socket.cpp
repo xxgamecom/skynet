@@ -89,7 +89,7 @@ static void forward_message(int type, bool padding, socket_message* result)
     // message.src_svc_handle = 0;
     // message.session = 0;
 //     message.data = sm;
-//     message.sz = sz | ((size_t)message_protocol_type::PTYPE_SOCKET << MESSAGE_TYPE_SHIFT);
+//     message.sz = sz | ((size_t)message_protocol_type::MSG_PTYPE_SOCKET << MESSAGE_TYPE_SHIFT);
     
 //     if (push_service_message((uint32_t)result->svc_handle, &message))
 //     {

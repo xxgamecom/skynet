@@ -218,7 +218,7 @@ local function adjust_address(address)
     if prefix == '.' then
         return assert(skynet.localname(address), "Not a valid name")
     elseif prefix ~= ':' then
-        address = assert(tonumber("0x" .. address), "Need an address") | (skynet.harbor(skynet.self()) << 24)
+        address = assert(tonumber("0x" .. address), "Need an address")
     end
     return address
 end
