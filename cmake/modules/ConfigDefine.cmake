@@ -42,23 +42,6 @@ if(CMAKE_GENERATOR)
 endif()
 
 #------------------------------------------------------
-# Custom properties
-#------------------------------------------------------
-
-# custom target property for dll collect
-define_property(TARGET
-    PROPERTY CC_DEPEND_DLLS
-    BRIEF_DOCS "depend dlls of a target"
-    FULL_DOCS "use to save depend dlls of a target"
-)
-# custom target property for lua link
-define_property(TARGET
-    PROPERTY CC_LUA_DEPEND
-    BRIEF_DOCS "skynet lua depend libs"
-    FULL_DOCS "use to save depend libs of skynet lua project"
-)
-
-#------------------------------------------------------
 # Compiler check
 #------------------------------------------------------
 

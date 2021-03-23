@@ -98,7 +98,7 @@ sudo apt-get install openssl
 sudo apt-get install libssl-dev
 ```
 
-## 编译
+## Build
 skynet++使用CMake构建。
 
 ```shell
@@ -118,4 +118,8 @@ $ cmake ../skynet
 $ make
 ```
 
+## Dependences
+* lua 5.3.5
+* asio 1.18.1
+* cmake 3.12+
 

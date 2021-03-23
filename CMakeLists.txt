@@ -25,9 +25,22 @@ include(DisallowBuildInSource)
 # set common compiler define & options
 include(ConfigDefine)
 
+if(MACOSX)
+    set(EXPORT )
+    set(SHARED -dynamiclib -Wl,-undefined,dynamic_lookup)
+elseif(LINUX)
+    set(EXPORT -Wl,-E)
+    set(SHARED --shared)
+endif()
+
 # Debug/Release support
-set(CMAKE_CXX_FLAGS_DEBUG   "$ENV{CXXFLAGS} -O0 -fPIC -g -ggdb")
-set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -fPIC")
+set(CMAKE_CXX_FLAGS_DEBUG   "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
+set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+
+# macosx not use jemalloc
+if (MACOSX)
+    add_definitions(-DDONT_USE_JEMALLOC)
+endif()
 
 #
 message(STATUS "PROJECT_NAME              : " ${PROJECT_NAME})
@@ -41,11 +54,6 @@ message(STATUS "CMAKE_MODULE_PATH         : " ${CMAKE_MODULE_PATH})
 
 # rebuild: delete build dir if you hope a full clean rebuild
 message(STATUS "SKYNET_BUILD_DIR          : " ${PROJECT_BINARY_DIR})
-
-# macosx not use jemalloc
-if (MACOSX)
-    add_definitions(-DDONT_USE_JEMALLOC)
-endif()
 
 #------------------------------------------------------
 # default output & include path

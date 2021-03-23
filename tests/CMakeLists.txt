@@ -24,7 +24,7 @@ set_target_properties(test_hash_id
 
 #
 #add_executable(test_socket_server test_socket_server.cpp)
-#target_link_libraries(test_socket_server skynet_core)
+#target_link_libraries(test_socket_server)
 #set_target_properties(test_socket_server
 #    PROPERTIES
 #    PREFIX ""

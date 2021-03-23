@@ -33,25 +33,16 @@ set(SKYNET_CORE_SRC
 list(APPEND SKYNET_CORE_SRC ${SKYNET_CORE_HEADER})
 
 #----------------------------------------------------
-# target shared lib (skynet_core.dylib)
-#----------------------------------------------------
-
-add_library(skynet_core SHARED ${SKYNET_CORE_SRC})
-set_target_properties(skynet_core
-    PROPERTIES
-    PREFIX ""
-    OUTPUT_NAME "skynet_core"
-    ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH}"
-    LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH}"
-)
-target_link_libraries(skynet_core pthread m dl liblua)
-
-#----------------------------------------------------
 # target executable (skynet)
 #----------------------------------------------------
 
-#add_definitions(-Wl,-E)
+add_definitions(${EXPORT})
 
-add_executable(skynet skynet.cpp)
-target_link_libraries(skynet pthread m dl skynet_core)
+add_executable(skynet skynet.cpp ${SKYNET_CORE_SRC})
+if (MACOSX)
+    target_link_libraries(skynet pthread m dl liblua)
+elseif()
+    target_link_libraries(skynet pthread m dl rt liblua)
+endif ()
+
 
