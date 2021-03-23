@@ -26,7 +26,6 @@ class logger_service : public cservice
 private:
     FILE*                       log_handle_ = nullptr;          // log handle, it can be a file handle (log to file) or stdout (log to stdout)
     std::string                 log_filename_ = "";             // log file name;
-    uint32_t                    start_seconds_ = 0;             // the number of seconds since skynet node started.
 
     bool                        is_log_to_file_ = false;        // log to file flag
                                                                 // true - log to file;
@@ -34,7 +33,7 @@ private:
 
 public:
     logger_service() = default;
-    virtual ~logger_service() = default;
+    virtual ~logger_service();
 
     // cservice impl
 public:

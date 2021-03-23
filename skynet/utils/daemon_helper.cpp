@@ -23,7 +23,7 @@ int _check_pid(const char* pid_file)
 
     ::fclose(f);
 
-    if (n !=1 || pid == 0 || pid == ::getpid()) 
+    if (n != 1 || pid <= 0 || pid == ::getpid())
     {
         return -1;
     }
@@ -69,7 +69,7 @@ int _write_pid(const char* pid_file)
     }
 
     pid = ::getpid();
-    if (!::fprintf(f, "%d\n", pid)) 
+    if (::fprintf(f, "%d\n", pid) == 0)
     {
         std::cerr << "Can't write pid." << std::endl;
         ::close(fd);
@@ -110,7 +110,6 @@ bool _redirect_fds()
     return true;
 }
 
-
 bool daemon_helper::init(const char* pid_file)
 {
     int pid = _check_pid(pid_file);
@@ -130,8 +129,7 @@ bool daemon_helper::init(const char* pid_file)
     }
 #endif
 
-    pid = _write_pid(pid_file);
-    if (pid == -1)
+    if (_write_pid(pid_file) <= 0)
     {
         return false;
     }

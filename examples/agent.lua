@@ -45,7 +45,7 @@ end
 
 skynet.register_protocol {
 	name = "client",
-	id = skynet.MSG_PTYPE_CLIENT,
+	id = skynet.PTYPE_CLIENT,
 	unpack = function (msg, sz)
 		return host:dispatch(msg, sz)
 	end,
@@ -60,7 +60,7 @@ skynet.register_protocol {
 					send_package(result)
 				end
 			else
-				skynet.log(result)
+				skynet.error(result)
 			end
 		else
 			assert(type == "RESPONSE")

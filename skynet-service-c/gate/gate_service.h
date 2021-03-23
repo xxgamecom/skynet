@@ -35,7 +35,8 @@ public:
     message_pool                mp_;
 
 public:
-    virtual ~gate_service() = default;
+    gate_service() = default;
+    virtual ~gate_service();
 
     // cservice impl
 public:

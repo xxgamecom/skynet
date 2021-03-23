@@ -4,6 +4,7 @@
 
 namespace skynet {
 
+// forward declare
 class mq_private;
 
 // global message queue (link list)
@@ -15,19 +16,18 @@ public:
     static mq_global* instance();
 
 private:
-    // service message queue link list
-    mq_private*                     head_ = nullptr;                    // service private message queue head ptr
-    mq_private*                     tail_ = nullptr;                    // service private message queue tail ptr
-
-    std::mutex                      mutex_;                             // service message queue link list protect
+    // service mq link list
+    mq_private*                     head_ = nullptr;
+    mq_private*                     tail_ = nullptr;
+    std::mutex                      mutex_;
 
 public:
     // initialize
     void init();
 
-public:
-    // push/pop message
+    // push a service private mq to global mq link list
     void push(mq_private* q);
+    // pop a service private mq from global mq link list
     mq_private* pop();
 };
 

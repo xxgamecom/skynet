@@ -11,28 +11,26 @@ namespace skynet {
 // skynet node socket event type
 enum skynet_socket_event
 {
-    SKYNET_SOCKET_EVENT_DATA    = 1,                        // data event
-    SKYNET_SOCKET_EVENT_CONNECT = 2,                        // connect event
-    SKYNET_SOCKET_EVENT_CLOSE   = 3,                        // socket close event
-    SKYNET_SOCKET_EVENT_ACCEPT  = 4,                        // accept connection event
-    SKYNET_SOCKET_EVENT_ERROR   = 5,                        // socket error event
-    SKYNET_SOCKET_EVENT_UDP     = 6,                        //
-    SKYNET_SOCKET_EVENT_WARNING = 7,                        //
+    SKYNET_SOCKET_EVENT_DATA = 1,           // data event
+    SKYNET_SOCKET_EVENT_CONNECT = 2,        // connect event
+    SKYNET_SOCKET_EVENT_CLOSE = 3,          // socket close event
+    SKYNET_SOCKET_EVENT_ACCEPT = 4,         // accept connection event
+    SKYNET_SOCKET_EVENT_ERROR = 5,          // socket error event
+    SKYNET_SOCKET_EVENT_UDP = 6,            //
+    SKYNET_SOCKET_EVENT_WARNING = 7,        //
 };
-
 
 // skynet socket message
 struct skynet_socket_message
 {
-    int                         socket_event;               // skynet socket event type
-    int                         socket_id;                  // 
+    int socket_event;                       // skynet socket event type
+    int socket_id;                          //
 
-    int                         ud;                         // user data
-                                                            // - for accept, ud is new connection id;
-                                                            // - for data, ud is size of data.
-    char*                       buffer;                     // message data
+    int ud;                                 // user data
+                                            // - for accept, ud is new connection id;
+                                            // - for data, ud is size of data.
+    char* buffer;                           // message data
 };
-
 
 // forward declare
 class service_context;
@@ -47,7 +45,7 @@ public:
     static node_socket* instance();
 
 private:
-    std::shared_ptr<socket_server>  socket_server_;
+    std::shared_ptr<socket_server> socket_server_;
 
 public:
     bool init();
@@ -100,7 +98,7 @@ static inline void sendbuffer_init_(send_buffer* buf, int socket_id, const void*
     {
         buf->type = BUFFER_TYPE_MEMORY;
     }
-    buf->data_size = (size_t) sz;
+    buf->data_size = (size_t)sz;
 }
 
 static inline int skynet_socket_send(service_context* ctx, int socket_id, void* buffer, int sz)
@@ -125,3 +123,27 @@ static inline int skynet_socket_udp_send(service_context* ctx, int socket_id, co
 }
 
 }
+
+//void skynet_socket_init();
+//void skynet_socket_exit();
+//void skynet_socket_free();
+//int skynet_socket_poll();
+//void skynet_socket_updatetime();
+
+//int skynet_socket_sendbuffer(struct skynet_context *ctx, struct socket_sendbuffer *buffer);
+//int skynet_socket_sendbuffer_lowpriority(struct skynet_context *ctx, struct socket_sendbuffer *buffer);
+//int skynet_socket_listen(struct skynet_context *ctx, const char *host, int port, int backlog);
+//int skynet_socket_connect(struct skynet_context *ctx, const char *host, int port);
+//int skynet_socket_bind(struct skynet_context *ctx, int fd);
+//void skynet_socket_close(struct skynet_context *ctx, int id);
+//void skynet_socket_shutdown(struct skynet_context *ctx, int id);
+//void skynet_socket_start(struct skynet_context *ctx, int id);
+//void skynet_socket_nodelay(struct skynet_context *ctx, int id);
+//
+//int skynet_socket_udp(struct skynet_context *ctx, const char * addr, int port);
+//int skynet_socket_udp_connect(struct skynet_context *ctx, int id, const char * addr, int port);
+//int skynet_socket_udp_sendbuffer(struct skynet_context *ctx, const char * address, struct socket_sendbuffer *buffer);
+//const char * skynet_socket_udp_address(struct skynet_socket_message *, int *addrsz);
+//
+//struct socket_info * skynet_socket_info();
+//

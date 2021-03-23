@@ -32,21 +32,18 @@ void mq_global::push(mq_private* q)
 
     assert(q->next_ == nullptr);
 
-    // 链表不为空
+    // like list not empty
     if(tail_ != nullptr)
     {
         tail_->next_ = q;
         tail_ = q;
     }
-        // 链表为空
     else
     {
         head_ = tail_ = q;
     }
 }
 
-// 取链表中第一个消息队列
-// 从全局队列pop一个服务私有消息队列
 mq_private* mq_global::pop()
 {
     std::lock_guard<std::mutex> lock(mutex_);

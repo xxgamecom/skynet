@@ -1,37 +1,44 @@
---
--- bootstrap service
---
--- config file param:
--- bootstrap = "snlua bootstrap"
---
-
 local skynet = require "skynet"
-local skynet_service = require "skynet.service"
-require "skynet.manager" -- import skynet.launch, ...
+local harbor = require "skynet.harbor"
+require "skynet.manager"	-- import skynet.launch, ...
 
 skynet.start(function()
-    -- launcher service
-    local launcher = assert(skynet.launch("snlua", "launcher"))
-    skynet.name(".launcher", launcher)
+	local standalone = skynet.getenv "standalone"
 
-    -- datacenterd service
-    local datacenter = skynet.newservice("datacenterd")
-    skynet.name("DATACENTER", datacenter)
+	local launcher = assert(skynet.launch("snlua","launcher"))
+	skynet.name(".launcher", launcher)
 
-    -- service_mgr service
-    skynet.newservice("service_mgr")
+	local harbor_id = tonumber(skynet.getenv "harbor" or 0)
+	if harbor_id == 0 then
+		assert(standalone ==  nil)
+		standalone = true
+		skynet.setenv("standalone", "true")
 
-    -- enable ssl
-    local enablessl = skynet.getenv("enablessl")
-    if enablessl then
-        skynet_service.new("ltls_holder", function()
-            local c = require "ltls.init.c"
-            c.constructor()
-        end)
-    end
+		local ok, slave = pcall(skynet.newservice, "cdummy")
+		if not ok then
+			skynet.abort()
+		end
+		skynet.name(".cslave", slave)
 
-    -- start user service: main script
-    pcall(skynet.newservice, skynet.getenv("start") or "main")
+	else
+		if standalone then
+			if not pcall(skynet.newservice,"cmaster") then
+				skynet.abort()
+			end
+		end
 
-    skynet.exit()
+		local ok, slave = pcall(skynet.newservice, "cslave")
+		if not ok then
+			skynet.abort()
+		end
+		skynet.name(".cslave", slave)
+	end
+
+	if standalone then
+		local datacenter = skynet.newservice "datacenterd"
+		skynet.name("DATACENTER", datacenter)
+	end
+	skynet.newservice "service_mgr"
+	pcall(skynet.newservice,skynet.getenv "start" or "main")
+	skynet.exit()
 end)

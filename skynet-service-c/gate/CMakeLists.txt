@@ -27,4 +27,4 @@ set_target_properties(gate
     ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_SERVICE_C}"
     LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_SERVICE_C}"
 )
-target_link_libraries(gate liblua skynet_core)
+target_link_libraries(gate skynet_core)

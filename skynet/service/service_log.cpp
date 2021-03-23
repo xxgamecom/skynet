@@ -103,4 +103,3 @@ void service_log::log(FILE* f, uint32_t src_svc_handle, int type, int session, v
 }
 
 }
-

@@ -107,7 +107,7 @@ static msg_queue* get_queue(lua_State* L)
     auto q = (msg_queue*)lua_touserdata(L, 1);
     if (q == nullptr)
     {
-        q = (msg_queue*)lua_newuserdatauv(L, sizeof(msg_queue), 0);
+        q = (msg_queue*)lua_newuserdata(L, sizeof(msg_queue));
         q->cap = QUEUE_SIZE;
         q->head = 0;
         q->tail = 0;
@@ -124,7 +124,7 @@ static msg_queue* get_queue(lua_State* L)
 
 static void expand_queue(lua_State* L, msg_queue* q)
 {
-    auto nq = (msg_queue*)lua_newuserdatauv(L, sizeof(msg_queue) + q->cap * sizeof(netpack), 0);
+    auto nq = (msg_queue*)lua_newuserdata(L, sizeof(msg_queue) + q->cap * sizeof(netpack));
     nq->cap = q->cap + QUEUE_SIZE;
     nq->head = 0;
     nq->tail = q->cap;

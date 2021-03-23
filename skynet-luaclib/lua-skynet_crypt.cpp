@@ -500,7 +500,7 @@ static int l_des_encode(lua_State* L)
     uint8_t* buffer = tmp;
     if (chunksz > SMALL_CHUNK)
     {
-        buffer = (uint8_t*)lua_newuserdatauv(L, chunksz, 0);
+        buffer = (uint8_t*)lua_newuserdata(L, chunksz);
     }
     int i;
     for (i = 0; i < (int)textsz - 7; i += 8)
@@ -537,7 +537,7 @@ static int l_des_decode(lua_State* L)
     uint8_t* buffer = tmp;
     if (textsz > SMALL_CHUNK)
     {
-        buffer = (uint8_t*)lua_newuserdatauv(L, textsz, 0);
+        buffer = (uint8_t*)lua_newuserdata(L, textsz);
     }
     for (i = 0; i < textsz; i += 8)
     {
@@ -596,7 +596,7 @@ static int l_to_hex(lua_State* L)
     char* buffer = tmp;
     if (sz > SMALL_CHUNK / 2)
     {
-        buffer = (char*)lua_newuserdatauv(L, sz * 2, 0);
+        buffer = (char*)lua_newuserdata(L, sz * 2);
     }
     int i;
     for (i = 0; i < sz; i++)
@@ -622,7 +622,7 @@ static int l_from_hex(lua_State* L)
     char* buffer = tmp;
     if (sz > SMALL_CHUNK * 2)
     {
-        buffer = (char*)lua_newuserdatauv(L, sz / 2, 0);
+        buffer = (char*)lua_newuserdata(L, sz / 2);
     }
     int i;
     for (i = 0; i < sz; i += 2)
@@ -969,7 +969,7 @@ static int l_base64_encode(lua_State* L)
     char* buffer = tmp;
     if (encode_sz > SMALL_CHUNK)
     {
-        buffer = (char*)lua_newuserdatauv(L, encode_sz, 0);
+        buffer = (char*)lua_newuserdata(L, encode_sz);
     }
     int i, j;
     j = 0;
@@ -1031,7 +1031,7 @@ static int l_base64_decode(lua_State* L)
     char* buffer = tmp;
     if (decode_sz > SMALL_CHUNK)
     {
-        buffer = (char*)lua_newuserdatauv(L, decode_sz, 0);
+        buffer = (char*)lua_newuserdata(L, decode_sz);
     }
     int i, j;
     int output = 0;

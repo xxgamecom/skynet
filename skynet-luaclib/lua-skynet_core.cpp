@@ -12,7 +12,8 @@ extern "C" {
 #include <cassert>
 #include <cinttypes>
 
-namespace skynet { namespace luaclib {
+#include <thread>
+#include <iostream>
 
 //
 #define KNRM  "\x1B[0m"
@@ -39,7 +40,7 @@ static const char* _get_dst_svc_handle_string(lua_State* L, int index)
  */
 static int _send_message(lua_State* L, int src_svc_handle, int message_type_idx)
 {
-    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     // arg 1 - destination service handle (integer | string)
     uint32_t dst_svc_handle = (uint32_t)lua_tointeger(L, 1);
@@ -77,9 +78,9 @@ static int _send_message(lua_State* L, int src_svc_handle, int message_type_idx)
         }
 
         if (dst_svc_handle_string != nullptr)
-            session = service_manager::instance()->send_by_name(svc_ctx, src_svc_handle, dst_svc_handle_string, protocol_type, session, (void*)msg, len);
+            session = skynet::service_manager::instance()->send_by_name(svc_ctx, src_svc_handle, dst_svc_handle_string, protocol_type, session, (void*)msg, len);
         else
-            session = service_manager::instance()->send(svc_ctx, src_svc_handle, dst_svc_handle, protocol_type, session, (void*)msg, len);
+            session = skynet::service_manager::instance()->send(svc_ctx, src_svc_handle, dst_svc_handle, protocol_type, session, (void*)msg, len);
         break;
     }
     case LUA_TLIGHTUSERDATA:
@@ -87,9 +88,9 @@ static int _send_message(lua_State* L, int src_svc_handle, int message_type_idx)
         void* msg = lua_touserdata(L, message_type_idx + 2);
         int size = luaL_checkinteger(L, message_type_idx + 3);
         if (dst_svc_handle_string != nullptr)
-            session = service_manager::instance()->send_by_name(svc_ctx, src_svc_handle, dst_svc_handle_string, protocol_type | MESSAGE_TAG_DONT_COPY, session, msg, size);
+            session = skynet::service_manager::instance()->send_by_name(svc_ctx, src_svc_handle, dst_svc_handle_string, protocol_type | MESSAGE_TAG_DONT_COPY, session, msg, size);
         else
-            session = service_manager::instance()->send(svc_ctx, src_svc_handle, dst_svc_handle, protocol_type | MESSAGE_TAG_DONT_COPY, session, msg, size);
+            session = skynet::service_manager::instance()->send(svc_ctx, src_svc_handle, dst_svc_handle, protocol_type | MESSAGE_TAG_DONT_COPY, session, msg, size);
         break;
     }
     default:
@@ -167,7 +168,7 @@ static int l_redirect(lua_State* L)
  */
 static int l_service_command(lua_State* L)
 {
-    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     // cmd
     const char* cmd = luaL_checkstring(L, 1);
@@ -180,7 +181,7 @@ static int l_service_command(lua_State* L)
     }
 
     // handle service command
-    const char* result = service_command::exec(svc_ctx, cmd, cmd_param);
+    const char* result = skynet::service_command::exec(svc_ctx, cmd, cmd_param);
     if (result == nullptr)
         return 0;
 
@@ -205,7 +206,7 @@ static int l_service_command(lua_State* L)
 static int l_service_command_int(lua_State* L)
 {
     // service_context upvalue
-    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     // cmd
     const char* cmd = luaL_checkstring(L, 1);
@@ -225,7 +226,7 @@ static int l_service_command_int(lua_State* L)
     }
 
     // exec service command
-    const char* result = service_command::exec(svc_ctx, cmd, cmd_param.c_str());
+    const char* result = skynet::service_command::exec(svc_ctx, cmd, cmd_param.c_str());
     if (result == nullptr)
         return 0;
 
@@ -265,7 +266,7 @@ static int l_service_command_int(lua_State* L)
 static int l_service_command_address(lua_State* L)
 {
     // service context upvalue
-    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     // cmd
     const char* cmd = luaL_checkstring(L, 1);
@@ -278,7 +279,7 @@ static int l_service_command_address(lua_State* L)
     }
 
     // exec service command
-    const char* result = service_command::exec(svc_ctx, cmd, cmd_param.c_str());
+    const char* result = skynet::service_command::exec(svc_ctx, cmd, cmd_param.c_str());
     if (result == nullptr || result[0] != ':')
         return 0;
 
@@ -332,7 +333,7 @@ static int _traceback(lua_State* L)
  *
  * @return 0 need delete msg, 1 don't delete msg
  */
-static int _cb(service_context* svc_ctx, void* ud, int type, int session, uint32_t src_svc_handle, const void* msg, size_t sz)
+static int _cb(skynet::service_context* svc_ctx, void* ud, int type, int session, uint32_t src_svc_handle, const void* msg, size_t sz)
 {
     lua_State* L = (lua_State*)ud;
 
@@ -361,7 +362,7 @@ static int _cb(service_context* svc_ctx, void* ud, int type, int session, uint32
         return 0;
     }
 
-    const char* self = service_command::exec(svc_ctx, "REG");
+    const char* self = skynet::service_command::exec(svc_ctx, "REG");
     switch (r)
     {
     case LUA_ERRRUN:
@@ -385,7 +386,7 @@ static int _cb(service_context* svc_ctx, void* ud, int type, int session, uint32
  *
  * @return always return 1, means don't delete msg
  */
-static int _forward_cb(service_context* svc_ctx, void* ud, int type, int session, uint32_t src_svc_handle, const void* msg, size_t sz)
+static int _forward_cb(skynet::service_context* svc_ctx, void* ud, int type, int session, uint32_t src_svc_handle, const void* msg, size_t sz)
 {
     _cb(svc_ctx, ud, type, session, src_svc_handle, msg, sz);
 
@@ -407,7 +408,7 @@ static int _forward_cb(service_context* svc_ctx, void* ud, int type, int session
 static int l_set_service_callback(lua_State* L)
 {
     // service context upvalue
-    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     // forward mode check (arg 2)
     int forward = lua_toboolean(L, 2);
@@ -445,10 +446,10 @@ static int l_set_service_callback(lua_State* L)
 static int l_gen_session_id(lua_State* L)
 {
     // service context upvalue
-    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     // gen session id
-    int session_id = service_manager::instance()->send(svc_ctx, 0, 0, MESSAGE_TAG_ALLOC_SESSION, 0, nullptr, 0);
+    int session_id = skynet::service_manager::instance()->send(svc_ctx, 0, 0, MESSAGE_TAG_ALLOC_SESSION, 0, nullptr, 0);
 
     // return session id
     lua_pushinteger(L, session_id);
@@ -473,7 +474,7 @@ static int l_gen_session_id(lua_State* L)
 static int l_log(lua_State* L)
 {
     // service context upvalue
-    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     //
     const char* log_msg = nullptr;
@@ -542,7 +543,7 @@ struct source_info
 static int l_trace(lua_State* L)
 {
     //
-    auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
+    auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     //
     const char* tag = luaL_checkstring(L, 1);
@@ -551,7 +552,7 @@ static int l_trace(lua_State* L)
     // only 2 arguments
     if (lua_isnoneornil(L, 3))
     {
-        log(svc_ctx, "<TRACE %s> %lld %s", tag, time_helper::get_time_ns(), user);
+        log(svc_ctx, "<TRACE %s> %lld %s", tag, skynet::time_helper::get_time_ns(), user);
         return 0;
     }
 
@@ -591,18 +592,18 @@ static int l_trace(lua_State* L)
     switch (index)
     {
     case 1:
-        log(svc_ctx, "<TRACE %s> %lld %s : %s:%d", tag, time_helper::get_time_ns(), user, si[0].source, si[0].line);
+        log(svc_ctx, "<TRACE %s> %lld %s : %s:%d", tag, skynet::time_helper::get_time_ns(), user, si[0].source, si[0].line);
         break;
     case 2:
-        log(svc_ctx, "<TRACE %s> %lld %s : %s:%d %s:%d", tag, time_helper::get_time_ns(), user,
+        log(svc_ctx, "<TRACE %s> %lld %s : %s:%d %s:%d", tag, skynet::time_helper::get_time_ns(), user,
             si[0].source, si[0].line, si[1].source, si[1].line);
         break;
     case 3:
-        log(svc_ctx, "<TRACE %s> %lld %s : %s:%d %s:%d %s:%d", tag, time_helper::get_time_ns(), user,
+        log(svc_ctx, "<TRACE %s> %lld %s : %s:%d %s:%d %s:%d", tag, skynet::time_helper::get_time_ns(), user,
             si[0].source, si[0].line, si[1].source, si[1].line, si[2].source, si[2].line);
         break;
     default:
-        log(svc_ctx, "<TRACE %s> %lld %s", tag, time_helper::get_time_ns(), user);
+        log(svc_ctx, "<TRACE %s> %lld %s", tag, skynet::time_helper::get_time_ns(), user);
         break;
     }
 
@@ -736,7 +737,7 @@ static int l_trash(lua_State* L)
  */
 static int l_now(lua_State* L)
 {
-    lua_pushinteger(L, timer_manager::instance()->now());
+    lua_pushinteger(L, skynet::timer_manager::instance()->now());
     return 1;
 }
 
@@ -751,63 +752,64 @@ static int l_now(lua_State* L)
  */
 static int l_hpc(lua_State* L)
 {
-    lua_pushinteger(L, time_helper::get_time_ns());
+    lua_pushinteger(L, skynet::time_helper::get_time_ns());
     return 1;
 }
 
-} }
-
+/**
+ * skynet luaclib - skynet.core
+ */
 
 #if __cplusplus
 extern "C" {
 #endif
 
-/**
- * skynet luaclib - skynet.core
- */
-// need service_context upvalue
-static const luaL_Reg core_funcs_1[] = {
-    { "send",           skynet::luaclib::l_send },
-    { "redirect",       skynet::luaclib::l_redirect },
-    { "command",        skynet::luaclib::l_service_command },
-    { "intcommand",     skynet::luaclib::l_service_command_int },
-    { "addresscommand", skynet::luaclib::l_service_command_address },
-    { "callback",       skynet::luaclib::l_set_service_callback },
-    { "gen_session_id", skynet::luaclib::l_gen_session_id },
-    { "log",            skynet::luaclib::l_log },
-    { "trace",          skynet::luaclib::l_trace },
-
-    { nullptr,          nullptr },
-};
-
-// without service_context upvalue
-static const luaL_Reg core_funcs_2[] = {
-    { "tostring",    skynet::luaclib::l_tostring },
-    { "pack",        skynet::luaclib::l_pack },
-    { "unpack",      skynet::luaclib::l_unpack },
-    { "pack_string", skynet::luaclib::l_pack_string },
-    { "trash",       skynet::luaclib::l_trash },
-    { "now",         skynet::luaclib::l_now },
-    { "hpc",         skynet::luaclib::l_hpc },
-
-    { nullptr,       nullptr },
-};
-
 LUAMOD_API int luaopen_skynet_core(lua_State* L)
 {
     luaL_checkversion(L);
 
+    // need service_context upvalue
+    luaL_Reg core_funcs_1[] = {
+        { "send",           l_send },
+        { "redirect",       l_redirect },
+        { "command",        l_service_command },
+        { "intcommand",     l_service_command_int },
+        { "addresscommand", l_service_command_address },
+        { "callback",       l_set_service_callback },
+        { "gen_session_id", l_gen_session_id },
+        { "log",            l_log },
+        { "trace",          l_trace },
+
+        { nullptr,          nullptr },
+    };
+
+    // without service_context upvalue
+    luaL_Reg core_funcs_2[] = {
+        { "tostring",    l_tostring },
+        { "pack",        l_pack },
+        { "unpack",      l_unpack },
+        { "pack_string", l_pack_string },
+        { "trash",       l_trash },
+        { "now",         l_now },
+        { "hpc",         l_hpc },
+
+        { nullptr,       nullptr },
+    };
+
     lua_createtable(L, 0, sizeof(core_funcs_1) / sizeof(core_funcs_1[0]) + sizeof(core_funcs_2) / sizeof(core_funcs_2[0]) - 2);
 
-    // get service_context from global register (see: service_snlua::init_cb()), push it to stack top.
+    // get service_context from global register (see: snlua_service::init_lua_cb()), push it to stack top.
     // can use it by lua_upvalueindex(1)
     lua_getfield(L, LUA_REGISTRYINDEX, "service_context");
     auto svc_ctx = (skynet::service_context*)lua_touserdata(L, -1);
     if (svc_ctx == nullptr)
-        return luaL_error(L, "Init skynet service context first");
-
-    // shared service_context
+    {
+        std::cout << "addr 2 " << L << ", " << std::this_thread::get_id() << std::endl;
+        return luaL_error(L, "[skynet.core] Init skynet service context first");
+    }
+    // with service_context upvalue
     luaL_setfuncs(L, core_funcs_1, 1);
+
     // without service_context
     luaL_setfuncs(L, core_funcs_2, 0);
 

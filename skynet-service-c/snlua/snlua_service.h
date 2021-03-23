@@ -35,8 +35,6 @@ public:
     uint64_t                        mem_ = 0;                               // used memory
     uint64_t                        mem_report_ = MEMORY_WARNING_REPORT;    //
     uint64_t                        mem_limit_ = 0;                         //
-    lua_State*                      active_L_ = nullptr;                    //
-    std::atomic_int32_t             trap_ = 0;                              //
 
 public:
     snlua_service();
@@ -57,7 +55,7 @@ public:
     // init lua service message callback
     // 设置一些虚拟机环境变量 (主要是路径资源之类的)
     // 在init_cb里进行Lua层的初始化，比如初始化LUA_PATH，LUA_CPATH，LUA_SERVICE等全局变量
-    static int init_lua_cb(snlua_service* svc_ptr, service_context* svc_ctx, const char* args, size_t sz);
+    static bool init_lua_cb(snlua_service* svc_ptr, service_context* svc_ctx, const char* args, size_t sz);
 
     // lua memory alloc
     static void* lalloc(void* ud, void* ptr, size_t osize, size_t nsize);

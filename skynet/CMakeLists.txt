@@ -50,6 +50,8 @@ target_link_libraries(skynet_core pthread m dl liblua)
 # target executable (skynet)
 #----------------------------------------------------
 
+add_definitions(-Wl,-E)
+
 add_executable(skynet skynet.cpp)
 target_link_libraries(skynet pthread m dl liblua skynet_core)
 

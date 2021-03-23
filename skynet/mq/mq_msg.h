@@ -9,7 +9,8 @@ namespace skynet {
 // skynet_message
 //----------------------------------------------
 
-// skynet message
+// skynet service message, used for interaction between services
+// TODO: RENAME to service_message
 struct skynet_message
 {
     uint32_t                        src_svc_handle = 0;         // source service handle
@@ -18,12 +19,15 @@ struct skynet_message
     size_t                          sz = 0;                     // message data size, high 8 bits: message type
 };
 
-// type
-// 服务间的交互，只有很少的服务只需要处理别人发送过来的请求，而不需要向外提出请求。所以我们至少需要区分请求包和回应包。
-// 这两种包显然是有不同的处理方式，但它们需要从同一个 callback 函数入口进入。这就需要用一个额外的参数区分。
+//
+#define MESSAGE_TYPE_MASK           (SIZE_MAX >> 8)             // skynet_message.sz high 8 bits: message type
+#define MESSAGE_TYPE_SHIFT          ((sizeof(size_t) - 1) * 8)  // type is encoding in skynet_message.sz high 8bit
 
-// 消息类型定义
-// 
+
+/**
+ * message protocol type
+ * used for interaction between services
+ */
 enum message_protocol_type
 {
     MSG_PTYPE_TEXT                  = 0,                        // internal use, text message, 内部服务最为常用的文本消息类型
@@ -41,11 +45,8 @@ enum message_protocol_type
 };
 
 // message tag
-#define MESSAGE_TAG_DONT_COPY       0x10000                     // 让框架不复制 msg/sz 指代的数据包
-#define MESSAGE_TAG_ALLOC_SESSION   0x20000                     // 使用 send 发送一个包的时候，你可以在 type 里设上, send api 就会忽略掉传入的 session 参数，而会分配出一个当前服务从来没有使用过的 session 号，发送出去
-
-// 
-#define MESSAGE_TYPE_MASK           (SIZE_MAX >> 8)             // skynet_message.sz high 8 bits: message type
-#define MESSAGE_TYPE_SHIFT          ((sizeof(size_t) - 1) * 8)  // type is encoding in skynet_message.sz high 8bit
-
+#define MESSAGE_TAG_DONT_COPY       0x10000                     // don't copy message
+#define MESSAGE_TAG_ALLOC_SESSION   0x20000                     // set in msg_ptype when sending a package
+                                                                // send api method will ignore session arguemnts and allocate a new session id.
 }
+

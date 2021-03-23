@@ -34,23 +34,23 @@ static void _forward(gate_service* svc_ptr, connection* c, int size)
     //
     if (svc_ptr->broker_svc_handle_ != 0)
     {
-        char* temp = (char*)skynet_malloc(size);
+        char* temp = new char[size];
         data_buffer_read(&c->buffer, &svc_ptr->mp_, temp, size);
-        service_manager::instance()->send(svc_ptr->svc_ctx_, 0,svc_ptr->broker_svc_handle_,
+        service_manager::instance()->send(svc_ptr->svc_ctx_, 0, svc_ptr->broker_svc_handle_,
                                           svc_ptr->msg_ptype_ | MESSAGE_TAG_DONT_COPY, socket_id, temp, size);
         return;
     }
 
     if (c->agent_svc_handle != 0)
     {
-        char* temp = (char*)skynet_malloc(size);
+        char* temp = new char[size];
         data_buffer_read(&c->buffer, &svc_ptr->mp_, temp, size);
         service_manager::instance()->send(svc_ptr->svc_ctx_, c->client_svc_handle, c->agent_svc_handle,
                                           svc_ptr->msg_ptype_ | MESSAGE_TAG_DONT_COPY, socket_id, temp, size);
     }
     else if (svc_ptr->watchdog_svc_handle_ != 0)
     {
-        char* tmp = (char*)skynet_malloc(size + 32);
+        char* tmp = new char[size + 32];
         int n = snprintf(tmp, 32, "%d data ", c->socket_id);
         data_buffer_read(&c->buffer, &svc_ptr->mp_, tmp + n, size);
         service_manager::instance()->send(svc_ptr->svc_ctx_, 0, svc_ptr->watchdog_svc_handle_,
@@ -102,7 +102,7 @@ static void _dispatch_socket_message(gate_service* svc_ptr, const skynet_socket_
         {
             log(svc_ptr->svc_ctx_, "Drop unknown connection %d message", msg_ptr->socket_id);
             node_socket::instance()->close(svc_ptr->svc_ctx_, msg_ptr->socket_id);
-            skynet_free(msg_ptr->buffer);
+            delete[] msg_ptr->buffer;
         }
         break;
     }
@@ -157,6 +157,7 @@ static void _dispatch_socket_message(gate_service* svc_ptr, const skynet_socket_
         c->remote_name[sz] = '\0';
         _report(svc_ptr, "%d open %d %s:0", c->socket_id, c->socket_id, c->remote_name);
         log(svc_ptr->svc_ctx_, "socket open: %x", c->socket_id);
+
         break;
     }
     case SKYNET_SOCKET_EVENT_WARNING:
@@ -216,6 +217,11 @@ static int _start_listen(gate_service* svc_ptr, const std::string& listen_addr)
     node_socket::instance()->start(svc_ptr->svc_ctx_, svc_ptr->listen_id_);
 
     return 0;
+}
+
+gate_service::~gate_service()
+{
+    fini();
 }
 
 bool gate_service::init(service_context* svc_ctx, const char* param)
@@ -321,8 +327,74 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
     return is_error;
 }
 
+//int gate_init(struct gate_service* svc_ptr, struct skynet_context* ctx, char* parm)
+//{
+//    if (parm == NULL)
+//        return 1;
+//    int max = 0;
+//    int sz = strlen(parm) + 1;
+//    char watchdog[sz];
+//    char binding[sz];
+//    int client_tag = 0;
+//    char header;
+//    int n = sscanf(parm, "%c %s %s %d %d", &header, watchdog, binding, &client_tag, &max);
+//    if (n < 4)
+//    {
+//        skynet_error(ctx, "Invalid gate parm %s", parm);
+//        return 1;
+//    }
+//    if (max <= 0)
+//    {
+//        skynet_error(ctx, "Need max connection");
+//        return 1;
+//    }
+//    if (header != 'S' && header != 'L')
+//    {
+//        skynet_error(ctx, "Invalid data header style");
+//        return 1;
+//    }
+//
+//    if (client_tag == 0)
+//    {
+//        client_tag = PTYPE_CLIENT;
+//    }
+//    if (watchdog[0] == '!')
+//    {
+//        svc_ptr->watchdog = 0;
+//    }
+//    else
+//    {
+//        svc_ptr->watchdog = skynet_queryname(ctx, watchdog);
+//        if (svc_ptr->watchdog == 0)
+//        {
+//            skynet_error(ctx, "Invalid watchdog %s", watchdog);
+//            return 1;
+//        }
+//    }
+//
+//    svc_ptr->ctx = ctx;
+//
+//    hashid_init(&svc_ptr->hash, max);
+//    svc_ptr->conn = skynet_malloc(max * sizeof(struct connection));
+//    memset(svc_ptr->conn, 0, max * sizeof(struct connection));
+//    svc_ptr->max_connection = max;
+//    int i;
+//    for (i = 0; i < max; i++)
+//    {
+//        svc_ptr->conn[i].id = -1;
+//    }
+//
+//    svc_ptr->client_tag = client_tag;
+//    svc_ptr->header_size = header == 'S' ? 2 : 4;
+//
+//    skynet_callback(ctx, svc_ptr, _cb);
+//
+//    return start_listen(svc_ptr, binding);
+//}
+
 void gate_service::fini()
 {
+    // clean connection
     for (int i = 0; i < max_connection_; i++)
     {
         connection* c = &connections_.get()[i];
@@ -331,10 +403,17 @@ void gate_service::fini()
             node_socket::instance()->close(svc_ctx_, c->socket_id);
         }
     }
+    connections_.reset();
+    max_connection_ = 0;
+
+    // stop listen
     if (listen_id_ >= 0)
     {
         node_socket::instance()->close(svc_ctx_, listen_id_);
     }
+    listen_id_ = -1;
+
+    // clean buffer
     messagepool_free(&mp_);
     hash_id_clear(&hash_);
 }

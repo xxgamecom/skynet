@@ -9,12 +9,12 @@ local gateserver = {}
 
 local max_packsize = 10 * 1024
 local max_headersize = 1024
-local socket        -- listen socket
-local msg_queue     -- message queue
-local maxclient     -- max client
+local socket    -- listen socket
+local queue        -- message queue
+local maxclient    -- max client
 local client_number = 0
 local CMD = setmetatable({}, { __gc = function()
-    netpack.clear(msg_queue)
+    netpack.clear(queue)
 end })
 local nodelay = false
 local connection = {}  --{ isconnect, iswebsocket_handeshake (default 1) }
@@ -149,7 +149,7 @@ function gateserver.start(handler)
         local port = assert(conf.port)
         maxclient = conf.maxclient or 1024
         nodelay = conf.nodelay
-        skynet.log(string.format("Listen on %s:%d", address, port))
+        skynet.error(string.format("Listen on %s:%d", address, port))
         socket = socketdriver.listen(address, port)
         socketdriver.start(socket)
         if handler.open then
@@ -188,21 +188,21 @@ function gateserver.start(handler)
 
             handler.message(fd, msg, sz)
         else
-            skynet.log(string.format("Drop message from fd (%d) : %s", fd, netpack.tostring(msg, sz)))
+            skynet.error(string.format("Drop message from fd (%d) : %s", fd, netpack.tostring(msg, sz)))
         end
     end
 
     MSG.data = dispatch_msg
 
     local function dispatch_queue()
-        local fd, msg, sz = netpack.pop(msg_queue)
+        local fd, msg, sz = netpack.pop(queue)
         if fd then
             -- may dispatch even the handler.message blocked
-            -- If the handler.message never block, the msg_queue should be empty, so only fork once and then exit.
+            -- If the handler.message never block, the queue should be empty, so only fork once and then exit.
             skynet.fork(dispatch_queue)
             dispatch_msg(fd, msg, sz)
 
-            for fd, msg, sz in netpack.pop, msg_queue do
+            for fd, msg, sz in netpack.pop, queue do
                 dispatch_msg(fd, msg, sz)
             end
         end
@@ -247,7 +247,7 @@ function gateserver.start(handler)
     function MSG.error(fd, msg)
         if fd == socket then
             socketdriver.close(fd)
-            skynet.log(msg)
+            skynet.error(msg)
         else
             if handler.error then
                 handler.error(fd, msg)
@@ -264,18 +264,18 @@ function gateserver.start(handler)
 
     skynet.register_protocol({
         name = "socket",
-        id = skynet.MSG_PTYPE_SOCKET, -- MSG_PTYPE_SOCKET = 6
+        id = skynet.PTYPE_SOCKET, -- PTYPE_SOCKET = 6
         unpack = function(msg, sz)
             local _, fd = socketdriver.unpack(msg, sz)
             if (connection[fd] == nil) then
-                return netpack.filter(msg_queue, msg, sz, 1)
+                return netpack.filter(queue, msg, sz, 1)
             elseif connection[fd].isconnect then
-                return netpack.filter(msg_queue, msg, sz, connection[fd].iswebsocket_handeshake)
+                return netpack.filter(queue, msg, sz, connection[fd].iswebsocket_handeshake)
             end
-            return netpack.filter(msg_queue, msg, sz, 1)
+            return netpack.filter(queue, msg, sz, 1)
         end,
         dispatch = function(_, _, q, type, ...)
-            msg_queue = q
+            queue = q
             if type then
                 MSG[type](...)
             end

@@ -2,32 +2,13 @@
 
 namespace skynet { namespace service {
 
-#define SIZETIMEFMT    250
-
-static int _time_string(uint32_t time_secs, char tmp[SIZETIMEFMT])
+logger_service::~logger_service()
 {
-    uint64_t now = timer_manager::instance()->now();
-    time_t ti = now / 100 + time_secs;
-
-    struct tm info;
-    ::localtime_r(&ti, &info);
-    ::strftime(tmp, SIZETIMEFMT, "%D %T", &info);
-    return now % 100;
+    fini();
 }
 
 bool logger_service::init(service_context* svc_ctx, const char* param)
 {
-    //
-    const char* result = service_command::exec(svc_ctx, "START_TIME");
-    try
-    {
-        start_seconds_ = std::stoul(result);
-    }
-    catch (...)
-    {
-        return false;
-    }
-
     // log to file
     if (param != nullptr)
     {
@@ -85,12 +66,6 @@ int logger_service::logger_cb(service_context* svc_ctx, void* ud, int msg_ptype,
         }
         break;
     case message_protocol_type::MSG_PTYPE_TEXT:
-        if (!svc_ptr->log_filename_.empty())
-        {
-            char tmp[SIZETIMEFMT];
-            int ticks = _time_string(svc_ptr->start_seconds_, tmp);
-            ::fprintf(svc_ptr->log_handle_, "%s.%02d ", tmp, ticks);
-        }
         ::fprintf(svc_ptr->log_handle_, "[:%08x] ", src_svc_handle);
         ::fwrite(msg, sz, 1, svc_ptr->log_handle_);
         ::fprintf(svc_ptr->log_handle_, "\n");

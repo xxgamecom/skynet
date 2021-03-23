@@ -40,12 +40,12 @@ void node_env::set_env(const char* key, const char* value)
 
     // check old
     lua_getglobal(L_, key);
-    assert(lua_isnil(L_, -1));	// 环境变量不可修改?
+    assert(lua_isnil(L_, -1)); // 环境变量不可修改?
     lua_pop(L_,1);
 
     // set new
-    lua_pushstring(L_,value);
-    lua_setglobal(L_,key);
+    lua_pushstring(L_, value);
+    lua_setglobal(L_, key);
 }
 
 int node_env::get_int32(const char* key, int default_value)

@@ -10,7 +10,7 @@
 
 namespace skynet {
 
-#define LOG_BUF_SIZE            256
+#define LOG_MESSAGE_SIZE            256
 
 /**
  * log
@@ -18,20 +18,19 @@ namespace skynet {
  */
 void log(service_context* svc_ctx, const char* msg, ...)
 {
-    static uint32_t log_svc_handle = 0;
-
     // find logger service 'logger'
+    static uint32_t log_svc_handle = 0;
     if (log_svc_handle == 0)
         log_svc_handle = service_manager::instance()->find_by_name("logger");
     if (log_svc_handle == 0)
         return;
 
-    // 
-    char tmp[LOG_BUF_SIZE] = { 0 };
+    //
+    char tmp[LOG_MESSAGE_SIZE] = { 0 };
 
     va_list ap;
     va_start(ap, msg);
-    int len = ::vsnprintf(tmp, LOG_BUF_SIZE, msg, ap);
+    int len = ::vsnprintf(tmp, LOG_MESSAGE_SIZE, msg, ap);
     va_end(ap);
 
     // error
@@ -44,7 +43,7 @@ void log(service_context* svc_ctx, const char* msg, ...)
     char* data_ptr = nullptr;
 
     // log message length < 256
-    if (len >= 0 && len < LOG_BUF_SIZE)
+    if (len >= 0 && len < LOG_MESSAGE_SIZE)
     {
         data_ptr = new char[len + 1] { 0 };
         ::memcpy(data_ptr, tmp, len + 1);
@@ -52,7 +51,7 @@ void log(service_context* svc_ctx, const char* msg, ...)
     // log message length >= 256
     else
     {
-        int max_size = LOG_BUF_SIZE;
+        int max_size = LOG_MESSAGE_SIZE;
         for (;;)
         {
             // alloc double size
@@ -67,7 +66,7 @@ void log(service_context* svc_ctx, const char* msg, ...)
             // alloc log message buffer success
             if (len < max_size)
                 break;
-            
+
             // not enought, try alloc again
             delete[] data_ptr;
         }
@@ -78,7 +77,7 @@ void log(service_context* svc_ctx, const char* msg, ...)
         delete[] data_ptr;
         ::perror("vsnprintf error :");
         return;
-    }    
+    }
 
     // push message to log service
     skynet_message smsg;

@@ -181,7 +181,7 @@ static struct queue* get_queue(lua_State* L)
     struct queue* q = (queue*)lua_touserdata(L, 1);
     if (q == nullptr)
     {
-        q = (queue*)lua_newuserdatauv(L, sizeof(struct queue), 0);
+        q = (queue*)lua_newuserdata(L, sizeof(struct queue));
         q->cap = QUEUE_SIZE;
         q->head = 0;
         q->tail = 0;
@@ -197,7 +197,7 @@ static struct queue* get_queue(lua_State* L)
 
 static void expand_queue(lua_State* L, struct queue* q)
 {
-    struct queue* nq = (queue*)lua_newuserdatauv(L, sizeof(struct queue) + q->cap * sizeof(struct netpack), 0);
+    struct queue* nq = (queue*)lua_newuserdata(L, sizeof(struct queue) + q->cap * sizeof(struct netpack));
     nq->cap = q->cap + QUEUE_SIZE;
     nq->head = 0;
     nq->tail = q->cap;

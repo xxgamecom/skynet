@@ -30,6 +30,6 @@ skynet.start(function()
             libs[v] = m
         end
     end
-    skynet.log(limit, err)
+    skynet.error(limit, err)
     skynet.exit()
 end)

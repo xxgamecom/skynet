@@ -80,6 +80,7 @@ static bool _handle_ctrl_cmd_forward(gate_service* gate_svc_ptr, std::vector<std
         return false;
     }
 
+    // forward agent
     int idx = hash_id_lookup(&gate_svc_ptr->hash_, socket_id);
     if (idx >= 0)
     {
@@ -211,3 +212,4 @@ void handle_ctrl_cmd(gate_service* gate_svc_ptr, const char* msg, int sz)
 }
 
 } }
+

@@ -23,7 +23,7 @@ skynet.start(function()
 			if #str > 20 then
 				str = str:sub(1,20) .. "...(" .. #str .. ")"
 			end
-			skynet.log(string.format("%s ping %s", skynet.address(address), str))
+			skynet.error(string.format("%s ping %s", skynet.address(address), str))
 			return
 		end
 		local f = command[cmd]

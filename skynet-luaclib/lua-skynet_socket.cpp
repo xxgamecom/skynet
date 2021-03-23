@@ -131,7 +131,7 @@ static int _free_pool(lua_State* L)
 // alloc buffer pool
 static int _new_pool(lua_State* L, int sz)
 {
-    auto pool = (buffer_node*)lua_newuserdatauv(L, sizeof(buffer_node) * sz, 0);
+    auto pool = (buffer_node*)lua_newuserdata(L, sizeof(buffer_node) * sz);
     for (int i = 0; i < sz; i++)
     {
         pool[i].msg = nullptr;
@@ -159,7 +159,7 @@ static int _new_pool(lua_State* L, int sz)
  */
 static int l_new_socket_buffer(lua_State* L)
 {
-    auto sb = (socket_buffer*)lua_newuserdatauv(L, sizeof(socket_buffer), 0);
+    auto sb = (socket_buffer*)lua_newuserdata(L, sizeof(socket_buffer));
     sb->size = 0;
     sb->offset = 0;
     sb->head = nullptr;
@@ -1296,16 +1296,16 @@ LUAMOD_API int luaopen_skynet_socketdriver(lua_State* L)
 {
     luaL_checkversion(L);
 
+    // without service context
     luaL_newlib(L, socket_funcs_1);
 
-    // service_context upvalue
+    // with service_context upvalue
     lua_getfield(L, LUA_REGISTRYINDEX, "service_context");
     auto svc_ctx = (skynet::service_context*)lua_touserdata(L, -1);
     if (svc_ctx == nullptr)
     {
-        return luaL_error(L, "Init skynet service context first");
+        return luaL_error(L, "[skynet.socketdriver] Init skynet service context first");
     }
-
     luaL_setfuncs(L, socket_funcs_2, 1);
 
     return 1;

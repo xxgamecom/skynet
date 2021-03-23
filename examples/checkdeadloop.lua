@@ -8,12 +8,12 @@ local function timeout_check(ti)
 	end
 	skynet.sleep(ti)	-- sleep 10 sec
 	for k,v in pairs(list) do
-		skynet.log("timout",ti,k,v)
+		skynet.error("timout",ti,k,v)
 	end
 end
 
 skynet.start(function()
-	skynet.log("ping all")
+	skynet.error("ping all")
 	local list_ret = skynet.call(".launcher", "lua", "LIST")
 	for addr, desc in pairs(list_ret) do
 		list[addr] = desc

@@ -3,12 +3,10 @@ INCLUDE_DIRECTORIES("${SKYNET_ROOT_PATH}/skynet")
 
 #
 set(SKYNET_SNLUA_HEADER
-    profile.h
     snlua_service.h
 )
 
 set(SKYNET_SNLUA_SRC
-    profile.cpp
     snlua_service.cpp
     mod.cpp
 )
@@ -23,4 +21,4 @@ SET_TARGET_PROPERTIES(snlua
     ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_SERVICE_C}"
     LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_SERVICE_C}"
 )
-TARGET_LINK_LIBRARIES(snlua liblua skynet_core)
+TARGET_LINK_LIBRARIES(snlua skynet_core)

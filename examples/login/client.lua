@@ -1,55 +1,55 @@
 package.cpath = "luaclib/?.so"
 
-local crypt = require "skynet.crypt"
 local socket = require "client.socket"
+local crypt = require "client.crypt"
 
-if _VERSION ~= "Lua 5.4" then
-    error "Use lua 5.4"
+if _VERSION ~= "Lua 5.3" then
+	error "Use lua 5.3"
 end
 
 local fd = assert(socket.connect("127.0.0.1", 8001))
 
 local function writeline(fd, text)
-    socket.send(fd, text .. "\n")
+	socket.send(fd, text .. "\n")
 end
 
 local function unpack_line(text)
-    local from = text:find("\n", 1, true)
-    if from then
-        return text:sub(1, from-1), text:sub(from+1)
-    end
-    return nil, text
+	local from = text:find("\n", 1, true)
+	if from then
+		return text:sub(1, from-1), text:sub(from+1)
+	end
+	return nil, text
 end
 
 local last = ""
 
 local function unpack_f(f)
-    local function try_recv(fd, last)
-        local result
-        result, last = f(last)
-        if result then
-            return result, last
-        end
-        local r = socket.recv(fd)
-        if not r then
-            return nil, last
-        end
-        if r == "" then
-            error "Server closed"
-        end
-        return f(last .. r)
-    end
+	local function try_recv(fd, last)
+		local result
+		result, last = f(last)
+		if result then
+			return result, last
+		end
+		local r = socket.recv(fd)
+		if not r then
+			return nil, last
+		end
+		if r == "" then
+			error "Server closed"
+		end
+		return f(last .. r)
+	end
 
-    return function()
-        while true do
-            local result
-            result, last = try_recv(fd, last)
-            if result then
-                return result
-            end
-            socket.usleep(100)
-        end
-    end
+	return function()
+		while true do
+			local result
+			result, last = try_recv(fd, last)
+			if result then
+				return result
+			end
+			socket.usleep(100)
+		end
+	end
 end
 
 local readline = unpack_f(unpack_line)
@@ -66,16 +66,16 @@ local hmac = crypt.hmac64(challenge, secret)
 writeline(fd, crypt.base64encode(hmac))
 
 local token = {
-    server = "sample",
-    user = "hello",
-    pass = "password",
+	server = "sample",
+	user = "hello",
+	pass = "password",
 }
 
 local function encode_token(token)
-    return string.format("%s@%s:%s",
-            crypt.base64encode(token.user),
-            crypt.base64encode(token.server),
-            crypt.base64encode(token.pass))
+	return string.format("%s@%s:%s",
+		crypt.base64encode(token.user),
+		crypt.base64encode(token.server),
+		crypt.base64encode(token.pass))
 end
 
 local etoken = crypt.desencode(secret, encode_token(token))
@@ -95,36 +95,36 @@ print("login ok, subid=", subid)
 ----- connect to game server
 
 local function send_request(v, session)
-    local size = #v + 4
-    local package = string.pack(">I2", size)..v..string.pack(">I4", session)
-    socket.send(fd, package)
-    return v, session
+	local size = #v + 4
+	local package = string.pack(">I2", size)..v..string.pack(">I4", session)
+	socket.send(fd, package)
+	return v, session
 end
 
 local function recv_response(v)
-    local size = #v - 5
-    local content, ok, session = string.unpack("c"..tostring(size).."B>I4", v)
-    return ok ~=0 , content, session
+	local size = #v - 5
+	local content, ok, session = string.unpack("c"..tostring(size).."B>I4", v)
+	return ok ~=0 , content, session
 end
 
 local function unpack_package(text)
-    local size = #text
-    if size < 2 then
-        return nil, text
-    end
-    local s = text:byte(1) * 256 + text:byte(2)
-    if size < s+2 then
-        return nil, text
-    end
+	local size = #text
+	if size < 2 then
+		return nil, text
+	end
+	local s = text:byte(1) * 256 + text:byte(2)
+	if size < s+2 then
+		return nil, text
+	end
 
-    return text:sub(3,2+s), text:sub(3+s)
+	return text:sub(3,2+s), text:sub(3+s)
 end
 
 local readpackage = unpack_f(unpack_package)
 
 local function send_package(fd, pack)
-    local package = string.pack(">s2", pack)
-    socket.send(fd, package)
+	local package = string.pack(">s2", pack)
+	socket.send(fd, package)
 end
 
 local text = "echo"
