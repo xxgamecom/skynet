@@ -8,6 +8,13 @@
 
 .vscode
 .idea
-bin
-cmake-build-debug
-cmake-build-release
+/skynet
+/lua
+/luac
+
+/cmake-build-debug
+/cmake-build-release
+/cservice
+/luaclib
+
+

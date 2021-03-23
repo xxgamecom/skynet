@@ -3,15 +3,13 @@ cmake_minimum_required(VERSION 3.12)
 
 # skynet++ root & parent path
 set(SKYNET_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-get_filename_component(SKYNET_PARENT_DIR ${SKYNET_ROOT_PATH} DIRECTORY)
+#get_filename_component(SKYNET_PARENT_DIR ${SKYNET_ROOT_PATH} DIRECTORY)
 
 # skynet++ bin, lib, service path
-set(SKYNET_BIN_PATH             ${SKYNET_PARENT_DIR}/bin)
-set(SKYNET_BIN_PATH_LUACLIB     ${SKYNET_PARENT_DIR}/bin/luaclib)
-set(SKYNET_BIN_PATH_LUALIB      ${SKYNET_PARENT_DIR}/bin/lualib)
-set(SKYNET_BIN_PATH_SERVICE_C   ${SKYNET_PARENT_DIR}/bin/service-c)
-set(SKYNET_BIN_PATH_SERVICE_LUA ${SKYNET_PARENT_DIR}/bin/service-lua)
-set(SKYNET_BIN_PATH_TESTS       ${SKYNET_PARENT_DIR}/bin/tests)
+set(SKYNET_BIN_PATH             ${SKYNET_ROOT_PATH})
+set(SKYNET_BIN_PATH_LUACLIB     ${SKYNET_BIN_PATH}/luaclib)
+set(SKYNET_BIN_PATH_CSERVICE    ${SKYNET_BIN_PATH}/cservice)
+set(SKYNET_BIN_PATH_TESTS       ${SKYNET_BIN_PATH}/tests)
 
 
 # cmake module path
@@ -27,13 +25,17 @@ include(DisallowBuildInSource)
 # set common compiler define & options
 include(ConfigDefine)
 
+# Debug/Release support
+set(CMAKE_CXX_FLAGS_DEBUG   "$ENV{CXXFLAGS} -O0 -fPIC -g -ggdb")
+set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -fPIC")
+
 #
 message(STATUS "PROJECT_NAME              : " ${PROJECT_NAME})
 message(STATUS "SKYNET_BUILD_TYPE         : " ${CMAKE_BUILD_TYPE})
 message(STATUS "SKYNET_ROOT_PATH          : " ${SKYNET_ROOT_PATH})
 message(STATUS "SKYNET_BIN_PATH           : " ${SKYNET_BIN_PATH})
 message(STATUS "SKYNET_BIN_PATH_LUACLIB   : " ${SKYNET_BIN_PATH_LUACLIB})
-message(STATUS "SKYNET_BIN_PATH_SERVICE_C : " ${SKYNET_BIN_PATH_SERVICE_C})
+message(STATUS "SKYNET_BIN_PATH_CSERVICE  : " ${SKYNET_BIN_PATH_CSERVICE})
 message(STATUS "SKYNET_BIN_PATH_TESTS     : " ${SKYNET_BIN_PATH_TESTS})
 message(STATUS "CMAKE_MODULE_PATH         : " ${CMAKE_MODULE_PATH})
 
@@ -74,17 +76,17 @@ endif()
 
 # build skynet
 if (BUILD_SKYNET)
-    add_subdirectory(${SKYNET_ROOT_PATH}/skynet)
+    add_subdirectory(${SKYNET_ROOT_PATH}/skynet-src)
 endif()
 
-# build skynet-luaclib
+# build luaclib-src
 if (BUILD_SKYNET_LUACLIB)
-    add_subdirectory(${SKYNET_ROOT_PATH}/skynet-luaclib)
+    add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src)
 endif()
 
-# build skynet-service-c
+# build service-src
 if (BUILD_SKYNET_CSERVICE)
-    add_subdirectory(${SKYNET_ROOT_PATH}/skynet-service-c)
+    add_subdirectory(${SKYNET_ROOT_PATH}/service-src)
 endif()
 
 # build skynet tests
@@ -92,16 +94,3 @@ if (BUILD_SKYNET_TESTS)
     add_subdirectory(${SKYNET_ROOT_PATH}/tests)
 endif()
 
-#------------------------------------------------------
-# after build
-#------------------------------------------------------
-
-# after build: copy skynet-lualib to bin/lualib
-execute_process(COMMAND ${CMAKE_COMMAND} -E
-    copy_directory "${SKYNET_ROOT_PATH}/skynet-lualib/" "${SKYNET_BIN_PATH_LUALIB}"
-)
-
-# after build: copy skynet-service-lua to bin/service-lua
-execute_process(COMMAND ${CMAKE_COMMAND} -E
-    copy_directory "${SKYNET_ROOT_PATH}/skynet-service-lua/" "${SKYNET_BIN_PATH_SERVICE_LUA}"
-)

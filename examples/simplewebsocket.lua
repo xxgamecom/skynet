@@ -21,8 +21,7 @@ if MODE == "agent" then
         print("--------------")
     end
 
-    function handle.message(id, msg, msg_type)
-        assert(msg_type == "binary" or msg_type == "text")
+    function handle.message(id, msg)
         websocket.write(id, msg)
     end
 

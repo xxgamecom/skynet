@@ -1,5 +1,5 @@
 # target test_socket_server
-include_directories("${SKYNET_ROOT_PATH}/skynet")
+include_directories("${SKYNET_ROOT_PATH}/skynet-src")
 
 
 # test foo
@@ -24,7 +24,7 @@ set_target_properties(test_hash_id
 
 #
 #add_executable(test_socket_server test_socket_server.cpp)
-#target_link_libraries(test_socket_server liblua skynet)
+#target_link_libraries(test_socket_server skynet_core)
 #set_target_properties(test_socket_server
 #    PROPERTIES
 #    PREFIX ""

@@ -53,7 +53,7 @@ skynet                              // skynet源码目录
 │   ├── ...
 │   ├── skynet.cpp                  // skynet main入口文件
 │   └── skynet.h                    // skynet API header file
-├── skynet-luaclib                  // skynet luaclib 源码目录
+├── luaclib-src                     // skynet luaclib 源码目录
 │   ├── lua-bson                    // bson模块
 │   ├── lua-cjson                   // cjson模块
 │   ├── lua-codec                   // 基于OpenSSL实现的codec模块
@@ -69,13 +69,13 @@ skynet                              // skynet源码目录
 │   ├── lua-skynet                  // skynet luaclib 源码
 │   ├── lua-tls                     // ltls模块, 依赖OpenSSL
 │   └── sproto                      // sproto模块
-├── skynet-lualib                   // skynet lua模块 源码目录
+├── lualib                          // skynet lua模块 源码目录
 │   ├── ...
-├── skynet-service-c                // skynet c service 源码目录
+├── service-src                     // skynet c service 源码目录
 │   ├── gate                        // c service gate
 │   ├── logger                      // c service logger
 │   └── snlua                       // c service snlua
-├── skynet-service-lua              // skynet lua service 源码目录
+├── service                         // skynet lua service 源码目录
 │   ├── ...
 └── tests                           // 单元测试目录
 ```
