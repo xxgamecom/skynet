@@ -62,11 +62,11 @@ set_target_properties(liblua
     OUTPUT_NAME "lua"
 )
 
-# target lua
-add_executable(lua ${LUA_SRC})
-target_link_libraries(lua m dl readline liblua)
-
-# target luac
-add_executable(luac ${LUAC_SRC})
-target_link_libraries(luac m dl readline liblua)
+## target lua
+#add_executable(lua ${LUA_SRC})
+#target_link_libraries(lua m dl readline liblua)
+#
+## target luac
+#add_executable(luac ${LUAC_SRC})
+#target_link_libraries(luac m dl readline liblua)
 

@@ -1,5 +1,5 @@
 # include path
-include_directories("${SKYNET_ROOT_PATH}/skynet")
+include_directories("${SKYNET_ROOT_PATH}/skynet-src")
 
 #
 set(SKYNET_GATE_HEADER
@@ -24,7 +24,7 @@ add_library(gate MODULE ${SKYNET_GATE_SRC})
 set_target_properties(gate
     PROPERTIES
     PREFIX ""
-    ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_SERVICE_C}"
-    LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_SERVICE_C}"
+    ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_CSERVICE}"
+    LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_CSERVICE}"
 )
 target_link_libraries(gate skynet_core)

@@ -1,5 +1,5 @@
 # include path
-include_directories("${SKYNET_ROOT_PATH}/skynet")
+include_directories("${SKYNET_ROOT_PATH}/skynet-src")
 
 #
 set(SKYNET_LUACLIB_HEADER

@@ -1,5 +1,5 @@
 # target test_socket_server
-include_directories("${SKYNET_ROOT_PATH}/skynet")
+include_directories("${SKYNET_ROOT_PATH}/skynet-src")
 
 
 # test foo

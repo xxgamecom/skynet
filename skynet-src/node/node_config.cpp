@@ -114,7 +114,7 @@ bool node_config::load(const std::string& config_file)
 
     // 从节点环境中读取配置数据
     thread_ = skynet::node_env::instance()->get_int32("thread", 8);                                 // work thread count
-    cservice_path_ = skynet::node_env::instance()->get_string("cservice_path", "./service-c/?.so"); // c service mod search path
+    cservice_path_ = skynet::node_env::instance()->get_string("cservice_path", "./cservice/?.so");  // c service mod search path
     bootstrap_ = skynet::node_env::instance()->get_string("bootstrap","snlua bootstrap");           // bootstrap服务
     pid_file_ = skynet::node_env::instance()->get_string("pid_file", nullptr);                      // enable/disable daemon mode
     logger_ = skynet::node_env::instance()->get_string("logger", nullptr);                          // log output file
