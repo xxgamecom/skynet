@@ -12,6 +12,7 @@ set(SKYNET_LUACLIB_SRC
     lua-skynet_crypt.cpp
     lua-seri.cpp
     lua-skynet_core.cpp
+    lua-skynet_profile.cpp
     lua-skynet_netpack.cpp
     lua-skynet_netpack_tcp.cpp
     lua-skynet_netpack_ws.cpp

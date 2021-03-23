@@ -193,7 +193,7 @@ function server.start(conf)
 		local message = netpack.tostring(msg, sz)
 		local ok, result = pcall(do_auth, fd, message, addr)
 		if not ok then
-			skynet.error(result)
+			skynet.log(result)
 			result = "400 Bad Request"
 		end
 
@@ -247,7 +247,7 @@ function server.start(conf)
 				p = nil
 				if last[2] == nil then
 					local error_msg = string.format("Conflict session %s", crypt.hexencode(session))
-					skynet.error(error_msg)
+					skynet.log(error_msg)
 					error(error_msg)
 				end
 			end
@@ -260,7 +260,7 @@ function server.start(conf)
 			-- NOTICE: YIELD here, socket may close.
 			result = result or ""
 			if not ok then
-				skynet.error(result)
+				skynet.log(result)
 				result = string.pack(">BI4", 0, session)
 			else
 				result = result .. string.pack(">BI4", 1, session)
@@ -295,7 +295,7 @@ function server.start(conf)
 		local ok, err = pcall(do_request, fd, message)
 		-- not atomic, may yield
 		if not ok then
-			skynet.error(string.format("Invalid package %s : %s", err, message))
+			skynet.log(string.format("Invalid package %s : %s", err, message))
 			if connection[fd] then
 				gateserver.closeclient(fd)
 			end

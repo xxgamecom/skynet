@@ -37,7 +37,7 @@ local function assert_socket(service, v, fd)
 	if v then
 		return v
 	else
-		skynet.error(string.format("%s failed: socket (fd = %d) closed", service, fd))
+		skynet.log(string.format("%s failed: socket (fd = %d) closed", service, fd))
 		error(socket_error)
 	end
 end
@@ -94,7 +94,7 @@ local function launch_slave(auth_handler)
 	end
 
 	local function auth_fd(fd, addr)
-		skynet.error(string.format("connect from %s (fd = %d)", addr, fd))
+		skynet.log(string.format("connect from %s (fd = %d)", addr, fd))
 		socket.start(fd)	-- may raise error here
 		local msg, len = ret_pack(pcall(auth, fd, addr))
 		socket.abandon(fd)	-- never raise error here
@@ -163,7 +163,7 @@ local function launch_master(conf)
 		table.insert(slave, skynet.newservice(SERVICE_NAME))
 	end
 
-	skynet.error(string.format("login server listen at : %s %d", host, port))
+	skynet.log(string.format("login server listen at : %s %d", host, port))
 	local id = socket.listen(host, port)
 	socket.start(id , function(fd, addr)
 		local s = slave[balance]
@@ -174,7 +174,7 @@ local function launch_master(conf)
 		local ok, err = pcall(accept, conf, s, fd, addr)
 		if not ok then
 			if err ~= socket_error then
-				skynet.error(string.format("invalid client (fd = %d) error = %s", fd, err))
+				skynet.log(string.format("invalid client (fd = %d) error = %s", fd, err))
 			end
 		end
 		socket.close_fd(fd)	-- We haven't call socket.start, so use socket.close_fd rather than socket.close.

@@ -12,9 +12,6 @@ extern "C" {
 #include <cassert>
 #include <cinttypes>
 
-#include <thread>
-#include <iostream>
-
 //
 #define KNRM  "\x1B[0m"
 #define KRED  "\x1B[31m"
@@ -373,6 +370,9 @@ static int _cb(skynet::service_context* svc_ctx, void* ud, int type, int session
         break;
     case LUA_ERRERR:
         log(svc_ctx, "lua error in error : [%x to %s : %d]", src_svc_handle, self, session);
+        break;
+    case LUA_ERRGCMM:
+        log(svc_ctx, "lua gc error : [%x to %s : %d]", src_svc_handle , self, session);
         break;
     };
 
@@ -804,7 +804,6 @@ LUAMOD_API int luaopen_skynet_core(lua_State* L)
     auto svc_ctx = (skynet::service_context*)lua_touserdata(L, -1);
     if (svc_ctx == nullptr)
     {
-        std::cout << "addr 2 " << L << ", " << std::this_thread::get_id() << std::endl;
         return luaL_error(L, "[skynet.core] Init skynet service context first");
     }
     // with service_context upvalue

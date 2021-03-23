@@ -27,6 +27,10 @@ include(DisallowBuildInSource)
 # set common compiler define & options
 include(ConfigDefine)
 
+# Debug/Release support
+set(CMAKE_CXX_FLAGS_DEBUG   "$ENV{CXXFLAGS} -O0 -fPIC -g -ggdb")
+set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -fPIC")
+
 #
 message(STATUS "PROJECT_NAME              : " ${PROJECT_NAME})
 message(STATUS "SKYNET_BUILD_TYPE         : " ${CMAKE_BUILD_TYPE})

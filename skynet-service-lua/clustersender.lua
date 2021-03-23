@@ -38,7 +38,7 @@ function command.req(...)
 			skynet.ret(msg)
 		end
 	else
-		skynet.error(msg)
+		skynet.log(msg)
 		skynet.response()(false)
 	end
 end

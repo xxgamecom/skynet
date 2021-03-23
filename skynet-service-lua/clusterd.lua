@@ -26,7 +26,7 @@ local function open_channel(t, key)
 		local co = coroutine.running()
 		assert(ct.namequery == nil)
 		ct.namequery = co
-		skynet.error("Waiting for cluster node [".. key.."]")
+		skynet.log("Waiting for cluster node [".. key.."]")
 		skynet.wait(co)
 		address = node_address[key]
 	end
@@ -84,7 +84,7 @@ local function loadconfig(tmp)
 		if name:sub(1,2) == "__" then
 			name = name:sub(3)
 			config[name] = address
-			skynet.error(string.format("Config %s = %s", name, address))
+			skynet.log(string.format("Config %s = %s", name, address))
 		else
 			assert(address == false or type(address) == "string")
 			if node_address[name] ~= address then
@@ -97,7 +97,7 @@ local function loadconfig(tmp)
 			end
 			local ct = connecting[name]
 			if ct and ct.namequery and not config.nowaiting then
-				skynet.error(string.format("Cluster node [%s] resloved : %s", name, address))
+				skynet.log(string.format("Cluster node [%s] resloved : %s", name, address))
 				skynet.wakeup(ct.namequery)
 			end
 		end
@@ -185,7 +185,7 @@ function command.register(source, name, addr)
 	register_name[addr] = name
 	register_name[name] = addr
 	skynet.ret(nil)
-	skynet.error(string.format("Register [%s] :%08x", name, addr))
+	skynet.log(string.format("Register [%s] :%08x", name, addr))
 end
 
 function command.queryname(source, name)
@@ -194,7 +194,7 @@ end
 
 function command.socket(source, subcmd, fd, msg)
 	if subcmd == "open" then
-		skynet.error(string.format("socket accept from %s", msg))
+		skynet.log(string.format("socket accept from %s", msg))
 		-- new cluster agent
 		cluster_agent[fd] = false
 		local agent = skynet.newservice("clusteragent", skynet.self(), source, fd)
@@ -215,7 +215,7 @@ function command.socket(source, subcmd, fd, msg)
 				cluster_agent[fd] = nil
 			end
 		else
-			skynet.error(string.format("socket %s %d %s", subcmd, fd, msg or ""))
+			skynet.log(string.format("socket %s %d %s", subcmd, fd, msg or ""))
 		end
 	end
 end

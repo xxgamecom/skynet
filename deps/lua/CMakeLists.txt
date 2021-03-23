@@ -47,9 +47,9 @@ set(LUAC_SRC luac.c)
 
 #
 if (MACOSX)
-    add_definitions(-DLUA_USE_MACOSX -DLUA_USE_READLINE)
+    add_definitions(-DLUA_USE_MACOSX)
 elseif(LINUX)
-    add_definitions(-DLUA_USE_LINUX -DLUA_USE_READLINE)
+    add_definitions(-DLUA_USE_LINUX -Wl,-E)
 endif()
 
 # target liblua.a
@@ -61,9 +61,6 @@ set_target_properties(liblua
     PROPERTIES
     OUTPUT_NAME "lua"
 )
-
-#
-add_definitions(-Wl,-E)
 
 # target lua
 add_executable(lua ${LUA_SRC})

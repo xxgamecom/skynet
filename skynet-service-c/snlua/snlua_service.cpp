@@ -7,9 +7,6 @@ extern "C" {
 #include <lauxlib.h>
 }
 
-#include <thread>
-#include <iostream>
-
 namespace skynet { namespace service {
 
 
@@ -221,15 +218,11 @@ bool snlua_service::init_lua_cb(snlua_service* svc_ptr, service_context* svc_ctx
         return false;
     }
 
-    std::cout << "addr 1 " << L << ", " << std::this_thread::get_id() << std::endl;
-
     // use loader.lua to load bootstrap lua service
     lua_pushlstring(L, args, sz);
     r = lua_pcall(L, 1, 0, 1);
     if (r != LUA_OK)
     {
-        std::cout << "addr 3 " << L << ", " << std::this_thread::get_id() << std::endl;
-
         log(svc_ctx, "lua loader error : %s", lua_tostring(L, -1));
         report_launcher_error(svc_ctx);
         return false;

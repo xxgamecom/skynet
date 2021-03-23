@@ -116,7 +116,7 @@ local function co_create(f)
 				local session = session_coroutine_id[co]
 				if session and session ~= 0 then
 					local source = debug.getinfo(f,"S")
-					skynet.error(string.format("Maybe forgot response session %s from %s : %s:%d",
+					skynet.log(string.format("Maybe forgot response session %s from %s : %s:%d",
 						session,
 						skynet.address(session_coroutine_address[co]),
 						source.source, source.linedefined))
@@ -265,7 +265,7 @@ function skynet.yield()
 end
 
 function skynet.wait(token)
-	local session = c.genid()
+	local session = c.gen_session_id()
 	token = token or coroutine.running()
 	local ret, msg = suspend_sleep(session, token)
 	sleep_session[token] = nil
@@ -285,7 +285,7 @@ skynet.hpc = c.hpc	-- high performance counter
 
 local traceid = 0
 function skynet.trace(info)
-	skynet.error("TRACE", session_coroutine_tracetag[running_thread])
+	skynet.log("TRACE", session_coroutine_tracetag[running_thread])
 	if session_coroutine_tracetag[running_thread] == false then
 		-- force off trace log
 		return
@@ -363,14 +363,14 @@ function skynet.rawsend(addr, typename, msg, sz)
 	return c.send(addr, p.id, 0 , msg, sz)
 end
 
-skynet.genid = assert(c.genid)
+skynet.gen_session_id = assert(c.gen_session_id)
 
 skynet.redirect = function(dest,source,typename,...)
 	return c.redirect(dest, source, proto[typename].id, ...)
 end
 
 skynet.pack = assert(c.pack)
-skynet.packstring = assert(c.packstring)
+skynet.pack_string = assert(c.pack_string)
 skynet.unpack = assert(c.unpack)
 skynet.tostring = assert(c.tostring)
 skynet.trash = assert(c.trash)
@@ -524,7 +524,7 @@ function skynet.dispatch(typename, func)
 end
 
 local function unknown_request(session, address, msg, sz, prototype)
-	skynet.error(string.format("Unknown request (%s): %s", prototype, c.tostring(msg,sz)))
+	skynet.log(string.format("Unknown request (%s): %s", prototype, c.tostring(msg,sz)))
 	error(string.format("Unknown session : %d from %x", session, address))
 end
 
@@ -535,7 +535,7 @@ function skynet.dispatch_unknown_request(unknown)
 end
 
 local function unknown_response(session, address, msg, sz)
-	skynet.error(string.format("Response message : %s" , c.tostring(msg,sz)))
+	skynet.log(string.format("Response message : %s" , c.tostring(msg,sz)))
 	error(string.format("Unknown session : %d from %x", session, address))
 end
 
@@ -753,7 +753,7 @@ end
 function skynet.init_service(start)
 	local ok, err = skynet.pcall(start)
 	if not ok then
-		skynet.error("init service failed: " .. tostring(err))
+		skynet.log("init service failed: " .. tostring(err))
 		skynet.send(".launcher","lua", "ERROR")
 		skynet.exit()
 	else

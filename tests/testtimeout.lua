@@ -6,7 +6,7 @@ local function test_service()
 
 	skynet.start(function()
 		skynet.dispatch("lua", function()
-			skynet.error("Wait for 1s")
+			skynet.log("Wait for 1s")
 			skynet.sleep(100)	-- response after 1s for any request
 			skynet.ret()
 		end)
@@ -37,13 +37,13 @@ end
 
 skynet.start(function()
 	local test = service.new("testtimeout", test_service)
-	skynet.error("1", skynet.now())
+	skynet.log("1", skynet.now())
 	skynet.call(test, "lua")
-	skynet.error("2", skynet.now())
-	skynet.error(timeout_call(50, test, "lua"))
-	skynet.error("3", skynet.now())
-	skynet.error(timeout_call(150, test, "lua"))
-	skynet.error("4", skynet.now())
+	skynet.log("2", skynet.now())
+	skynet.log(timeout_call(50, test, "lua"))
+	skynet.log("3", skynet.now())
+	skynet.log(timeout_call(150, test, "lua"))
+	skynet.log("4", skynet.now())
 	skynet.exit()
 end)
 

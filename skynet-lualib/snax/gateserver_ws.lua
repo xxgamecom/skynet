@@ -149,7 +149,7 @@ function gateserver.start(handler)
         local port = assert(conf.port)
         maxclient = conf.maxclient or 1024
         nodelay = conf.nodelay
-        skynet.error(string.format("Listen on %s:%d", address, port))
+        skynet.log(string.format("Listen on %s:%d", address, port))
         socket = socketdriver.listen(address, port)
         socketdriver.start(socket)
         if handler.open then
@@ -188,7 +188,7 @@ function gateserver.start(handler)
 
             handler.message(fd, msg, sz)
         else
-            skynet.error(string.format("Drop message from fd (%d) : %s", fd, netpack.tostring(msg, sz)))
+            skynet.log(string.format("Drop message from fd (%d) : %s", fd, netpack.tostring(msg, sz)))
         end
     end
 
@@ -247,7 +247,7 @@ function gateserver.start(handler)
     function MSG.error(fd, msg)
         if fd == socket then
             socketdriver.close(fd)
-            skynet.error(msg)
+            skynet.log(msg)
         else
             if handler.error then
                 handler.error(fd, msg)

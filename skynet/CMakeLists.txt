@@ -50,10 +50,8 @@ target_link_libraries(skynet_core pthread m dl liblua)
 # target executable (skynet)
 #----------------------------------------------------
 
-add_definitions(-Wl,-E)
+#add_definitions(-Wl,-E)
 
 add_executable(skynet skynet.cpp)
-target_link_libraries(skynet pthread m dl liblua skynet_core)
+target_link_libraries(skynet pthread m dl skynet_core)
 
-#$(SKYNET_BUILD_PATH)/skynet : $(foreach v, $(SKYNET_SRC), skynet-src/$(v)) $(LUA_LIB) $(MALLOC_STATICLIB)
-#    $(CC) $(CFLAGS) -o $@ $^ -Iskynet-src -I$(JEMALLOC_INC) $(LDFLAGS) $(EXPORT) $(SKYNET_LIBS) $(SKYNET_DEFINES)

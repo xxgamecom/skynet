@@ -22,7 +22,7 @@ local function read_package(fd)
 end
 
 local function pack_package(...)
-	local message = skynet.packstring(...)
+	local message = skynet.pack_string(...)
 	local size = #message
 	assert(size <= 255 , "too long")
 	return string.char(size) .. message
@@ -43,7 +43,7 @@ local function connect_slave(slave_id, address)
 		if slaves[slave_id] == nil then
 			local fd = assert(socket.open(address), "Can't connect to "..address)
 			socketdriver.nodelay(fd)
-			skynet.error(string.format("Connect to harbor %d (fd=%d), %s", slave_id, fd, address))
+			skynet.log(string.format("Connect to harbor %d (fd=%d), %s", slave_id, fd, address))
 			slaves[slave_id] = fd
 			monitor_clear(slave_id)
 			socket.abandon(fd)
@@ -51,7 +51,7 @@ local function connect_slave(slave_id, address)
 		end
 	end)
 	if not ok then
-		skynet.error(err)
+		skynet.log(err)
 	end
 end
 
@@ -102,7 +102,7 @@ local function monitor_master(master_fd)
 				end
 			end
 		else
-			skynet.error("Master disconnect")
+			skynet.log("Master disconnect")
 			for _, v in ipairs(monitor_master_set) do
 				v(true)
 			end
@@ -116,20 +116,20 @@ local function accept_slave(fd)
 	socket.start(fd)
 	local id = socket.read(fd, 1)
 	if not id then
-		skynet.error(string.format("Connection (fd =%d) closed", fd))
+		skynet.log(string.format("Connection (fd =%d) closed", fd))
 		socket.close(fd)
 		return
 	end
 	id = string.byte(id)
 	if slaves[id] ~= nil then
-		skynet.error(string.format("Slave %d exist (fd =%d)", id, fd))
+		skynet.log(string.format("Slave %d exist (fd =%d)", id, fd))
 		socket.close(fd)
 		return
 	end
 	slaves[id] = fd
 	monitor_clear(id)
 	socket.abandon(fd)
-	skynet.error(string.format("Harbor %d connected (fd = %d)", id, fd))
+	skynet.log(string.format("Harbor %d connected (fd = %d)", id, fd))
 	skynet.send(harbor_service, "harbor", string.format("A %d %d", fd, id))
 end
 
@@ -166,7 +166,7 @@ local function monitor_harbor(master_fd)
 			end
 			slaves[id] = false
 		else
-			skynet.error("Unknown command ", command)
+			skynet.log("Unknown command ", command)
 		end
 	end
 end
@@ -230,7 +230,7 @@ skynet.start(function()
 	local harbor_id = tonumber(skynet.getenv "harbor")
 	local slave_address = assert(skynet.getenv "address")
 	local slave_fd = socket.listen(slave_address)
-	skynet.error("slave connect to master " .. tostring(master_addr))
+	skynet.log("slave connect to master " .. tostring(master_addr))
 	local master_fd = assert(socket.open(master_addr), "Can't connect to master")
 
 	skynet.dispatch("lua", function (_,_,command,...)
@@ -245,12 +245,12 @@ skynet.start(function()
 	socket.write(master_fd, hs_message)
 	local t, n = read_package(master_fd)
 	assert(t == "W" and type(n) == "number", "slave shakehand failed")
-	skynet.error(string.format("Waiting for %d harbors", n))
+	skynet.log(string.format("Waiting for %d harbors", n))
 	skynet.fork(monitor_master, master_fd)
 	if n > 0 then
 		local co = coroutine.running()
 		socket.start(slave_fd, function(fd, addr)
-			skynet.error(string.format("New connection (fd = %d, %s)",fd, addr))
+			skynet.log(string.format("New connection (fd = %d, %s)",fd, addr))
 			socketdriver.nodelay(fd)
 			if pcall(accept_slave,fd) then
 				local s = 0
@@ -268,6 +268,6 @@ skynet.start(function()
 		-- slave_fd does not start, so use close_fd.
 		socket.close_fd(slave_fd)
 	end
-	skynet.error("Shakehand ready")
+	skynet.log("Shakehand ready")
 	skynet.fork(ready)
 end)
