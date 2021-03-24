@@ -137,8 +137,8 @@ function gateserver.start(handler)
     end
 
     skynet.register_protocol({
-        name = "socket",
-        id = skynet.MSG_PTYPE_SOCKET, -- MSG_PTYPE_SOCKET = 6
+        msg_ptype_name = "socket",
+        msg_ptype = skynet.MSG_PTYPE_SOCKET, -- MSG_PTYPE_SOCKET = 6
         unpack = function(msg, sz)
             return netpack.filter(queue, msg, sz)
         end,

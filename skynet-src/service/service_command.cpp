@@ -82,17 +82,17 @@ static void _handle_exit(service_context* svc_ctx, uint32_t svc_handle)
 
 
 // skynet cmd: timeout
-// @param param 
+// @param param timeout ticks
 const char* cmd_timeout(service_context* svc_ctx, const char* param)
 {
     // get time & session id
     char* session_ptr = nullptr;
-    int ti = ::strtol(param, &session_ptr, 10);
+    int ticks = ::strtol(param, &session_ptr, 10);
 
-    int session = svc_ctx->new_session();
-    timer_manager::instance()->instance()->timeout(svc_ctx->svc_handle_, ti, session);
+    int session_id = svc_ctx->new_session();
+    timer_manager::instance()->instance()->timeout(svc_ctx->svc_handle_, ticks, session_id);
     
-    ::sprintf(svc_ctx->cmd_result_, "%d", session);
+    ::sprintf(svc_ctx->cmd_result_, "%d", session_id);
     return svc_ctx->cmd_result_;
 }
 

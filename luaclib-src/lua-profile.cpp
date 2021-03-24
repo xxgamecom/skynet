@@ -150,7 +150,7 @@ static int timing_resume(lua_State* L)
     return co_resume(L);
 }
 
-static int lresume(lua_State* L)
+static int l_resume(lua_State* L)
 {
     lua_pushvalue(L, 1);
 
@@ -165,10 +165,11 @@ static int l_resume_co(lua_State* L)
     return timing_resume(L);
 }
 
+//
 static int timing_yield(lua_State* L)
 {
 #ifdef DEBUG_LOG
-    lua_State *from = lua_tothread(L, -1);
+    lua_State* from = lua_tothread(L, -1);
 #endif
     lua_pushvalue(L, -1);
     lua_rawget(L, lua_upvalueindex(2));    // check total time
@@ -189,13 +190,13 @@ static int timing_yield(lua_State* L)
         double diff = diff_time(starttime);
         ti += diff;
 #ifdef DEBUG_LOG
-        fprintf(stderr, "PROFILE [%p] yield (%lf/%lf)\n", from, diff, ti);
+        ::fprintf(stderr, "PROFILE [%p] yield (%lf/%lf)\n", from, diff, ti);
 #endif
 
-        lua_pushvalue(L, -1);    // push coroutine
+        lua_pushvalue(L, -1);      // push coroutine
         lua_pushnumber(L, ti);
         lua_rawset(L, lua_upvalueindex(2));
-        lua_pop(L, 1);    // pop coroutine
+        lua_pop(L, 1);              // pop coroutine
     }
 
     lua_CFunction co_yield = lua_tocfunction(L, lua_upvalueindex(3));
@@ -233,7 +234,7 @@ LUAMOD_API int luaopen_skynet_profile(lua_State* L)
     luaL_Reg l[] = {
         { "start",     l_start },
         { "stop",      l_stop },
-        { "resume",    lresume },
+        { "resume",    l_resume },
         { "yield",     l_yield },
         { "resume_co", l_resume_co },
         { "yield_co",  l_yield_co },
