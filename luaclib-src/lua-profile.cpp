@@ -55,6 +55,68 @@ static inline double diff_time(double start)
     }
 }
 
+static int timing_resume(lua_State* L)
+{
+    lua_pushvalue(L, -1);
+    lua_rawget(L, lua_upvalueindex(2));
+    if (lua_isnil(L, -1))
+    {        // check total time
+        lua_pop(L, 2);    // pop from coroutine
+    }
+    else
+    {
+        lua_pop(L, 1);
+        double ti = get_time();
+#ifdef DEBUG_LOG
+        fprintf(stderr, "PROFILE [%p] resume %lf\n", lua_tothread(L, -1), ti);
+#endif
+        lua_pushnumber(L, ti);
+        lua_rawset(L, lua_upvalueindex(1));    // set start time
+    }
+
+    lua_CFunction co_resume = lua_tocfunction(L, lua_upvalueindex(3));
+
+    return co_resume(L);
+}
+
+//
+static int timing_yield(lua_State* L)
+{
+#ifdef DEBUG_LOG
+    lua_State* from = lua_tothread(L, -1);
+#endif
+    lua_pushvalue(L, -1);
+    lua_rawget(L, lua_upvalueindex(2));    // check total time
+    if (lua_isnil(L, -1))
+    {
+        lua_pop(L, 2);
+    }
+    else
+    {
+        double ti = lua_tonumber(L, -1);
+        lua_pop(L, 1);
+
+        lua_pushvalue(L, -1);    // push coroutine
+        lua_rawget(L, lua_upvalueindex(1));
+        double starttime = lua_tonumber(L, -1);
+        lua_pop(L, 1);
+
+        double diff = diff_time(starttime);
+        ti += diff;
+#ifdef DEBUG_LOG
+        ::fprintf(stderr, "PROFILE [%p] yield (%lf/%lf)\n", from, diff, ti);
+#endif
+
+        lua_pushvalue(L, -1);      // push coroutine
+        lua_pushnumber(L, ti);
+        lua_rawset(L, lua_upvalueindex(2));
+        lua_pop(L, 1);              // pop coroutine
+    }
+
+    lua_CFunction co_yield = lua_tocfunction(L, lua_upvalueindex(3));
+    return co_yield(L);
+}
+
 static int l_start(lua_State* L)
 {
     if (lua_gettop(L) != 0)
@@ -126,30 +188,6 @@ static int l_stop(lua_State* L)
     return 1;
 }
 
-static int timing_resume(lua_State* L)
-{
-    lua_pushvalue(L, -1);
-    lua_rawget(L, lua_upvalueindex(2));
-    if (lua_isnil(L, -1))
-    {        // check total time
-        lua_pop(L, 2);    // pop from coroutine
-    }
-    else
-    {
-        lua_pop(L, 1);
-        double ti = get_time();
-#ifdef DEBUG_LOG
-        fprintf(stderr, "PROFILE [%p] resume %lf\n", lua_tothread(L, -1), ti);
-#endif
-        lua_pushnumber(L, ti);
-        lua_rawset(L, lua_upvalueindex(1));    // set start time
-    }
-
-    lua_CFunction co_resume = lua_tocfunction(L, lua_upvalueindex(3));
-
-    return co_resume(L);
-}
-
 static int l_resume(lua_State* L)
 {
     lua_pushvalue(L, 1);
@@ -163,45 +201,6 @@ static int l_resume_co(lua_State* L)
     lua_rotate(L, 2, -1);    // 'from' coroutine rotate to the top(index -1)
 
     return timing_resume(L);
-}
-
-//
-static int timing_yield(lua_State* L)
-{
-#ifdef DEBUG_LOG
-    lua_State* from = lua_tothread(L, -1);
-#endif
-    lua_pushvalue(L, -1);
-    lua_rawget(L, lua_upvalueindex(2));    // check total time
-    if (lua_isnil(L, -1))
-    {
-        lua_pop(L, 2);
-    }
-    else
-    {
-        double ti = lua_tonumber(L, -1);
-        lua_pop(L, 1);
-
-        lua_pushvalue(L, -1);    // push coroutine
-        lua_rawget(L, lua_upvalueindex(1));
-        double starttime = lua_tonumber(L, -1);
-        lua_pop(L, 1);
-
-        double diff = diff_time(starttime);
-        ti += diff;
-#ifdef DEBUG_LOG
-        ::fprintf(stderr, "PROFILE [%p] yield (%lf/%lf)\n", from, diff, ti);
-#endif
-
-        lua_pushvalue(L, -1);      // push coroutine
-        lua_pushnumber(L, ti);
-        lua_rawset(L, lua_upvalueindex(2));
-        lua_pop(L, 1);              // pop coroutine
-    }
-
-    lua_CFunction co_yield = lua_tocfunction(L, lua_upvalueindex(3));
-
-    return co_yield(L);
 }
 
 static int l_yield(lua_State* L)

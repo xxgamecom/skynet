@@ -66,8 +66,8 @@ local function init(skynet, export)
             skynet.ret(skynet.pack(ok, table.concat(output, "\n")))
         end
 
-        function dbgcmd.TERM(service)
-            skynet.term(service)
+        function dbgcmd.TERM(svc_handle)
+            skynet.term(svc_handle)
         end
 
         function dbgcmd.REMOTEDEBUG(...)

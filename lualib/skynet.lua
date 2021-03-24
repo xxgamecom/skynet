@@ -84,24 +84,24 @@ local function dispatch_error_queue()
     end
 end
 
-local function _error_dispatch(error_session, error_source)
+local function _error_dispatch(error_session_id, error_src_svc_handle)
     skynet.ignoreret()    -- don't return for error
-    if error_session == 0 then
-        -- error_source is down, clear unreponse set
+    if error_session_id == 0 then
+        -- error_src_svc_handle is down, clear unreponse set
         for resp, address in pairs(unresponse) do
-            if error_source == address then
+            if error_src_svc_handle == address then
                 unresponse[resp] = nil
             end
         end
-        for session_id, srv in pairs(watching_session) do
-            if srv == error_source then
+        for session_id, svc_handle in pairs(watching_session) do
+            if svc_handle == error_src_svc_handle then
                 table_insert(error_queue, session_id)
             end
         end
     else
-        -- capture an error for error_session
-        if watching_session[error_session] then
-            table_insert(error_queue, error_session)
+        -- capture an error for error_session_id
+        if watching_session[error_session_id] then
+            table_insert(error_queue, error_session_id)
         end
     end
 end
@@ -110,15 +110,15 @@ end
 
 local coroutine_pool = setmetatable({}, { __mode = "kv" })
 
-local function co_create(f)
+local function co_create(func)
     local co = table_remove(coroutine_pool)
     if co == nil then
         co = coroutine_create(function(...)
-            f(...)
+            func(...)
             while true do
                 local session_id = session_coroutine_id[co]
                 if session_id and session_id ~= 0 then
-                    local source = debug.getinfo(f, "S")
+                    local source = debug.getinfo(func, "S")
                     skynet.log(string.format("Maybe forgot response session %s from %s : %s:%d",
                             session_id,
                             skynet.address(session_coroutine_address[co]),
@@ -139,17 +139,17 @@ local function co_create(f)
                 end
 
                 -- recycle co into pool
-                f = nil
+                func = nil
                 coroutine_pool[#coroutine_pool + 1] = co
-                -- recv new main function f
-                f = coroutine_yield "SUSPEND"
-                f(coroutine_yield())
+                -- recv new main function
+                func = coroutine_yield "SUSPEND"
+                func(coroutine_yield())
             end
         end)
     else
-        -- pass the main function f to coroutine, and restore running thread
+        -- pass the main function to coroutine, and restore running thread
         local running = running_thread
-        coroutine_resume(co, f)
+        coroutine_resume(co, func)
         running_thread = running
     end
     return co
@@ -405,8 +405,8 @@ end
 skynet.gen_session_id = assert(skynet_core.gen_session_id)
 
 --- redirect the message to destination service
-skynet.redirect = function(dst_service_handle, src_svc_handle, msg_ptype, ...)
-    return skynet_core.redirect(dst_service_handle, src_svc_handle, msg_proto_handlers[msg_ptype].msg_ptype, ...)
+skynet.redirect = function(dst_svc_handle, src_svc_handle, msg_ptype, ...)
+    return skynet_core.redirect(dst_svc_handle, src_svc_handle, msg_proto_handlers[msg_ptype].msg_ptype, ...)
 end
 
 skynet.pack = assert(skynet_core.pack)
@@ -415,8 +415,8 @@ skynet.unpack = assert(skynet_core.unpack)
 skynet.tostring = assert(skynet_core.tostring)
 skynet.trash = assert(skynet_core.trash)
 
-local function yield_call(service, session_id)
-    watching_session[session_id] = service
+local function yield_call(svc_handle, session_id)
+    watching_session[session_id] = svc_handle
     session_id_coroutine[session_id] = running_thread
     local succ, msg, sz = coroutine_yield "SUSPEND"
     watching_session[session_id] = nil
@@ -614,9 +614,9 @@ local function raw_dispatch_message(msg_ptype, msg, sz, session_id, src_svc_hand
             return
         end
 
-        local f = proto_handler.dispatch
-        if f then
-            local co = co_create(f)
+        local func = proto_handler.dispatch
+        if func then
+            local co = co_create(func)
             session_coroutine_id[co] = session_id
             session_coroutine_address[co] = src_svc_handle
             local traceflag = proto_handler.trace
@@ -739,16 +739,16 @@ skynet.register_protocol({
 local init_func = {}
 
 --
-function skynet.init(f, name)
-    assert(type(f) == "function")
+function skynet.init(func, name)
+    assert(type(func) == "function")
     if init_func == nil then
-        f()
+        func()
     else
-        table_insert(init_func, f)
+        table_insert(init_func, func)
         if name then
             assert(type(name) == "string")
             assert(init_func[name] == nil)
-            init_func[name] = f
+            init_func[name] = func
         end
     end
 end
@@ -757,14 +757,14 @@ local function init_all()
     local funcs = init_func
     init_func = nil
     if funcs then
-        for _, f in ipairs(funcs) do
-            f()
+        for _, func in ipairs(funcs) do
+            func()
         end
     end
 end
 
-local function ret(f, ...)
-    f()
+local function ret(func, ...)
+    func()
     return ...
 end
 
@@ -908,8 +908,8 @@ function skynet.uniqtask()
     return ret
 end
 
-function skynet.term(service)
-    return _error_dispatch(0, service)
+function skynet.term(svc_handle)
+    return _error_dispatch(0, svc_handle)
 end
 
 function skynet.memlimit(bytes)
