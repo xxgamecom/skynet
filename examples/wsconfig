@@ -2,7 +2,6 @@ root = "./"
 thread = 8
 logger = nil
 logpath = "./run"
-harbor = 0
 start = "wsmain"	-- main script
 bootstrap = "snlua bootstrap"	-- The service for bootstrap
 luaservice = root.."service/?.lua;"..root.."test/?.lua;"..root.."examples/?.lua"

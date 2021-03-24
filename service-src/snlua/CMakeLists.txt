@@ -11,8 +11,6 @@ set(SKYNET_SNLUA_SRC
 )
 list(APPEND SKYNET_SNLUA_SRC ${SKYNET_SNLUA_HEADER})
 
-#cc -g -O2 -Wall -I3rd/lua  -fPIC -dynamiclib -Wl,-undefined,dynamic_lookup service-src/service_snlua.c -o cservice/snlua.so -Iskynet-src
-
 # target module lib (snlua.so)
 add_library(snlua MODULE ${SKYNET_SNLUA_SRC})
 set_target_properties(snlua
@@ -21,4 +19,4 @@ set_target_properties(snlua
     ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_CSERVICE}"
     LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_CSERVICE}"
 )
-target_link_libraries(snlua "-undefined dynamic_lookup")
+target_link_libraries(snlua ${SKYNET_SHARED})

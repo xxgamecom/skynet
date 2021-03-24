@@ -7,11 +7,10 @@
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     set(LINUX TRUE)
-    set(PLATFORM_FOLDER linux)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(APPLE TRUE)
     set(MACOSX TRUE)
-    set(PLATFORM_FOLDER mac)
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+    set(FREEBSD TRUE)
 else()
     message(FATAL_ERROR "Unsupported platform, CMake will exit")
     return()

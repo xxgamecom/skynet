@@ -19,4 +19,4 @@ set_target_properties(logger
     ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_CSERVICE}"
     LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_CSERVICE}"
 )
-target_link_libraries(logger "-undefined dynamic_lookup")
+target_link_libraries(logger ${SKYNET_SHARED})

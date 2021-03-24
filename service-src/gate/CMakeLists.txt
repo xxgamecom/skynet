@@ -25,5 +25,4 @@ set_target_properties(gate
     ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_CSERVICE}"
     LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_CSERVICE}"
 )
-target_link_libraries(gate "-undefined dynamic_lookup")
-# Meh. main should have been module. You could also try to add it to CMAKE_SHARED_LINKER_FLAGS.
+target_link_libraries(gate ${SKYNET_SHARED})

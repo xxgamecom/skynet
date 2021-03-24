@@ -19,7 +19,7 @@ set(SKYNET_CORE_HEADER skynet.h
     ${SKYNET_NODE_HEADER}
     ${SKYNET_UTILS_HEADER}
 )
-set(SKYNET_CORE_SRC
+set(SKYNET_CORE_SRC skynet.cpp
     ${SKYNET_MEMORY_SRC}
     ${SKYNET_MQ_SRC}
     ${SKYNET_LOG_SRC}
@@ -32,17 +32,12 @@ set(SKYNET_CORE_SRC
 )
 list(APPEND SKYNET_CORE_SRC ${SKYNET_CORE_HEADER})
 
-#----------------------------------------------------
 # target executable (skynet)
-#----------------------------------------------------
-
-add_definitions(${EXPORT})
-
-add_executable(skynet skynet.cpp ${SKYNET_CORE_SRC})
+add_executable(skynet ${SKYNET_CORE_SRC})
 if (MACOSX)
-    target_link_libraries(skynet pthread m dl liblua)
-elseif()
-    target_link_libraries(skynet pthread m dl rt liblua)
-endif ()
+    target_link_libraries(skynet ${SKYNET_EXPORT} pthread m dl liblua)
+elseif(LINUX OR FREEBSD)
+    target_link_libraries(skynet ${SKYNET_EXPORT} pthread m dl rt liblua)
+endif()
 
 

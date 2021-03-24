@@ -26,21 +26,21 @@ include(DisallowBuildInSource)
 include(ConfigDefine)
 
 if(MACOSX)
-    set(EXPORT )
-    set(SHARED -dynamiclib -Wl,-undefined,dynamic_lookup)
-elseif(LINUX)
-    set(EXPORT -Wl,-E)
-    set(SHARED --shared)
+    set(SKYNET_EXPORT )
+    set(SKYNET_SHARED -Wl,-undefined,dynamic_lookup)  # -dynamiclib
+    set(SKYNET_DEFINES -DDONT_USE_JEMALLOC)
+elseif(LINUX OR FREEBSD)
+    set(SKYNET_EXPORT -Wl,-E)
+    set(SKYNET_SHARED --shared)
+    set(SKYNET_DEFINES )
 endif()
 
 # Debug/Release support
 set(CMAKE_CXX_FLAGS_DEBUG   "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 
-# macosx not use jemalloc
-if (MACOSX)
-    add_definitions(-DDONT_USE_JEMALLOC)
-endif()
+#
+add_definitions(${SKYNET_DEFINES})
 
 #
 message(STATUS "PROJECT_NAME              : " ${PROJECT_NAME})

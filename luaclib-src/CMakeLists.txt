@@ -30,4 +30,4 @@ set_target_properties(skynet_luaclib
     ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_LUACLIB}"
     LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_LUACLIB}"
 )
-target_link_libraries(skynet_luaclib "-undefined dynamic_lookup")
+target_link_libraries(skynet_luaclib ${SKYNET_SHARED})
