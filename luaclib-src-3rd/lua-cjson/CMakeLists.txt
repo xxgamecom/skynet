@@ -17,7 +17,7 @@ endif()
 # multiple threads
 SET(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 #
-FIND_PACKAGE(Threads REQUIRED)
+find_package(Threads REQUIRED)
 if(NOT CMAKE_USE_PTHREADS_INIT)
     MESSAGE(FATAL_ERROR "Pthreads not found")
 endif()

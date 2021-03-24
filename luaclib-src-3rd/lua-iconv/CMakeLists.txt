@@ -2,7 +2,7 @@
 #SET(ICONV_USE_STATIC_LIBS ON)
 
 # find iconv
-FIND_PACKAGE(iconv REQUIRED)
+find_package(iconv REQUIRED)
 if (Iconv_FOUND)
     MESSAGE(STATUS "iconv found")
     # include

@@ -1,0 +1,29 @@
+# use static
+set(OPENSSL_USE_STATIC_LIBS ON)
+
+# find openssl
+find_package(OpenSSL COMPONENTS SSL Crypto REQUIRED)
+if (OpenSSL_FOUND)
+    # include
+    include_directories("${OPENSSL_INCLUDE_DIR}")
+
+    #message(STATUS "OpenSSL version      : " ${OPENSSL_VERSION})
+    #message(STATUS "OpenSSL include path : " ${OPENSSL_INCLUDE_DIR})
+    #message(STATUS "OpenSSL ssl path     : " ${OPENSSL_SSL_LIBRARIES})
+    #message(STATUS "OpenSSL crypto path  : " ${OPENSSL_CRYPTO_LIBRARIES})
+
+    # target shared lib
+    add_library(ltls MODULE
+        "${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-tls/ltls.c"
+    )
+    set_target_properties(ltls
+        PROPERTIES
+        PREFIX ""
+        ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_LUACLIB_3RD}"
+        LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_LUACLIB_3RD}"
+    )
+    target_link_libraries(ltls ${SKYNET_SHARED} OpenSSL::SSL OpenSSL::Crypto)
+else()
+    message(WARNING "lua-tls need OpenSSL, but not found OpenSSL, SKIP...")
+endif()
+
