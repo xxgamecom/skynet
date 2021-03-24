@@ -1,7 +1,7 @@
 -- This is a deprecated module, use skynet.queue instead.
 
 local skynet = require "skynet"
-local c = require "skynet.core"
+local skynet_core = require "skynet.core"
 
 local mqueue = {}
 local init_once
@@ -49,7 +49,7 @@ local function message_dispatch(f)
 			else
 				local data, size = skynet.pack(do_func(f,msg))
 				-- 1 means response
-				c.send(msg.addr, 1, session, data, size)
+				skynet_core.send(msg.addr, 1, session, data, size)
 			end
 		end
 	end

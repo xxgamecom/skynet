@@ -29,19 +29,14 @@ include(ConfigDefine)
 if(MACOSX)
     set(SKYNET_EXPORT )
     set(SKYNET_SHARED -Wl,-undefined,dynamic_lookup)  # -dynamiclib
-    set(SKYNET_DEFINES -DDONT_USE_JEMALLOC)
 elseif(LINUX OR FREEBSD)
     set(SKYNET_EXPORT -Wl,-E)
     set(SKYNET_SHARED --shared)
-    set(SKYNET_DEFINES )
 endif()
 
 # Debug/Release support
 set(CMAKE_CXX_FLAGS_DEBUG   "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
-
-#
-add_definitions(${SKYNET_DEFINES})
 
 #
 message(STATUS "PROJECT_NAME                : " ${PROJECT_NAME})

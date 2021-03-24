@@ -33,7 +33,7 @@ skynet                              // skynet源码目录
 │   └── snlua.so                    // `snlua服务` 编译后的生成文件, 该服务是一个用于启动lua服务的c服务
 |
 ├── deps                            // skynet 依赖目录
-│   ├── jemalloc                    // jemalloc库
+│   ├── asio                        // asio库
 │   └── lua                         // lua库
 |
 ├── examples                        // 示例

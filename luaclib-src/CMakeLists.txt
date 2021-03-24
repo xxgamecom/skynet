@@ -8,17 +8,17 @@ set(SKYNET_LUACLIB_HEADER
 )
 set(SKYNET_LUACLIB_SRC
     lsha1.c
-    lua-skynet_crypt.cpp
+    lua-crypt.cpp
     lua-seri.cpp
     lua-memory.cpp
-    lua-skynet_core.cpp
-    lua-skynet_profile.cpp
-    lua-skynet_netpack.cpp
-    lua-skynet_netpack_tcp.cpp
-    lua-skynet_netpack_ws.cpp
-    lua-skynet_socket.cpp
-    lua-skynet_cluster.cpp
-    lua-skynet_mongo.cpp
+    lua-core.cpp
+    lua-profile.cpp
+    lua-socket.cpp
+    lua-netpack.cpp
+    lua-netpack_tcp.cpp
+    lua-netpack_ws.cpp
+    lua-cluster.cpp
+    lua-mongo.cpp
 )
 list(APPEND SKYNET_LUACLIB_SRC ${SKYNET_LUACLIB_HEADER})
 
