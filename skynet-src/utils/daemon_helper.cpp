@@ -6,6 +6,7 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/file.h>
 
 namespace skynet {
 
@@ -53,7 +54,7 @@ int _write_pid(const char* pid_file)
     }
 
     int pid = -1;
-    if (::flock(fd, LOCK_EX|LOCK_NB) == -1) 
+    if (::flock(fd, LOCK_EX|LOCK_NB) == -1)
     {
         int n = ::fscanf(f, "%d", &pid);
         ::fclose(f);

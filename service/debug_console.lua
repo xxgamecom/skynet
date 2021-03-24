@@ -1,6 +1,6 @@
 local skynet = require "skynet"
 local codecache = require "skynet.codecache"
-local core = require "skynet.core"
+local skynet_core = require "skynet.core"
 local socket = require "skynet.socket"
 local snax = require "skynet.snax"
 local memory = require "skynet.memory"
@@ -313,20 +313,20 @@ end
 
 function COMMAND.logon(address)
     address = adjust_address(address)
-    core.command("LOGON", skynet.address(address))
+    skynet_core.command("LOGON", skynet.address(address))
 end
 
 function COMMAND.logoff(address)
     address = adjust_address(address)
-    core.command("LOGOFF", skynet.address(address))
+    skynet_core.command("LOGOFF", skynet.address(address))
 end
 
 function COMMAND.signal(address, sig)
     address = skynet.address(adjust_address(address))
     if sig then
-        core.command("SIGNAL", string.format("%s %d",address,sig))
+        skynet_core.command("SIGNAL", string.format("%s %d",address,sig))
     else
-        core.command("SIGNAL", address)
+        skynet_core.command("SIGNAL", address)
     end
 end
 

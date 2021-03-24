@@ -1,5 +1,7 @@
 #include "socket_lock.h"
 
+#include <cassert>
+
 namespace skynet {
 
 socket_lock::socket_lock(std::mutex& mutex_ref)

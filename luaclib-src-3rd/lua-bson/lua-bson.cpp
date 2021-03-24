@@ -8,7 +8,7 @@ extern "C" {
 #include <ctime>
 #include <unistd.h>
 
-#include <string>
+#include <cstring>
 #include <cstdint>
 #include <cstdlib>
 #include <cstdbool>

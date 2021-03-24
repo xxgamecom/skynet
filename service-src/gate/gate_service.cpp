@@ -2,6 +2,8 @@
 #include "skynet.h"
 #include "gate_ctrl_cmd.h"
 
+#include <cassert>
+#include <cstdarg>
 #include <regex>
 
 namespace skynet { namespace service {

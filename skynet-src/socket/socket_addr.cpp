@@ -3,7 +3,7 @@
 
 #include "../utils/string_helper.h"
 
-#include <iostream>
+#include <cstring>
 
 namespace skynet {
 

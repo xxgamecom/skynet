@@ -11,6 +11,7 @@
 #include "../mq/mq_private.h"
 #include "../mq/mq_global.h"
 
+#include <cstring>
 #include <mutex>
 
 namespace skynet {

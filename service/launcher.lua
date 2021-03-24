@@ -1,6 +1,7 @@
 local skynet = require "skynet"
-local core = require "skynet.core"
+local skynet_core = require "skynet.core"
 require "skynet.manager"	-- import manager apis
+
 local string = string
 
 local services = {}
@@ -100,7 +101,7 @@ end
 function command.LOGLAUNCH(_, service, ...)
 	local inst = launch_service(service, ...)
 	if inst then
-		core.command("LOGON", skynet.address(inst))
+		skynet_core.command("LOGON", skynet.address(inst))
 	end
 	return NORET
 end

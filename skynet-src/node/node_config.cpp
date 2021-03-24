@@ -2,6 +2,8 @@
 #include "node_env.h"
 
 #include <iostream>
+#include <cassert>
+#include <cstring>
 
 extern "C" {
 #include <lua.h>

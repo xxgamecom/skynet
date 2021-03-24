@@ -5,6 +5,9 @@ extern "C" {
 #include <lauxlib.h>
 }
 
+#include <cstring>
+#include <cassert>
+
 namespace skynet {
 
 node_env* node_env::instance_ = nullptr;
