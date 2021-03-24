@@ -1,15 +1,15 @@
 # use static
-#SET(ICONV_USE_STATIC_LIBS ON)
+#set(ICONV_USE_STATIC_LIBS ON)
 
 # find iconv
 find_package(iconv REQUIRED)
 if (Iconv_FOUND)
-    MESSAGE(STATUS "iconv found")
+    message(STATUS "iconv found")
     # include
     include_directories("${Iconv_INCLUDE_DIR}")
 
-    MESSAGE(STATUS "iconv include path       : " ${Iconv_INCLUDE_DIR})
-    MESSAGE(STATUS "iconv lib path           : " ${Iconv_LIBRARIES})
+    message(STATUS "iconv include path       : " ${Iconv_INCLUDE_DIR})
+    message(STATUS "iconv lib path           : " ${Iconv_LIBRARIES})
 
     # target shared lib
     add_library(iconv MODULE
@@ -23,6 +23,6 @@ if (Iconv_FOUND)
     )
     target_link_libraries(iconv ${SKYNET_SHARED} Iconv::Iconv)
 else()
-    MESSAGE(WARNING "lua-iconv need iconv, but not found iconv, SKIP...")
+    message(WARNING "lua-iconv need iconv, but not found iconv, SKIP...")
 endif()
 

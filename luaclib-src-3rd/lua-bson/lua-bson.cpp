@@ -1,16 +1,18 @@
 #define LUA_LIB
 
+extern "C" {
 #include <lua.h>
 #include <lauxlib.h>
+}
 
-#include <time.h>
+#include <ctime>
 #include <unistd.h>
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include "atomic.h"
+#include <string>
+#include <cstdint>
+#include <cstdlib>
+#include <cstdbool>
+#include <atomic>
 
 #define DEFAULT_CAP 64
 #define MAX_NUMBER 1024
@@ -94,12 +96,12 @@ bson_reserve(struct bson* b, int sz)
 
     if (b->ptr == b->buffer)
     {
-        b->ptr = malloc(b->cap);
+        b->ptr = (uint8_t*)malloc(b->cap);
         memcpy(b->ptr, b->buffer, b->size);
     }
     else
     {
-        b->ptr = realloc(b->ptr, b->cap);
+        b->ptr = (uint8_t*)realloc(b->ptr, b->cap);
     }
 }
 
@@ -382,7 +384,7 @@ append_one(struct bson* bs, lua_State* L, const char* key, size_t sz, int depth)
     case LUA_TUSERDATA:
     {
         append_key(bs, L, BSON_DOCUMENT, key, sz);
-        int32_t* doc = lua_touserdata(L, -1);
+        int32_t* doc = (int32_t*)lua_touserdata(L, -1);
         int32_t sz = *doc;
         bson_reserve(bs, sz);
         memcpy(bs->ptr + bs->size, doc, sz);
@@ -675,7 +677,7 @@ static int
 ltostring(lua_State* L)
 {
     size_t sz = lua_rawlen(L, 1);
-    void* ud = lua_touserdata(L, 1);
+    char* ud = (char*)lua_touserdata(L, 1);
     lua_pushlstring(L, ud, sz);
     return 1;
 }
@@ -695,7 +697,7 @@ make_object(lua_State* L, int type, const void* ptr, size_t len)
     luaL_buffinit(L, &b);
     luaL_addchar(&b, 0);
     luaL_addchar(&b, type);
-    luaL_addlstring(&b, ptr, len);
+    luaL_addlstring(&b, (char*)ptr, len);
     luaL_pushresult(&b);
 }
 
@@ -705,7 +707,7 @@ unpack_dict(lua_State* L, struct bson_reader* br, bool array)
     luaL_checkstack(L, 16, NULL);    // reserve enough stack space to unpack table
     int sz = read_int32(L, br);
     const void* bytes = read_bytes(L, br, sz - 5);
-    struct bson_reader t = { bytes, sz - 5 };
+    struct bson_reader t = { (uint8_t*)bytes, sz - 5 };
     int end = read_byte(L, br);
     if (end != '\0')
     {
@@ -745,7 +747,7 @@ unpack_dict(lua_State* L, struct bson_reader* br, bool array)
             {
                 luaL_error(L, "Invalid bson string , length = %d", sz);
             }
-            lua_pushlstring(L, read_bytes(L, &t, sz), sz - 1);
+            lua_pushlstring(L, (char*)read_bytes(L, &t, sz), sz - 1);
             break;
         }
         case BSON_DOCUMENT:
@@ -764,7 +766,7 @@ unpack_dict(lua_State* L, struct bson_reader* br, bool array)
             luaL_addchar(&b, 0);
             luaL_addchar(&b, BSON_BINARY);
             luaL_addchar(&b, subtype);
-            luaL_addlstring(&b, read_bytes(L, &t, sz), sz);
+            luaL_addlstring(&b, (char*)read_bytes(L, &t, sz), sz);
             luaL_pushresult(&b);
             break;
         }
@@ -782,7 +784,7 @@ unpack_dict(lua_State* L, struct bson_reader* br, bool array)
         case BSON_MAXKEY:
         case BSON_NULL:
         {
-            char key[] = { 0, bt };
+            char key[] = { 0, (char)bt };
             lua_pushlstring(L, key, sizeof(key));
             break;
         }
@@ -861,7 +863,7 @@ unpack_dict(lua_State* L, struct bson_reader* br, bool array)
 static int
 lmakeindex(lua_State* L)
 {
-    int32_t* bson = luaL_checkudata(L, 1, "bson");
+    int32_t* bson = (int32_t*)luaL_checkudata(L, 1, "bson");
     const uint8_t* start = (const uint8_t*)bson;
     struct bson_reader br = { start + 4, get_length(start) - 5 };
     lua_newtable(L);
@@ -1012,7 +1014,7 @@ lreplace(lua_State* L)
     int id = lua_tointeger(L, -1);
     int type = id & ((1 << (BSON_TYPE_SHIFT)) - 1);
     int offset = id >> BSON_TYPE_SHIFT;
-    uint8_t* start = lua_touserdata(L, 1);
+    uint8_t* start = (uint8_t*)lua_touserdata(L, 1);
     struct bson b = { 0, 16, start + offset };
     switch (type)
     {
@@ -1057,7 +1059,7 @@ lreplace(lua_State* L)
 static int
 ldecode(lua_State* L)
 {
-    const int32_t* data = lua_touserdata(L, 1);
+    const int32_t* data = (int32_t*)lua_touserdata(L, 1);
     if (data == NULL)
     {
         return 0;
@@ -1095,7 +1097,7 @@ static void bson_meta(lua_State* L)
 static int
 encode_bson(lua_State* L)
 {
-    struct bson* b = lua_touserdata(L, 2);
+    struct bson* b = (struct bson*)lua_touserdata(L, 2);
     lua_settop(L, 1);
     if (luaL_getmetafield(L, -1, "__pairs") != LUA_TNIL)
     {
@@ -1134,7 +1136,7 @@ static int
 encode_bson_byorder(lua_State* L)
 {
     int n = lua_gettop(L);
-    struct bson* b = lua_touserdata(L, n);
+    struct bson* b = (struct bson*)lua_touserdata(L, n);
     lua_settop(L, --n);
     pack_ordered_dict(L, b, n, 0);
     lua_settop(L, 0);
@@ -1277,7 +1279,7 @@ lsubtype(lua_State* L, int subtype, const uint8_t* buf, size_t sz)
         char oid[24];
         int i;
         const uint8_t* id = buf;
-        static char* hex = "0123456789abcdef";
+        static char* hex = const_cast<char*>("0123456789abcdef");
         for (i = 0; i < 12; i++)
         {
             oid[i * 2] = hex[id[i] >> 4];
@@ -1408,7 +1410,7 @@ ltype(lua_State* L)
 static void
 typeclosure(lua_State* L)
 {
-    static const char* typename[] = {
+    static const char* type_name[] = {
         "number",    // 1
         "boolean",    // 2
         "table",    // 3
@@ -1425,21 +1427,21 @@ typeclosure(lua_State* L)
         "unsupported", // 14
     };
     int i;
-    int n = sizeof(typename) / sizeof(typename[0]);
+    int n = sizeof(type_name) / sizeof(type_name[0]);
     for (i = 0; i < n; i++)
     {
-        lua_pushstring(L, typename[i]);
+        lua_pushstring(L, type_name[i]);
     }
     lua_pushcclosure(L, ltype, n);
 }
 
 static uint8_t oid_header[5];
-static ATOM_ULONG oid_counter;
+std::atomic<uint32_t> oid_counter = 0;
 
 static void
 init_oid_header()
 {
-    if (ATOM_LOAD(&oid_counter))
+    if (oid_counter != 0)
     {
         // already init
         return;
@@ -1467,7 +1469,7 @@ init_oid_header()
     {
         c = 1;
     }
-    ATOM_STORE(&oid_counter, c);
+    oid_counter = c;
 }
 
 static inline int
@@ -1504,7 +1506,7 @@ lobjectid(lua_State* L)
     {
         time_t ti = time(NULL);
         // old_counter is a static var, use atom inc.
-        uint32_t id = ATOM_FINC(&oid_counter);
+        uint32_t id = oid_counter++;
 
         oid[2] = (ti >> 24) & 0xff;
         oid[3] = (ti >> 16) & 0xff;
@@ -1520,8 +1522,15 @@ lobjectid(lua_State* L)
     return 1;
 }
 
-LUAMOD_API int
-luaopen_bson(lua_State* L)
+/**
+ * skynet 3rd luaclib - bson
+ */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+LUAMOD_API int luaopen_bson(lua_State* L)
 {
     luaL_checkversion(L);
     int i;
@@ -1551,7 +1560,7 @@ luaopen_bson(lua_State* L)
     char null[] = { 0, BSON_NULL };
     lua_pushlstring(L, null, sizeof(null));
     lua_setfield(L, -2, "null");
-    char minkey[] = { 0, BSON_MINKEY };
+    char minkey[] = { 0, (char)BSON_MINKEY };
     lua_pushlstring(L, minkey, sizeof(minkey));
     lua_setfield(L, -2, "minkey");
     char maxkey[] = { 0, BSON_MAXKEY };
@@ -1562,3 +1571,6 @@ luaopen_bson(lua_State* L)
     return 1;
 }
 
+#ifdef __cplusplus
+}
+#endif

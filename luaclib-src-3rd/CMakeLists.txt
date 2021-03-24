@@ -9,7 +9,7 @@ add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-iconv)
 # lua-cjson
 add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-cjson)
 # lua-bson
-#add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-bson)
+add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-bson)
 # lua-snapshot
 add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-snapshot)
 
