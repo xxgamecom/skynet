@@ -27,11 +27,13 @@ add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src-3rd/sproto)
 # need openssl support
 #------------------------------------
 
-## lua-tls
-#add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-tls)
-## lua-codec
-#add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-codec)
-## lua-curl
-#add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-curl)
-## lua-httpsc
-#add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-httpsc)
+if (BUILD_SKYNET_SUPPORT_OPENSSL)
+    # lua-tls
+    add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-tls)
+    # lua-codec
+    add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-codec)
+    # lua-curl
+    add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-curl)
+    # lua-httpsc
+    add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-httpsc)
+endif()
