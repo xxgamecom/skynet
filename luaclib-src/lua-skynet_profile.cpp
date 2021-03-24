@@ -6,10 +6,8 @@ extern "C" {
 }
 
 #if defined(__APPLE__)
-
 #include <mach/task.h>
 #include <mach/mach.h>
-
 #endif
 
 #define NANOSEC 1000000000

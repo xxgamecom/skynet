@@ -10,6 +10,7 @@ set(SKYNET_LUACLIB_SRC
     lsha1.c
     lua-skynet_crypt.cpp
     lua-seri.cpp
+    lua-memory.cpp
     lua-skynet_core.cpp
     lua-skynet_profile.cpp
     lua-skynet_netpack.cpp
