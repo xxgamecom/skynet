@@ -7,11 +7,10 @@
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     set(LINUX TRUE)
-    set(PLATFORM_FOLDER linux)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(APPLE TRUE)
     set(MACOSX TRUE)
-    set(PLATFORM_FOLDER mac)
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+    set(FREEBSD TRUE)
 else()
     message(FATAL_ERROR "Unsupported platform, CMake will exit")
     return()
@@ -40,23 +39,6 @@ if(CMAKE_GENERATOR)
     # make configurations type keep same to cmake build type.
     set(CMAKE_CONFIGURATION_TYPES "${CMAKE_BUILD_TYPE}" CACHE STRING "Reset the configurations to what we need" FORCE)
 endif()
-
-#------------------------------------------------------
-# Custom properties
-#------------------------------------------------------
-
-# custom target property for dll collect
-define_property(TARGET
-    PROPERTY CC_DEPEND_DLLS
-    BRIEF_DOCS "depend dlls of a target"
-    FULL_DOCS "use to save depend dlls of a target"
-)
-# custom target property for lua link
-define_property(TARGET
-    PROPERTY CC_LUA_DEPEND
-    BRIEF_DOCS "skynet lua depend libs"
-    FULL_DOCS "use to save depend libs of skynet lua project"
-)
 
 #------------------------------------------------------
 # Compiler check

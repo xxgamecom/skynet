@@ -3,7 +3,6 @@ thread = 8
 logger = "userlog"
 logservice = "snlua"
 logpath = "."
-harbor = 0
 start = "main"	-- main script
 bootstrap = "snlua bootstrap"	-- The service for bootstrap
 luaservice = root.."service/?.lua;"..root.."test/?.lua;"..root.."examples/?.lua"

@@ -6,7 +6,6 @@ set(SKYNET_LUACLIB_HEADER
     lsha1.h
     lua-seri.h
 )
-
 set(SKYNET_LUACLIB_SRC
     lsha1.c
     lua-skynet_crypt.cpp
@@ -20,7 +19,6 @@ set(SKYNET_LUACLIB_SRC
     lua-skynet_cluster.cpp
     lua-skynet_mongo.cpp
 )
-
 list(APPEND SKYNET_LUACLIB_SRC ${SKYNET_LUACLIB_HEADER})
 
 # target module lib (skynet.so)
@@ -32,4 +30,4 @@ set_target_properties(skynet_luaclib
     ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_LUACLIB}"
     LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_LUACLIB}"
 )
-target_link_libraries(skynet_luaclib skynet_core)
+target_link_libraries(skynet_luaclib ${SKYNET_SHARED})

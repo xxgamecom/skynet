@@ -7,8 +7,9 @@ set(SKYNET_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 
 # skynet++ bin, lib, service path
 set(SKYNET_BIN_PATH             ${SKYNET_ROOT_PATH})
-set(SKYNET_BIN_PATH_LUACLIB     ${SKYNET_BIN_PATH}/luaclib)
 set(SKYNET_BIN_PATH_CSERVICE    ${SKYNET_BIN_PATH}/cservice)
+set(SKYNET_BIN_PATH_LUACLIB     ${SKYNET_BIN_PATH}/luaclib)
+set(SKYNET_BIN_PATH_LUACLIB_3RD ${SKYNET_BIN_PATH}/luaclib)
 set(SKYNET_BIN_PATH_TESTS       ${SKYNET_BIN_PATH}/tests)
 
 
@@ -25,27 +26,36 @@ include(DisallowBuildInSource)
 # set common compiler define & options
 include(ConfigDefine)
 
+if(MACOSX)
+    set(SKYNET_EXPORT )
+    set(SKYNET_SHARED -Wl,-undefined,dynamic_lookup)  # -dynamiclib
+    set(SKYNET_DEFINES -DDONT_USE_JEMALLOC)
+elseif(LINUX OR FREEBSD)
+    set(SKYNET_EXPORT -Wl,-E)
+    set(SKYNET_SHARED --shared)
+    set(SKYNET_DEFINES )
+endif()
+
 # Debug/Release support
-set(CMAKE_CXX_FLAGS_DEBUG   "$ENV{CXXFLAGS} -O0 -fPIC -g -ggdb")
-set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -fPIC")
+set(CMAKE_CXX_FLAGS_DEBUG   "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
+set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 
 #
-message(STATUS "PROJECT_NAME              : " ${PROJECT_NAME})
-message(STATUS "SKYNET_BUILD_TYPE         : " ${CMAKE_BUILD_TYPE})
-message(STATUS "SKYNET_ROOT_PATH          : " ${SKYNET_ROOT_PATH})
-message(STATUS "SKYNET_BIN_PATH           : " ${SKYNET_BIN_PATH})
-message(STATUS "SKYNET_BIN_PATH_LUACLIB   : " ${SKYNET_BIN_PATH_LUACLIB})
-message(STATUS "SKYNET_BIN_PATH_CSERVICE  : " ${SKYNET_BIN_PATH_CSERVICE})
-message(STATUS "SKYNET_BIN_PATH_TESTS     : " ${SKYNET_BIN_PATH_TESTS})
-message(STATUS "CMAKE_MODULE_PATH         : " ${CMAKE_MODULE_PATH})
+add_definitions(${SKYNET_DEFINES})
+
+#
+message(STATUS "PROJECT_NAME                : " ${PROJECT_NAME})
+message(STATUS "SKYNET_BUILD_TYPE           : " ${CMAKE_BUILD_TYPE})
+message(STATUS "SKYNET_ROOT_PATH            : " ${SKYNET_ROOT_PATH})
+message(STATUS "SKYNET_BIN_PATH             : " ${SKYNET_BIN_PATH})
+message(STATUS "SKYNET_BIN_PATH_CSERVICE    : " ${SKYNET_BIN_PATH_CSERVICE})
+message(STATUS "SKYNET_BIN_PATH_LUACLIB     : " ${SKYNET_BIN_PATH_LUACLIB})
+message(STATUS "SKYNET_BIN_PATH_LUACLIB_3RD : " ${SKYNET_BIN_PATH_LUACLIB_3RD})
+message(STATUS "SKYNET_BIN_PATH_TESTS       : " ${SKYNET_BIN_PATH_TESTS})
+message(STATUS "CMAKE_MODULE_PATH           : " ${CMAKE_MODULE_PATH})
 
 # rebuild: delete build dir if you hope a full clean rebuild
-message(STATUS "SKYNET_BUILD_DIR          : " ${PROJECT_BINARY_DIR})
-
-# macosx not use jemalloc
-if (MACOSX)
-    add_definitions(-DDONT_USE_JEMALLOC)
-endif()
+message(STATUS "SKYNET_BUILD_DIR            : " ${PROJECT_BINARY_DIR})
 
 #------------------------------------------------------
 # default output & include path
@@ -65,8 +75,9 @@ include_directories("${SKYNET_ROOT_PATH}/deps/asio/include")
 # build options
 option(BUILD_SKYNET_DEPS "Build skynet deps" ON)
 option(BUILD_SKYNET "Build skynet" ON)
-option(BUILD_SKYNET_LUACLIB "Build skynet luaclib" ON)
 option(BUILD_SKYNET_CSERVICE "Build skynet c service" ON)
+option(BUILD_SKYNET_LUACLIB "Build skynet luaclib" ON)
+option(BUILD_SKYNET_LUACLIB_3RD "Build skynet luaclib-3rd" ON)
 option(BUILD_SKYNET_TESTS "Build skynet tests" OFF)
 
 # build deps
@@ -79,14 +90,19 @@ if (BUILD_SKYNET)
     add_subdirectory(${SKYNET_ROOT_PATH}/skynet-src)
 endif()
 
+# build service-src
+if (BUILD_SKYNET_CSERVICE)
+    add_subdirectory(${SKYNET_ROOT_PATH}/service-src)
+endif()
+
 # build luaclib-src
 if (BUILD_SKYNET_LUACLIB)
     add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src)
 endif()
 
-# build service-src
-if (BUILD_SKYNET_CSERVICE)
-    add_subdirectory(${SKYNET_ROOT_PATH}/service-src)
+# build luaclib-src-3rd
+if (BUILD_SKYNET_LUACLIB_3RD)
+    add_subdirectory(${SKYNET_ROOT_PATH}/luaclib-src-3rd)
 endif()
 
 # build skynet tests
