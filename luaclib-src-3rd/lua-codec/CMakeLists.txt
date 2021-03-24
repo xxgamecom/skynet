@@ -7,10 +7,10 @@ if (OpenSSL_FOUND)
     # include
     include_directories("${OPENSSL_INCLUDE_DIR}")
 
-    #MESSAGE(STATUS "OpenSSL version          : " ${OPENSSL_VERSION})
-    #MESSAGE(STATUS "OpenSSL include path     : " ${OPENSSL_INCLUDE_DIR})
-    #MESSAGE(STATUS "OpenSSL ssl path         : " ${OPENSSL_SSL_LIBRARIES})
-    #MESSAGE(STATUS "OpenSSL crypto path      : " ${OPENSSL_CRYPTO_LIBRARIES})
+    #message(STATUS "OpenSSL version          : " ${OPENSSL_VERSION})
+    #message(STATUS "OpenSSL include path     : " ${OPENSSL_INCLUDE_DIR})
+    #message(STATUS "OpenSSL ssl path         : " ${OPENSSL_SSL_LIBRARIES})
+    #message(STATUS "OpenSSL crypto path      : " ${OPENSSL_CRYPTO_LIBRARIES})
 
     # target codec.so
     add_library(codec MODULE
@@ -24,6 +24,6 @@ if (OpenSSL_FOUND)
     )
     target_link_libraries(codec ${SKYNET_SHARED} OpenSSL::SSL OpenSSL::Crypto)
 else()
-    MESSAGE(WARNING "lua-codec need OpenSSL, but not found OpenSSL, SKIP...")
+    message(WARNING "lua-codec need OpenSSL, but not found OpenSSL, SKIP...")
 endif()
 

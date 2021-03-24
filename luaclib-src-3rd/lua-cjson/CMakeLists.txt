@@ -6,29 +6,29 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Use internal number conversion routines
-ADD_DEFINITIONS(-DUSE_INTERNAL_FPCONV)
+add_definitions(-DUSE_INTERNAL_FPCONV)
 
-INCLUDE(TestBigEndian)
-TEST_BIG_ENDIAN(IEEE_BIG_ENDIAN)
+include(TestBigEndian)
+test_big_endian(IEEE_BIG_ENDIAN)
 if(IEEE_BIG_ENDIAN)
-    ADD_DEFINITIONS(-DIEEE_BIG_ENDIAN)
+    add_definitions(-DIEEE_BIG_ENDIAN)
 endif()
 
 # multiple threads
-SET(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 #
 find_package(Threads REQUIRED)
 if(NOT CMAKE_USE_PTHREADS_INIT)
-    MESSAGE(FATAL_ERROR "Pthreads not found")
+    message(FATAL_ERROR "Pthreads not found")
 endif()
-ADD_DEFINITIONS(-DMULTIPLE_THREADS)
+add_definitions(-DMULTIPLE_THREADS)
 
 
 # Handle platforms missing isinf() macro (Eg, some Solaris systems).
-INCLUDE(CheckSymbolExists)
-CHECK_SYMBOL_EXISTS(isinf math.h HAVE_ISINF)
+include(CheckSymbolExists)
+check_symbol_exists(isinf math.h HAVE_ISINF)
 if(NOT HAVE_ISINF)
-    ADD_DEFINITIONS(-DUSE_INTERNAL_ISINF)
+    add_definitions(-DUSE_INTERNAL_ISINF)
 endif()
 
 if(MACOSX)

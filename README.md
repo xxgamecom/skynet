@@ -12,7 +12,8 @@ skynet++
 ## 与原版skynet的异同
 
 * 底层skynet使用C++重新编写
-* 网络层使用独立asio继续替换
+* 使用CMake进行项目构建
+* 网络层使用独立asio替换
 * 移除了分布式harbor模式(harbor模式有点鸡肋), 只支持cluster模式
 * 为完善上层服务框架, 提供一些基础设施, 为服务治理提供支持: 注册服务、发现服务、配置服务等
 * 提供简单完善的服务RPC接口
@@ -114,19 +115,16 @@ sudo apt-get install libssl-dev
 skynet++使用CMake构建。
 
 ```shell
-# 1 创建编译目录
-$ mkdir skynet
-$ cd skynet
 
-# 2 从github拉取项目
+# 1 从github拉取项目
 $ git clone https://github.com/xxgamecom/skynet
 
-# 3 创建cmake构建目录
-$ cd ../
+# 2 创建cmake构建目录
+$ cd ./skynet
 $ mkdir cmake-build-skynet && cd cmake-build-skynet
 
-# 4 编译
-$ cmake ../skynet
+# 3 编译
+$ cmake ../
 $ make
 ```
 

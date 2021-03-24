@@ -1,6 +1,6 @@
 # target shared lib (bson.so)
 add_library(bson MODULE
-    "${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-bson/lua-bson.c"
+    "${SKYNET_ROOT_PATH}/luaclib-src-3rd/lua-bson/lua-bson.cpp"
 )
 set_target_properties(bson
     PROPERTIES
