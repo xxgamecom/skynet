@@ -45,7 +45,7 @@ end
 
 skynet.register_protocol {
 	name = "client",
-	id = skynet.PTYPE_CLIENT,
+	id = skynet.MSG_PTYPE_CLIENT,
 	unpack = function (msg, sz)
 		return host:dispatch(msg, sz)
 	end,

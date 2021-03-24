@@ -143,7 +143,7 @@ end
 
 skynet.register_protocol {
 	name = "text",
-	id = skynet.PTYPE_TEXT,
+	id = skynet.MSG_PTYPE_TEXT,
 	unpack = skynet.tostring,
 	dispatch = function(session, address , cmd)
 		if cmd == "" then

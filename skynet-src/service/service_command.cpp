@@ -109,10 +109,11 @@ const char* cmd_reg(service_context* svc_ctx, const char* param)
     {
         return service_manager::instance()->set_handle_by_name(param + 1, svc_ctx->svc_handle_);
     }
-
-    log(svc_ctx, "Can't register global name %s in C", param);
-
-    return nullptr;
+    else
+    {
+        log(svc_ctx, "Can't register global name %s in C", param);
+        return nullptr;
+    }
 }
 
 // skynet cmd: query, 通过名字查找对应的handle

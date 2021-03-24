@@ -191,6 +191,5 @@ skynet.start(function()
         skynet.register(".service")
     end
 
-    skynet.register("SERVICE")
     register_global()
 end)

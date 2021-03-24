@@ -126,10 +126,10 @@ $ mkdir cmake-build-skynet && cd cmake-build-skynet
 # 3 编译
 
 $ cmake ../  
+$ make
 
-或需要支持openssl时, 指定openssl安装路径
-$cmake ../ -DOPENSSL_ROOT_DIR=/usr/local/ssl
-
+# 4 编译支持openssl
+$ cmake ../ -DOPENSSL_ROOT_DIR=/usr/local/ssl
 $ make
 ```
 
