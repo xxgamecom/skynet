@@ -4,6 +4,7 @@
 #include "../log/log.h"
 
 #include <iostream>
+#include <cstring>
 #include <netinet/tcp.h>
 
 namespace skynet {

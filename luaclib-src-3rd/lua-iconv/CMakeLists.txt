@@ -2,14 +2,16 @@
 #set(ICONV_USE_STATIC_LIBS ON)
 
 # find iconv
-find_package(iconv REQUIRED)
+find_package(Iconv REQUIRED)
 if (Iconv_FOUND)
     message(STATUS "iconv found")
-    # include
-    include_directories("${Iconv_INCLUDE_DIR}")
 
-    message(STATUS "iconv include path       : " ${Iconv_INCLUDE_DIR})
-    message(STATUS "iconv lib path           : " ${Iconv_LIBRARIES})
+    if (NOT Iconv_IS_BUILT_IN)
+        message(STATUS "iconv include path       : " ${Iconv_INCLUDE_DIRS})
+        message(STATUS "iconv lib path           : " ${Iconv_LIBRARIES})
+        # include
+        include_directories("${Iconv_INCLUDE_DIRS}")
+    endif()
 
     # target shared lib
     add_library(iconv MODULE

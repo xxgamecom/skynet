@@ -7,6 +7,8 @@ extern "C" {
 #include <lauxlib.h>
 }
 
+#include <cassert>
+
 namespace skynet { namespace service {
 
 

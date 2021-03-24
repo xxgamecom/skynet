@@ -9,6 +9,8 @@
 #include "mq_global.h"
 #include "mq_private.h"
 
+#include <cassert>
+
 namespace skynet {
 
 mq_global* mq_global::instance_ = nullptr;

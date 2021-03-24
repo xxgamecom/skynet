@@ -13,6 +13,7 @@ extern "C" {
 #include <string>
 
 #include <sys/time.h>
+#include <arpa/inet.h>
 
 namespace skynet { namespace luaclib {
 

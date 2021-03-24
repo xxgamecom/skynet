@@ -8,7 +8,7 @@ extern "C" {
 }
 
 #include <cstdint>
-#include <string>
+#include <cstring>
 #include <cstdlib>
 #include <ctime>
 #include <mutex>

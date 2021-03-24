@@ -7,6 +7,7 @@
 #include "../service/service_manager.h"
 
 #include <cstdarg>
+#include <cstring>
 
 namespace skynet {
 

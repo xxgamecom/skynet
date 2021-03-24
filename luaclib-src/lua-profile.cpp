@@ -10,6 +10,8 @@ extern "C" {
 #include <mach/mach.h>
 #endif
 
+#include <ctime>
+
 #define NANOSEC 1000000000
 #define MICROSEC 1000000
 

@@ -20,7 +20,7 @@
 #pragma once
 
 #include <cstdint>
-#include <cctype>
+#include <cstddef>
 
 // forward declare
 namespace skynet {

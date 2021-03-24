@@ -8,6 +8,7 @@ extern "C" {
 }
 
 #include <cstdint>
+#include <cassert>
 #include <string>
 
 namespace skynet { namespace luaclib {

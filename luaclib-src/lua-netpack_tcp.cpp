@@ -9,6 +9,9 @@ extern "C" {
 
 #include <cstdint>
 #include <string>
+#include <cassert>
+
+#include <arpa/inet.h>
 
 namespace skynet { namespace luaclib {
 
