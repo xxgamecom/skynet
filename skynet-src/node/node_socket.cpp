@@ -94,7 +94,7 @@ static void forward_message(int socket_event, bool padding, socket_message* resu
      message.src_svc_handle = 0;
      message.session_id = 0;
      message.data = sm;
-     message.sz = sz | ((size_t)message_protocol_type::MSG_PTYPE_SOCKET << MESSAGE_TYPE_SHIFT);
+     message.sz = sz | ((size_t)service_message_type::MSG_PTYPE_SOCKET << MESSAGE_TYPE_SHIFT);
     
      if (service_manager::instance()->push_service_message((uint32_t)result->svc_handle, &message))
      {

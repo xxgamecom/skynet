@@ -83,7 +83,7 @@ static void report_launcher_error(service_context* ctx)
 {
     // sizeof "ERROR" == 5
     service_manager::instance()->send_by_name(ctx, 0, ".launcher",
-        message_protocol_type::MSG_PTYPE_TEXT, 0, (void*)"ERROR", 5);
+        service_message_type::MSG_PTYPE_TEXT, 0, (void*)"ERROR", 5);
 }
 
 snlua_service::snlua_service()

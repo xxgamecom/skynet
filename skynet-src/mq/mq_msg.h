@@ -12,7 +12,7 @@ namespace skynet {
 /**
  * skynet message type, used for interaction between skynet services
  */
-enum message_protocol_type
+enum service_message_type
 {
     MSG_PTYPE_TEXT                  = 0,                        // internal use, text message, 内部服务最为常用的文本消息类型
     MSG_PTYPE_RESPONSE              = 1,                        // 响应消息
