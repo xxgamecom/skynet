@@ -35,7 +35,7 @@ mq_private* mq_private::create(uint32_t svc_handle)
     q->overload_threshold_ = DEFAULT_OVERLOAD_THRESHOLD;
 
     // 分配cap个skynet_message大小容量
-    q->queue_ = new skynet_message[q->cap_];
+    q->queue_ = new service_message[q->cap_];
     q->next_ = nullptr;
 
     return q;
@@ -75,7 +75,7 @@ void mq_private::release(message_drop_proc drop_func, void* ud)
 
 
 // 向消息队列里push消息
-void mq_private::push(skynet_message* message)
+void mq_private::push(service_message* message)
 {
     assert(message != nullptr);
 
@@ -104,7 +104,7 @@ void mq_private::push(skynet_message* message)
 }
 
 // 从私有队列里pop一个消息
-bool mq_private::pop(skynet_message* message)
+bool mq_private::pop(service_message* message)
 {
     bool is_empty = true;
 
@@ -197,7 +197,7 @@ uint32_t mq_private::svc_handle()
 // 准备释放队列, 释放服务，清空循环数组
 void mq_private::_drop_queue(mq_private* q, message_drop_proc drop_func, void* ud)
 {
-    skynet_message msg;
+    service_message msg;
 
     // drop all
     while (!q->pop(&msg))
@@ -214,7 +214,7 @@ void mq_private::_drop_queue(mq_private* q, message_drop_proc drop_func, void* u
 
 void mq_private::_expand_queue()
 {
-    skynet_message* new_queue = new skynet_message[cap_ * 2];
+    service_message* new_queue = new service_message[cap_ * 2];
 
     // copy old data
     for (int i = 0; i < cap_; i++)

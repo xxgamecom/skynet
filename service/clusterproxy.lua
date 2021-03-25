@@ -6,16 +6,16 @@ local node, address = ...
 
 skynet.register_protocol {
     msg_ptype_name = "system",
-    msg_ptype = skynet.MSG_PTYPE_SYSTEM,
+    msg_ptype = skynet.SERVICE_MSG_TYPE_SYSTEM,
     unpack = function(...)
         return ...
     end,
 }
 
 local forward_map = {
-    [skynet.MSG_PTYPE_SNAX] = skynet.MSG_PTYPE_SYSTEM,
-    [skynet.MSG_PTYPE_LUA] = skynet.MSG_PTYPE_SYSTEM,
-    [skynet.MSG_PTYPE_RESPONSE] = skynet.MSG_PTYPE_RESPONSE, -- don't free response message
+    [skynet.SERVICE_MSG_TYPE_SNAX] = skynet.SERVICE_MSG_TYPE_SYSTEM,
+    [skynet.SERVICE_MSG_TYPE_LUA] = skynet.SERVICE_MSG_TYPE_SYSTEM,
+    [skynet.SERVICE_MSG_TYPE_RESPONSE] = skynet.SERVICE_MSG_TYPE_RESPONSE, -- don't free response message
 }
 
 skynet.forward_type(forward_map, function()

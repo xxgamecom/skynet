@@ -1,4 +1,6 @@
-#define LUA_LIB
+// simple lua socket library for client
+// It's only for demo, limited feature. Don't use it in your project.
+// Rewrite socket library by yourself .
 
 extern "C" {
 #include <lua.h>
@@ -74,8 +76,7 @@ static void block_send(lua_State* L, int fd, const char* buffer, int sz)
 	integer fd
 	string message
  */
-static int
-l_send(lua_State* L)
+static int l_send(lua_State* L)
 {
     size_t sz = 0;
     int fd = luaL_checkinteger(L, 1);
@@ -91,7 +92,7 @@ l_send(lua_State* L)
 	string last
 	table result
 
-	return 
+	return
 		boolean (true: data, false: block, nil: close)
 		string last
  */
@@ -203,17 +204,17 @@ static int lreadstdin(lua_State* L)
 extern "C" {
 #endif
 
-LUAMOD_API int luaopen_client_socket(lua_State* L)
+LUAMOD_API int luaopen_client_socket_tcp(lua_State* L)
 {
     luaL_checkversion(L);
-
     luaL_Reg l[] = {
         { "connect", l_connect },
         { "recv",    l_recv },
         { "send",    l_send },
         { "close",   l_close },
         { "usleep",  l_usleep },
-        { NULL, NULL },
+
+        { nullptr,   nullptr },
     };
     luaL_newlib(L, l);
 

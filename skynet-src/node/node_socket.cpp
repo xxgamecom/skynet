@@ -55,7 +55,7 @@ void node_socket::update_time()
 }
 
 // mainloop thread
-// 将数据变为 skynet_message 并且将消息压入 二级队列 （每个服务模块的私有队列）
+// 将数据变为 service_message 并且将消息压入 二级队列 （每个服务模块的私有队列）
 static void forward_message(int socket_event, bool padding, socket_message* result)
 {
     size_t sz = sizeof(skynet_socket_message);
@@ -90,11 +90,11 @@ static void forward_message(int socket_event, bool padding, socket_message* resu
          sm->buffer = result->data;
      }
 
-     skynet_message message;
+     service_message message;
      message.src_svc_handle = 0;
      message.session_id = 0;
      message.data = sm;
-     message.sz = sz | ((size_t)message_protocol_type::MSG_PTYPE_SOCKET << MESSAGE_TYPE_SHIFT);
+     message.sz = sz | ((size_t)SERVICE_MSG_TYPE_SOCKET << MESSAGE_TYPE_SHIFT);
     
      if (service_manager::instance()->push_service_message((uint32_t)result->svc_handle, &message))
      {
@@ -107,7 +107,7 @@ static void forward_message(int socket_event, bool padding, socket_message* resu
 
 // 主要工作是将 poll_socket_event 的数据 转换成 skynet 通信机制中使用的格式
 // 以便分发数据 socket_sever_poll 返回的数据是  socket_message
-// 在 forward_message 中将数据变为 skynet_message 并且将消息压入 二级队列 （每个服务模块的私有队列）
+// 在 forward_message 中将数据变为 service_message 并且将消息压入 二级队列 （每个服务模块的私有队列）
 int node_socket::poll_socket_event()
 {
     assert(socket_server_ != nullptr);

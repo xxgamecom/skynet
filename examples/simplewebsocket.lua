@@ -15,8 +15,8 @@ if MODE == "agent" then
         local addr = websocket.addrinfo(id)
         print("ws handshake from: " .. tostring(id), "url", url, "addr:", addr)
         print("----header-----")
-        for k,v in pairs(header) do
-            print(k,v)
+        for k, v in pairs(header) do
+            print(k, v)
         end
         print("--------------")
     end
@@ -41,8 +41,8 @@ if MODE == "agent" then
         print("ws error from: " .. tostring(id))
     end
 
-    skynet.start(function ()
-        skynet.dispatch("lua", function (_,_, id, protocol, addr)
+    skynet.start(function()
+        skynet.dispatch("lua", function(_, _, id, protocol, addr)
             local ok, err = websocket.accept(id, handle, protocol, addr)
             if not ok then
                 print(err)
@@ -71,9 +71,9 @@ else
         end
     end
 
-    skynet.start(function ()
+    skynet.start(function()
         local agent = {}
-        for i= 1, 20 do
+        for i = 1, 20 do
             agent[i] = skynet.newservice(SERVICE_NAME, "agent")
         end
         local balance = 1

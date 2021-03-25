@@ -1,14 +1,15 @@
 local skynet = require "skynet"
-require "skynet.manager"    -- import skynet.register
+require "skynet.manager"
+
 local db = {}
 
-local command = {}
+local CMD = {}
 
-function command.GET(key)
+function CMD.GET(key)
     return db[key]
 end
 
-function command.SET(key, value)
+function CMD.SET(key, value)
     local last = db[key]
     db[key] = value
     return last
@@ -26,7 +27,7 @@ skynet.start(function()
             skynet.log(string.format("%s ping %s", skynet.address(address), str))
             return
         end
-        local f = command[cmd]
+        local f = CMD[cmd]
         if f then
             skynet.ret(skynet.pack(f(...)))
         else

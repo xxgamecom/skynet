@@ -27,7 +27,7 @@ class node_config;
 class service_context;
 class mq_private;
 class service_monitor;
-struct skynet_message;
+struct service_message;
 
 // server node
 class node final
@@ -70,7 +70,7 @@ private:
     void _dispatch_all(service_context* svc_ctx);
 
     // handle service message (call service message callback)
-    void _do_dispatch_message(service_context* svc_ctx, skynet_message* msg);
+    void _do_dispatch_message(service_context* svc_ctx, service_message* msg);
 };
 
 }

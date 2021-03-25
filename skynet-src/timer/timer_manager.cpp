@@ -134,11 +134,11 @@ static inline void dispatch_list(timer_node* current)
     do
     {
         timer_event* event = (timer_event*)(current + 1);
-        skynet_message msg;
+        service_message msg;
         msg.src_svc_handle = 0;
         msg.session_id = event->session;
         msg.data = nullptr;
-        msg.sz = (size_t)message_protocol_type::MSG_PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        msg.sz = (size_t)SERVICE_MSG_TYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
         service_manager::instance()->push_service_message(event->svc_handle, &msg);
 
@@ -224,11 +224,11 @@ int timer_manager::timeout(uint32_t handle, int time, int session)
     // time<=0说明是立即发送消息, 无需定时处理
     if (time <= 0)
     {
-        skynet_message msg;
+        service_message msg;
         msg.src_svc_handle = 0;
         msg.session_id = session;
         msg.data = nullptr;
-        msg.sz = (size_t)message_protocol_type::MSG_PTYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        msg.sz = (size_t)SERVICE_MSG_TYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
         if (service_manager::instance()->push_service_message(handle, &msg))
         {

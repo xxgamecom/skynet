@@ -109,7 +109,7 @@ local function init(skynet, export)
 
     skynet.register_protocol {
         msg_ptype_name = "debug",
-        msg_ptype = assert(skynet.MSG_PTYPE_DEBUG),
+        msg_ptype = assert(skynet.SERVICE_MSG_TYPE_DEBUG),
         pack = assert(skynet.pack),
         unpack = assert(skynet.unpack),
         dispatch = _debug_dispatch,

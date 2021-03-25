@@ -79,7 +79,7 @@ local server = {}
 
 skynet.register_protocol {
     msg_ptype_name = "client",
-    msg_ptype = skynet.MSG_PTYPE_CLIENT,
+    msg_ptype = skynet.SERVICE_MSG_TYPE_CLIENT,
 }
 
 local user_online = {}

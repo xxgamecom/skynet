@@ -11,7 +11,7 @@ interface_g = nil
 
 skynet.register_protocol {
     msg_ptype_name = "snax",
-    msg_ptype = skynet.MSG_PTYPE_SNAX,
+    msg_ptype = skynet.SERVICE_MSG_TYPE_SNAX,
     pack = skynet.pack,
     unpack = skynet.unpack,
 }

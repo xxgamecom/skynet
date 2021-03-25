@@ -22,7 +22,7 @@ static void _report(gate_service* svc_ptr, const char* data, ...)
     va_end(ap);
 
     service_manager::instance()->send(svc_ptr->svc_ctx_, 0, svc_ptr->watchdog_svc_handle_,
-                                      message_protocol_type::MSG_PTYPE_TEXT, 0, tmp, n);
+                                      SERVICE_MSG_TYPE_TEXT, 0, tmp, n);
 }
 
 static void _forward(gate_service* svc_ptr, connection* c, int size)
@@ -56,7 +56,7 @@ static void _forward(gate_service* svc_ptr, connection* c, int size)
         int n = snprintf(tmp, 32, "%d data ", c->socket_id);
         data_buffer_read(&c->buffer, &svc_ptr->mp_, tmp + n, size);
         service_manager::instance()->send(svc_ptr->svc_ctx_, 0, svc_ptr->watchdog_svc_handle_,
-                                          message_protocol_type::MSG_PTYPE_TEXT | MESSAGE_TAG_DONT_COPY, socket_id, tmp, size + n);
+                                          SERVICE_MSG_TYPE_TEXT | MESSAGE_TAG_DONT_COPY, socket_id, tmp, size + n);
     }
 }
 
@@ -244,7 +244,7 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
         };
         if (param_array.size() < 4)
         {
-            log(svc_ctx, "Invalid gate parm %s", param);
+            log(svc_ctx, "Invalid gate param %s", param);
             break;
         }
 
@@ -283,12 +283,12 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
         }
         catch (...)
         {
-            log(svc_ctx, "Invalid gate parm %s", param);
+            log(svc_ctx, "Invalid gate param %s", param);
             break;
         }
         if (msg_ptype == 0)
         {
-            msg_ptype = message_protocol_type::MSG_PTYPE_CLIENT;
+            msg_ptype = SERVICE_MSG_TYPE_CLIENT;
         }
 
         // param 5 - max connnection
@@ -329,71 +329,6 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
     return is_error;
 }
 
-//int gate_init(struct gate_service* svc_ptr, struct skynet_context* ctx, char* parm)
-//{
-//    if (parm == NULL)
-//        return 1;
-//    int max = 0;
-//    int sz = strlen(parm) + 1;
-//    char watchdog[sz];
-//    char binding[sz];
-//    int client_tag = 0;
-//    char header;
-//    int n = sscanf(parm, "%c %s %s %d %d", &header, watchdog, binding, &client_tag, &max);
-//    if (n < 4)
-//    {
-//        skynet_error(ctx, "Invalid gate parm %s", parm);
-//        return 1;
-//    }
-//    if (max <= 0)
-//    {
-//        skynet_error(ctx, "Need max connection");
-//        return 1;
-//    }
-//    if (header != 'S' && header != 'L')
-//    {
-//        skynet_error(ctx, "Invalid data header style");
-//        return 1;
-//    }
-//
-//    if (client_tag == 0)
-//    {
-//        client_tag = MSG_PTYPE_CLIENT;
-//    }
-//    if (watchdog[0] == '!')
-//    {
-//        svc_ptr->watchdog = 0;
-//    }
-//    else
-//    {
-//        svc_ptr->watchdog = skynet_queryname(ctx, watchdog);
-//        if (svc_ptr->watchdog == 0)
-//        {
-//            skynet_error(ctx, "Invalid watchdog %s", watchdog);
-//            return 1;
-//        }
-//    }
-//
-//    svc_ptr->ctx = ctx;
-//
-//    hashid_init(&svc_ptr->hash, max);
-//    svc_ptr->conn = skynet_malloc(max * sizeof(struct connection));
-//    memset(svc_ptr->conn, 0, max * sizeof(struct connection));
-//    svc_ptr->max_connection = max;
-//    int i;
-//    for (i = 0; i < max; i++)
-//    {
-//        svc_ptr->conn[i].id = -1;
-//    }
-//
-//    svc_ptr->client_tag = client_tag;
-//    svc_ptr->header_size = header == 'S' ? 2 : 4;
-//
-//    skynet_callback(ctx, svc_ptr, _cb);
-//
-//    return start_listen(svc_ptr, binding);
-//}
-
 void gate_service::fini()
 {
     // clean connection
@@ -431,10 +366,10 @@ int gate_service::gate_cb(service_context* svc_ctx, void* ud, int msg_ptype, int
 
     switch (msg_ptype)
     {
-    case message_protocol_type::MSG_PTYPE_TEXT:
+    case SERVICE_MSG_TYPE_TEXT:
         handle_ctrl_cmd(svc_ptr, (const char*)msg, (int)msg_sz);
         break;
-    case message_protocol_type::MSG_PTYPE_CLIENT:
+    case SERVICE_MSG_TYPE_CLIENT:
     {
         if (msg_sz <= 4)
         {
@@ -459,7 +394,7 @@ int gate_service::gate_cb(service_context* svc_ctx, void* ud, int msg_ptype, int
             break;
         }
     }
-    case message_protocol_type::MSG_PTYPE_SOCKET:
+    case SERVICE_MSG_TYPE_SOCKET:
         // recv socket message from skynet_socket
         _dispatch_socket_message(svc_ptr, (const skynet_socket_message*)msg, (int)(msg_sz - sizeof(skynet_socket_message)));
         break;
