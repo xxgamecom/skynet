@@ -137,8 +137,8 @@ static inline void dispatch_list(timer_node* current)
         service_message msg;
         msg.src_svc_handle = 0;
         msg.session_id = event->session;
-        msg.data = nullptr;
-        msg.sz = (size_t)SERVICE_MSG_TYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        msg.data_ptr = nullptr;
+        msg.data_size = (size_t)SERVICE_MSG_TYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
         service_manager::instance()->push_service_message(event->svc_handle, &msg);
 
@@ -227,8 +227,8 @@ int timer_manager::timeout(uint32_t handle, int time, int session)
         service_message msg;
         msg.src_svc_handle = 0;
         msg.session_id = session;
-        msg.data = nullptr;
-        msg.sz = (size_t)SERVICE_MSG_TYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
+        msg.data_ptr = nullptr;
+        msg.data_size = (size_t)SERVICE_MSG_TYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
         if (service_manager::instance()->push_service_message(handle, &msg))
         {

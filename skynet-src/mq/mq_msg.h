@@ -23,7 +23,7 @@ enum service_message_type
     SERVICE_MSG_TYPE_ERROR          = 6,                        // 错误消息, 一般服务退出的时候会发送error消息给关联的服务
     SERVICE_MSG_TYPE_RESERVED_QUEUE = 7,                        //
     SERVICE_MSG_TYPE_RESERVED_DEBUG = 8,                        //
-    SERVICE_MSG_TYPE_RESERVED_LUA   = 9,                       // lua类型消息, 最常用
+    SERVICE_MSG_TYPE_RESERVED_LUA   = 9,                        // lua类型消息, 最常用
     SERVICE_MSG_TYPE_RESERVED_SNAX  = 10,                       // snax服务消息
 };
 
@@ -37,8 +37,8 @@ struct service_message
 {
     uint32_t                        src_svc_handle = 0;         // source service handle
     int                             session_id = 0;             // message session id
-    void*                           data = nullptr;             // message data
-    size_t                          sz = 0;                     // message data size, high 8 bits: message type
+    void*                           data_ptr = nullptr;         // message data
+    size_t                          data_size = 0;              // message data size, high 8 bits: message type
 };
 
 //

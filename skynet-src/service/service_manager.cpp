@@ -508,8 +508,8 @@ int service_manager::send(service_context* svc_ctx, uint32_t src_svc_handle, uin
     service_message smsg;
     smsg.src_svc_handle = src_svc_handle;
     smsg.session_id = session_id;
-    smsg.data = msg;
-    smsg.sz = msg_sz;
+    smsg.data_ptr = msg;
+    smsg.data_size = msg_sz;
     if (push_service_message(dst_svc_handle, &smsg))
     {
         delete[] msg;
