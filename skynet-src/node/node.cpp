@@ -42,7 +42,7 @@ struct drop_t
     uint32_t svc_handle;
 };
 
-static void drop_message(skynet_message* msg, void* ud)
+static void drop_message(service_message* msg, void* ud)
 {
     drop_t* d = (drop_t*)ud;
     delete[] msg->data;
@@ -151,7 +151,7 @@ mq_private* node::dispatch_message(service_monitor& svc_monitor, mq_private* q, 
     }
 
     // handle message
-    skynet_message msg;
+    service_message msg;
     int n = 1;
     for (int i = 0; i < n; i++)
     {
@@ -244,7 +244,7 @@ void node::_bootstrap(service_context* log_svc_ctx, const char* cmdline)
 void node::_dispatch_all(service_context* svc_ctx)
 {
     // for log
-    skynet_message msg;
+    service_message msg;
     mq_private* q = svc_ctx->queue_;
 
     // dispatch all
@@ -255,7 +255,7 @@ void node::_dispatch_all(service_context* svc_ctx)
 }
 
 // handle service message (call service message callback)
-void node::_do_dispatch_message(service_context* svc_ctx, skynet_message* msg)
+void node::_do_dispatch_message(service_context* svc_ctx, service_message* msg)
 {
     int msg_ptype = msg->sz >> MESSAGE_TYPE_SHIFT;
     size_t sz = msg->sz & MESSAGE_TYPE_MASK;

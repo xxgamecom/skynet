@@ -343,7 +343,7 @@ uint32_t service_manager::query_by_name(service_context* svc_ctx, const char* na
 }
 
 // 投递服务消息
-int service_manager::push_service_message(uint32_t svc_handle, skynet_message* message)
+int service_manager::push_service_message(uint32_t svc_handle, service_message* message)
 {
     // 增加服务引用计数
     service_context* svc_ctx = grab(svc_handle);
@@ -505,7 +505,7 @@ int service_manager::send(service_context* svc_ctx, uint32_t src_svc_handle, uin
         src_svc_handle = svc_ctx->svc_handle_;
 
     // push message to dst service
-    skynet_message smsg;
+    service_message smsg;
     smsg.src_svc_handle = src_svc_handle;
     smsg.session_id = session_id;
     smsg.data = msg;

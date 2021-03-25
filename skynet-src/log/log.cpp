@@ -81,7 +81,7 @@ void log(service_context* svc_ctx, const char* msg, ...)
     }
 
     // push message to log service
-    skynet_message smsg;
+    service_message smsg;
     smsg.src_svc_handle = svc_ctx != nullptr ? svc_ctx->svc_handle_ : 0;
     smsg.session_id = 0;
     smsg.data = data_ptr;

@@ -7,7 +7,7 @@
 namespace skynet {
 
 // forward declare
-struct skynet_message;
+struct service_message;
 class service_context;
 
 /**
@@ -89,7 +89,7 @@ public:
 
 public:
     // push service message
-    int push_service_message(uint32_t svc_handle, skynet_message* message);
+    int push_service_message(uint32_t svc_handle, service_message* message);
 
     //
     // @param src_svc_handle 0: reserve service handle, self

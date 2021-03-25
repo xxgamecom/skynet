@@ -12,10 +12,10 @@
 namespace skynet {
 
 // forward declare
-struct skynet_message;
+struct service_message;
 
 // message drop function
-typedef void (*message_drop_proc)(skynet_message* message, void* ud);
+typedef void (*message_drop_proc)(service_message* message, void* ud);
 
 /**
  * service private message queue (one per service)
@@ -44,7 +44,7 @@ public:
     int cap_ = DEFAULT_QUEUE_CAPACITY;                      // message ring buffer capacity
     int head_ = 0;                                          // message ring buffer header
     int tail_ = 0;                                          // message ring buffer tailer
-    skynet_message* queue_ = nullptr;                       // message ring buffer
+    service_message* queue_ = nullptr;                       // message ring buffer
 
     mq_private* next_ = nullptr;                            // link list: next message queue ptr
 
@@ -58,8 +58,8 @@ public:
 
 public:
     // 0 for success
-    void push(skynet_message* message);
-    bool pop(skynet_message* message);
+    void push(service_message* message);
+    bool pop(service_message* message);
 
     // return the length of message queue, for debug
     int length();

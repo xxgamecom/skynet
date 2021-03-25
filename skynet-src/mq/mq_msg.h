@@ -6,7 +6,7 @@
 namespace skynet {
 
 //----------------------------------------------
-// skynet_message
+// service_message
 //----------------------------------------------
 
 /**
@@ -34,8 +34,7 @@ enum message_protocol_type
                                                                 // send api method will ignore session arguemnts and allocate a new session id.
 
 // skynet service message, used for interaction between services
-// TODO: RENAME to service_message
-struct skynet_message
+struct service_message
 {
     uint32_t                        src_svc_handle = 0;         // source service handle
     int                             session_id = 0;             // message session id
@@ -44,8 +43,8 @@ struct skynet_message
 };
 
 //
-#define MESSAGE_TYPE_MASK           (SIZE_MAX >> 8)             // skynet_message.sz high 8 bits: message type
-#define MESSAGE_TYPE_SHIFT          ((sizeof(size_t) - 1) * 8)  // type is encoding in skynet_message.sz high 8bit
+#define MESSAGE_TYPE_MASK           (SIZE_MAX >> 8)             // service_message.sz high 8 bits: message type
+#define MESSAGE_TYPE_SHIFT          ((sizeof(size_t) - 1) * 8)  // type is encoding in service_message.sz high 8bit
 
 }
 

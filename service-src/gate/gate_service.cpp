@@ -244,7 +244,7 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
         };
         if (param_array.size() < 4)
         {
-            log(svc_ctx, "Invalid gate parm %s", param);
+            log(svc_ctx, "Invalid gate param %s", param);
             break;
         }
 
@@ -283,7 +283,7 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
         }
         catch (...)
         {
-            log(svc_ctx, "Invalid gate parm %s", param);
+            log(svc_ctx, "Invalid gate param %s", param);
             break;
         }
         if (msg_ptype == 0)
@@ -328,71 +328,6 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
 
     return is_error;
 }
-
-//int gate_init(struct gate_service* svc_ptr, struct skynet_context* ctx, char* parm)
-//{
-//    if (parm == NULL)
-//        return 1;
-//    int max = 0;
-//    int sz = strlen(parm) + 1;
-//    char watchdog[sz];
-//    char binding[sz];
-//    int client_tag = 0;
-//    char header;
-//    int n = sscanf(parm, "%c %s %s %d %d", &header, watchdog, binding, &client_tag, &max);
-//    if (n < 4)
-//    {
-//        skynet_error(ctx, "Invalid gate parm %s", parm);
-//        return 1;
-//    }
-//    if (max <= 0)
-//    {
-//        skynet_error(ctx, "Need max connection");
-//        return 1;
-//    }
-//    if (header != 'S' && header != 'L')
-//    {
-//        skynet_error(ctx, "Invalid data header style");
-//        return 1;
-//    }
-//
-//    if (client_tag == 0)
-//    {
-//        client_tag = MSG_PTYPE_CLIENT;
-//    }
-//    if (watchdog[0] == '!')
-//    {
-//        svc_ptr->watchdog = 0;
-//    }
-//    else
-//    {
-//        svc_ptr->watchdog = skynet_queryname(ctx, watchdog);
-//        if (svc_ptr->watchdog == 0)
-//        {
-//            skynet_error(ctx, "Invalid watchdog %s", watchdog);
-//            return 1;
-//        }
-//    }
-//
-//    svc_ptr->ctx = ctx;
-//
-//    hashid_init(&svc_ptr->hash, max);
-//    svc_ptr->conn = skynet_malloc(max * sizeof(struct connection));
-//    memset(svc_ptr->conn, 0, max * sizeof(struct connection));
-//    svc_ptr->max_connection = max;
-//    int i;
-//    for (i = 0; i < max; i++)
-//    {
-//        svc_ptr->conn[i].id = -1;
-//    }
-//
-//    svc_ptr->client_tag = client_tag;
-//    svc_ptr->header_size = header == 'S' ? 2 : 4;
-//
-//    skynet_callback(ctx, svc_ptr, _cb);
-//
-//    return start_listen(svc_ptr, binding);
-//}
 
 void gate_service::fini()
 {

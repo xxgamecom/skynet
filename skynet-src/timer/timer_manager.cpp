@@ -134,7 +134,7 @@ static inline void dispatch_list(timer_node* current)
     do
     {
         timer_event* event = (timer_event*)(current + 1);
-        skynet_message msg;
+        service_message msg;
         msg.src_svc_handle = 0;
         msg.session_id = event->session;
         msg.data = nullptr;
@@ -224,7 +224,7 @@ int timer_manager::timeout(uint32_t handle, int time, int session)
     // time<=0说明是立即发送消息, 无需定时处理
     if (time <= 0)
     {
-        skynet_message msg;
+        service_message msg;
         msg.src_svc_handle = 0;
         msg.session_id = session;
         msg.data = nullptr;

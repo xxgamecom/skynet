@@ -1,4 +1,3 @@
--- read https://github.com/cloudwu/skynet/wiki/FAQ for the module "skynet.core"
 local skynet_core = require "skynet.core"
 
 local profile = require "skynet.profile"

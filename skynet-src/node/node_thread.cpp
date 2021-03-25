@@ -180,7 +180,7 @@ void node_thread::thread_timer(std::shared_ptr<monitor_data> monitor_data_ptr)
         if (SIG != 0)
         {
             // reopen log file
-            skynet_message msg;
+            service_message msg;
             msg.src_svc_handle = 0;
             msg.session_id = 0;
             msg.data = nullptr;

@@ -11,7 +11,7 @@ skynet服务消息
 该消息类型定义: MSG_PTYPE_*, lua层可以通过 skynet.register_protocol() 添加各种类型消息的处理器
 
 数据结构
-struct skynet_message
+struct service_message
 
 消息类型  
 MSG_PTYPE_TEXT  
