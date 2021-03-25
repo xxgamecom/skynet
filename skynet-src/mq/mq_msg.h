@@ -19,13 +19,12 @@ enum service_message_type
     SERVICE_MSG_TYPE_MULTICAST      = 2,                        // 组播消息
     SERVICE_MSG_TYPE_CLIENT         = 3,                        // 用来处理客户端的请求消息, 是 gate 给外部连接定义出来的消息类型
     SERVICE_MSG_TYPE_SYSTEM         = 4,                        // 系统消息
-    SERVICE_MSG_TYPE_HARBOR         = 5,                        // 跨节点消息
-    SERVICE_MSG_TYPE_SOCKET         = 6,                        // 套接字消息, 不一定是客户端的消息, 也可以能是服务之间的消息
-    SERVICE_MSG_TYPE_ERROR          = 7,                        // 错误消息, 一般服务退出的时候会发送error消息给关联的服务
-    SERVICE_MSG_TYPE_RESERVED_QUEUE = 8,                        //
-    SERVICE_MSG_TYPE_RESERVED_DEBUG = 9,                        //
-    SERVICE_MSG_TYPE_RESERVED_LUA   = 10,                       // lua类型消息, 最常用
-    SERVICE_MSG_TYPE_RESERVED_SNAX  = 11,                       // snax服务消息
+    SERVICE_MSG_TYPE_SOCKET         = 5,                        // 套接字消息, 不一定是客户端的消息, 也可以能是服务之间的消息
+    SERVICE_MSG_TYPE_ERROR          = 6,                        // 错误消息, 一般服务退出的时候会发送error消息给关联的服务
+    SERVICE_MSG_TYPE_RESERVED_QUEUE = 7,                        //
+    SERVICE_MSG_TYPE_RESERVED_DEBUG = 8,                        //
+    SERVICE_MSG_TYPE_RESERVED_LUA   = 9,                       // lua类型消息, 最常用
+    SERVICE_MSG_TYPE_RESERVED_SNAX  = 10,                       // snax服务消息
 };
 
 // message tag
