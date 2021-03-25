@@ -124,26 +124,3 @@ static inline int skynet_socket_udp_send(service_context* ctx, int socket_id, co
 
 }
 
-//void skynet_socket_init();
-//void skynet_socket_exit();
-//void skynet_socket_free();
-//int skynet_socket_poll();
-//void skynet_socket_updatetime();
-
-//int skynet_socket_sendbuffer(struct skynet_context *ctx, struct socket_sendbuffer *buffer);
-//int skynet_socket_sendbuffer_lowpriority(struct skynet_context *ctx, struct socket_sendbuffer *buffer);
-//int skynet_socket_listen(struct skynet_context *ctx, const char *host, int port, int backlog);
-//int skynet_socket_connect(struct skynet_context *ctx, const char *host, int port);
-//int skynet_socket_bind(struct skynet_context *ctx, int fd);
-//void skynet_socket_close(struct skynet_context *ctx, int id);
-//void skynet_socket_shutdown(struct skynet_context *ctx, int id);
-//void skynet_socket_start(struct skynet_context *ctx, int id);
-//void skynet_socket_nodelay(struct skynet_context *ctx, int id);
-//
-//int skynet_socket_udp(struct skynet_context *ctx, const char * addr, int port);
-//int skynet_socket_udp_connect(struct skynet_context *ctx, int id, const char * addr, int port);
-//int skynet_socket_udp_sendbuffer(struct skynet_context *ctx, const char * address, struct socket_sendbuffer *buffer);
-//const char * skynet_socket_udp_address(struct skynet_socket_message *, int *addrsz);
-//
-//struct socket_info * skynet_socket_info();
-//

@@ -13,7 +13,7 @@ class mq_private;
 class service_context;
 
 //
-typedef int (*skynet_cb)(service_context* svc_ctx, void* ud, int type, int session, uint32_t source , const void* msg, size_t sz);
+typedef int (*skynet_cb)(service_context* svc_ctx, void* ud, int msg_ptype, int session_id, uint32_t src_svc_handle , const void* msg, size_t sz);
 
 /**
  * service_context

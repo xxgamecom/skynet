@@ -55,11 +55,11 @@ static int _send_message(lua_State* L, int src_svc_handle, int message_type_idx)
     int protocol_type = luaL_checkinteger(L, message_type_idx + 0);
 
     // arg 3 - session id, 0 means need alloc a new session id
-    int session = 0;
+    int session_id = 0;
     if (lua_isnil(L, message_type_idx + 1))
         protocol_type |= MESSAGE_TAG_ALLOC_SESSION;
     else
-        session = luaL_checkinteger(L, message_type_idx + 1);
+        session_id = luaL_checkinteger(L, message_type_idx + 1);
 
     // arg 4 - message (string | lightuserdata)
     int msg_type = lua_type(L, message_type_idx + 2);
@@ -75,9 +75,9 @@ static int _send_message(lua_State* L, int src_svc_handle, int message_type_idx)
         }
 
         if (dst_svc_handle_string != nullptr)
-            session = skynet::service_manager::instance()->send_by_name(svc_ctx, src_svc_handle, dst_svc_handle_string, protocol_type, session, (void*)msg, len);
+            session_id = skynet::service_manager::instance()->send_by_name(svc_ctx, src_svc_handle, dst_svc_handle_string, protocol_type, session_id, (void*)msg, len);
         else
-            session = skynet::service_manager::instance()->send(svc_ctx, src_svc_handle, dst_svc_handle, protocol_type, session, (void*)msg, len);
+            session_id = skynet::service_manager::instance()->send(svc_ctx, src_svc_handle, dst_svc_handle, protocol_type, session_id, (void*)msg, len);
         break;
     }
     case LUA_TLIGHTUSERDATA:
@@ -85,9 +85,9 @@ static int _send_message(lua_State* L, int src_svc_handle, int message_type_idx)
         void* msg = lua_touserdata(L, message_type_idx + 2);
         int size = luaL_checkinteger(L, message_type_idx + 3);
         if (dst_svc_handle_string != nullptr)
-            session = skynet::service_manager::instance()->send_by_name(svc_ctx, src_svc_handle, dst_svc_handle_string, protocol_type | MESSAGE_TAG_DONT_COPY, session, msg, size);
+            session_id = skynet::service_manager::instance()->send_by_name(svc_ctx, src_svc_handle, dst_svc_handle_string, protocol_type | MESSAGE_TAG_DONT_COPY, session_id, msg, size);
         else
-            session = skynet::service_manager::instance()->send(svc_ctx, src_svc_handle, dst_svc_handle, protocol_type | MESSAGE_TAG_DONT_COPY, session, msg, size);
+            session_id = skynet::service_manager::instance()->send(svc_ctx, src_svc_handle, dst_svc_handle, protocol_type | MESSAGE_TAG_DONT_COPY, session_id, msg, size);
         break;
     }
     default:
@@ -96,10 +96,10 @@ static int _send_message(lua_State* L, int src_svc_handle, int message_type_idx)
     }
 
     //
-    if (session < 0)
+    if (session_id < 0)
     {
         // package is too large
-        if (session == -2)
+        if (session_id == -2)
         {
             lua_pushboolean(L, 0);
             return 1;
@@ -108,7 +108,7 @@ static int _send_message(lua_State* L, int src_svc_handle, int message_type_idx)
         // send to invalid address, todo: maybe throw an error would be better
         return 0;
     }
-    lua_pushinteger(L, session);
+    lua_pushinteger(L, session_id);
 
     return 1;
 }
@@ -121,6 +121,9 @@ static int _send_message(lua_State* L, int src_svc_handle, int message_type_idx)
  * 2 message protocol type       - integer
  * 3 session                     - integer
  * 4 message                     - string | lightuserdata (message_ptr, integer len)
+ *
+ * outputs:
+ * session id                    - integer
  *
  * lua examples:
  * c.send(addr, proto.id, session, proto.pack(...))
@@ -257,7 +260,7 @@ static int l_service_command_int(lua_State* L)
  * 2 service cmd param  - string
  *
  * examples:
- * c.addresscommand "REG"
+ * c.addresscommand("REG")
  * c.addresscommand("QUERY", name)
  */
 static int l_service_command_address(lua_State* L)

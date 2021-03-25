@@ -7,10 +7,6 @@ skynet.start(function()
     skynet.name(".launcher", launcher)
 
     --
-    local datacenter = skynet.newservice("datacenterd")
-    skynet.name("DATACENTER", datacenter)
-
-    --
     skynet.newservice "service_mgr"
     pcall(skynet.newservice, skynet.getenv("start") or "main")
 

@@ -1,196 +1,217 @@
 -- read https://github.com/cloudwu/skynet/wiki/FAQ for the module "skynet.core"
 local skynet_core = require "skynet.core"
 
+local profile = require "skynet.profile"
+local profile_resume = profile.resume
+
 local tostring = tostring
 local coroutine = coroutine
 local assert = assert
 local pairs = pairs
 local pcall = pcall
 local table = table
-local tremove = table.remove
-local tinsert = table.insert
+local table_remove = table.remove
+local table_insert = table.insert
 local traceback = debug.traceback
 
-local profile = require "skynet.profile"
+-- -----------------------------------
+-- coroutine functions
+--
+-- thread_create
+-- thread_resume
+-- thread_yield
+-- thread_running
+-- -----------------------------------
 
-local cresume = profile.resume
-local running_thread = nil
+-- record current running thread
+local current_thread = nil
+
+local thread_create = coroutine.create
+local thread_resume = function(thread, ...)
+    current_thread = thread
+    return profile_resume(thread, ...)
+end
+local thread_yield = profile.yield
+local thread_running = coroutine.running
+
+-- -----------------------------------
+--
+-- -----------------------------------
+
 local init_thread = nil
 
-local function coroutine_resume(co, ...)
-    running_thread = co
-    return cresume(co, ...)
-end
-local coroutine_yield = profile.yield
-local coroutine_create = coroutine.create
+local msg_proto_handlers = {}
 
-local proto = {}
 local skynet = {
-    -- read skynet.h
-    PTYPE_TEXT = 0,
-    PTYPE_RESPONSE = 1,
-    PTYPE_MULTICAST = 2,
-    PTYPE_CLIENT = 3,
-    PTYPE_SYSTEM = 4,
-    PTYPE_HARBOR = 5,
-    PTYPE_SOCKET = 6,
-    PTYPE_ERROR = 7,
-    PTYPE_QUEUE = 8, -- used in deprecated mqueue, use skynet.queue instead
-    PTYPE_DEBUG = 9,
-    PTYPE_LUA = 10,
-    PTYPE_SNAX = 11,
-    PTYPE_TRACE = 12, -- use for debug trace
+    MSG_PTYPE_TEXT = 0,
+    MSG_PTYPE_RESPONSE = 1,
+    MSG_PTYPE_MULTICAST = 2,
+    MSG_PTYPE_CLIENT = 3,
+    MSG_PTYPE_SYSTEM = 4,
+    MSG_PTYPE_HARBOR = 5,
+    MSG_PTYPE_SOCKET = 6,
+    MSG_PTYPE_ERROR = 7,
+    MSG_PTYPE_QUEUE = 8, -- used in deprecated mqueue, use skynet.queue instead
+    MSG_PTYPE_DEBUG = 9,
+    MSG_PTYPE_LUA = 10,
+    MSG_PTYPE_SNAX = 11,
+    MSG_PTYPE_TRACE = 12, -- use for debug trace
 }
 
 -- code cache
 skynet.cache = require "skynet.codecache"
 
-function skynet.register_protocol(class)
-    local name = class.name
-    local id = class.id
-    assert(proto[name] == nil and proto[id] == nil)
-    assert(type(name) == "string" and type(id) == "number" and id >= 0 and id <= 255)
-    proto[name] = class
-    proto[id] = class
+-- register skynet service message handler
+function skynet.register_protocol(proto_handler)
+    local msg_ptype_name = proto_handler.msg_ptype_name
+    local msg_ptype = proto_handler.msg_ptype
+    assert(msg_proto_handlers[msg_ptype_name] == nil and msg_proto_handlers[msg_ptype] == nil)
+    assert(type(msg_ptype_name) == "string" and type(msg_ptype) == "number" and msg_ptype >= 0 and msg_ptype <= 255)
+    msg_proto_handlers[msg_ptype_name] = proto_handler
+    msg_proto_handlers[msg_ptype] = proto_handler
 end
 
-local session_id_coroutine = {}
-local session_coroutine_id = {}
-local session_coroutine_address = {}
-local session_coroutine_tracetag = {}
+local session_id_coroutine = {}         -- session_id -> coroutine
+local session_coroutine_id = {}         -- coroutine -> session_id
+local session_coroutine_address = {}    -- coroutine -> service handle
+local session_coroutine_tracetag = {}   -- coroutine -> trace tag
 local unresponse = {}
 
 local wakeup_queue = {}
 local sleep_session = {}
 
-local watching_session = {}
-local error_queue = {}
-local fork_queue = {}
+local watching_session = {} --
+local fork_queue = {} -- fork coroutine exec queue
 
--- suspend is function
+-- thread suspend function
 local suspend
 
 
 ----- monitor exit
 
+local error_queue = {}
+
 local function dispatch_error_queue()
-    local session = tremove(error_queue, 1)
-    if session then
-        local co = session_id_coroutine[session]
-        session_id_coroutine[session] = nil
-        return suspend(co, coroutine_resume(co, false))
+    local session_id = table_remove(error_queue, 1)
+    if session_id then
+        local thread = session_id_coroutine[session_id]
+        session_id_coroutine[session_id] = nil
+        return suspend(thread, thread_resume(thread, false))
     end
 end
 
-local function _error_dispatch(error_session, error_source)
+local function _error_dispatch(error_session_id, error_src_svc_handle)
     skynet.ignoreret()    -- don't return for error
-    if error_session == 0 then
-        -- error_source is down, clear unreponse set
+    if error_session_id == 0 then
+        -- error_src_svc_handle is down, clear unreponse set
         for resp, address in pairs(unresponse) do
-            if error_source == address then
+            if error_src_svc_handle == address then
                 unresponse[resp] = nil
             end
         end
-        for session, srv in pairs(watching_session) do
-            if srv == error_source then
-                tinsert(error_queue, session)
+        for session_id, svc_handle in pairs(watching_session) do
+            if svc_handle == error_src_svc_handle then
+                table_insert(error_queue, session_id)
             end
         end
     else
-        -- capture an error for error_session
-        if watching_session[error_session] then
-            tinsert(error_queue, error_session)
+        -- capture an error for error_session_id
+        if watching_session[error_session_id] then
+            table_insert(error_queue, error_session_id)
         end
     end
 end
 
--- coroutine reuse
+-- -----------------------------------
+-- thread pool
+-- -----------------------------------
 
-local coroutine_pool = setmetatable({}, { __mode = "kv" })
+local thread_pool = setmetatable({}, { __mode = "kv" })
 
-local function co_create(f)
-    local co = tremove(coroutine_pool)
-    if co == nil then
-        co = coroutine_create(function(...)
-            f(...)
+--
+local function co_create(func)
+    local thread = table_remove(thread_pool)
+    if thread == nil then
+        thread = thread_create(function(...)
+            func(...)
             while true do
-                local session = session_coroutine_id[co]
-                if session and session ~= 0 then
-                    local source = debug.getinfo(f, "S")
+                local session_id = session_coroutine_id[thread]
+                if session_id and session_id ~= 0 then
+                    local source = debug.getinfo(func, "S")
                     skynet.log(string.format("Maybe forgot response session %s from %s : %s:%d",
-                            session,
-                            skynet.address(session_coroutine_address[co]),
+                            session_id,
+                            skynet.address(session_coroutine_address[thread]),
                             source.source, source.linedefined))
                 end
                 -- coroutine exit
-                local tag = session_coroutine_tracetag[co]
+                local tag = session_coroutine_tracetag[thread]
                 if tag ~= nil then
                     if tag then
                         skynet_core.trace(tag, "end")
                     end
-                    session_coroutine_tracetag[co] = nil
+                    session_coroutine_tracetag[thread] = nil
                 end
-                local address = session_coroutine_address[co]
+                local address = session_coroutine_address[thread]
                 if address then
-                    session_coroutine_id[co] = nil
-                    session_coroutine_address[co] = nil
+                    session_coroutine_id[thread] = nil
+                    session_coroutine_address[thread] = nil
                 end
 
-                -- recycle co into pool
-                f = nil
-                coroutine_pool[#coroutine_pool + 1] = co
-                -- recv new main function f
-                f = coroutine_yield "SUSPEND"
-                f(coroutine_yield())
+                -- recycle thread into pool
+                func = nil
+                thread_pool[#thread_pool + 1] = thread
+                -- recv new main function
+                func = thread_yield("SUSPEND")
+                func(thread_yield())
             end
         end)
     else
-        -- pass the main function f to coroutine, and restore running thread
-        local running = running_thread
-        coroutine_resume(co, f)
-        running_thread = running
+        -- pass the main function to coroutine, and restore running thread
+        local running = current_thread
+        thread_resume(thread, func)
+        current_thread = running
     end
-    return co
+    return thread
 end
 
 local function dispatch_wakeup()
-    local token = tremove(wakeup_queue, 1)
+    local token = table_remove(wakeup_queue, 1)
     if token then
-        local session = sleep_session[token]
-        if session then
-            local co = session_id_coroutine[session]
-            local tag = session_coroutine_tracetag[co]
+        local session_id = sleep_session[token]
+        if session_id then
+            local thread = session_id_coroutine[session_id]
+            local tag = session_coroutine_tracetag[thread]
             if tag then
                 skynet_core.trace(tag, "resume")
             end
-            session_id_coroutine[session] = "BREAK"
-            return suspend(co, coroutine_resume(co, false, "BREAK"))
+            session_id_coroutine[session_id] = "BREAK"
+            return suspend(thread, thread_resume(thread, false, "BREAK"))
         end
     end
 end
 
 -- suspend is local function
-function suspend(co, result, command)
+function suspend(thread, result, command)
     if not result then
-        local session = session_coroutine_id[co]
-        if session then
-            -- coroutine may fork by others (session is nil)
-            local addr = session_coroutine_address[co]
-            if session ~= 0 then
+        local session_id = session_coroutine_id[thread]
+        if session_id then
+            -- coroutine may fork by others (session_id is nil)
+            local addr = session_coroutine_address[thread]
+            if session_id ~= 0 then
                 -- only call response error
-                local tag = session_coroutine_tracetag[co]
+                local tag = session_coroutine_tracetag[thread]
                 if tag then
                     skynet_core.trace(tag, "error")
                 end
-                skynet_core.send(addr, skynet.PTYPE_ERROR, session, "")
+                skynet_core.send(addr, skynet.MSG_PTYPE_ERROR, session_id, "")
             end
-            session_coroutine_id[co] = nil
+            session_coroutine_id[thread] = nil
         end
-        session_coroutine_address[co] = nil
-        session_coroutine_tracetag[co] = nil
+        session_coroutine_address[thread] = nil
+        session_coroutine_tracetag[thread] = nil
         skynet.fork(function()
         end)    -- trigger command "SUSPEND"
-        error(traceback(co, tostring(command)))
+        error(traceback(thread, tostring(command)))
     end
     if command == "SUSPEND" then
         dispatch_wakeup()
@@ -200,12 +221,12 @@ function suspend(co, result, command)
         return
     elseif command == "USER" then
         -- See skynet.coutine for detail
-        error("Call skynet.coroutine.yield out of skynet.coroutine.resume\n" .. traceback(co))
+        error("Call skynet.coroutine.yield out of skynet.coroutine.resume\n" .. traceback(thread))
     elseif command == nil then
         -- debug trace
         return
     else
-        error("Unknown command : " .. command .. "\n" .. traceback(co))
+        error("Unknown command : " .. command .. "\n" .. traceback(thread))
     end
 end
 
@@ -214,14 +235,14 @@ local timeout_traceback
 
 function skynet.trace_timeout(on)
     local function trace_coroutine(func, ti)
-        local co
-        co = co_create(function()
-            timeout_traceback[co] = nil
+        local thread
+        thread = co_create(function()
+            timeout_traceback[thread] = nil
             func()
         end)
         local info = string.format("TIMER %d+%d : ", skynet.now(), ti)
-        timeout_traceback[co] = traceback(info, 3)
-        return co
+        timeout_traceback[thread] = traceback(info, 3)
+        return thread
     end
     if on then
         timeout_traceback = timeout_traceback or {}
@@ -232,34 +253,41 @@ function skynet.trace_timeout(on)
     end
 end
 
-skynet.trace_timeout(false)    -- turn off by default
+-- turn off by default
+skynet.trace_timeout(false)
 
 function skynet.timeout(ti, func)
-    local session = skynet_core.intcommand("TIMEOUT", ti)
-    assert(session)
-    local co = co_create_for_timeout(func, ti)
-    assert(session_id_coroutine[session] == nil)
-    session_id_coroutine[session] = co
-    return co    -- for debug
+    local session_id = skynet_core.intcommand("TIMEOUT", ti)
+    assert(session_id)
+    local thread = co_create_for_timeout(func, ti)
+    assert(session_id_coroutine[session_id] == nil)
+    session_id_coroutine[session_id] = thread
+    -- for debug
+    return thread
 end
 
-local function suspend_sleep(session, token)
-    local tag = session_coroutine_tracetag[running_thread]
+--
+local function suspend_sleep(session_id, token)
+    local tag = session_coroutine_tracetag[current_thread]
     if tag then
         skynet_core.trace(tag, "sleep", 2)
     end
-    session_id_coroutine[session] = running_thread
+    session_id_coroutine[session_id] = current_thread
     assert(sleep_session[token] == nil, "token duplicative")
-    sleep_session[token] = session
+    sleep_session[token] = session_id
 
-    return coroutine_yield "SUSPEND"
+    return thread_yield("SUSPEND")
 end
 
+-- -----------------------------------
+-- thread functions
+-- -----------------------------------
+
 function skynet.sleep(ti, token)
-    local session = skynet_core.intcommand("TIMEOUT", ti)
-    assert(session)
-    token = token or coroutine.running()
-    local succ, ret = suspend_sleep(session, token)
+    local session_id = skynet_core.intcommand("TIMEOUT", ti)
+    assert(session_id)
+    token = token or thread_running()
+    local succ, ret = suspend_sleep(session_id, token)
     sleep_session[token] = nil
     if succ then
         return
@@ -276,35 +304,63 @@ function skynet.yield()
 end
 
 function skynet.wait(token)
-    local session = skynet_core.gen_session_id()
-    token = token or coroutine.running()
-    local ret, msg = suspend_sleep(session, token)
+    local session_id = skynet_core.gen_session_id()
+    token = token or thread_running()
+    local ret, msg = suspend_sleep(session_id, token)
     sleep_session[token] = nil
-    session_id_coroutine[session] = nil
+    session_id_coroutine[session_id] = nil
 end
 
+function skynet.wakeup(token)
+    if sleep_session[token] then
+        table_insert(wakeup_queue, token)
+        return true
+    end
+end
+
+function skynet.fork(func, ...)
+    local n = select("#", ...)
+    local thread
+    if n == 0 then
+        thread = co_create(func)
+    else
+        local args = { ... }
+        thread = co_create(function()
+            func(table.unpack(args, 1, n))
+        end)
+    end
+    table_insert(fork_queue, thread)
+    return thread
+end
+
+-- -----------------------------------
+--
+-- -----------------------------------
+
+-- self service handle
 function skynet.self()
-    return skynet_core.addresscommand "REG"
+    return skynet_core.addresscommand("REG")
 end
 
+-- query local serivce name
 function skynet.localname(name)
     return skynet_core.addresscommand("QUERY", name)
 end
 
-skynet.now = skynet_core.now
+skynet.now = skynet_core.now    -- current tick (1tick = 10ms)
 skynet.hpc = skynet_core.hpc    -- high performance counter
 
 local traceid = 0
 function skynet.trace(info)
-    skynet.log("TRACE", session_coroutine_tracetag[running_thread])
-    if session_coroutine_tracetag[running_thread] == false then
+    skynet.log("TRACE", session_coroutine_tracetag[current_thread])
+    if session_coroutine_tracetag[current_thread] == false then
         -- force off trace log
         return
     end
     traceid = traceid + 1
 
     local tag = string.format(":%08x-%d", skynet.self(), traceid)
-    session_coroutine_tracetag[running_thread] = tag
+    session_coroutine_tracetag[current_thread] = tag
     if info then
         skynet_core.trace(tag, "trace " .. info)
     else
@@ -313,11 +369,16 @@ function skynet.trace(info)
 end
 
 function skynet.tracetag()
-    return session_coroutine_tracetag[running_thread]
+    return session_coroutine_tracetag[current_thread]
 end
+
+-- -----------------------------------
+-- time functions
+-- -----------------------------------
 
 local starttime
 
+--
 function skynet.starttime()
     if not starttime then
         starttime = skynet_core.intcommand("START_TIME")
@@ -325,35 +386,14 @@ function skynet.starttime()
     return starttime
 end
 
+-- get current time (seconds)
 function skynet.time()
     return skynet.now() / 100 + (starttime or skynet.starttime())
 end
 
-function skynet.exit()
-    fork_queue = {}    -- no fork coroutine can be execute after skynet.exit
-    skynet.send(".launcher", "lua", "REMOVE", skynet.self(), false)
-    -- report the sources that call me
-    for co, session in pairs(session_coroutine_id) do
-        local address = session_coroutine_address[co]
-        if session ~= 0 and address then
-            skynet_core.send(address, skynet.PTYPE_ERROR, session, "")
-        end
-    end
-    for resp in pairs(unresponse) do
-        resp(false)
-    end
-    -- report the sources I call but haven't return
-    local tmp = {}
-    for session, address in pairs(watching_session) do
-        tmp[address] = true
-    end
-    for address in pairs(tmp) do
-        skynet_core.send(address, skynet.PTYPE_ERROR, 0, "")
-    end
-    skynet_core.command("EXIT")
-    -- quit service
-    coroutine_yield "QUIT"
-end
+-- -----------------------------------
+-- env functions
+-- -----------------------------------
 
 function skynet.getenv(key)
     return (skynet_core.command("GETENV", key))
@@ -364,20 +404,28 @@ function skynet.setenv(key, value)
     skynet_core.command("SETENV", key .. " " .. value)
 end
 
-function skynet.send(addr, typename, ...)
-    local p = proto[typename]
-    return skynet_core.send(addr, p.id, 0, p.pack(...))
+
+-- -----------------------------------
+--
+-- -----------------------------------
+
+
+function skynet.send(addr, msg_ptype, ...)
+    local proto_handler = msg_proto_handlers[msg_ptype]
+    return skynet_core.send(addr, proto_handler.msg_ptype, 0, proto_handler.pack(...))
 end
 
-function skynet.rawsend(addr, typename, msg, sz)
-    local p = proto[typename]
-    return skynet_core.send(addr, p.id, 0, msg, sz)
+function skynet.rawsend(addr, msg_ptype, msg, sz)
+    local proto_handler = msg_proto_handlers[msg_ptype]
+    return skynet_core.send(addr, proto_handler.msg_ptype, 0, msg, sz)
 end
 
+--- new session id
 skynet.gen_session_id = assert(skynet_core.gen_session_id)
 
-skynet.redirect = function(dest, source, typename, ...)
-    return skynet_core.redirect(dest, source, proto[typename].id, ...)
+--- redirect the message to destination service
+skynet.redirect = function(dst_svc_handle, src_svc_handle, msg_ptype, ...)
+    return skynet_core.redirect(dst_svc_handle, src_svc_handle, msg_proto_handlers[msg_ptype].msg_ptype, ...)
 end
 
 skynet.pack = assert(skynet_core.pack)
@@ -386,100 +434,100 @@ skynet.unpack = assert(skynet_core.unpack)
 skynet.tostring = assert(skynet_core.tostring)
 skynet.trash = assert(skynet_core.trash)
 
-local function yield_call(service, session)
-    watching_session[session] = service
-    session_id_coroutine[session] = running_thread
-    local succ, msg, sz = coroutine_yield "SUSPEND"
-    watching_session[session] = nil
+local function yield_call(svc_handle, session_id)
+    watching_session[session_id] = svc_handle
+    session_id_coroutine[session_id] = current_thread
+    local succ, msg, sz = thread_yield "SUSPEND"
+    watching_session[session_id] = nil
     if not succ then
         error "call failed"
     end
     return msg, sz
 end
 
-function skynet.call(addr, typename, ...)
-    local tag = session_coroutine_tracetag[running_thread]
+function skynet.call(addr, msg_ptype, ...)
+    local tag = session_coroutine_tracetag[current_thread]
     if tag then
         skynet_core.trace(tag, "call", 2)
-        skynet_core.send(addr, skynet.PTYPE_TRACE, 0, tag)
+        skynet_core.send(addr, skynet.MSG_PTYPE_TRACE, 0, tag)
     end
 
-    local p = proto[typename]
-    local session = skynet_core.send(addr, p.id, nil, p.pack(...))
-    if session == nil then
+    local proto_handler = msg_proto_handlers[msg_ptype]
+    local session_id = skynet_core.send(addr, proto_handler.msg_ptype, nil, proto_handler.pack(...))
+    if session_id == nil then
         error("call to invalid address " .. skynet.address(addr))
     end
-    return p.unpack(yield_call(addr, session))
+    return proto_handler.unpack(yield_call(addr, session_id))
 end
 
-function skynet.rawcall(addr, typename, msg, sz)
-    local tag = session_coroutine_tracetag[running_thread]
+function skynet.rawcall(addr, msg_ptype, msg, sz)
+    local tag = session_coroutine_tracetag[current_thread]
     if tag then
         skynet_core.trace(tag, "call", 2)
-        skynet_core.send(addr, skynet.PTYPE_TRACE, 0, tag)
+        skynet_core.send(addr, skynet.MSG_PTYPE_TRACE, 0, tag)
     end
-    local p = proto[typename]
-    local session = assert(skynet_core.send(addr, p.id, nil, msg, sz), "call to invalid address")
-    return yield_call(addr, session)
+    local proto_handler = msg_proto_handlers[msg_ptype]
+    local session_id = assert(skynet_core.send(addr, proto_handler.msg_ptype, nil, msg, sz), "call to invalid address")
+    return yield_call(addr, session_id)
 end
 
-function skynet.tracecall(tag, addr, typename, msg, sz)
+function skynet.tracecall(tag, addr, msg_ptype, msg, sz)
     skynet_core.trace(tag, "tracecall begin")
-    skynet_core.send(addr, skynet.PTYPE_TRACE, 0, tag)
-    local p = proto[typename]
-    local session = assert(skynet_core.send(addr, p.id, nil, msg, sz), "call to invalid address")
-    local msg, sz = yield_call(addr, session)
+    skynet_core.send(addr, skynet.MSG_PTYPE_TRACE, 0, tag)
+    local proto_handler = msg_proto_handlers[msg_ptype]
+    local session_id = assert(skynet_core.send(addr, proto_handler.msg_ptype, nil, msg, sz), "call to invalid address")
+    local msg, sz = yield_call(addr, session_id)
     skynet_core.trace(tag, "tracecall end")
     return msg, sz
 end
 
 function skynet.ret(msg, sz)
     msg = msg or ""
-    local tag = session_coroutine_tracetag[running_thread]
+    local tag = session_coroutine_tracetag[current_thread]
     if tag then
         skynet_core.trace(tag, "response")
     end
-    local co_session = session_coroutine_id[running_thread]
-    session_coroutine_id[running_thread] = nil
+    local co_session = session_coroutine_id[current_thread]
+    session_coroutine_id[current_thread] = nil
     if co_session == 0 then
         if sz ~= nil then
             skynet_core.trash(msg, sz)
         end
         return false    -- send don't need ret
     end
-    local co_address = session_coroutine_address[running_thread]
+    local co_address = session_coroutine_address[current_thread]
     if not co_session then
         error "No session"
     end
-    local ret = skynet_core.send(co_address, skynet.PTYPE_RESPONSE, co_session, msg, sz)
+    local ret = skynet_core.send(co_address, skynet.MSG_PTYPE_RESPONSE, co_session, msg, sz)
     if ret then
         return true
     elseif ret == false then
         -- If the package is too large, returns false. so we should report error back
-        skynet_core.send(co_address, skynet.PTYPE_ERROR, co_session, "")
+        skynet_core.send(co_address, skynet.MSG_PTYPE_ERROR, co_session, "")
     end
     return false
 end
 
 function skynet.context()
-    local co_session = session_coroutine_id[running_thread]
-    local co_address = session_coroutine_address[running_thread]
+    local co_session = session_coroutine_id[current_thread]
+    local co_address = session_coroutine_address[current_thread]
     return co_session, co_address
 end
 
 function skynet.ignoreret()
     -- We use session for other uses
-    session_coroutine_id[running_thread] = nil
+    session_coroutine_id[current_thread] = nil
 end
 
 function skynet.response(pack)
     pack = pack or skynet.pack
 
-    local co_session = assert(session_coroutine_id[running_thread], "no session")
-    session_coroutine_id[running_thread] = nil
-    local co_address = session_coroutine_address[running_thread]
+    local co_session = assert(session_coroutine_id[current_thread], "no session")
+    session_coroutine_id[current_thread] = nil
+    local co_address = session_coroutine_address[current_thread]
     if co_session == 0 then
-        --  do not response when session == 0 (send)
+        --  do not response when session_id == 0 (send)
         return function()
         end
     end
@@ -494,13 +542,13 @@ function skynet.response(pack)
         local ret
         if unresponse[response] then
             if ok then
-                ret = skynet_core.send(co_address, skynet.PTYPE_RESPONSE, co_session, pack(...))
+                ret = skynet_core.send(co_address, skynet.MSG_PTYPE_RESPONSE, co_session, pack(...))
                 if ret == false then
                     -- If the package is too large, returns false. so we should report error back
-                    skynet_core.send(co_address, skynet.PTYPE_ERROR, co_session, "")
+                    skynet_core.send(co_address, skynet.MSG_PTYPE_ERROR, co_session, "")
                 end
             else
-                ret = skynet_core.send(co_address, skynet.PTYPE_ERROR, co_session, "")
+                ret = skynet_core.send(co_address, skynet.MSG_PTYPE_ERROR, co_session, "")
             end
             unresponse[response] = nil
             ret = ret ~= nil
@@ -519,27 +567,20 @@ function skynet.retpack(...)
     return skynet.ret(skynet.pack(...))
 end
 
-function skynet.wakeup(token)
-    if sleep_session[token] then
-        tinsert(wakeup_queue, token)
-        return true
-    end
-end
-
-function skynet.dispatch(typename, func)
-    local p = proto[typename]
+function skynet.dispatch(msg_ptype, func)
+    local proto_handler = msg_proto_handlers[msg_ptype]
     if func then
-        local ret = p.dispatch
-        p.dispatch = func
+        local ret = proto_handler.dispatch
+        proto_handler.dispatch = func
         return ret
     else
-        return p and p.dispatch
+        return proto_handler and proto_handler.dispatch
     end
 end
 
-local function unknown_request(session, address, msg, sz, prototype)
-    skynet.log(string.format("Unknown request (%s): %s", prototype, skynet_core.tostring(msg, sz)))
-    error(string.format("Unknown session : %d from %x", session, address))
+local function unknown_request(session_id, address, msg, sz, msg_ptype)
+    skynet.log(string.format("Unknown request (%s): %s", msg_ptype, skynet_core.tostring(msg, sz)))
+    error(string.format("Unknown session : %d from %x", session_id, address))
 end
 
 function skynet.dispatch_unknown_request(unknown)
@@ -548,9 +589,9 @@ function skynet.dispatch_unknown_request(unknown)
     return prev
 end
 
-local function unknown_response(session, address, msg, sz)
+local function unknown_response(session_id, address, msg, sz)
     skynet.log(string.format("Response message : %s", skynet_core.tostring(msg, sz)))
-    error(string.format("Unknown session : %d from %x", session, address))
+    error(string.format("Unknown session : %d from %x", session_id, address))
 end
 
 function skynet.dispatch_unknown_response(unknown)
@@ -559,82 +600,68 @@ function skynet.dispatch_unknown_response(unknown)
     return prev
 end
 
-function skynet.fork(func, ...)
-    local n = select("#", ...)
-    local co
-    if n == 0 then
-        co = co_create(func)
-    else
-        local args = { ... }
-        co = co_create(function()
-            func(table.unpack(args, 1, n))
-        end)
-    end
-    tinsert(fork_queue, co)
-    return co
-end
 
 local trace_source = {}
 
-local function raw_dispatch_message(prototype, msg, sz, session, source)
-    -- skynet.PTYPE_RESPONSE = 1, read skynet.h
-    if prototype == 1 then
-        local co = session_id_coroutine[session]
-        if co == "BREAK" then
-            session_id_coroutine[session] = nil
-        elseif co == nil then
-            unknown_response(session, source, msg, sz)
+local function raw_dispatch_message(msg_ptype, msg, sz, session_id, src_svc_handle)
+    --
+    if msg_ptype == skynet.MSG_PTYPE_RESPONSE then
+        local thread = session_id_coroutine[session_id]
+        if thread == "BREAK" then
+            session_id_coroutine[session_id] = nil
+        elseif thread == nil then
+            unknown_response(session_id, src_svc_handle, msg, sz)
         else
-            local tag = session_coroutine_tracetag[co]
+            local tag = session_coroutine_tracetag[thread]
             if tag then
                 skynet_core.trace(tag, "resume")
             end
-            session_id_coroutine[session] = nil
-            suspend(co, coroutine_resume(co, true, msg, sz))
+            session_id_coroutine[session_id] = nil
+            suspend(thread, thread_resume(thread, true, msg, sz))
         end
     else
-        local p = proto[prototype]
-        if p == nil then
-            if prototype == skynet.PTYPE_TRACE then
+        local proto_handler = msg_proto_handlers[msg_ptype]
+        if proto_handler == nil then
+            if msg_ptype == skynet.MSG_PTYPE_TRACE then
                 -- trace next request
-                trace_source[source] = skynet_core.tostring(msg, sz)
-            elseif session ~= 0 then
-                skynet_core.send(source, skynet.PTYPE_ERROR, session, "")
+                trace_source[src_svc_handle] = skynet_core.tostring(msg, sz)
+            elseif session_id ~= 0 then
+                skynet_core.send(src_svc_handle, skynet.MSG_PTYPE_ERROR, session_id, "")
             else
-                unknown_request(session, source, msg, sz, prototype)
+                unknown_request(session_id, src_svc_handle, msg, sz, msg_ptype)
             end
             return
         end
 
-        local f = p.dispatch
-        if f then
-            local co = co_create(f)
-            session_coroutine_id[co] = session
-            session_coroutine_address[co] = source
-            local traceflag = p.trace
+        local func = proto_handler.dispatch
+        if func then
+            local thread = co_create(func)
+            session_coroutine_id[thread] = session_id
+            session_coroutine_address[thread] = src_svc_handle
+            local traceflag = proto_handler.trace
             if traceflag == false then
                 -- force off
-                trace_source[source] = nil
-                session_coroutine_tracetag[co] = false
+                trace_source[src_svc_handle] = nil
+                session_coroutine_tracetag[thread] = false
             else
-                local tag = trace_source[source]
+                local tag = trace_source[src_svc_handle]
                 if tag then
-                    trace_source[source] = nil
+                    trace_source[src_svc_handle] = nil
                     skynet_core.trace(tag, "request")
-                    session_coroutine_tracetag[co] = tag
+                    session_coroutine_tracetag[thread] = tag
                 elseif traceflag then
-                    -- set running_thread for trace
-                    running_thread = co
+                    -- set current_thread for trace
+                    current_thread = thread
                     skynet.trace()
                 end
             end
-            suspend(co, coroutine_resume(co, session, source, p.unpack(msg, sz)))
+            suspend(thread, thread_resume(thread, session_id, src_svc_handle, proto_handler.unpack(msg, sz)))
         else
-            trace_source[source] = nil
-            if session ~= 0 then
-                skynet_core.send(source, skynet.PTYPE_ERROR, session, "")
+            trace_source[src_svc_handle] = nil
+            if session_id ~= 0 then
+                skynet_core.send(src_svc_handle, skynet.MSG_PTYPE_ERROR, session_id, "")
             else
-                unknown_request(session, source, msg, sz, proto[prototype].name)
+                unknown_request(session_id, src_svc_handle, msg, sz, msg_proto_handlers[msg_ptype].name)
             end
         end
     end
@@ -643,11 +670,11 @@ end
 function skynet.dispatch_message(...)
     local succ, err = pcall(raw_dispatch_message, ...)
     while true do
-        local co = tremove(fork_queue, 1)
-        if co == nil then
+        local thread = table_remove(fork_queue, 1)
+        if thread == nil then
             break
         end
-        local fork_succ, fork_err = pcall(suspend, co, coroutine_resume(co))
+        local fork_succ, fork_err = pcall(suspend, thread, thread_resume(thread))
         if not fork_succ then
             if succ then
                 succ = false
@@ -694,49 +721,53 @@ skynet.tracelog = skynet_core.trace
 -- true: force on
 -- false: force off
 -- nil: optional (use skynet.trace() to trace one message)
-function skynet.traceproto(prototype, flag)
-    local p = assert(proto[prototype])
-    p.trace = flag
+function skynet.traceproto(msg_ptype, flag)
+    local proto_handler = assert(msg_proto_handlers[msg_ptype])
+    proto_handler.trace = flag
 end
 
------ register protocol
-do
-    local REG = skynet.register_protocol
+-- -----------------------------------
+-- register protocol
+-- -----------------------------------
 
-    REG {
-        name = "lua",
-        id = skynet.PTYPE_LUA,
-        pack = skynet.pack,
-        unpack = skynet.unpack,
-    }
+skynet.register_protocol({
+    msg_ptype_name = "lua",
+    msg_ptype = skynet.MSG_PTYPE_LUA,
+    pack = skynet.pack,
+    unpack = skynet.unpack,
+})
 
-    REG {
-        name = "response",
-        id = skynet.PTYPE_RESPONSE,
-    }
+skynet.register_protocol({
+    msg_ptype_name = "response",
+    msg_ptype = skynet.MSG_PTYPE_RESPONSE,
+})
 
-    REG {
-        name = "error",
-        id = skynet.PTYPE_ERROR,
-        unpack = function(...)
-            return ...
-        end,
-        dispatch = _error_dispatch,
-    }
-end
+skynet.register_protocol({
+    msg_ptype_name = "error",
+    msg_ptype = skynet.MSG_PTYPE_ERROR,
+    unpack = function(...)
+        return ...
+    end,
+    dispatch = _error_dispatch,
+})
+
+-- -----------------------------------
+--
+-- -----------------------------------
 
 local init_func = {}
 
-function skynet.init(f, name)
-    assert(type(f) == "function")
+--
+function skynet.init(func, name)
+    assert(type(func) == "function")
     if init_func == nil then
-        f()
+        func()
     else
-        tinsert(init_func, f)
+        table_insert(init_func, func)
         if name then
             assert(type(name) == "string")
             assert(init_func[name] == nil)
-            init_func[name] = f
+            init_func[name] = func
         end
     end
 end
@@ -745,29 +776,29 @@ local function init_all()
     local funcs = init_func
     init_func = nil
     if funcs then
-        for _, f in ipairs(funcs) do
-            f()
+        for _, func in ipairs(funcs) do
+            func()
         end
     end
 end
 
-local function ret(f, ...)
-    f()
+local function ret(func, ...)
+    func()
     return ...
 end
 
-local function init_template(start, ...)
+local function init_template(start_func, ...)
     init_all()
     init_func = {}
-    return ret(init_all, start(...))
+    return ret(init_all, start_func(...))
 end
 
-function skynet.pcall(start, ...)
-    return xpcall(init_template, traceback, start, ...)
+function skynet.pcall(start_func, ...)
+    return xpcall(init_template, traceback, start_func, ...)
 end
 
-function skynet.init_service(start)
-    local ok, err = skynet.pcall(start)
+function skynet.init_service(start_func)
+    local ok, err = skynet.pcall(start_func)
     if not ok then
         skynet.log("init service failed: " .. tostring(err))
         skynet.send(".launcher", "lua", "ERROR")
@@ -777,6 +808,7 @@ function skynet.init_service(start)
     end
 end
 
+-- start service
 function skynet.start(start_func)
     skynet_core.callback(skynet.dispatch_message)
     init_thread = skynet.timeout(0, function()
@@ -785,22 +817,53 @@ function skynet.start(start_func)
     end)
 end
 
+-- exit service
+function skynet.exit()
+    fork_queue = {}    -- no fork coroutine can be execute after skynet.exit
+    skynet.send(".launcher", "lua", "REMOVE", skynet.self(), false)
+    -- report the sources that call me
+    for thread, session_id in pairs(session_coroutine_id) do
+        local address = session_coroutine_address[thread]
+        if session_id ~= 0 and address then
+            skynet_core.send(address, skynet.MSG_PTYPE_ERROR, session_id, "")
+        end
+    end
+    for resp in pairs(unresponse) do
+        resp(false)
+    end
+    -- report the sources I call but haven't return
+    local tmp = {}
+    for session_id, svc_handle in pairs(watching_session) do
+        tmp[svc_handle] = true
+    end
+    for svc_handle in pairs(tmp) do
+        skynet_core.send(svc_handle, skynet.MSG_PTYPE_ERROR, 0, "")
+    end
+    skynet_core.command("EXIT")
+    -- quit service
+    thread_yield("QUIT")
+end
+
+-- query whether the service is blocked
 function skynet.endless()
     return (skynet_core.intcommand("STAT", "endless") == 1)
 end
 
+-- query the service message queue length
 function skynet.mqlen()
     return skynet_core.intcommand("STAT", "mqlen")
 end
 
+-- query the service status
 function skynet.stat(what)
     return skynet_core.intcommand("STAT", what)
 end
 
+--
 function skynet.task(ret)
     if ret == nil then
         local t = 0
-        for session, co in pairs(session_id_coroutine) do
+        for session_id, thread in pairs(session_id_coroutine) do
             t = t + 1
         end
         return t
@@ -812,27 +875,28 @@ function skynet.task(ret)
             return
         end
     end
+
     local tt = type(ret)
     if tt == "table" then
-        for session, co in pairs(session_id_coroutine) do
-            if timeout_traceback and timeout_traceback[co] then
-                ret[session] = timeout_traceback[co]
+        for session_id, thread in pairs(session_id_coroutine) do
+            if timeout_traceback and timeout_traceback[thread] then
+                ret[session_id] = timeout_traceback[thread]
             else
-                ret[session] = traceback(co)
+                ret[session_id] = traceback(thread)
             end
         end
         return
     elseif tt == "number" then
-        local co = session_id_coroutine[ret]
-        if co then
-            return traceback(co)
+        local thread = session_id_coroutine[ret]
+        if thread then
+            return traceback(thread)
         else
             return "No session"
         end
     elseif tt == "thread" then
-        for session, co in pairs(session_id_coroutine) do
-            if co == ret then
-                return session
+        for session_id, thread in pairs(session_id_coroutine) do
+            if thread == ret then
+                return session_id
             end
         end
         return
@@ -841,12 +905,12 @@ end
 
 function skynet.uniqtask()
     local stacks = {}
-    for session, co in pairs(session_id_coroutine) do
-        local stack = traceback(co)
+    for session_id, thread in pairs(session_id_coroutine) do
+        local stack = traceback(thread)
         local info = stacks[stack] or { count = 0, sessions = {} }
         info.count = info.count + 1
         if info.count < 10 then
-            info.sessions[#info.sessions + 1] = session
+            info.sessions[#info.sessions + 1] = session_id
         end
         stacks[stack] = info
     end
@@ -863,8 +927,8 @@ function skynet.uniqtask()
     return ret
 end
 
-function skynet.term(service)
-    return _error_dispatch(0, service)
+function skynet.term(svc_handle)
+    return _error_dispatch(0, svc_handle)
 end
 
 function skynet.memlimit(bytes)
@@ -873,8 +937,8 @@ function skynet.memlimit(bytes)
 end
 
 -- Inject internal debug framework
-local debug = require "skynet.debug"
-debug.init(skynet, {
+local skynet_debug = require "skynet.debug"
+skynet_debug.init(skynet, {
     dispatch = skynet.dispatch_message,
     suspend = suspend,
 })

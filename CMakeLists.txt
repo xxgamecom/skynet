@@ -70,6 +70,7 @@ include_directories("${SKYNET_ROOT_PATH}/deps/asio/include")
 # build options
 option(BUILD_SKYNET_DEPS "Build skynet deps" ON)
 option(BUILD_SKYNET "Build skynet" ON)
+option(BUILD_SKYNET_SUPPORT_OPENSSL "Build skynet support openssl" OFF)
 option(BUILD_SKYNET_CSERVICE "Build skynet c service" ON)
 option(BUILD_SKYNET_LUACLIB "Build skynet luaclib" ON)
 option(BUILD_SKYNET_LUACLIB_3RD "Build skynet luaclib-3rd" ON)

@@ -358,7 +358,7 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
 //
 //    if (client_tag == 0)
 //    {
-//        client_tag = PTYPE_CLIENT;
+//        client_tag = MSG_PTYPE_CLIENT;
 //    }
 //    if (watchdog[0] == '!')
 //    {

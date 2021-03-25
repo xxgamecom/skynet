@@ -1,9 +1,14 @@
 #include "node_socket.h"
 
 #include "../log/log.h"
+
+#include "../mq/mq_msg.h"
+
 #include "../timer/timer_manager.h"
 #include "../socket/socket_server.h"
+
 #include "../service/service_context.h"
+#include "../service/service_manager.h"
 
 #include <iostream>
 #include <cassert>
@@ -51,14 +56,14 @@ void node_socket::update_time()
 
 // mainloop thread
 // 将数据变为 skynet_message 并且将消息压入 二级队列 （每个服务模块的私有队列）
-static void forward_message(int type, bool padding, socket_message* result)
+static void forward_message(int socket_event, bool padding, socket_message* result)
 {
     size_t sz = sizeof(skynet_socket_message);
 
     // 
     if (padding)
     {
-        if (result->data)
+        if (result->data != nullptr)
         {
             size_t msg_sz = ::strlen(result->data);
             if (msg_sz > 128)
@@ -71,33 +76,33 @@ static void forward_message(int type, bool padding, socket_message* result)
         }
     }
 
-    // skynet_socket_message* sm = (skynet_socket_message*)skynet_malloc(sz);
-//     sm->type = type;
-//     sm->socket_id = result->socket_id;
-//     sm->ud = result->ud;
-//     if (padding)
-//     {
-//         sm->buffer = NULL;
-//         ::memcpy(sm+1, result->data, sz - sizeof(*sm));
-//     }
-//     else
-//     {
-//         sm->buffer = result->data;
-//     }
+     auto sm = (skynet_socket_message*)new char[sz];
+     sm->socket_event = socket_event;
+     sm->socket_id = result->socket_id;
+     sm->ud = result->ud;
+     if (padding)
+     {
+         sm->buffer = nullptr;
+         ::memcpy(sm+1, result->data, sz - sizeof(*sm));
+     }
+     else
+     {
+         sm->buffer = result->data;
+     }
 
-    // socket::skynet_message message;
-    // message.src_svc_handle = 0;
-    // message.session = 0;
-//     message.data = sm;
-//     message.sz = sz | ((size_t)message_protocol_type::MSG_PTYPE_SOCKET << MESSAGE_TYPE_SHIFT);
+     skynet_message message;
+     message.src_svc_handle = 0;
+     message.session_id = 0;
+     message.data = sm;
+     message.sz = sz | ((size_t)message_protocol_type::MSG_PTYPE_SOCKET << MESSAGE_TYPE_SHIFT);
     
-//     if (push_service_message((uint32_t)result->svc_handle, &message))
-//     {
-//         // todo: report somewhere to close socket
-//         // don't call skynet_socket_close here (It will block mainloop)
-//         skynet_free(sm->buffer);
-//         skynet_free(sm);
-//     }
+     if (service_manager::instance()->push_service_message((uint32_t)result->svc_handle, &message))
+     {
+         // todo: report somewhere to close socket
+         // don't call skynet_socket_close here (It will block mainloop)
+         delete[] sm->buffer;
+         delete[] sm;
+     }
 }
 
 // 主要工作是将 poll_socket_event 的数据 转换成 skynet 通信机制中使用的格式
