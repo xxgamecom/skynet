@@ -419,7 +419,7 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
                     err = "Unknown error";
                 
                 force_close(socket_ptr, sl, result);
-                result->data = const_cast<char*>(err);
+                result->data_ptr = const_cast<char*>(err);
 
                 return SOCKET_EVENT_ERROR;
             }
@@ -531,7 +531,7 @@ int socket_server::send(send_buffer* buf)
 
     //
     ctrl_cmd_package cmd;
-    const send_buffer* clone_buf_ptr = (const send_buffer*)clone_send_buffer(buf, &cmd.u.send.sz);
+    const send_buffer* clone_buf_ptr = (const send_buffer*)clone_send_buffer(buf, &cmd.u.send.data_size);
     prepare_ctrl_cmd_request_send(cmd, socket_id, clone_buf_ptr, true);
     _send_ctrl_cmd(&cmd);
 
@@ -554,7 +554,7 @@ int socket_server::send_low_priority(send_buffer* buf)
 
     // 
     ctrl_cmd_package cmd;
-    const send_buffer* clone_buf_ptr = (const send_buffer*)clone_send_buffer(buf, &cmd.u.send.sz);
+    const send_buffer* clone_buf_ptr = (const send_buffer*)clone_send_buffer(buf, &cmd.u.send.data_size);
     prepare_ctrl_cmd_request_send(cmd, socket_id, clone_buf_ptr, false);
     _send_ctrl_cmd(&cmd);
 
@@ -684,7 +684,7 @@ int socket_server::udp_send(const socket_udp_address* addr, send_buffer* buf)
     }
 
     ctrl_cmd_package cmd;
-    send_buffer* clone_buf = (send_buffer*)clone_send_buffer(buf, &cmd.u.send_udp.send.sz);
+    send_buffer* clone_buf = (send_buffer*)clone_send_buffer(buf, &cmd.u.send_udp.send.data_size);
     prepare_ctrl_cmd_request_send_udp(cmd, socket_id, clone_buf, udp_address, addr_sz);
     _send_ctrl_cmd(&cmd);
 
@@ -748,7 +748,7 @@ int socket_server::udp_connect(int socket_id, const char* addr, int port)
 const socket_udp_address* socket_server::udp_address(socket_message* msg, int* addr_sz)
 {
     // type
-    uint8_t* address = (uint8_t*)(msg->data + msg->ud);
+    uint8_t* address = (uint8_t*)(msg->data_ptr + msg->ud);
     int type = address[0];
 
     // 必须为udp
@@ -873,7 +873,7 @@ int socket_server::handle_ctrl_cmd_open_socket(request_open* cmd, socket_message
     result->svc_handle = cmd->svc_handle;
     result->socket_id = socket_id;
     result->ud = 0;
-    result->data = nullptr;
+    result->data_ptr = nullptr;
 
     addrinfo ai_hints;
     ::memset(&ai_hints, 0, sizeof(ai_hints));
@@ -891,7 +891,7 @@ int socket_server::handle_ctrl_cmd_open_socket(request_open* cmd, socket_message
         int status = ::getaddrinfo(cmd->host, port, &ai_hints, &ai_list);
         if (status != 0)
         {
-            result->data = const_cast<char*>(::gai_strerror(status));
+            result->data_ptr = const_cast<char*>(::gai_strerror(status));
             break;  // failed
         }
 
@@ -918,7 +918,7 @@ int socket_server::handle_ctrl_cmd_open_socket(request_open* cmd, socket_message
         // failed
         if (socket_fd < 0)
         {
-            result->data = ::strerror(errno);
+            result->data_ptr = ::strerror(errno);
             break;
         }
 
@@ -927,7 +927,7 @@ int socket_server::handle_ctrl_cmd_open_socket(request_open* cmd, socket_message
         if (new_socket_ptr == nullptr)
         {
             ::close(socket_fd);
-            result->data = const_cast<char*>("reach skynet socket number limit");
+            result->data_ptr = const_cast<char*>("reach skynet socket number limit");
             break;
         }
 
@@ -938,7 +938,7 @@ int socket_server::handle_ctrl_cmd_open_socket(request_open* cmd, socket_message
             void* sin_addr = (ai_ptr->ai_family == AF_INET) ? (void*)&((sockaddr_in*)addr)->sin_addr : (void*)&((sockaddr_in6*)addr)->sin6_addr;
             if (::inet_ntop(ai_ptr->ai_family, sin_addr, addr_tmp_buf_, ADDR_TMP_BUFFER_SIZE))
             {
-                result->data = addr_tmp_buf_;
+                result->data_ptr = addr_tmp_buf_;
             }
             ::freeaddrinfo(ai_list);
             return SOCKET_EVENT_OPEN;
@@ -948,7 +948,7 @@ int socket_server::handle_ctrl_cmd_open_socket(request_open* cmd, socket_message
             new_socket_ptr->status = SOCKET_STATUS_CONNECTING;
             if (enable_write(new_socket_ptr, true))
             {
-                result->data = const_cast<char*>("enable write failed");
+                result->data_ptr = const_cast<char*>("enable write failed");
                 break;
             }
         }
@@ -1021,13 +1021,13 @@ int socket_server::handle_ctrl_cmd_bind_socket(request_bind* cmd, socket_message
     socket* new_socket_ptr = new_socket(socket_id, cmd->fd, SOCKET_TYPE_TCP, cmd->svc_handle);
     if (new_socket_ptr == nullptr)
     {
-        result->data = const_cast<char*>("reach skynet socket number limit");
+        result->data_ptr = const_cast<char*>("reach skynet socket number limit");
         return SOCKET_EVENT_ERROR;
     }
 
     socket_helper::nonblocking(cmd->fd);
     new_socket_ptr->status = SOCKET_STATUS_BIND;
-    result->data = const_cast<char*>("binding");
+    result->data_ptr = const_cast<char*>("binding");
 
     return SOCKET_EVENT_OPEN;
 }
@@ -1040,12 +1040,12 @@ int socket_server::handle_ctrl_cmd_resume_socket(request_resume_pause* cmd, sock
     result->socket_id = socket_id;
     result->svc_handle = cmd->svc_handle;
     result->ud = 0;
-    result->data = nullptr;
+    result->data_ptr = nullptr;
 
     auto& socket_ref = socket_pool_.get_socket(socket_id);
     if (socket_ref.is_invalid(socket_id))
     {
-        result->data = const_cast<char*>("invalid socket");
+        result->data_ptr = const_cast<char*>("invalid socket");
         return SOCKET_EVENT_ERROR;
     }
 
@@ -1056,7 +1056,7 @@ int socket_server::handle_ctrl_cmd_resume_socket(request_resume_pause* cmd, sock
 
     if (enable_read(&socket_ref, true))
     {
-        result->data = const_cast<char*>("enable read failed");
+        result->data_ptr = const_cast<char*>("enable read failed");
         return SOCKET_EVENT_ERROR;
     }
 
@@ -1068,7 +1068,7 @@ int socket_server::handle_ctrl_cmd_resume_socket(request_resume_pause* cmd, sock
         else
             socket_ref.status = SOCKET_STATUS_LISTEN;
         socket_ref.svc_handle = cmd->svc_handle;
-        result->data = const_cast<char*>("start");
+        result->data_ptr = const_cast<char*>("start");
 
         return SOCKET_EVENT_OPEN;
     }
@@ -1077,7 +1077,7 @@ int socket_server::handle_ctrl_cmd_resume_socket(request_resume_pause* cmd, sock
     {
         // todo: maybe we should send a message SOCKET_TRANSFER to socket_ptr->svc_handle
         socket_ref.svc_handle = cmd->svc_handle;
-        result->data = const_cast<char*>("transfer");
+        result->data_ptr = const_cast<char*>("transfer");
         return SOCKET_EVENT_OPEN;
     }
 
@@ -1100,7 +1100,7 @@ int socket_server::handle_ctrl_cmd_pause_socket(request_resume_pause* cmd, socke
         result->socket_id = socket_id;
         result->svc_handle = cmd->svc_handle;
         result->ud = 0;
-        result->data = const_cast<char*>("enable read failed");
+        result->data_ptr = const_cast<char*>("enable read failed");
         return SOCKET_EVENT_ERROR;
     }
 
@@ -1126,7 +1126,7 @@ int socket_server::handle_ctrl_cmd_exit_socket(socket_message* result)
     result->svc_handle = 0;
     result->socket_id = 0;
     result->ud = 0;
-    result->data = nullptr;
+    result->data_ptr = nullptr;
 
     return SOCKET_EVENT_EXIT;
 }
@@ -1144,7 +1144,7 @@ int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message
     auto& socket_ref = socket_pool_.get_socket(socket_id);
 
     send_object so;
-    send_object_init(&so, cmd->data_ptr, cmd->sz);
+    send_object_init(&so, cmd->data_ptr, cmd->data_size);
 
     // can't send data when the socket is 'invalid' or 'write closed' or '' or 'closing'
     if (socket_ref.is_invalid(socket_id) ||
@@ -1215,7 +1215,7 @@ int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message
             result->svc_handle = socket_ref.svc_handle;
             result->socket_id = socket_ref.socket_id;
             result->ud = 0;
-            result->data = const_cast<char*>("enable write failed");
+            result->data_ptr = const_cast<char*>("enable write failed");
 
             return SOCKET_EVENT_ERROR;
         }
@@ -1247,7 +1247,7 @@ int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message
         result->svc_handle = socket_ref.svc_handle;
         result->socket_id = socket_ref.socket_id;
         result->ud = socket_ref.wb_size % 1024 == 0 ? socket_ref.wb_size / 1024 : socket_ref.wb_size / 1024 + 1;
-        result->data = nullptr;
+        result->data_ptr = nullptr;
 
         return SOCKET_EVENT_WARNING;
     }
@@ -1269,7 +1269,7 @@ int socket_server::handle_ctrl_cmd_trigger_write(request_send* cmd, socket_messa
         result->svc_handle = socket_ref.svc_handle;
         result->socket_id = socket_ref.socket_id;
         result->ud = 0;
-        result->data = const_cast<char*>("enable write failed");
+        result->data_ptr = const_cast<char*>("enable write failed");
 
         return SOCKET_EVENT_ERROR;
     }
@@ -1291,7 +1291,7 @@ int socket_server::handle_ctrl_cmd_listen_socket(request_listen* cmd, socket_mes
         result->svc_handle = cmd->svc_handle;
         result->socket_id = socket_id;
         result->ud = 0;
-        result->data = const_cast<char*>("reach socket number limit");
+        result->data_ptr = const_cast<char*>("reach socket number limit");
 
         //
         socket_pool_.get_socket(socket_id).status = SOCKET_STATUS_INVALID;
@@ -1339,7 +1339,7 @@ int socket_server::handle_ctrl_cmd_set_udp_address(request_set_udp* cmd, socket_
         result->svc_handle = socket_ref.svc_handle;
         result->socket_id = socket_ref.socket_id;
         result->ud = 0;
-        result->data = const_cast<char*>("socket type mismatch");
+        result->data_ptr = const_cast<char*>("socket type mismatch");
 
         return SOCKET_EVENT_ERROR;
     }
@@ -1382,7 +1382,7 @@ void socket_server::force_close(socket* socket_ptr, socket_lock& sl, socket_mess
     result->svc_handle = socket_ptr->svc_handle;
     result->socket_id = socket_ptr->socket_id;
     result->ud = 0;
-    result->data = nullptr;
+    result->data_ptr = nullptr;
 
     //
     if (socket_ptr->status == SOCKET_STATUS_INVALID)
@@ -1425,7 +1425,7 @@ void socket_server::close_read(socket* socket_ptr, socket_message* result)
 
     result->socket_id = socket_ptr->socket_id;
     result->ud = 0;
-    result->data = nullptr;
+    result->data_ptr = nullptr;
     result->svc_handle = socket_ptr->svc_handle;
 }
 
@@ -1459,7 +1459,7 @@ int socket_server::close_write(socket* socket_ptr, socket_lock& sl, socket_messa
     result->socket_id = socket_ptr->socket_id;
     result->ud = 0;
     result->svc_handle = socket_ptr->svc_handle;
-    result->data = ::strerror(errno);
+    result->data_ptr = ::strerror(errno);
 
     return SOCKET_EVENT_ERROR;
 }
@@ -1617,7 +1617,7 @@ write_buffer* socket_server::prepare_write_buffer(write_buffer_list* wb_list, re
 
     //
     send_object so;
-    write_buf_ptr->is_user_object = send_object_init(&so, cmd->data_ptr, cmd->sz);
+    write_buf_ptr->is_user_object = send_object_init(&so, cmd->data_ptr, cmd->data_size);
     write_buf_ptr->ptr = (char*)so.buffer;
     write_buf_ptr->sz = so.sz;
     write_buf_ptr->buffer = cmd->data_ptr;
@@ -1890,7 +1890,7 @@ int socket_server::do_send_write_buffer(socket* socket_ptr, socket_lock& sl, soc
             result->svc_handle = socket_ptr->svc_handle;
             result->socket_id = socket_ptr->socket_id;
             result->ud = 0;
-            result->data = const_cast<char*>("disable write failed");
+            result->data_ptr = const_cast<char*>("disable write failed");
             return SOCKET_EVENT_ERROR;
         }
 
@@ -1900,7 +1900,7 @@ int socket_server::do_send_write_buffer(socket* socket_ptr, socket_lock& sl, soc
             result->svc_handle = socket_ptr->svc_handle;
             result->socket_id = socket_ptr->socket_id;
             result->ud = 0;
-            result->data = nullptr;
+            result->data_ptr = nullptr;
             return SOCKET_EVENT_WARNING;
         }
     }
@@ -1926,7 +1926,7 @@ int socket_server::handle_accept(socket* socket_ptr, socket_message* result)
         result->svc_handle = socket_ptr->svc_handle;
         result->socket_id = socket_ptr->socket_id;
         result->ud = 0;
-        result->data = ::strerror(errno);
+        result->data_ptr = ::strerror(errno);
         return -1;
     }
 
@@ -1960,11 +1960,11 @@ int socket_server::handle_accept(socket* socket_ptr, socket_message* result)
     result->svc_handle = socket_ptr->svc_handle;
     result->socket_id = socket_ptr->socket_id;
     result->ud = socket_id;
-    result->data = nullptr;
+    result->data_ptr = nullptr;
 
     if (sa.to_string(addr_tmp_buf_, ADDR_TMP_BUFFER_SIZE))
     {
-        result->data = addr_tmp_buf_;
+        result->data_ptr = addr_tmp_buf_;
     }
 
     return 1;
@@ -1980,7 +1980,7 @@ int socket_server::handle_connect(socket* socket_ptr, socket_lock& sl, socket_me
     {
         force_close(socket_ptr, sl, result);
 
-        result->data = code >= 0 ? ::strerror(error) : ::strerror(errno);
+        result->data_ptr = code >= 0 ? ::strerror(error) : ::strerror(errno);
         
         return SOCKET_EVENT_ERROR;
     }
@@ -1996,7 +1996,7 @@ int socket_server::handle_connect(socket* socket_ptr, socket_lock& sl, socket_me
         {
             force_close(socket_ptr, sl, result);
 
-            result->data = const_cast<char*>("disable write failed");
+            result->data_ptr = const_cast<char*>("disable write failed");
 
             return SOCKET_EVENT_ERROR;
         }
@@ -2008,11 +2008,11 @@ int socket_server::handle_connect(socket* socket_ptr, socket_lock& sl, socket_me
         void* sin_addr = (sa.addr.s.sa_family == AF_INET) ? (void*)&sa.addr.v4.sin_addr : (void*)&sa.addr.v6.sin6_addr;
         if (::inet_ntop(sa.addr.s.sa_family, sin_addr, addr_tmp_buf_, ADDR_TMP_BUFFER_SIZE))
         {
-            result->data = addr_tmp_buf_;
+            result->data_ptr = addr_tmp_buf_;
             return SOCKET_EVENT_OPEN;
         }
     }
-    result->data = nullptr;
+    result->data_ptr = nullptr;
 
     return SOCKET_EVENT_OPEN;
 }
@@ -2110,7 +2110,7 @@ int socket_server::forward_message_tcp(socket* socket_ptr, socket_lock& sl, sock
 
         // close when error
         force_close(socket_ptr, sl, result);
-        result->data = ::strerror(errno);
+        result->data_ptr = ::strerror(errno);
 
         return SOCKET_EVENT_ERROR;
     }
@@ -2157,7 +2157,7 @@ int socket_server::forward_message_tcp(socket* socket_ptr, socket_lock& sl, sock
     result->svc_handle = socket_ptr->svc_handle;
     result->socket_id = socket_ptr->socket_id;
     result->ud = n;
-    result->data = buf.buf;
+    result->data_ptr = buf.buf;
 
     return SOCKET_EVENT_DATA;
 }
@@ -2174,7 +2174,7 @@ int socket_server::forward_message_udp(socket* socket_ptr, socket_lock& sl, sock
         
         // close when error
         force_close(socket_ptr, sl, result);
-        result->data = ::strerror(errno);
+        result->data_ptr = ::strerror(errno);
 
         return SOCKET_EVENT_ERROR;
     }
@@ -2209,7 +2209,7 @@ int socket_server::forward_message_udp(socket* socket_ptr, socket_lock& sl, sock
     result->svc_handle = socket_ptr->svc_handle;
     result->socket_id = socket_ptr->socket_id;
     result->ud = recv_n;
-    result->data = (char*)data_ptr;
+    result->data_ptr = (char*)data_ptr;
 
     return SOCKET_EVENT_UDP;
 }

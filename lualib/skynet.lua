@@ -47,14 +47,13 @@ local skynet = {
     SERVICE_MSG_TYPE_MULTICAST = 2,
     SERVICE_MSG_TYPE_CLIENT = 3,
     SERVICE_MSG_TYPE_SYSTEM = 4,
-    SERVICE_MSG_TYPE_HARBOR = 5,
-    SERVICE_MSG_TYPE_SOCKET = 6,
-    SERVICE_MSG_TYPE_ERROR = 7,
-    SERVICE_MSG_TYPE_QUEUE = 8, -- used in deprecated mqueue, use skynet.queue instead
-    SERVICE_MSG_TYPE_DEBUG = 9,
-    SERVICE_MSG_TYPE_LUA = 10,
-    SERVICE_MSG_TYPE_SNAX = 11,
-    SERVICE_MSG_TYPE_TRACE = 12, -- use for debug trace
+    SERVICE_MSG_TYPE_SOCKET = 5,
+    SERVICE_MSG_TYPE_ERROR = 6,
+    SERVICE_MSG_TYPE_QUEUE = 7, -- used in deprecated mqueue, use skynet.queue instead
+    SERVICE_MSG_TYPE_DEBUG = 8,
+    SERVICE_MSG_TYPE_LUA = 9,
+    SERVICE_MSG_TYPE_SNAX = 10,
+    SERVICE_MSG_TYPE_TRACE = 11, -- use for debug trace
 }
 
 -- code cache

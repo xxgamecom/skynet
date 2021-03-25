@@ -57,7 +57,7 @@ struct socket_message
     int socket_id = 0;                  //
     uint64_t svc_handle = 0;            // skynet service handle, where message sendding, TODO: change to uint32_t
     int ud = 0;                         // for accept: ud is new connection's fd; for data: ud is the size of data
-    char* data = nullptr;               // data ptr
+    char* data_ptr = nullptr;           // data ptr
 };
 
 }

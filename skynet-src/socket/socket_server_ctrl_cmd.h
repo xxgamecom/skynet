@@ -21,7 +21,7 @@ struct request_open
 struct request_send
 {
     int                         socket_id = 0;                      //
-    size_t                      sz = 0;                             // data size
+    size_t                      data_size = 0;                      // data size
     const void*                 data_ptr = nullptr;                 // data
 };
 

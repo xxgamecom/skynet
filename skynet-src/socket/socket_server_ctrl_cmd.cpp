@@ -161,7 +161,7 @@ int prepare_ctrl_cmd_request_send(ctrl_cmd_package& cmd, int socket_id, const se
 int prepare_ctrl_cmd_request_trigger_write(ctrl_cmd_package& cmd, int socket_id)
 {
     cmd.u.send.socket_id = socket_id;
-    cmd.u.send.sz = 0;
+    cmd.u.send.data_size = 0;
     cmd.u.send.data_ptr = nullptr;
 
     // actually length

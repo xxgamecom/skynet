@@ -63,16 +63,16 @@ static void forward_message(int socket_event, bool padding, socket_message* resu
     // 
     if (padding)
     {
-        if (result->data != nullptr)
+        if (result->data_ptr != nullptr)
         {
-            size_t msg_sz = ::strlen(result->data);
+            size_t msg_sz = ::strlen(result->data_ptr);
             if (msg_sz > 128)
                 msg_sz = 128;
             sz += msg_sz;
         }
         else
         {
-            result->data = const_cast<char*>("");
+            result->data_ptr = const_cast<char*>("");
         }
     }
 
@@ -83,18 +83,18 @@ static void forward_message(int socket_event, bool padding, socket_message* resu
      if (padding)
      {
          sm->buffer = nullptr;
-         ::memcpy(sm+1, result->data, sz - sizeof(*sm));
+         ::memcpy(sm+1, result->data_ptr, sz - sizeof(*sm));
      }
      else
      {
-         sm->buffer = result->data;
+         sm->buffer = result->data_ptr;
      }
 
      service_message message;
      message.src_svc_handle = 0;
      message.session_id = 0;
-     message.data = sm;
-     message.sz = sz | ((size_t)SERVICE_MSG_TYPE_SOCKET << MESSAGE_TYPE_SHIFT);
+     message.data_ptr = sm;
+     message.data_size = sz | ((size_t)SERVICE_MSG_TYPE_SOCKET << MESSAGE_TYPE_SHIFT);
     
      if (service_manager::instance()->push_service_message((uint32_t)result->svc_handle, &message))
      {
@@ -234,7 +234,7 @@ const char* node_socket::udp_address(skynet_socket_message* msg, int* addrsz)
     sm.socket_id = msg->socket_id;
     sm.svc_handle = 0;
     sm.ud = msg->ud;
-    sm.data = msg->buffer;
+    sm.data_ptr = msg->buffer;
     return (const char*)socket_server_->udp_address(&sm, addrsz);
 }
 
