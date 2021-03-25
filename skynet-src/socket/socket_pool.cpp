@@ -24,7 +24,7 @@ int socket_pool::alloc_socket_id()
 
         // set socket status: alloced
         uint8_t expect_status = socket_ref.status;
-        if (expect_status == SOCKET_STATUS_ALLOCED)
+        if (expect_status == SOCKET_STATUS_INVALID)
         {
             if (socket_ref.status.compare_exchange_strong(expect_status, SOCKET_STATUS_ALLOCED))
             {

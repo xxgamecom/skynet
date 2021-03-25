@@ -9,24 +9,8 @@ namespace skynet {
 // skynet_message
 //----------------------------------------------
 
-// skynet service message, used for interaction between services
-// TODO: RENAME to service_message
-struct skynet_message
-{
-    uint32_t                        src_svc_handle = 0;         // source service handle
-    int                             session = 0;                // message session id
-    void*                           data = nullptr;             // message data
-    size_t                          sz = 0;                     // message data size, high 8 bits: message type
-};
-
-//
-#define MESSAGE_TYPE_MASK           (SIZE_MAX >> 8)             // skynet_message.sz high 8 bits: message type
-#define MESSAGE_TYPE_SHIFT          ((sizeof(size_t) - 1) * 8)  // type is encoding in skynet_message.sz high 8bit
-
-
 /**
- * message protocol type
- * used for interaction between services
+ * skynet message type, used for interaction between skynet services
  */
 enum message_protocol_type
 {
@@ -48,5 +32,20 @@ enum message_protocol_type
 #define MESSAGE_TAG_DONT_COPY       0x10000                     // don't copy message
 #define MESSAGE_TAG_ALLOC_SESSION   0x20000                     // set in msg_ptype when sending a package
                                                                 // send api method will ignore session arguemnts and allocate a new session id.
+
+// skynet service message, used for interaction between services
+// TODO: RENAME to service_message
+struct skynet_message
+{
+    uint32_t                        src_svc_handle = 0;         // source service handle
+    int                             session_id = 0;             // message session id
+    void*                           data = nullptr;             // message data
+    size_t                          sz = 0;                     // message data size, high 8 bits: message type
+};
+
+//
+#define MESSAGE_TYPE_MASK           (SIZE_MAX >> 8)             // skynet_message.sz high 8 bits: message type
+#define MESSAGE_TYPE_SHIFT          ((sizeof(size_t) - 1) * 8)  // type is encoding in skynet_message.sz high 8bit
+
 }
 
