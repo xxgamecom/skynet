@@ -184,7 +184,7 @@ void node_thread::thread_timer(std::shared_ptr<monitor_data> monitor_data_ptr)
             msg.src_svc_handle = 0;
             msg.session_id = 0;
             msg.data = nullptr;
-            msg.sz = (size_t)service_message_type::SERVICE_MSG_TYPE_SYSTEM << MESSAGE_TYPE_SHIFT;
+            msg.sz = (size_t)SERVICE_MSG_TYPE_SYSTEM << MESSAGE_TYPE_SHIFT;
             uint32_t logger_svc_handle = service_manager::instance()->find_by_name("logger");
             if (logger_svc_handle != 0)
             {

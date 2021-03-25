@@ -88,7 +88,7 @@ void service_log::close_log_file(service_context* svc_ctx, FILE* f, uint32_t svc
 
 void service_log::log(FILE* f, uint32_t src_svc_handle, int msg_ptype, int session_id, void* buffer, size_t sz)
 {
-    if (msg_ptype == service_message_type::SERVICE_MSG_TYPE_SOCKET)
+    if (msg_ptype == SERVICE_MSG_TYPE_SOCKET)
     {
         _log_socket(f, (skynet_socket_message*)buffer, sz);
     }

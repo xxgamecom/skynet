@@ -51,7 +51,7 @@ static void drop_message(service_message* msg, void* ud)
     assert(src_svc_handle != 0);
 
     // report error to the message source
-    service_manager::instance()->send(nullptr, src_svc_handle, msg->src_svc_handle, service_message_type::SERVICE_MSG_TYPE_ERROR, 0, nullptr, 0);
+    service_manager::instance()->send(nullptr, src_svc_handle, msg->src_svc_handle, SERVICE_MSG_TYPE_ERROR, 0, nullptr, 0);
 }
 
 bool node::init(const std::string config_filename)
