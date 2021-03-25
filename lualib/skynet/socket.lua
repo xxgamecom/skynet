@@ -194,7 +194,7 @@ end
 
 skynet.register_protocol {
     msg_ptype_name = "socket",
-    msg_ptype = skynet.MSG_PTYPE_SOCKET, -- MSG_PTYPE_SOCKET = 6
+    msg_ptype = skynet.SERVICE_MSG_TYPE_SOCKET, -- SERVICE_MSG_TYPE_SOCKET = 6
     unpack = socketdriver.unpack,
     dispatch = function(_, _, t, ...)
         socket_message[t](...)

@@ -74,7 +74,7 @@ static void _handle_exit(service_context* svc_ctx, uint32_t svc_handle)
     if (node::instance()->get_monitor_exit() != 0)
     {
         service_manager::instance()->send(svc_ctx, svc_handle, node::instance()->get_monitor_exit(),
-            service_message_type::MSG_PTYPE_CLIENT, 0, nullptr, 0);
+            service_message_type::SERVICE_MSG_TYPE_CLIENT, 0, nullptr, 0);
     }
 
     service_manager::instance()->unregister_service(svc_handle);

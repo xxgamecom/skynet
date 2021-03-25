@@ -450,7 +450,7 @@ service_context* service_manager::release_service(service_context* svc_ctx)
 // @param svc_ctx            源服务的ctx，可以为NULL，drop_message时这个参数为NULL
 // @param src_svc_handle         源服务地址，通常设置为0即可，api里会设置成ctx->handle，当context为NULL时，需指定source
 // @param dst_svc_handle     目的服务地址
-// @param msg_ptype             消息类型， skynet定义了多种消息，MSG_PTYPE_TEXT，MSG_PTYPE_CLIENT，MSG_PTYPE_RESPONSE等（详情见skynet.h）
+// @param msg_ptype             消息类型， skynet定义了多种消息，SERVICE_MSG_TYPE_TEXT，SERVICE_MSG_TYPE_CLIENT，SERVICE_MSG_TYPE_RESPONSE等（详情见skynet.h）
 // @param session         如果在type里设上allocsession的tag(MESSAGE_TAG_ALLOC_SESSION)，api会忽略掉传入的session参数，重新生成一个新的唯一的
 // @param msg             消息包数据
 // @param msg_sz             消息包长度

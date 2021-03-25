@@ -146,7 +146,7 @@ end
 
 skynet.register_protocol {
     msg_ptype_name = "text",
-    msg_ptype = skynet.MSG_PTYPE_TEXT,
+    msg_ptype = skynet.SERVICE_MSG_TYPE_TEXT,
     unpack = skynet.tostring,
     dispatch = function(session, address, cmd)
         if cmd == "" then

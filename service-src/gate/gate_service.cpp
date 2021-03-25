@@ -22,7 +22,7 @@ static void _report(gate_service* svc_ptr, const char* data, ...)
     va_end(ap);
 
     service_manager::instance()->send(svc_ptr->svc_ctx_, 0, svc_ptr->watchdog_svc_handle_,
-                                      service_message_type::MSG_PTYPE_TEXT, 0, tmp, n);
+                                      service_message_type::SERVICE_MSG_TYPE_TEXT, 0, tmp, n);
 }
 
 static void _forward(gate_service* svc_ptr, connection* c, int size)
@@ -56,7 +56,7 @@ static void _forward(gate_service* svc_ptr, connection* c, int size)
         int n = snprintf(tmp, 32, "%d data ", c->socket_id);
         data_buffer_read(&c->buffer, &svc_ptr->mp_, tmp + n, size);
         service_manager::instance()->send(svc_ptr->svc_ctx_, 0, svc_ptr->watchdog_svc_handle_,
-                                          service_message_type::MSG_PTYPE_TEXT | MESSAGE_TAG_DONT_COPY, socket_id, tmp, size + n);
+                                          service_message_type::SERVICE_MSG_TYPE_TEXT | MESSAGE_TAG_DONT_COPY, socket_id, tmp, size + n);
     }
 }
 
@@ -288,7 +288,7 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
         }
         if (msg_ptype == 0)
         {
-            msg_ptype = service_message_type::MSG_PTYPE_CLIENT;
+            msg_ptype = service_message_type::SERVICE_MSG_TYPE_CLIENT;
         }
 
         // param 5 - max connnection
@@ -366,10 +366,10 @@ int gate_service::gate_cb(service_context* svc_ctx, void* ud, int msg_ptype, int
 
     switch (msg_ptype)
     {
-    case service_message_type::MSG_PTYPE_TEXT:
+    case service_message_type::SERVICE_MSG_TYPE_TEXT:
         handle_ctrl_cmd(svc_ptr, (const char*)msg, (int)msg_sz);
         break;
-    case service_message_type::MSG_PTYPE_CLIENT:
+    case service_message_type::SERVICE_MSG_TYPE_CLIENT:
     {
         if (msg_sz <= 4)
         {
@@ -394,7 +394,7 @@ int gate_service::gate_cb(service_context* svc_ctx, void* ud, int msg_ptype, int
             break;
         }
     }
-    case service_message_type::MSG_PTYPE_SOCKET:
+    case service_message_type::SERVICE_MSG_TYPE_SOCKET:
         // recv socket message from skynet_socket
         _dispatch_socket_message(svc_ptr, (const skynet_socket_message*)msg, (int)(msg_sz - sizeof(skynet_socket_message)));
         break;

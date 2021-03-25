@@ -42,19 +42,19 @@ local init_thread = nil
 local msg_proto_handlers = {}
 
 local skynet = {
-    MSG_PTYPE_TEXT = 0,
-    MSG_PTYPE_RESPONSE = 1,
-    MSG_PTYPE_MULTICAST = 2,
-    MSG_PTYPE_CLIENT = 3,
-    MSG_PTYPE_SYSTEM = 4,
-    MSG_PTYPE_HARBOR = 5,
-    MSG_PTYPE_SOCKET = 6,
-    MSG_PTYPE_ERROR = 7,
-    MSG_PTYPE_QUEUE = 8, -- used in deprecated mqueue, use skynet.queue instead
-    MSG_PTYPE_DEBUG = 9,
-    MSG_PTYPE_LUA = 10,
-    MSG_PTYPE_SNAX = 11,
-    MSG_PTYPE_TRACE = 12, -- use for debug trace
+    SERVICE_MSG_TYPE_TEXT = 0,
+    SERVICE_MSG_TYPE_RESPONSE = 1,
+    SERVICE_MSG_TYPE_MULTICAST = 2,
+    SERVICE_MSG_TYPE_CLIENT = 3,
+    SERVICE_MSG_TYPE_SYSTEM = 4,
+    SERVICE_MSG_TYPE_HARBOR = 5,
+    SERVICE_MSG_TYPE_SOCKET = 6,
+    SERVICE_MSG_TYPE_ERROR = 7,
+    SERVICE_MSG_TYPE_QUEUE = 8, -- used in deprecated mqueue, use skynet.queue instead
+    SERVICE_MSG_TYPE_DEBUG = 9,
+    SERVICE_MSG_TYPE_LUA = 10,
+    SERVICE_MSG_TYPE_SNAX = 11,
+    SERVICE_MSG_TYPE_TRACE = 12, -- use for debug trace
 }
 
 -- code cache
@@ -202,7 +202,7 @@ function suspend(thread, result, command)
                 if tag then
                     skynet_core.trace(tag, "error")
                 end
-                skynet_core.send(addr, skynet.MSG_PTYPE_ERROR, session_id, "")
+                skynet_core.send(addr, skynet.SERVICE_MSG_TYPE_ERROR, session_id, "")
             end
             session_coroutine_id[thread] = nil
         end
@@ -448,7 +448,7 @@ function skynet.call(addr, msg_ptype, ...)
     local tag = session_coroutine_tracetag[current_thread]
     if tag then
         skynet_core.trace(tag, "call", 2)
-        skynet_core.send(addr, skynet.MSG_PTYPE_TRACE, 0, tag)
+        skynet_core.send(addr, skynet.SERVICE_MSG_TYPE_TRACE, 0, tag)
     end
 
     local proto_handler = msg_proto_handlers[msg_ptype]
@@ -463,7 +463,7 @@ function skynet.rawcall(addr, msg_ptype, msg, sz)
     local tag = session_coroutine_tracetag[current_thread]
     if tag then
         skynet_core.trace(tag, "call", 2)
-        skynet_core.send(addr, skynet.MSG_PTYPE_TRACE, 0, tag)
+        skynet_core.send(addr, skynet.SERVICE_MSG_TYPE_TRACE, 0, tag)
     end
     local proto_handler = msg_proto_handlers[msg_ptype]
     local session_id = assert(skynet_core.send(addr, proto_handler.msg_ptype, nil, msg, sz), "call to invalid address")
@@ -472,7 +472,7 @@ end
 
 function skynet.tracecall(tag, addr, msg_ptype, msg, sz)
     skynet_core.trace(tag, "tracecall begin")
-    skynet_core.send(addr, skynet.MSG_PTYPE_TRACE, 0, tag)
+    skynet_core.send(addr, skynet.SERVICE_MSG_TYPE_TRACE, 0, tag)
     local proto_handler = msg_proto_handlers[msg_ptype]
     local session_id = assert(skynet_core.send(addr, proto_handler.msg_ptype, nil, msg, sz), "call to invalid address")
     local msg, sz = yield_call(addr, session_id)
@@ -498,12 +498,12 @@ function skynet.ret(msg, sz)
     if not co_session then
         error "No session"
     end
-    local ret = skynet_core.send(co_address, skynet.MSG_PTYPE_RESPONSE, co_session, msg, sz)
+    local ret = skynet_core.send(co_address, skynet.SERVICE_MSG_TYPE_RESPONSE, co_session, msg, sz)
     if ret then
         return true
     elseif ret == false then
         -- If the package is too large, returns false. so we should report error back
-        skynet_core.send(co_address, skynet.MSG_PTYPE_ERROR, co_session, "")
+        skynet_core.send(co_address, skynet.SERVICE_MSG_TYPE_ERROR, co_session, "")
     end
     return false
 end
@@ -541,13 +541,13 @@ function skynet.response(pack)
         local ret
         if unresponse[response] then
             if ok then
-                ret = skynet_core.send(co_address, skynet.MSG_PTYPE_RESPONSE, co_session, pack(...))
+                ret = skynet_core.send(co_address, skynet.SERVICE_MSG_TYPE_RESPONSE, co_session, pack(...))
                 if ret == false then
                     -- If the package is too large, returns false. so we should report error back
-                    skynet_core.send(co_address, skynet.MSG_PTYPE_ERROR, co_session, "")
+                    skynet_core.send(co_address, skynet.SERVICE_MSG_TYPE_ERROR, co_session, "")
                 end
             else
-                ret = skynet_core.send(co_address, skynet.MSG_PTYPE_ERROR, co_session, "")
+                ret = skynet_core.send(co_address, skynet.SERVICE_MSG_TYPE_ERROR, co_session, "")
             end
             unresponse[response] = nil
             ret = ret ~= nil
@@ -604,7 +604,7 @@ local trace_source = {}
 
 local function raw_dispatch_message(msg_ptype, msg, sz, session_id, src_svc_handle)
     --
-    if msg_ptype == skynet.MSG_PTYPE_RESPONSE then
+    if msg_ptype == skynet.SERVICE_MSG_TYPE_RESPONSE then
         local thread = session_id_coroutine[session_id]
         if thread == "BREAK" then
             session_id_coroutine[session_id] = nil
@@ -621,11 +621,11 @@ local function raw_dispatch_message(msg_ptype, msg, sz, session_id, src_svc_hand
     else
         local proto_handler = msg_proto_handlers[msg_ptype]
         if proto_handler == nil then
-            if msg_ptype == skynet.MSG_PTYPE_TRACE then
+            if msg_ptype == skynet.SERVICE_MSG_TYPE_TRACE then
                 -- trace next request
                 trace_source[src_svc_handle] = skynet_core.tostring(msg, sz)
             elseif session_id ~= 0 then
-                skynet_core.send(src_svc_handle, skynet.MSG_PTYPE_ERROR, session_id, "")
+                skynet_core.send(src_svc_handle, skynet.SERVICE_MSG_TYPE_ERROR, session_id, "")
             else
                 unknown_request(session_id, src_svc_handle, msg, sz, msg_ptype)
             end
@@ -658,7 +658,7 @@ local function raw_dispatch_message(msg_ptype, msg, sz, session_id, src_svc_hand
         else
             trace_source[src_svc_handle] = nil
             if session_id ~= 0 then
-                skynet_core.send(src_svc_handle, skynet.MSG_PTYPE_ERROR, session_id, "")
+                skynet_core.send(src_svc_handle, skynet.SERVICE_MSG_TYPE_ERROR, session_id, "")
             else
                 unknown_request(session_id, src_svc_handle, msg, sz, msg_proto_handlers[msg_ptype].name)
             end
@@ -731,19 +731,19 @@ end
 
 skynet.register_protocol({
     msg_ptype_name = "lua",
-    msg_ptype = skynet.MSG_PTYPE_LUA,
+    msg_ptype = skynet.SERVICE_MSG_TYPE_LUA,
     pack = skynet.pack,
     unpack = skynet.unpack,
 })
 
 skynet.register_protocol({
     msg_ptype_name = "response",
-    msg_ptype = skynet.MSG_PTYPE_RESPONSE,
+    msg_ptype = skynet.SERVICE_MSG_TYPE_RESPONSE,
 })
 
 skynet.register_protocol({
     msg_ptype_name = "error",
-    msg_ptype = skynet.MSG_PTYPE_ERROR,
+    msg_ptype = skynet.SERVICE_MSG_TYPE_ERROR,
     unpack = function(...)
         return ...
     end,
@@ -824,7 +824,7 @@ function skynet.exit()
     for thread, session_id in pairs(session_coroutine_id) do
         local address = session_coroutine_address[thread]
         if session_id ~= 0 and address then
-            skynet_core.send(address, skynet.MSG_PTYPE_ERROR, session_id, "")
+            skynet_core.send(address, skynet.SERVICE_MSG_TYPE_ERROR, session_id, "")
         end
     end
     for resp in pairs(unresponse) do
@@ -836,7 +836,7 @@ function skynet.exit()
         tmp[svc_handle] = true
     end
     for svc_handle in pairs(tmp) do
-        skynet_core.send(svc_handle, skynet.MSG_PTYPE_ERROR, 0, "")
+        skynet_core.send(svc_handle, skynet.SERVICE_MSG_TYPE_ERROR, 0, "")
     end
     skynet_core.command("EXIT")
     -- quit service

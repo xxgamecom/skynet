@@ -59,13 +59,13 @@ int logger_service::logger_cb(service_context* svc_ctx, void* ud, int msg_ptype,
 
     switch (msg_ptype)
     {
-    case service_message_type::MSG_PTYPE_SYSTEM:
+    case service_message_type::SERVICE_MSG_TYPE_SYSTEM:
         if (!svc_ptr->log_filename_.empty())
         {
             svc_ptr->log_handle_ = ::freopen(svc_ptr->log_filename_.c_str(), "a", svc_ptr->log_handle_);
         }
         break;
-    case service_message_type::MSG_PTYPE_TEXT:
+    case service_message_type::SERVICE_MSG_TYPE_TEXT:
         ::fprintf(svc_ptr->log_handle_, "[:%08x] ", src_svc_handle);
         ::fwrite(msg, sz, 1, svc_ptr->log_handle_);
         ::fprintf(svc_ptr->log_handle_, "\n");

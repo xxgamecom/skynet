@@ -10,7 +10,7 @@ local message_queue = {}
 
 skynet.register_protocol {
     msg_ptype_name = "queue",
-    msg_ptype = skynet.MSG_PTYPE_QUEUE,
+    msg_ptype = skynet.SERVICE_MSG_TYPE_QUEUE,
     pack = skynet.pack,
     unpack = skynet.unpack,
     dispatch = function(session, from, ...)
