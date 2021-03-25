@@ -10,7 +10,6 @@ local message_queue = {}
 
 skynet.register_protocol {
     msg_ptype_name = "queue",
-    -- please read skynet.h for magic number 8
     msg_ptype = skynet.MSG_PTYPE_QUEUE,
     pack = skynet.pack,
     unpack = skynet.unpack,

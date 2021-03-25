@@ -11,7 +11,6 @@ local MAX_FRAME_SIZE = 256 * 1024 -- max frame is 256K
 
 local M = {}
 
-
 local ws_pool = {}
 local function _close_websocket(ws_obj)
     local id = ws_obj.id
@@ -24,9 +23,8 @@ local function _isws_closed(id)
     return not ws_pool[id]
 end
 
-
 local function write_handshake(self, host, url, header)
-    local key = crypt.base64encode(crypt.randomkey()..crypt.randomkey())
+    local key = crypt.base64encode(crypt.randomkey() .. crypt.randomkey())
     local request_header = {
         ["Upgrade"] = "websocket",
         ["Connection"] = "Upgrade",
@@ -34,7 +32,7 @@ local function write_handshake(self, host, url, header)
         ["Sec-WebSocket-Key"] = key
     }
     if header then
-        for k,v in pairs(header) do
+        for k, v in pairs(header) do
             assert(request_header[k] == nil, k)
             request_header[k] = v
         end
@@ -43,7 +41,7 @@ local function write_handshake(self, host, url, header)
     local recvheader = {}
     local code, body = internal.request(self, "GET", host, url, recvheader, request_header)
     if code ~= 101 then
-        error(string.format("websocket handshake error: code[%s] info:%s", code, body))    
+        error(string.format("websocket handshake error: code[%s] info:%s", code, body))
     end
 
     if not recvheader["upgrade"] or recvheader["upgrade"]:lower() ~= "websocket" then
@@ -65,7 +63,6 @@ local function write_handshake(self, host, url, header)
         error("websocket handshake invalid Sec-WebSocket-Accept")
     end
 end
-
 
 local function read_handshake(self)
     local tmpline = {}
@@ -134,12 +131,12 @@ local function read_handshake(self)
 
     -- response handshake
     local accept = crypt.base64encode(crypt.sha1(sw_key .. self.guid))
-    local resp = "HTTP/1.1 101 Switching Protocols\r\n"..
-                 "Upgrade: websocket\r\n"..
-                 "Connection: Upgrade\r\n"..
-    string.format("Sec-WebSocket-Accept: %s\r\n", accept)..
-                  sub_pro ..
-                  "\r\n"
+    local resp = "HTTP/1.1 101 Switching Protocols\r\n" ..
+            "Upgrade: websocket\r\n" ..
+            "Connection: Upgrade\r\n" ..
+            string.format("Sec-WebSocket-Accept: %s\r\n", accept) ..
+            sub_pro ..
+            "\r\n"
     self.write(resp)
     return nil, header, url
 end
@@ -153,18 +150,18 @@ local function try_handle(self, method, ...)
 end
 
 local op_code = {
-    ["frame"]  = 0x00,
-    ["text"]   = 0x01,
+    ["frame"] = 0x00,
+    ["text"] = 0x01,
     ["binary"] = 0x02,
-    ["close"]  = 0x08,
-    ["ping"]   = 0x09,
-    ["pong"]   = 0x0A,
-    [0x00]     = "frame",
-    [0x01]     = "text",
-    [0x02]     = "binary",
-    [0x08]     = "close",
-    [0x09]     = "ping",
-    [0x0A]     = "pong",
+    ["close"] = 0x08,
+    ["ping"] = 0x09,
+    ["pong"] = 0x0A,
+    [0x00] = "frame",
+    [0x01] = "text",
+    [0x02] = "binary",
+    [0x08] = "close",
+    [0x09] = "ping",
+    [0x0A] = "pong",
 }
 
 local function write_frame(self, op, payload_data, masking_key)
@@ -196,7 +193,6 @@ local function write_frame(self, op, payload_data, masking_key)
     end
 end
 
-
 local function read_close(payload_data)
     local code, reason
     local payload_len = #payload_data
@@ -207,16 +203,15 @@ local function read_close(payload_data)
     return code, reason
 end
 
-
 local function read_frame(self)
     local s = self.read(2)
     local v1, v2 = string.unpack("I1I1", s)
-    local fin  = (v1 & 0x80) ~= 0
+    local fin = (v1 & 0x80) ~= 0
     -- unused flag
     -- local rsv1 = (v1 & 0x40) ~= 0
     -- local rsv2 = (v1 & 0x20) ~= 0
     -- local rsv3 = (v1 & 0x10) ~= 0
-    local op   =  v1 & 0x0f
+    local op = v1 & 0x0f
     local mask = (v2 & 0x80) ~= 0
     local payload_len = (v2 & 0x7f)
     if payload_len == 126 then
@@ -233,11 +228,10 @@ local function read_frame(self)
 
     -- print(string.format("fin:%s, op:%s, mask:%s, payload_len:%s", fin, op_code[op], mask, payload_len))
     local masking_key = mask and self.read(4) or false
-    local payload_data = payload_len>0 and self.read(payload_len) or ""
+    local payload_data = payload_len > 0 and self.read(payload_len) or ""
     payload_data = masking_key and crypt.xor_str(payload_data, masking_key) or payload_data
     return fin, assert(op_code[op]), payload_data
 end
-
 
 local function resolve_accept(self)
     try_handle(self, "connect")
@@ -273,7 +267,7 @@ local function resolve_accept(self)
             if fin and #recv_buf == 0 then
                 try_handle(self, "message", payload_data)
             else
-                recv_buf[#recv_buf+1] = payload_data
+                recv_buf[#recv_buf + 1] = payload_data
                 recv_count = recv_count + #payload_data
                 if recv_count > MAX_FRAME_SIZE then
                     error("payload_len is too large")
@@ -289,19 +283,18 @@ local function resolve_accept(self)
     end
 end
 
-
 local SSLCTX_CLIENT = nil
 local function _new_client_ws(socket_id, protocol)
     local obj
     if protocol == "ws" then
         obj = {
             websocket = true,
-            close = function ()
+            close = function()
                 socket.close(socket_id)
             end,
             read = sockethelper.readfunc(socket_id),
             write = sockethelper.writefunc(socket_id),
-            readall = function ()
+            readall = function()
                 return socket.readall(socket_id)
             end,
         }
@@ -313,9 +306,9 @@ local function _new_client_ws(socket_id, protocol)
         init()
         obj = {
             websocket = true,
-            close = function ()
+            close = function()
                 socket.close(socket_id)
-                tls.closefunc(tls_ctx)() 
+                tls.closefunc(tls_ctx)()
             end,
             read = tls.readfunc(socket_id, tls_ctx),
             write = tls.writefunc(socket_id, tls_ctx),
@@ -332,13 +325,12 @@ local function _new_client_ws(socket_id, protocol)
     return obj
 end
 
-
 local SSLCTX_SERVER = nil
 local function _new_server_ws(socket_id, handle, protocol)
     local obj
     if protocol == "ws" then
         obj = {
-            close = function ()
+            close = function()
                 socket.close(socket_id)
             end,
             read = sockethelper.readfunc(socket_id),
@@ -359,9 +351,9 @@ local function _new_server_ws(socket_id, handle, protocol)
         local init = tls.init_responsefunc(socket_id, tls_ctx)
         init()
         obj = {
-            close = function ()
+            close = function()
                 socket.close(socket_id)
-                tls.closefunc(tls_ctx)() 
+                tls.closefunc(tls_ctx)()
             end,
             read = tls.readfunc(socket_id, tls_ctx),
             write = tls.writefunc(socket_id, tls_ctx),
@@ -389,7 +381,7 @@ function M.accept(socket_id, handle, protocol, addr)
     ws_obj.addr = addr
     local on_warning = handle and handle["warning"]
     if on_warning then
-        socket.warning(socket_id, function (id, sz)
+        socket.warning(socket_id, function(id, sz)
             on_warning(ws_obj, sz)
         end)
     end
@@ -414,13 +406,12 @@ function M.accept(socket_id, handle, protocol, addr)
     return true
 end
 
-
 function M.connect(url, header, timeout)
     local protocol, host, uri = string.match(url, "^(wss?)://([^/]+)(.*)$")
     if protocol ~= "wss" and protocol ~= "ws" then
         error(string.format("invalid protocol: %s", protocol))
     end
-    
+
     assert(host)
     local host_name, host_port = string.match(host, "^([^:]+):?(%d*)$")
     assert(host_name and host_port)
@@ -436,7 +427,6 @@ function M.connect(url, header, timeout)
     return socket_id
 end
 
-
 function M.read(id)
     local ws_obj = assert(ws_pool[id])
     local recv_buf
@@ -447,12 +437,13 @@ function M.read(id)
             return false, payload_data
         elseif op == "ping" then
             write_frame(ws_obj, "pong")
-        elseif op ~= "pong" then  -- op is frame, text binary
+        elseif op ~= "pong" then
+            -- op is frame, text binary
             if fin and not recv_buf then
                 return payload_data
             else
                 recv_buf = recv_buf or {}
-                recv_buf[#recv_buf+1] = payload_data
+                recv_buf[#recv_buf + 1] = payload_data
                 if fin then
                     local s = table.concat(recv_buf)
                     return s
@@ -463,14 +454,12 @@ function M.read(id)
     assert(false)
 end
 
-
 function M.write(id, data, fmt, masking_key)
     local ws_obj = assert(ws_pool[id])
     fmt = fmt or "text"
     assert(fmt == "text" or fmt == "binary")
     write_frame(ws_obj, fmt, data, masking_key)
 end
-
 
 function M.ping(id)
     local ws_obj = assert(ws_pool[id])
@@ -482,17 +471,17 @@ function M.addrinfo(id)
     return ws_obj.addr
 end
 
-function M.close(id, code ,reason)
+function M.close(id, code, reason)
     local ws_obj = ws_pool[id]
     if not ws_obj then
         return
     end
 
-    local ok, err = xpcall(function ()
+    local ok, err = xpcall(function()
         reason = reason or ""
         local payload_data
         if code then
-            local fmt =string.format(">I2c%d", #reason)
+            local fmt = string.format(">I2c%d", #reason)
             payload_data = string.pack(fmt, code, reason)
         end
         write_frame(ws_obj, "close", payload_data)
@@ -502,6 +491,5 @@ function M.close(id, code ,reason)
         skynet.log(err)
     end
 end
-
 
 return M
