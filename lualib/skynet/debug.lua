@@ -8,22 +8,22 @@ local function init(skynet, export)
         internal_info_func = func
     end
 
-    local dbgcmd
+    local dbg_cmd
 
     local function init_dbgcmd()
-        dbgcmd = {}
+        dbg_cmd = {}
 
-        function dbgcmd.MEM()
+        function dbg_cmd.MEM()
             local kb = collectgarbage "count"
             skynet.ret(skynet.pack(kb))
         end
 
-        function dbgcmd.GC()
+        function dbg_cmd.GC()
 
             collectgarbage "collect"
         end
 
-        function dbgcmd.STAT()
+        function dbg_cmd.STAT()
             local stat = {}
             stat.task = skynet.task()
             stat.mqlen = skynet.stat "mqlen"
@@ -32,7 +32,7 @@ local function init(skynet, export)
             skynet.ret(skynet.pack(stat))
         end
 
-        function dbgcmd.TASK(session)
+        function dbg_cmd.TASK(session)
             if session then
                 skynet.ret(skynet.pack(skynet.task(session)))
             else
@@ -42,11 +42,11 @@ local function init(skynet, export)
             end
         end
 
-        function dbgcmd.UNIQTASK()
+        function dbg_cmd.UNIQTASK()
             skynet.ret(skynet.pack(skynet.uniqtask()))
         end
 
-        function dbgcmd.INFO(...)
+        function dbg_cmd.INFO(...)
             if internal_info_func then
                 skynet.ret(skynet.pack(internal_info_func(...)))
             else
@@ -54,11 +54,11 @@ local function init(skynet, export)
             end
         end
 
-        function dbgcmd.EXIT()
+        function dbg_cmd.EXIT()
             skynet.exit()
         end
 
-        function dbgcmd.RUN(source, filename, ...)
+        function dbg_cmd.RUN(source, filename, ...)
             local inject = require "skynet.inject"
             local args = table.pack(...)
             local ok, output = inject(skynet, source, filename, args, export.dispatch, skynet.register_svc_msg_handler)
@@ -66,28 +66,28 @@ local function init(skynet, export)
             skynet.ret(skynet.pack(ok, table.concat(output, "\n")))
         end
 
-        function dbgcmd.TERM(svc_handle)
+        function dbg_cmd.TERM(svc_handle)
             skynet.term(svc_handle)
         end
 
-        function dbgcmd.REMOTEDEBUG(...)
+        function dbg_cmd.REMOTEDEBUG(...)
             local remotedebug = require "skynet.remotedebug"
             remotedebug.start(export, ...)
         end
 
-        function dbgcmd.SUPPORT(pname)
+        function dbg_cmd.SUPPORT(pname)
             return skynet.ret(skynet.pack(skynet.dispatch(pname) ~= nil))
         end
 
-        function dbgcmd.PING()
+        function dbg_cmd.PING()
             return skynet.ret()
         end
 
-        function dbgcmd.LINK()
+        function dbg_cmd.LINK()
             skynet.response()    -- get response , but not return. raise error when exit
         end
 
-        function dbgcmd.TRACELOG(proto, flag)
+        function dbg_cmd.TRACELOG(proto, flag)
             if type(proto) ~= "string" then
                 flag = proto
                 proto = "lua"
@@ -97,12 +97,12 @@ local function init(skynet, export)
             skynet.ret()
         end
 
-        return dbgcmd
+        return dbg_cmd
     end -- function init_dbgcmd
 
     local function _debug_dispatch(session, address, cmd, ...)
-        dbgcmd = dbgcmd or init_dbgcmd() -- lazy init dbgcmd
-        local f = dbgcmd[cmd] or extern_dbgcmd[cmd]
+        dbg_cmd = dbg_cmd or init_dbgcmd() -- lazy init dbg_cmd
+        local f = dbg_cmd[cmd] or extern_dbgcmd[cmd]
         assert(f, cmd)
         f(...)
     end
@@ -116,11 +116,11 @@ local function init(skynet, export)
     })
 end
 
-local function reg_debugcmd(name, fn)
+local function reg_debug_cmd(name, fn)
     extern_dbgcmd[name] = fn
 end
 
 return {
     init = init,
-    reg_debugcmd = reg_debugcmd,
+    reg_debug_cmd = reg_debug_cmd,
 }

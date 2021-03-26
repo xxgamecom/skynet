@@ -517,7 +517,7 @@ struct queue
 
 static void* readline_stdin(void* arg)
 {
-    struct queue* q = arg;
+    struct queue* q = (queue*)arg;
     char tmp[1024];
     while (!feof(stdin))
     {
@@ -528,7 +528,7 @@ static void* readline_stdin(void* arg)
         }
         int n = strlen(tmp) - 1;
 
-        char* str = malloc(n + 1);
+        char* str = new char[n + 1];
         memcpy(str, tmp, n);
         str[n] = 0;
 
@@ -551,7 +551,7 @@ static void* readline_stdin(void* arg)
 
 static int lreadstdin(lua_State* L)
 {
-    struct queue* q = lua_touserdata(L, lua_upvalueindex(1));
+    struct queue* q = (queue*)lua_touserdata(L, lua_upvalueindex(1));
     pthread_mutex_lock(&q->lock);
     if (q->head == q->tail)
     {
@@ -565,7 +565,7 @@ static int lreadstdin(lua_State* L)
     }
     pthread_mutex_unlock(&q->lock);
     lua_pushstring(L, str);
-    free(str);
+    delete[] str;
     return 1;
 }
 
@@ -587,7 +587,7 @@ LUAMOD_API int luaopen_client_socket_ws(lua_State* L)
     };
     luaL_newlib(L, l);
 
-    struct queue* q = lua_newuserdata(L, sizeof(*q));
+    struct queue* q = (queue*)lua_newuserdata(L, sizeof(*q));
     memset(q, 0, sizeof(*q));
     pthread_mutex_init(&q->lock, nullptr);
     lua_pushcclosure(L, lreadstdin, 1);

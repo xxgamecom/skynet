@@ -14,10 +14,10 @@ function CMD.start(address, fd)
     channel, handle = debugchannel.create()
     local ok, err = pcall(skynet.call, address, "debug", "REMOTEDEBUG", fd, handle)
     if not ok then
-        skynet.ret(skynet.pack(false, "Debugger attach failed"))
+        skynet.ret_pack(false, "Debugger attach failed")
     else
         -- todo hook
-        skynet.ret(skynet.pack(true))
+        skynet.ret_pack(true)
     end
 
     skynet.exit()

@@ -19,6 +19,9 @@ set(SKYNET_LUACLIB_SRC
     lua-netpack_ws.cpp
     lua-cluster.cpp
     lua-mongo.cpp
+    lua-clientsocket.cpp
+    lua-clientsocket_tcp.cpp
+    lua-clientsocket_ws.cpp
 )
 list(APPEND SKYNET_LUACLIB_SRC ${SKYNET_LUACLIB_HEADER})
 

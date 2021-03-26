@@ -60,7 +60,7 @@ local function split_cmdline(cmdline)
     return split
 end
 
-local function docmd(cmdline, print, fd)
+local function do_cmd(cmdline, print, fd)
     local split = split_cmdline(cmdline)
     local command = split[1]
     local cmd = CMD[command]
@@ -106,11 +106,11 @@ local function console_main_loop(stdin, print)
                 -- http
                 local code, url = httpd.read_request(sockethelper.readfunc(stdin, cmdline .. "\n"), 8192)
                 local cmdline = url:sub(2):gsub("/", " ")
-                docmd(cmdline, print, stdin)
+                do_cmd(cmdline, print, stdin)
                 break
             end
             if cmdline ~= "" then
-                docmd(cmdline, print, stdin)
+                do_cmd(cmdline, print, stdin)
             end
         end
     end)
@@ -254,7 +254,7 @@ function CMD.inject(address, filename, ...)
     if not f then
         return "Can't open " .. filename
     end
-    local source = f:read "*a"
+    local source = f:read("*a")
     f:close()
     local ok, output = skynet.call(address, "debug", "RUN", source, filename, ...)
     if ok == false then
@@ -263,6 +263,8 @@ function CMD.inject(address, filename, ...)
     return output
 end
 
+---
+--- @param address
 function CMD.task(address)
     address = adjust_address(address)
     return skynet.call(address, "debug", "TASK")
