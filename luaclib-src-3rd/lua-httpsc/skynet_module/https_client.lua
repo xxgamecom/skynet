@@ -25,14 +25,14 @@ local req_step = {
 }
 
 local function logger_msg(msg_type, format, ...)
-    skynet.log(string.format("[%s %s] ".. format, os.date("%Y-%m-%d %H:%M:%S"), msg_type, ...))
+    skynet.log(string.format("[%s %s] " .. format, os.date("%Y-%m-%d %H:%M:%S"), msg_type, ...))
 end
 
 local logger = {
-    info = function( ... )
+    info = function(...)
         logger_msg("info", ...)
     end,
-    err = function( ... )
+    err = function(...)
         logger_msg("error", ...)
     end
 }
@@ -43,7 +43,7 @@ local function getip(host, is_fresh)
         return host_cache[host]
     end
     local ip, ips = dns.resolve(host)
-    for k,v in ipairs(ips) do
+    for k, v in ipairs(ips) do
         if host_cache[host] ~= v then
             host_cache[host] = v
             break
@@ -76,7 +76,7 @@ local function recv_data(request)
         local padding = read(length - #body)
         body = body .. padding
         if #body >= length then
-            request.body = body:sub(1,length)
+            request.body = body:sub(1, length)
             request.step = req_step.finish
             return
         else
@@ -98,7 +98,7 @@ local function recv_data(request)
         request.code = code
 
         local recvheader
-        local header = internal.parseheader(tmpline,2,recvheader or {})
+        local header = internal.parseheader(tmpline, 2, recvheader or {})
         if not header then
             error("Invalid HTTP response header")
         end
@@ -112,7 +112,7 @@ local function recv_data(request)
         local mode = header["transfer-encoding"]
         if mode then
             if mode ~= "identity" and mode ~= "chunked" then
-                error ("Unsupport transfer-encoding")
+                error("Unsupport transfer-encoding")
             end
         end
 
@@ -124,10 +124,10 @@ local function recv_data(request)
             request.step = req_step.finish
         else
             -- identity mode
-            
+
             if length then
                 if #body >= length then
-                    body = body:sub(1,length)
+                    body = body:sub(1, length)
                 else
                     local padding = read(length - #body)
                     body = body .. padding
@@ -178,7 +178,7 @@ local function finish_request(requests, request, ret, step)
 end
 
 local function do_timeout()
-    local interval = 2*100
+    local interval = 2 * 100
     while true do
         skynet.sleep(interval)
         local now = os.time()
@@ -204,7 +204,7 @@ local function do_timeout()
 end
 
 local function do_clean()
-    local interval = 5*60*100
+    local interval = 5 * 60 * 100
     while true do
         skynet.sleep(interval)
         skynet.send(skynet.self(), "debug", "GC")
@@ -237,7 +237,7 @@ local function raw_job(request, requests, job_fun, error_tip, timeout_tip)
     local retry_time_s = retry_time_base * 10
     local ret_text = timeout_tip
     local ret_step = req_step.error
-    for k =1, retry_time do
+    for k = 1, retry_time do
         local ok, err = pcall(job_fun, request)
         if not ok then
             logger.err("https_client %s, err = %s", error_tip, err)
@@ -254,9 +254,8 @@ local function raw_job(request, requests, job_fun, error_tip, timeout_tip)
     finish_request(requests, request, ret_text, ret_step)
 end
 
-
 local function raw_request(method, host, url, header, content)
-    local hostname, port = host:match"([^:]+):?(%d*)$"
+    local hostname, port = host:match "([^:]+):?(%d*)$"
     if port == "" then
         port = 443
     else
@@ -270,7 +269,8 @@ local function raw_request(method, host, url, header, content)
     else
         ok, fd = nil, "getip nil"
     end
-    if not ok then --if conn fail, retry once
+    if not ok then
+        --if conn fail, retry once
         if svrip ~= hostname then
             logger.err("https_client raw_request connect fail, will retry once, error = %s", fd)
             --resolve host again
@@ -304,11 +304,11 @@ local function raw_request(method, host, url, header, content)
         if not header.host then
             header.host = host
         end
-        for k,v in pairs(header) do
+        for k, v in pairs(header) do
             header_content = string.format("%s%s:%s\r\n", header_content, k, v)
         end
     else
-        header_content = string.format("host:%s\r\n",host)
+        header_content = string.format("host:%s\r\n", host)
     end
 
     local request_header
@@ -334,7 +334,7 @@ local function raw_request(method, host, url, header, content)
         httpsc.close(fd)
         return false, request.error
     end
-    
+
     return true, fd
 end
 
@@ -389,24 +389,23 @@ function command.post(host, url, form)
         ["content-type"] = "application/x-www-form-urlencoded"
     }
     local body = {}
-    for k,v in pairs(form) do
-        table.insert(body, string.format("%s=%s",escape(k),escape(v)))
+    for k, v in pairs(form) do
+        table.insert(body, string.format("%s=%s", escape(k), escape(v)))
     end
-    return command.request("POST", host, url, header, table.concat(body , "&"))
+    return command.request("POST", host, url, header, table.concat(body, "&"))
 end
 
 local function lua_docmd(cmdhandler, session, cmd, ...)
-	local f = cmdhandler[cmd]
-	if not f then
-		return error(string.format("%s Unknown command %s", SERVICE_NAME, tostring(cmd)))
-	end
-	if session == 0 then
-		return f(...)
-	else
-		return skynet.ret(skynet.pack(f(...)))
-	end
+    local f = cmdhandler[cmd]
+    if not f then
+        return error(string.format("%s Unknown command %s", SERVICE_NAME, tostring(cmd)))
+    end
+    if session == 0 then
+        return f(...)
+    else
+        return skynet.ret(skynet.pack(f(...)))
+    end
 end
-
 
 skynet.start(function()
     logger.info("https_client starting...")
@@ -417,10 +416,9 @@ skynet.start(function()
     skynet.fork(do_timeout)
     skynet.fork(do_clean)
 
-    skynet.dispatch("lua", function (session, source, cmd, ...)
+    skynet.dispatch("lua", function(session, source, cmd, ...)
         return lua_docmd(command, session, string.lower(cmd), ...)
     end)
-
 
     skynet.register ".https_client"
     logger.info("https_client started!")

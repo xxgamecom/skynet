@@ -76,7 +76,7 @@ end
 -- call by self (when recv a request from client)
 function server.request_handler(username, msg)
     local u = username_map[username]
-    return skynet.tostring(skynet.rawcall(u.agent, "client", msg))
+    return skynet.tostring(skynet.call_raw(u.agent, "client", msg))
 end
 
 -- call by self (when gate open)

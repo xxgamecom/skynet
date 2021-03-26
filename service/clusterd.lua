@@ -3,113 +3,160 @@ require "skynet.manager"
 local cluster_core = require "skynet.cluster.core"
 
 local config_name = skynet.getenv("cluster")
-local node_address = {}
-local node_sender = {}
-local config = {}
-local nodename = cluster_core.nodename()
 
-local connecting = {}
+local node_map = {}             -- cluster node map, key: node name, value: node address
+local node_sender_svc_map = {}  -- cluster node sender service map, key: node name, value: cluster sender service handle
+local config_map = {}           -- config map, key: config name, value: config value
+local connecting = {}           -- cluster node connecting info = { node_name = { namequery_thread = thread, channel = sender_svc }, }
 
+--- the name of this cluster node (format: hostname+pid)
+local this_node_name = cluster_core.nodename()
+
+---
+--- open sender service
+--- @param t
+--- @param key string cluster node name
 local function open_channel(t, key)
-    local ct = connecting[key]
-    if ct then
-        local co = coroutine.running()
-        table.insert(ct, co)
-        skynet.wait(co)
-        return assert(ct.channel)
+    -- check reslove, block
+    local connecting_info = connecting[key]
+    if connecting_info then
+        local current_thread = coroutine.running()
+        table.insert(connecting_info, current_thread)
+        -- wait current thread
+        skynet.wait(current_thread)
+        return assert(connecting_info.sender_svc)
     end
-    ct = {}
-    connecting[key] = ct
-    local address = node_address[key]
-    if address == nil and not config.nowaiting then
-        local co = coroutine.running()
-        assert(ct.namequery == nil)
-        ct.namequery = co
+
+    --
+    connecting_info = {}
+    connecting[key] = connecting_info
+
+    --
+    local node_address = node_map[key]
+    -- node address is nil, block until cluster node address resloved
+    if node_address == nil and not config_map.nowaiting then
+        local current_thread = coroutine.running()
+        assert(connecting_info.namequery_thread == nil)
+        connecting_info.namequery_thread = current_thread
         skynet.log("Waiting for cluster node [" .. key .. "]")
-        skynet.wait(co)
-        address = node_address[key]
+        -- wait query cluster node success
+        skynet.wait(current_thread)
+        node_address = node_map[key]
     end
-    local succ, err, c
-    if address then
-        local host, port = string.match(address, "([^:]+):(.*)$")
-        c = node_sender[key]
-        if c == nil then
-            c = skynet.newservice("clustersender", key, nodename, host, port)
-            if node_sender[key] then
+
+    --
+    local sender_svc
+    local ok, err
+    --  cluster node address is provide or reslove success
+    if node_address then
+        local host, port = string.match(node_address, "([^:]+):(.*)$")
+        sender_svc = node_sender_svc_map[key]
+        if sender_svc == nil then
+            sender_svc = skynet.newservice("cluster_sender", key, this_node_name, host, port)
+            if node_sender_svc_map[key] then
                 -- double check
-                skynet.kill(c)
-                c = node_sender[key]
+                skynet.kill(sender_svc)
+                sender_svc = node_sender_svc_map[key]
             else
-                node_sender[key] = c
+                node_sender_svc_map[key] = sender_svc
             end
         end
 
-        succ = pcall(skynet.call, c, "lua", "changenode", host, port)
-
-        if succ then
-            t[key] = c
-            ct.channel = c
+        --
+        ok = pcall(skynet.call, sender_svc, "lua", "changenode", host, port)
+        if ok then
+            t[key] = sender_svc
+            connecting_info.sender_svc = sender_svc
         else
             err = string.format("changenode [%s] (%s:%s) failed", key, host, port)
         end
     else
-        err = string.format("cluster node [%s] is %s.", key, address == false and "down" or "absent")
+        -- cluster node is down, or can't reslove
+        err = string.format("cluster node [%s] is %s.", key, node_address == false and "down" or "absent")
     end
+
+    --
     connecting[key] = nil
-    for _, co in ipairs(ct) do
-        skynet.wakeup(co)
+    --
+    for _, thread in ipairs(connecting_info) do
+        skynet.wakeup(thread)
     end
-    assert(succ, err)
-    if node_address[key] ~= address then
+
+    --
+    assert(ok, err)
+    if node_map[key] ~= node_address then
         return open_channel(t, key)
     end
-    return c
+    return sender_svc
 end
 
+--- cluster node sender channel
 local node_channel = setmetatable({}, { __index = open_channel })
 
-local function load_config(tmp)
-    if tmp == nil then
-        tmp = {}
+---
+--- load cluster config
+---
+--- cluster config file example:
+--- __nowaiting = true  -- If you turn this flag off, cluster.call would block when node name is absent
+--- login_1 = "0.0.0.0:9000"
+--- connect_1 = "0.0.0.0:9010"
+--- gate_1 = "0.0.0.0:9020"
+--- ...
+---
+--- @param env
+local function load_config(env)
+    -- load cluster config file
+    if env == nil then
+        env = {}
         if config_name then
             local f = assert(io.open(config_name))
-            local source = f:read "*a"
+            local chunk = f:read("*a")
             f:close()
-            assert(load(source, "@" .. config_name, "t", tmp))()
+            assert(load(chunk, "@" .. config_name, "t", env))()
         end
     end
-    local reload = {}
-    for name, address in pairs(tmp) do
-        if name:sub(1, 2) == "__" then
-            name = name:sub(3)
-            config[name] = address
-            skynet.log(string.format("Config %s = %s", name, address))
+
+    --
+    local reconnect_nodes = {}
+    for node_name, node_address in pairs(env) do
+        -- start with '__', e.g. __nowaiting
+        if node_name:sub(1, 2) == "__" then
+            node_name = node_name:sub(3)
+            config_map[node_name] = node_address
+            skynet.log(string.format("Config %s = %s", node_name, node_address))
         else
-            assert(address == false or type(address) == "string")
-            if node_address[name] ~= address then
-                -- address changed
-                if rawget(node_channel, name) then
-                    node_channel[name] = nil    -- reset connection
-                    table.insert(reload, name)
+            -- cluster node config
+
+            assert(node_address == false or type(node_address) == "string")
+            -- address changed, reset connection then reconnect
+            if node_map[node_name] ~= node_address then
+                if rawget(node_channel, node_name) then
+                    node_channel[node_name] = nil    -- reset connection
+                    table.insert(reconnect_nodes, node_name)
                 end
-                node_address[name] = address
+                node_map[node_name] = node_address
             end
-            local ct = connecting[name]
-            if ct and ct.namequery and not config.nowaiting then
-                skynet.log(string.format("Cluster node [%s] resloved : %s", name, address))
-                skynet.wakeup(ct.namequery)
-            end
-        end
-    end
-    if config.nowaiting then
-        -- wakeup all connecting request
-        for name, ct in pairs(connecting) do
-            if ct.namequery then
-                skynet.wakeup(ct.namequery)
+
+            -- reslove cluster node
+            local connecting_info = connecting[node_name]
+            if connecting_info and connecting_info.namequery_thread and not config_map.nowaiting then
+                skynet.log(string.format("Cluster node [%s] resloved : %s", node_name, node_address))
+                skynet.wakeup(connecting_info.namequery_thread)
             end
         end
     end
-    for _, name in ipairs(reload) do
+
+    -- no block, wakeup all connecting request
+    if config_map.nowaiting then
+        for _, connecting_info in pairs(connecting) do
+            if connecting_info.namequery_thread then
+                skynet.wakeup(connecting_info.namequery_thread)
+            end
+        end
+    end
+
+    -- reconnect cluster node
+    for _, name in ipairs(reconnect_nodes) do
         -- open_channel would block
         skynet.fork(open_channel, node_channel, name)
     end
@@ -125,8 +172,8 @@ end
 function CMD.listen(source, addr, port)
     local gate = skynet.newservice("gate")
     if port == nil then
-        local address = assert(node_address[addr], addr .. " is down")
-        addr, port = string.match(address, "([^:]+):(.*)$")
+        local node_address = assert(node_map[addr], addr .. " is down")
+        addr, port = string.match(node_address, "([^:]+):(.*)$")
     end
     skynet.call(gate, "lua", "open", { address = addr, port = port })
     skynet.ret(skynet.pack(nil))
@@ -137,7 +184,7 @@ function CMD.sender(source, node)
 end
 
 function CMD.senders(source)
-    skynet.retpack(node_sender)
+    skynet.ret_pack(node_sender_svc_map)
 end
 
 local proxy = {}
@@ -152,7 +199,7 @@ function CMD.proxy(source, node, name)
     local fullname = node .. "." .. name
     local p = proxy[fullname]
     if p == nil then
-        p = skynet.newservice("clusterproxy", node, name)
+        p = skynet.newservice("cluster_proxy", node, name)
         -- double check
         if proxy[fullname] then
             skynet.kill(p)
@@ -164,7 +211,7 @@ function CMD.proxy(source, node, name)
     skynet.ret(skynet.pack(p))
 end
 
-local cluster_agent = {}    -- fd:service
+local cluster_agent = {}    -- key: fd, value: service
 local register_name = {}
 
 local function clearnamecache()
@@ -196,9 +243,10 @@ end
 function CMD.socket(source, subcmd, fd, msg)
     if subcmd == "open" then
         skynet.log(string.format("socket accept from %s", msg))
+
         -- new cluster agent
         cluster_agent[fd] = false
-        local agent = skynet.newservice("clusteragent", skynet.self(), source, fd)
+        local agent = skynet.newservice("cluster_agent", skynet.self(), source, fd)
         local closed = cluster_agent[fd]
         cluster_agent[fd] = agent
         if closed then
@@ -225,9 +273,9 @@ skynet.start(function()
     --
     load_config()
 
-    --
-    skynet.dispatch("lua", function(session, source, cmd, ...)
+    -- set service message dispatch function
+    skynet.dispatch("lua", function(session_id, src_svc_handle, cmd, ...)
         local f = assert(CMD[cmd])
-        f(source, ...)
+        f(src_svc_handle, ...)
     end)
 end)

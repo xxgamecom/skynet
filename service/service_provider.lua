@@ -103,7 +103,7 @@ skynet.start(function()
             elseif v.queue then
                 status = "waiting(" .. #v.queue .. ")"
             end
-            info[skynet.address(v.address)] = {
+            info[skynet.to_address(v.address)] = {
                 init = v.init,
                 name = k,
                 time = os.date("%Y %b %d %T %z", math.floor(v.time)),

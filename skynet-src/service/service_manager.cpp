@@ -450,18 +450,18 @@ service_context* service_manager::release_service(service_context* svc_ctx)
 // @param svc_ctx            源服务的ctx，可以为NULL，drop_message时这个参数为NULL
 // @param src_svc_handle         源服务地址，通常设置为0即可，api里会设置成ctx->handle，当context为NULL时，需指定source
 // @param dst_svc_handle     目的服务地址
-// @param msg_ptype             消息类型， skynet定义了多种消息，SERVICE_MSG_TYPE_TEXT，SERVICE_MSG_TYPE_CLIENT，SERVICE_MSG_TYPE_RESPONSE等（详情见skynet.h）
+// @param svc_msg_type             消息类型， skynet定义了多种消息，SERVICE_MSG_TYPE_TEXT，SERVICE_MSG_TYPE_CLIENT，SERVICE_MSG_TYPE_RESPONSE等（详情见skynet.h）
 // @param session         如果在type里设上allocsession的tag(MESSAGE_TAG_ALLOC_SESSION)，api会忽略掉传入的session参数，重新生成一个新的唯一的
 // @param msg             消息包数据
 // @param msg_sz             消息包长度
 // @return int session, 源服务保存这个session，同时约定，目的服务处理完这个消息后，把这个session原样发送回来(skynet_message结构里带有一个session字段)，
 //         源服务就知道是哪个请求的返回，从而正确调用对应的回调函数。
-int service_manager::send(service_context* svc_ctx, uint32_t src_svc_handle, uint32_t dst_svc_handle , int msg_ptype, int session_id, void* msg, size_t msg_sz)
+int service_manager::send(service_context* svc_ctx, uint32_t src_svc_handle, uint32_t dst_svc_handle , int svc_msg_type, int session_id, void* msg, size_t msg_sz)
 {
     if ((msg_sz & MESSAGE_TYPE_MASK) != msg_sz)
     {
         log(svc_ctx, "The message to %x is too large", dst_svc_handle);
-        if (msg_ptype & MESSAGE_TAG_DONT_COPY)
+        if (svc_msg_type & MESSAGE_TAG_DONT_COPY)
         {
             delete[] msg;
         }
@@ -471,9 +471,9 @@ int service_manager::send(service_context* svc_ctx, uint32_t src_svc_handle, uin
     }
 
     // 预处理消息数据块
-    bool need_copy = (msg_ptype & MESSAGE_TAG_DONT_COPY) == 0;
-    bool need_alloc_session = (msg_ptype & MESSAGE_TAG_ALLOC_SESSION) != 0;
-    msg_ptype &= 0xff;
+    bool need_copy = (svc_msg_type & MESSAGE_TAG_DONT_COPY) == 0;
+    bool need_alloc_session = (svc_msg_type & MESSAGE_TAG_ALLOC_SESSION) != 0;
+    svc_msg_type &= 0xff;
 
     if (need_alloc_session)
     {
@@ -487,7 +487,7 @@ int service_manager::send(service_context* svc_ctx, uint32_t src_svc_handle, uin
         new_msg[msg_sz] = '\0';
         msg = new_msg;
     }
-    msg_sz |= (size_t)msg_ptype << MESSAGE_TYPE_SHIFT;
+    msg_sz |= (size_t)svc_msg_type << MESSAGE_TYPE_SHIFT;
 
     if (dst_svc_handle == 0)
     {
@@ -519,7 +519,7 @@ int service_manager::send(service_context* svc_ctx, uint32_t src_svc_handle, uin
     return session_id;
 }
 
-int service_manager::send_by_name(service_context* svc_ctx, uint32_t src_svc_handle, const char* dst_name_or_addr, int msg_ptype, int session, void* msg, size_t sz)
+int service_manager::send_by_name(service_context* svc_ctx, uint32_t src_svc_handle, const char* dst_name_or_addr, int svc_msg_type, int session, void* msg, size_t sz)
 {
     if (src_svc_handle == 0)
         src_svc_handle = svc_ctx->svc_handle_;
@@ -536,7 +536,7 @@ int service_manager::send_by_name(service_context* svc_ctx, uint32_t src_svc_han
         des = find_by_name(dst_name_or_addr + 1);
         if (des == 0)
         {
-            if (msg_ptype & MESSAGE_TAG_DONT_COPY)
+            if (svc_msg_type & MESSAGE_TAG_DONT_COPY)
             {
                 delete[] msg;
             }
@@ -544,7 +544,7 @@ int service_manager::send_by_name(service_context* svc_ctx, uint32_t src_svc_han
         }
     }
 
-    return send(svc_ctx, src_svc_handle, des, msg_ptype, session, msg, sz);
+    return send(svc_ctx, src_svc_handle, des, svc_msg_type, session, msg, sz);
 }
 
 }

@@ -257,11 +257,11 @@ void node::_dispatch_all(service_context* svc_ctx)
 // handle service message (call service message callback)
 void node::_do_dispatch_message(service_context* svc_ctx, service_message* msg)
 {
-    int msg_ptype = msg->data_size >> MESSAGE_TYPE_SHIFT;
+    int svc_msg_type = msg->data_size >> MESSAGE_TYPE_SHIFT;
     size_t sz = msg->data_size & MESSAGE_TYPE_MASK;
     if (svc_ctx->log_fd_ != nullptr)
     {
-        service_log::log(svc_ctx->log_fd_, msg->src_svc_handle, msg_ptype, msg->session_id, msg->data_ptr, sz);
+        service_log::log(svc_ctx->log_fd_, msg->src_svc_handle, svc_msg_type, msg->session_id, msg->data_ptr, sz);
     }
 
     //
@@ -273,7 +273,7 @@ void node::_do_dispatch_message(service_context* svc_ctx, service_message* msg)
         svc_ctx->cpu_start_ = time_helper::thread_time();
 
         // message callback
-        reserve_msg = svc_ctx->msg_callback_(svc_ctx, svc_ctx->cb_ud_, msg_ptype, msg->session_id, msg->src_svc_handle, msg->data_ptr, sz);
+        reserve_msg = svc_ctx->msg_callback_(svc_ctx, svc_ctx->cb_ud_, svc_msg_type, msg->session_id, msg->src_svc_handle, msg->data_ptr, sz);
 
         uint64_t cost_time = time_helper::thread_time() - svc_ctx->cpu_start_;
         svc_ctx->cpu_cost_ += cost_time;
@@ -281,7 +281,7 @@ void node::_do_dispatch_message(service_context* svc_ctx, service_message* msg)
     else
     {
         // message callback
-        reserve_msg = svc_ctx->msg_callback_(svc_ctx, svc_ctx->cb_ud_, msg_ptype, msg->session_id, msg->src_svc_handle, msg->data_ptr, sz);
+        reserve_msg = svc_ctx->msg_callback_(svc_ctx, svc_ctx->cb_ud_, svc_msg_type, msg->session_id, msg->src_svc_handle, msg->data_ptr, sz);
     }
 
     //

@@ -130,9 +130,9 @@ function gateserver.start(handler)
         end
     end
 
-    skynet.register_protocol {
-        msg_ptype_name = "socket",
-        msg_ptype = skynet.SERVICE_MSG_TYPE_SOCKET, -- SERVICE_MSG_TYPE_SOCKET = 6
+    skynet.register_svc_msg_handler({
+        msg_type_name = "socket",
+        msg_type = skynet.SERVICE_MSG_TYPE_SOCKET, -- SERVICE_MSG_TYPE_SOCKET = 6
         unpack = function(msg, sz)
             return netpack.filter(queue, msg, sz)
         end,
@@ -142,7 +142,7 @@ function gateserver.start(handler)
                 MSG[type](...)
             end
         end
-    }
+    })
 
     skynet.start(function()
         skynet.dispatch("lua", function(_, address, cmd, ...)

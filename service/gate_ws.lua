@@ -9,9 +9,9 @@ local watchdog
 local connection = {}    -- fd -> connection : { fd , client, agent , ip, mode }
 local forwarding = {}    -- agent -> connection
 
-skynet.register_protocol({
-    msg_ptype_name = "client",
-    msg_ptype = skynet.SERVICE_MSG_TYPE_CLIENT,
+skynet.register_svc_msg_handler({
+    msg_type_name = "client",
+    msg_type = skynet.SERVICE_MSG_TYPE_CLIENT,
 })
 
 local handler = {}

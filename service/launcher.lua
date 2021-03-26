@@ -21,7 +21,7 @@ local CMD = {}
 function CMD.LIST()
     local list = {}
     for k, v in pairs(services) do
-        list[skynet.address(k)] = v
+        list[skynet.to_address(k)] = v
     end
     return list
 end
@@ -33,7 +33,7 @@ function CMD.STAT()
         if not ok then
             stat = string.format("ERROR (%s)", v)
         end
-        list[skynet.address(k)] = stat
+        list[skynet.to_address(k)] = stat
     end
     return list
 end
@@ -41,7 +41,7 @@ end
 function CMD.KILL(_, handle)
     handle = handle_to_address(handle)
     skynet.kill(handle)
-    local ret = { [skynet.address(handle)] = tostring(services[handle]) }
+    local ret = { [skynet.to_address(handle)] = tostring(services[handle]) }
     services[handle] = nil
     return ret
 end
@@ -51,9 +51,9 @@ function CMD.MEM()
     for k, v in pairs(services) do
         local ok, kb = pcall(skynet.call, k, "debug", "MEM")
         if not ok then
-            list[skynet.address(k)] = string.format("ERROR (%s)", v)
+            list[skynet.to_address(k)] = string.format("ERROR (%s)", v)
         else
-            list[skynet.address(k)] = string.format("%.2f Kb (%s)", kb, v)
+            list[skynet.to_address(k)] = string.format("%.2f Kb (%s)", kb, v)
         end
     end
     return list
@@ -83,12 +83,12 @@ end
 local function launch_service(service, ...)
     local param = table.concat({ ... }, " ")
     local inst = skynet.launch(service, param)
-    local session = skynet.context()
+    local session_id = skynet.context()
     local response = skynet.response()
     if inst then
         services[inst] = service .. " " .. param
         instance[inst] = response
-        launch_session[inst] = session
+        launch_session[inst] = session_id
     else
         response(false)
         return
@@ -104,7 +104,7 @@ end
 function CMD.LOGLAUNCH(_, service, ...)
     local inst = launch_service(service, ...)
     if inst then
-        skynet_core.command("LOGON", skynet.address(inst))
+        skynet_core.command("LOGON", skynet.to_address(inst))
     end
     return NORET
 end
@@ -144,9 +144,9 @@ end
 
 -- for historical reasons, launcher support text command (for C service)
 
-skynet.register_protocol {
-    msg_ptype_name = "text",
-    msg_ptype = skynet.SERVICE_MSG_TYPE_TEXT,
+skynet.register_svc_msg_handler({
+    msg_type_name = "text",
+    msg_type = skynet.SERVICE_MSG_TYPE_TEXT,
     unpack = skynet.tostring,
     dispatch = function(session, address, cmd)
         if cmd == "" then
@@ -157,7 +157,7 @@ skynet.register_protocol {
             error("Invalid text command " .. cmd)
         end
     end,
-}
+})
 
 skynet.dispatch("lua", function(session, address, cmd, ...)
     cmd = string.upper(cmd)

@@ -20,7 +20,7 @@ public:
     static void close_log_file(service_context* svc_ctx, FILE* f, uint32_t svc_handle);
 
     // log service message
-    static void log(FILE* f, uint32_t src_svc_handle, int msg_ptype, int session_id, void* buffer, size_t sz);
+    static void log(FILE* f, uint32_t src_svc_handle, int svc_msg_type, int session_id, void* buffer, size_t sz);
 };
 
 }

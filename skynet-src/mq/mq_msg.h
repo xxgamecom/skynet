@@ -29,7 +29,7 @@ enum service_message_type
 
 // message tag
 #define MESSAGE_TAG_DONT_COPY       0x10000                     // don't copy message
-#define MESSAGE_TAG_ALLOC_SESSION   0x20000                     // set in msg_ptype when sending a package
+#define MESSAGE_TAG_ALLOC_SESSION   0x20000                     // set in svc_msg_type when sending a package
                                                                 // send api method will ignore session arguemnts and allocate a new session id.
 
 // skynet service message, used for interaction between services

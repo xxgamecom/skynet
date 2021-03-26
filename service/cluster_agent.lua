@@ -91,14 +91,14 @@ local function dispatch_request(_, _, addr, session, msg, sz, padding, is_push)
         end
         if addr then
             if is_push then
-                skynet.rawsend(addr, "lua", msg, sz)
+                skynet.send_raw(addr, "lua", msg, sz)
                 return    -- no response
             else
                 if tracetag then
-                    ok, msg, sz = pcall(skynet.tracecall, tracetag, addr, "lua", msg, sz)
+                    ok, msg, sz = pcall(skynet.call_trace, tracetag, addr, "lua", msg, sz)
                     tracetag = nil
                 else
-                    ok, msg, sz = pcall(skynet.rawcall, addr, "lua", msg, sz)
+                    ok, msg, sz = pcall(skynet.call_raw, addr, "lua", msg, sz)
                 end
             end
         else
@@ -122,12 +122,12 @@ local function dispatch_request(_, _, addr, session, msg, sz, padding, is_push)
 end
 
 skynet.start(function()
-    skynet.register_protocol {
-        msg_ptype_name = "client",
-        msg_ptype = skynet.SERVICE_MSG_TYPE_CLIENT,
+    skynet.register_svc_msg_handler({
+        msg_type_name = "client",
+        msg_type = skynet.SERVICE_MSG_TYPE_CLIENT,
         unpack = cluster.unpackrequest,
         dispatch = dispatch_request,
-    }
+    })
     -- fd can write, but don't read fd, the data package will forward from gate though client protocol.
     skynet.call(gate, "lua", "forward", fd)
 
@@ -138,7 +138,7 @@ skynet.start(function()
         elseif cmd == "namechange" then
             register_name = new_register_name()
         else
-            skynet.log(string.format("Invalid command %s from %s", cmd, skynet.address(source)))
+            skynet.log(string.format("Invalid command %s from %s", cmd, skynet.to_address(source)))
         end
     end)
 end)

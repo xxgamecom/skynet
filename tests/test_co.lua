@@ -6,11 +6,11 @@ local profile = require("skynet.profile")
 local function co_func()
     skynet.log("resume co_func 1")
 
-    skynet_co.yield("BEGIN")
-    skynet.log("resume co_func 2")
+    local t = skynet_co.yield("BEGIN")
+    skynet.log("resume co_func 2", t)
 
-    skynet_co.yield("END")
-    skynet.log("resume co_func 3")
+    t = skynet_co.yield("END")
+    skynet.log("resume co_func 3", t)
 
     local ti = profile.stop(skynet_co.thread())
     skynet.log("cost time:", ti)

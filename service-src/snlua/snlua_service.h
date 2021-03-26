@@ -51,7 +51,7 @@ public:
 
 public:
     // service message callback
-    static int snlua_cb(service_context* svc_ctx, void* ud, int msg_ptype, int session_id, uint32_t src_svc_handle, const void* msg, size_t sz);
+    static int snlua_cb(service_context* svc_ctx, void* ud, int svc_msg_type, int session_id, uint32_t src_svc_handle, const void* msg, size_t sz);
     // init lua service message callback
     // 设置一些虚拟机环境变量 (主要是路径资源之类的)
     // 在init_cb里进行Lua层的初始化，比如初始化LUA_PATH，LUA_CPATH，LUA_SERVICE等全局变量

@@ -9,22 +9,22 @@ local node, nodename, init_host, init_port = ...
 
 local CMD = {}
 
-local function send_request(addr, msg, sz)
+local function send_request(addr, msg, msg_sz)
     -- msg is a local pointer, cluster.packrequest will free it
     local current_session = session
-    local req, new_session, padding = cluster.packrequest(addr, session, msg, sz)
+    local req, new_session, padding = cluster.packrequest(addr, session, msg, msg_sz)
     session = new_session
 
-    local tracetag = skynet.tracetag()
-    if tracetag then
-        if tracetag:sub(1, 1) ~= "(" then
+    local trace_tag = skynet.trace_tag()
+    if trace_tag then
+        if trace_tag:sub(1, 1) ~= "(" then
             -- add nodename
-            local newtag = string.format("(%s-%s-%d)%s", nodename, node, session, tracetag)
-            skynet.tracelog(tracetag, string.format("session %s", newtag))
-            tracetag = newtag
+            local new_tag = string.format("(%s-%s-%d)%s", nodename, node, session, trace_tag)
+            skynet.tracelog(trace_tag, string.format("session %s", new_tag))
+            trace_tag = new_tag
         end
-        skynet.tracelog(tracetag, string.format("cluster %s", node))
-        channel:request(cluster.packtrace(tracetag))
+        skynet.tracelog(trace_tag, string.format("cluster %s", node))
+        channel:request(cluster.packtrace(trace_tag))
     end
     return channel:request(req, current_session, padding)
 end
@@ -43,8 +43,8 @@ function CMD.req(...)
     end
 end
 
-function CMD.push(addr, msg, sz)
-    local req, new_session, padding = cluster.packpush(addr, session, msg, sz)
+function CMD.push(addr, msg, msg_sz)
+    local req, new_session, padding = cluster.packpush(addr, session, msg, msg_sz)
     if padding then
         -- is multi push
         session = new_session
@@ -54,8 +54,8 @@ function CMD.push(addr, msg, sz)
 end
 
 local function read_response(sock)
-    local sz = socket.header(sock:read(2))
-    local msg = sock:read(sz)
+    local msg_sz = socket.header(sock:read(2))
+    local msg = sock:read(msg_sz)
     return cluster.unpackresponse(msg)    -- session, ok, data, padding
 end
 
@@ -66,13 +66,16 @@ function CMD.changenode(host, port)
 end
 
 skynet.start(function()
+    --
     channel = sc.channel {
         host = init_host,
         port = tonumber(init_port),
         response = read_response,
         nodelay = true,
     }
-    skynet.dispatch("lua", function(session, source, cmd, ...)
+
+    -- set "lua" service message dispatch function
+    skynet.dispatch("lua", function(session_id, src_svc_handle, cmd, ...)
         local f = assert(CMD[cmd])
         f(...)
     end)

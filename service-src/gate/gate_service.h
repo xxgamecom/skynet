@@ -23,7 +23,7 @@ public:
     int                         listen_id_ = -1;                // listen socket id
     uint32_t                    watchdog_svc_handle_ = 0;       //
     uint32_t                    broker_svc_handle_ = 0;         //
-    int                         msg_ptype_ = 0;                 // message protocol type
+    int                         svc_msg_type_ = 0;              // service message type
     int                         header_size_ = 0;               // package header size, (header == 'S') ? 2 : 4;
     hash_id                     hash_;                          //
 
@@ -45,7 +45,7 @@ public:
     void signal(int signal) override;
 
 public:
-    static int gate_cb(service_context* svc_ctx, void* ud, int msg_ptype, int session_id, uint32_t src_svc_handle, const void* msg, size_t msg_sz);
+    static int gate_cb(service_context* svc_ctx, void* ud, int svc_msg_type, int session_id, uint32_t src_svc_handle, const void* msg, size_t msg_sz);
 
 };
 

@@ -145,9 +145,9 @@ void snlua_service::signal(int signal)
     }
 }
 
-int snlua_service::snlua_cb(service_context* svc_ctx, void* ud, int msg_ptype, int session, uint32_t src_svc_handle, const void* msg, size_t sz)
+int snlua_service::snlua_cb(service_context* svc_ctx, void* ud, int svc_msg_type, int session, uint32_t src_svc_handle, const void* msg, size_t sz)
 {
-    assert(msg_ptype == 0 && session == 0);
+    assert(svc_msg_type == 0 && session == 0);
 
     auto svc_ptr = (snlua_service*)ud;
 

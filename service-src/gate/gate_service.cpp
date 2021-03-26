@@ -39,7 +39,7 @@ static void _forward(gate_service* svc_ptr, connection* c, int size)
         char* temp = new char[size];
         data_buffer_read(&c->buffer, &svc_ptr->mp_, temp, size);
         service_manager::instance()->send(svc_ptr->svc_ctx_, 0, svc_ptr->broker_svc_handle_,
-                                          svc_ptr->msg_ptype_ | MESSAGE_TAG_DONT_COPY, socket_id, temp, size);
+                                          svc_ptr->svc_msg_type_ | MESSAGE_TAG_DONT_COPY, socket_id, temp, size);
         return;
     }
 
@@ -48,7 +48,7 @@ static void _forward(gate_service* svc_ptr, connection* c, int size)
         char* temp = new char[size];
         data_buffer_read(&c->buffer, &svc_ptr->mp_, temp, size);
         service_manager::instance()->send(svc_ptr->svc_ctx_, c->client_svc_handle, c->agent_svc_handle,
-                                          svc_ptr->msg_ptype_ | MESSAGE_TAG_DONT_COPY, socket_id, temp, size);
+                                          svc_ptr->svc_msg_type_ | MESSAGE_TAG_DONT_COPY, socket_id, temp, size);
     }
     else if (svc_ptr->watchdog_svc_handle_ != 0)
     {
@@ -276,19 +276,19 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
         std::string listen_addr = param_array[2];
 
         // param 4 - message protocol type
-        int msg_ptype = 0;
+        int svc_msg_type = 0;
         try
         {
-            msg_ptype = std::stoi(param_array[3]);
+            svc_msg_type = std::stoi(param_array[3]);
         }
         catch (...)
         {
             log(svc_ctx, "Invalid gate param %s", param);
             break;
         }
-        if (msg_ptype == 0)
+        if (svc_msg_type == 0)
         {
-            msg_ptype = SERVICE_MSG_TYPE_CLIENT;
+            svc_msg_type = SERVICE_MSG_TYPE_CLIENT;
         }
 
         // param 5 - max connnection
@@ -317,7 +317,7 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
         this->max_connection_ = max;
 
         //
-        this->msg_ptype_ = msg_ptype;
+        this->svc_msg_type_ = svc_msg_type;
         this->header_size_ = header == 'S' ? 2 : 4;
 
         //
@@ -360,11 +360,11 @@ void gate_service::signal(int signal)
 
 }
 
-int gate_service::gate_cb(service_context* svc_ctx, void* ud, int msg_ptype, int session_id, uint32_t src_svc_handle, const void* msg, size_t msg_sz)
+int gate_service::gate_cb(service_context* svc_ctx, void* ud, int svc_msg_type, int session_id, uint32_t src_svc_handle, const void* msg, size_t msg_sz)
 {
     auto svc_ptr = (gate_service*)ud;
 
-    switch (msg_ptype)
+    switch (svc_msg_type)
     {
     case SERVICE_MSG_TYPE_TEXT:
         handle_ctrl_cmd(svc_ptr, (const char*)msg, (int)msg_sz);

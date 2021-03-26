@@ -8,7 +8,7 @@
 skynet服务消息
 
 用于服务之间的交互，发送消息时，该消息会投递到服务的私有消息队列。
-该消息类型定义: SERVICE_MSG_TYPE_*, lua层可以通过 skynet.register_protocol() 添加各种类型消息的处理器
+该消息类型定义: SERVICE_MSG_TYPE_*, lua层可以通过 skynet.register_svc_msg_handler() 添加各种类型消息的处理器
 
 数据结构
 struct service_message

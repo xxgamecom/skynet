@@ -5,9 +5,9 @@
 local plural = {}
 local defaultFunction = nil
 
--- ----------------------------------------------
+-- ------------------------------------------------------
 -- helper functions
--- ----------------------------------------------
+-- ------------------------------------------------------
 
 local function assertPresentString(functionName, paramName, value)
 	if type(value) ~= 'string' or #value == 0 then
@@ -283,9 +283,9 @@ for f, locales in pairs(pluralization) do
 	end
 end
 
--- ----------------------------------------------
+-- ------------------------------------------------------
 -- public interface
--- ----------------------------------------------
+-- ------------------------------------------------------
 
 function plural.get(locale, n)
 	assertPresentString('i18n.plural.get', 'locale', locale)

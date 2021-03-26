@@ -8,9 +8,9 @@ local init_once
 local thread_id
 local message_queue = {}
 
-skynet.register_protocol {
-    msg_ptype_name = "queue",
-    msg_ptype = skynet.SERVICE_MSG_TYPE_QUEUE,
+skynet.register_svc_msg_handler({
+    msg_type_name = "queue",
+    msg_type = skynet.SERVICE_MSG_TYPE_QUEUE,
     pack = skynet.pack,
     unpack = skynet.unpack,
     dispatch = function(session, from, ...)
@@ -20,7 +20,7 @@ skynet.register_protocol {
             thread_id = nil
         end
     end
-}
+})
 
 local function do_func(f, msg)
     return pcall(f, table.unpack(msg))
