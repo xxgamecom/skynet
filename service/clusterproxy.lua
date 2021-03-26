@@ -5,8 +5,8 @@ require "skynet.manager"    -- inject skynet.forward_type
 local node, address = ...
 
 skynet.register_protocol {
-    msg_ptype_name = "system",
-    msg_ptype = skynet.SERVICE_MSG_TYPE_SYSTEM,
+    msg_type_name = "system",
+    msg_type = skynet.SERVICE_MSG_TYPE_SYSTEM,
     unpack = function(...)
         return ...
     end,
@@ -29,7 +29,7 @@ skynet.forward_type(forward_map, function()
         if session == 0 then
             skynet.send(sender, "lua", "push", address, msg, sz)
         else
-            skynet.ret(skynet.rawcall(sender, "lua", skynet.pack("req", address, msg, sz)))
+            skynet.ret(skynet.call_raw(sender, "lua", skynet.pack("req", address, msg, sz)))
         end
     end)
 end)

@@ -44,8 +44,8 @@ local function send_package(pack)
 end
 
 skynet.register_protocol {
-    msg_ptype_name = "client",
-    msg_ptype = skynet.SERVICE_MSG_TYPE_CLIENT,
+    msg_type_name = "client",
+    msg_type = skynet.SERVICE_MSG_TYPE_CLIENT,
     unpack = function(msg, sz)
         return host:dispatch(msg, sz)
     end,

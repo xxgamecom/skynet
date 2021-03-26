@@ -6,8 +6,8 @@ local connection = {}    -- fd -> connection : { fd , client, agent , ip, mode }
 local forwarding = {}    -- agent -> connection
 
 skynet.register_protocol {
-    msg_ptype_name = "client",
-    msg_ptype = skynet.SERVICE_MSG_TYPE_CLIENT,
+    msg_type_name = "client",
+    msg_type = skynet.SERVICE_MSG_TYPE_CLIENT,
 }
 
 local handler = {}

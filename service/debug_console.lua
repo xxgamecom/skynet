@@ -177,7 +177,7 @@ function COMMAND.start(...)
     local ok, addr = pcall(skynet.newservice, ...)
     if ok then
         if addr then
-            return { [skynet.address(addr)] = ... }
+            return { [skynet.to_address(addr)] = ... }
         else
             return "Exit"
         end
@@ -190,7 +190,7 @@ function COMMAND.log(...)
     local ok, addr = pcall(skynet.call, ".launcher", "lua", "LOGLAUNCH", "snlua", ...)
     if ok then
         if addr then
-            return { [skynet.address(addr)] = ... }
+            return { [skynet.to_address(addr)] = ... }
         else
             return "Failed"
         end
@@ -203,7 +203,7 @@ function COMMAND.snax(...)
     local ok, s = pcall(snax.newservice, ...)
     if ok then
         local addr = s.handle
-        return { [skynet.address(addr)] = ... }
+        return { [skynet.to_address(addr)] = ... }
     else
         return "Failed"
     end
@@ -318,16 +318,16 @@ end
 
 function COMMAND.logon(address)
     address = adjust_address(address)
-    skynet_core.command("LOGON", skynet.address(address))
+    skynet_core.command("LOGON", skynet.to_address(address))
 end
 
 function COMMAND.logoff(address)
     address = adjust_address(address)
-    skynet_core.command("LOGOFF", skynet.address(address))
+    skynet_core.command("LOGOFF", skynet.to_address(address))
 end
 
 function COMMAND.signal(address, sig)
-    address = skynet.address(adjust_address(address))
+    address = skynet.to_address(adjust_address(address))
     if sig then
         skynet_core.command("SIGNAL", string.format("%s %d", address, sig))
     else
@@ -339,7 +339,7 @@ function COMMAND.cmem()
     local info = memory.info()
     local tmp = {}
     for k, v in pairs(info) do
-        tmp[skynet.address(k)] = v
+        tmp[skynet.to_address(k)] = v
     end
     tmp.total = memory.total()
     tmp.block = memory.block()
@@ -414,7 +414,7 @@ local function convert_stat(info)
         return string.format("%s%d:%.2gs", hour == 0 and "" or (hour .. ":"), min, sec)
     end
 
-    info.address = skynet.address(info.address)
+    info.address = skynet.to_address(info.address)
     info.read = bytes(info.read)
     info.write = bytes(info.write)
     info.wbuffer = bytes(info.wbuffer)

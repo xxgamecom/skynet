@@ -86,16 +86,16 @@ void service_log::close_log_file(service_context* svc_ctx, FILE* f, uint32_t svc
     ::fclose(f);
 }
 
-void service_log::log(FILE* f, uint32_t src_svc_handle, int msg_ptype, int session_id, void* buffer, size_t sz)
+void service_log::log(FILE* f, uint32_t src_svc_handle, int svc_msg_type, int session_id, void* buffer, size_t sz)
 {
-    if (msg_ptype == SERVICE_MSG_TYPE_SOCKET)
+    if (svc_msg_type == SERVICE_MSG_TYPE_SOCKET)
     {
         _log_socket(f, (skynet_socket_message*)buffer, sz);
     }
     else
     {
         uint32_t ti = (uint32_t)timer_manager::instance()->now();
-        ::fprintf(f, ":%08x %d %d %u ", src_svc_handle, msg_ptype, session_id, ti);
+        ::fprintf(f, ":%08x %d %d %u ", src_svc_handle, svc_msg_type, session_id, ti);
         _log_blob(f, buffer, sz);
         ::fprintf(f, "\n");
         ::fflush(f);

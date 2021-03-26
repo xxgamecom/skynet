@@ -77,10 +77,10 @@ Config for server.start:
 
 local server = {}
 
-skynet.register_protocol {
-    msg_ptype_name = "client",
-    msg_ptype = skynet.SERVICE_MSG_TYPE_CLIENT,
-}
+skynet.register_protocol({
+    msg_type_name = "client",
+    msg_type = skynet.SERVICE_MSG_TYPE_CLIENT,
+})
 
 local user_online = {}
 local handshake = {}

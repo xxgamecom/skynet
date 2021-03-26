@@ -715,11 +715,9 @@ static int l_trash(lua_State* L)
 
     if (t == LUA_TLIGHTUSERDATA)
     {
-        void* msg = lua_touserdata(L, 1);
+        char* msg = (char*)lua_touserdata(L, 1);
         luaL_checkinteger(L, 2);
-
-        // TODO: delete
-        skynet_free(msg);
+        delete[] msg;
     }
     else
     {

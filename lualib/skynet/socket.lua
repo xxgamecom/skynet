@@ -193,8 +193,8 @@ socket_message[7] = function(socket_id, size)
 end
 
 skynet.register_protocol {
-    msg_ptype_name = "socket",
-    msg_ptype = skynet.SERVICE_MSG_TYPE_SOCKET, -- SERVICE_MSG_TYPE_SOCKET = 6
+    msg_type_name = "socket",
+    msg_type = skynet.SERVICE_MSG_TYPE_SOCKET, -- SERVICE_MSG_TYPE_SOCKET = 6
     unpack = socketdriver.unpack,
     dispatch = function(_, _, t, ...)
         socket_message[t](...)

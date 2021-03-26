@@ -51,7 +51,7 @@ public:
     virtual void signal(int signal) = 0;
 
     // snlua service message callback
-//    virtual int callback(service_context* svc_ctx, void* ud, int msg_ptype, int session_id, uint32_t src_svc_handle, const void* msg, size_t sz) = 0;
+//    virtual int callback(service_context* svc_ctx, void* ud, int svc_msg_type, int session_id, uint32_t src_svc_handle, const void* msg, size_t sz) = 0;
 
 };
 

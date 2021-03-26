@@ -135,7 +135,7 @@ static int _timing_yield(lua_State* L)
  * local ti = profile.stop()
  * ...
  */
-static int l_start(lua_State* L)
+static int l_profile_start(lua_State* L)
 {
     // have arguments
     if (lua_gettop(L) != 0)
@@ -192,7 +192,7 @@ static int l_start(lua_State* L)
  * local ti = profile.stop()
  * ...
  */
-static int l_stop(lua_State* L)
+static int l_profile_stop(lua_State* L)
 {
     // have argument
     if (lua_gettop(L) != 0)
@@ -244,10 +244,14 @@ static int l_stop(lua_State* L)
 }
 
 /**
+ * resume the coroutine
  *
  * arguments:
  * 1 coroutine                    - thread
  * 2 coroutine fucntion arguments -
+ *
+ * outputs:
+ *
  *
  * lua examples:
  * local profile = require "skynet.profile"
@@ -262,6 +266,15 @@ static int l_resume(lua_State* L)
     return _timing_resume(L);
 }
 
+/**
+ * suspend current coroutine
+ *
+ * arguments:
+ *
+ * lua examples:
+ * local profile = require "skynet.profile"
+ * func = profile.yield("SUSPEND")
+ */
 static int l_yield(lua_State* L)
 {
     lua_pushthread(L);
@@ -269,6 +282,9 @@ static int l_yield(lua_State* L)
     return _timing_yield(L);
 }
 
+/**
+ *
+ */
 static int l_resume_co(lua_State* L)
 {
     luaL_checktype(L, 2, LUA_TTHREAD);
@@ -277,6 +293,9 @@ static int l_resume_co(lua_State* L)
     return _timing_resume(L);
 }
 
+/**
+ *
+ */
 static int l_yield_co(lua_State* L)
 {
     luaL_checktype(L, 1, LUA_TTHREAD);
@@ -298,8 +317,8 @@ LUAMOD_API int luaopen_skynet_profile(lua_State* L)
     luaL_checkversion(L);
 
     luaL_Reg l[] = {
-        { "start",     l_start },
-        { "stop",      l_stop },
+        { "start",     l_profile_start },
+        { "stop",      l_profile_stop },
         { "resume",    l_resume },
         { "yield",     l_yield },
         { "resume_co", l_resume_co },

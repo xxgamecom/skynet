@@ -53,11 +53,11 @@ void logger_service::signal(int signal)
 
 }
 
-int logger_service::logger_cb(service_context* svc_ctx, void* ud, int msg_ptype, int session_id, uint32_t src_svc_handle, const void* msg, size_t sz)
+int logger_service::logger_cb(service_context* svc_ctx, void* ud, int svc_msg_type, int session_id, uint32_t src_svc_handle, const void* msg, size_t sz)
 {
     auto svc_ptr = (logger_service*)ud;
 
-    switch (msg_ptype)
+    switch (svc_msg_type)
     {
     case SERVICE_MSG_TYPE_SYSTEM:
         if (!svc_ptr->log_filename_.empty())

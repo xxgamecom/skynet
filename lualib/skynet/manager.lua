@@ -2,18 +2,19 @@ local skynet = require "skynet"
 local skynet_core = require "skynet.core"
 
 function skynet.launch(...)
-    local addr = skynet_core.command("LAUNCH", table.concat({...}," "))
+    local addr = skynet_core.command("LAUNCH", table.concat({ ... }, " "))
     if addr then
-        return tonumber("0x" .. string.sub(addr , 2))
+        return tonumber("0x" .. string.sub(addr, 2))
     end
 end
 
+--- @param name string|number
 function skynet.kill(name)
     if type(name) == "number" then
-        skynet.send(".launcher","lua","REMOVE",name, true)
-        name = skynet.address(name)
+        skynet.send(".launcher", "lua", "REMOVE", name, true)
+        name = skynet.to_address(name)
     end
-    skynet_core.command("KILL",name)
+    skynet_core.command("KILL", name)
 end
 
 function skynet.abort()
@@ -25,7 +26,7 @@ function skynet.register(name)
 end
 
 function skynet.name(name, handle)
-    skynet_core.command("NAME", name .. " " .. skynet.address(handle))
+    skynet_core.command("NAME", name .. " " .. skynet.to_address(handle))
 end
 
 local dispatch_message = skynet.dispatch_message
@@ -48,7 +49,7 @@ function skynet.forward_type(map, start_func)
     end)
 end
 
-function skynet.filter(f ,start_func)
+function skynet.filter(f, start_func)
     skynet_core.callback(function(...)
         dispatch_message(f(...))
     end)

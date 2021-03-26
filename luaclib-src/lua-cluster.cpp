@@ -456,7 +456,7 @@ static int l_packresponse(lua_State* L)
 {
     uint32_t session = (uint32_t)luaL_checkinteger(L, 1);
     // clusterd.lua:command.socket call l_packresponse,
-    // and the msg/sz is return by skynet.rawcall , so don't free(msg)
+    // and the msg/sz is return by skynet.call_raw , so don't free(msg)
     int ok = lua_toboolean(L, 2);
     void* msg;
     size_t sz;
