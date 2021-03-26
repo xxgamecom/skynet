@@ -138,7 +138,7 @@ local function add_watch_hook()
 end
 
 local function watch_proto(protoname, cond)
-    local proto = assert(replace_upvalue(skynet.register_protocol, "proto"), "Can't find proto table")
+    local proto = assert(replace_upvalue(skynet.register_svc_msg_handler, "proto"), "Can't find proto table")
     local p = proto[protoname]
     if p == nil then
         return "No " .. protoname

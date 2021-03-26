@@ -144,7 +144,7 @@ end
 
 -- for historical reasons, launcher support text command (for C service)
 
-skynet.register_protocol {
+skynet.register_svc_msg_handler({
     msg_type_name = "text",
     msg_type = skynet.SERVICE_MSG_TYPE_TEXT,
     unpack = skynet.tostring,
@@ -157,7 +157,7 @@ skynet.register_protocol {
             error("Invalid text command " .. cmd)
         end
     end,
-}
+})
 
 skynet.dispatch("lua", function(session, address, cmd, ...)
     cmd = string.upper(cmd)

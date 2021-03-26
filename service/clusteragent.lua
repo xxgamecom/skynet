@@ -122,12 +122,12 @@ local function dispatch_request(_, _, addr, session, msg, sz, padding, is_push)
 end
 
 skynet.start(function()
-    skynet.register_protocol {
+    skynet.register_svc_msg_handler({
         msg_type_name = "client",
         msg_type = skynet.SERVICE_MSG_TYPE_CLIENT,
         unpack = cluster.unpackrequest,
         dispatch = dispatch_request,
-    }
+    })
     -- fd can write, but don't read fd, the data package will forward from gate though client protocol.
     skynet.call(gate, "lua", "forward", fd)
 

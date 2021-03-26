@@ -61,7 +61,7 @@ local function init(skynet, export)
         function dbgcmd.RUN(source, filename, ...)
             local inject = require "skynet.inject"
             local args = table.pack(...)
-            local ok, output = inject(skynet, source, filename, args, export.dispatch, skynet.register_protocol)
+            local ok, output = inject(skynet, source, filename, args, export.dispatch, skynet.register_svc_msg_handler)
             collectgarbage "collect"
             skynet.ret(skynet.pack(ok, table.concat(output, "\n")))
         end
@@ -107,13 +107,13 @@ local function init(skynet, export)
         f(...)
     end
 
-    skynet.register_protocol {
+    skynet.register_svc_msg_handler({
         msg_type_name = "debug",
         msg_type = assert(skynet.SERVICE_MSG_TYPE_DEBUG),
         pack = assert(skynet.pack),
         unpack = assert(skynet.unpack),
         dispatch = _debug_dispatch,
-    }
+    })
 end
 
 local function reg_debugcmd(name, fn)

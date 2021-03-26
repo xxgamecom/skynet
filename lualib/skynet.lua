@@ -64,7 +64,7 @@ skynet.cache = require "skynet.codecache"
 ---
 --- register skynet service message handler
 --- @param svc_msg_handler table the service messsage handler
-function skynet.register_protocol(svc_msg_handler)
+function skynet.register_svc_msg_handler(svc_msg_handler)
     local msg_type_name = svc_msg_handler.msg_type_name
     local msg_type = svc_msg_handler.msg_type
     assert(svc_msg_handlers[msg_type_name] == nil and svc_msg_handlers[msg_type] == nil)
@@ -85,8 +85,8 @@ local unresponse = {}
 local wakeup_queue = {}
 local sleep_session = {}
 
-local watching_session = {} --
-local fork_queue = {} -- fork coroutine exec queue
+local watching_session = {}             --
+local fork_queue = {}                   -- fork coroutine exec queue
 
 -- thread suspend function
 local suspend
@@ -309,6 +309,10 @@ end
 -- thread functions
 -- ------------------------------------------------------
 
+---
+--- sleep the current thread
+--- @param ti
+--- @param token
 function skynet.sleep(ti, token)
     local session_id = skynet_core.intcommand("TIMEOUT", ti)
     assert(session_id)
@@ -325,10 +329,15 @@ function skynet.sleep(ti, token)
     end
 end
 
+---
+--- suspend the current thread
 function skynet.yield()
     return skynet.sleep(0)
 end
 
+---
+--- wait a thread
+--- @param token
 function skynet.wait(token)
     local session_id = skynet_core.gen_session_id()
     token = token or thread_running()
@@ -337,6 +346,9 @@ function skynet.wait(token)
     session_thread_map[session_id] = nil
 end
 
+---
+--- wakeup a thread
+--- @param token
 function skynet.wakeup(token)
     if sleep_session[token] then
         table_insert(wakeup_queue, token)
@@ -344,15 +356,19 @@ function skynet.wakeup(token)
     end
 end
 
+---
+--- fork a new thread & insert exec queue
+--- @param func function thread function
+--- @return thread
 function skynet.fork(func, ...)
-    local n = select("#", ...)
+    local arg_n = select("#", ...)
     local thread
-    if n == 0 then
+    if arg_n == 0 then
         thread = co_create(func)
     else
         local args = { ... }
         thread = co_create(function()
-            func(table.unpack(args, 1, n))
+            func(table.unpack(args, 1, arg_n))
         end)
     end
     table_insert(fork_queue, thread)
@@ -363,12 +379,14 @@ end
 --
 -- ------------------------------------------------------
 
--- self service handle
+---
+--- self service handle
 function skynet.self()
     return skynet_core.addresscommand("REG")
 end
 
--- query local serivce name
+---
+--- query local serivce name
 function skynet.localname(name)
     return skynet_core.addresscommand("QUERY", name)
 end
@@ -410,7 +428,7 @@ end
 
 local starttime
 
---
+---
 function skynet.starttime()
     if not starttime then
         starttime = skynet_core.intcommand("START_TIME")
@@ -418,7 +436,8 @@ function skynet.starttime()
     return starttime
 end
 
--- get current time (seconds)
+---
+--- get current time (seconds)
 function skynet.time()
     return skynet.now() / 100 + (starttime or skynet.starttime())
 end
@@ -462,9 +481,7 @@ function skynet.send_raw(addr, svc_msg_type, msg, msg_sz)
     return skynet_core.send(addr, svc_msg_handler.msg_type, 0, msg, msg_sz)
 end
 
---- new session id
-skynet.gen_session_id = assert(skynet_core.gen_session_id)
-
+---
 --- redirect the message to destination service
 --- @param dst_svc_handle number destination service handle
 --- @param src_svc_handle number source service handle
@@ -473,16 +490,18 @@ skynet.redirect = function(dst_svc_handle, src_svc_handle, svc_msg_type, ...)
     return skynet_core.redirect(dst_svc_handle, src_svc_handle, svc_msg_handlers[svc_msg_type].msg_type, ...)
 end
 
+skynet.gen_session_id = assert(skynet_core.gen_session_id)
 skynet.pack = assert(skynet_core.pack)
 skynet.pack_string = assert(skynet_core.pack_string)
 skynet.unpack = assert(skynet_core.unpack)
 skynet.tostring = assert(skynet_core.tostring)
 skynet.trash = assert(skynet_core.trash)
 
+--
 local function yield_call(svc_handle, session_id)
     watching_session[session_id] = svc_handle
     session_thread_map[session_id] = current_thread
-    local succ, msg, msg_sz = thread_yield "SUSPEND"
+    local succ, msg, msg_sz = thread_yield("SUSPEND")
     watching_session[session_id] = nil
     if not succ then
         error "call failed"
@@ -667,15 +686,23 @@ function skynet.response(pack)
     return response
 end
 
+---
+--- set/get service message dispatch function
+--- @param svc_msg_type
+--- @param func function service message dispatch function
+--- @return function
 function skynet.dispatch(svc_msg_type, func)
+    local old_dispatch_func = nil
     local svc_msg_handler = svc_msg_handlers[svc_msg_type]
     if func then
-        local ret = svc_msg_handler.dispatch
+        -- set
+        old_dispatch_func = svc_msg_handler.dispatch
         svc_msg_handler.dispatch = func
-        return ret
     else
-        return svc_msg_handler and svc_msg_handler.dispatch
+        -- get
+        old_dispatch_func = svc_msg_handler and svc_msg_handler.dispatch
     end
+    return old_dispatch_func
 end
 
 local function unknown_request(session_id, address, msg, msg_sz, svc_msg_type)
@@ -703,6 +730,12 @@ end
 
 local trace_source = {}
 
+---
+--- @param svc_msg_type
+--- @param msg
+--- @param msg_sz
+--- @param session_id
+--- @param src_svc_handle
 local function raw_dispatch_message(svc_msg_type, msg, msg_sz, session_id, src_svc_handle)
     --
     if svc_msg_type == skynet.SERVICE_MSG_TYPE_RESPONSE then
@@ -712,15 +745,20 @@ local function raw_dispatch_message(svc_msg_type, msg, msg_sz, session_id, src_s
         elseif thread == nil then
             unknown_response(session_id, src_svc_handle, msg, msg_sz)
         else
-            local tag = thread_trace_tag_map[thread]
-            if tag then
-                skynet_core.trace(tag, "resume")
+            -- trace
+            local trace_tag = thread_trace_tag_map[thread]
+            if trace_tag then
+                skynet_core.trace(trace_tag, "resume")
             end
+
+            --
             session_thread_map[session_id] = nil
             suspend(thread, thread_resume(thread, true, msg, msg_sz))
         end
     else
         local svc_msg_handler = svc_msg_handlers[svc_msg_type]
+
+        --
         if svc_msg_handler == nil then
             if svc_msg_type == skynet.SERVICE_MSG_TYPE_TRACE then
                 -- trace next request
@@ -733,23 +771,24 @@ local function raw_dispatch_message(svc_msg_type, msg, msg_sz, session_id, src_s
             return
         end
 
+        -- message dispatch
         local func = svc_msg_handler.dispatch
         if func then
             local thread = co_create(func)
             thread_session_map[thread] = session_id
             thread_svc_handle_map[thread] = src_svc_handle
-            local traceflag = svc_msg_handler.trace
-            if traceflag == false then
+            local need_trace = svc_msg_handler.trace
+            if need_trace == false then
                 -- force off
                 trace_source[src_svc_handle] = nil
                 thread_trace_tag_map[thread] = false
             else
-                local tag = trace_source[src_svc_handle]
-                if tag then
+                local trace_tag = trace_source[src_svc_handle]
+                if trace_tag then
                     trace_source[src_svc_handle] = nil
-                    skynet_core.trace(tag, "request")
-                    thread_trace_tag_map[thread] = tag
-                elseif traceflag then
+                    skynet_core.trace(trace_tag, "request")
+                    thread_trace_tag_map[thread] = trace_tag
+                elseif need_trace then
                     -- set current_thread for trace
                     current_thread = thread
                     skynet.trace()
@@ -767,8 +806,13 @@ local function raw_dispatch_message(svc_msg_type, msg, msg_sz, session_id, src_s
     end
 end
 
+---
+--- service message callback
 function skynet.dispatch_message(...)
+    --
     local succ, err = pcall(raw_dispatch_message, ...)
+
+    --
     while true do
         local thread = table_remove(fork_queue, 1)
         if thread == nil then
@@ -787,10 +831,16 @@ function skynet.dispatch_message(...)
     assert(succ, tostring(err))
 end
 
+---
+--- create a new service, will use launcher service to load a new service
+--- @param name string service name
 function skynet.newservice(name, ...)
     return skynet.call(".launcher", "lua", "LAUNCH", "snlua", name, ...)
 end
 
+---
+--- create a unique service, will use service_mgr service to load a unique service
+--- @param global boolean
 function skynet.uniqueservice(global, ...)
     if global == true then
         return assert(skynet.call(".service", "lua", "GLAUNCH", ...))
@@ -824,31 +874,31 @@ end
 skynet.log = skynet_core.log
 skynet.tracelog = skynet_core.trace
 
--- true: force on
--- false: force off
--- nil: optional (use skynet.trace() to trace one message)
+--- enable/disable proto trace
+--- @param svc_msg_type
+--- @param flag boolean force on/off, true, false, nil: optional (use skynet.trace() to trace one message)
 function skynet.traceproto(svc_msg_type, flag)
     local svc_msg_handler = assert(svc_msg_handlers[svc_msg_type])
     svc_msg_handler.trace = flag
 end
 
 -- ------------------------------------------------------
--- register protocol
+-- register servie message handler
 -- ------------------------------------------------------
 
-skynet.register_protocol({
+skynet.register_svc_msg_handler({
     msg_type_name = "lua",
     msg_type = skynet.SERVICE_MSG_TYPE_LUA,
     pack = skynet.pack,
     unpack = skynet.unpack,
 })
 
-skynet.register_protocol({
+skynet.register_svc_msg_handler({
     msg_type_name = "response",
     msg_type = skynet.SERVICE_MSG_TYPE_RESPONSE,
 })
 
-skynet.register_protocol({
+skynet.register_svc_msg_handler({
     msg_type_name = "error",
     msg_type = skynet.SERVICE_MSG_TYPE_ERROR,
     unpack = function(...)
@@ -964,22 +1014,26 @@ function skynet.exit()
     thread_yield("QUIT")
 end
 
--- query whether the service is blocked
+---
+--- query whether the service is blocked
 function skynet.endless()
     return (skynet_core.intcommand("STAT", "endless") == 1)
 end
 
--- query the service message queue length
+---
+--- query the service message queue length
 function skynet.mqlen()
     return skynet_core.intcommand("STAT", "mqlen")
 end
 
--- query the service status
+---
+--- query the service status
+--- @param what string
 function skynet.stat(what)
     return skynet_core.intcommand("STAT", what)
 end
 
---
+---
 function skynet.task(ret)
     if ret == nil then
         local t = 0

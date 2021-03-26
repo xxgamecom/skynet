@@ -9,12 +9,12 @@ local G = interface_g and require(interface_g) or { require = function()
 end }
 interface_g = nil
 
-skynet.register_protocol {
+skynet.register_svc_msg_handler({
     msg_type_name = "snax",
     msg_type = skynet.SERVICE_MSG_TYPE_SNAX,
     pack = skynet.pack,
     unpack = skynet.unpack,
-}
+})
 
 function snax.interface(name)
     if typeclass[name] then

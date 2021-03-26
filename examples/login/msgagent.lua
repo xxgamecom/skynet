@@ -1,6 +1,6 @@
 local skynet = require "skynet"
 
-skynet.register_protocol {
+skynet.register_svc_msg_handler {
     msg_type_name = "client",
     msg_type = skynet.SERVICE_MSG_TYPE_CLIENT,
     unpack = skynet.tostring,

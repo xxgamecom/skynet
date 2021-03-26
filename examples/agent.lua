@@ -43,7 +43,7 @@ local function send_package(pack)
     socket.write(client_fd, package)
 end
 
-skynet.register_protocol {
+skynet.register_svc_msg_handler({
     msg_type_name = "client",
     msg_type = skynet.SERVICE_MSG_TYPE_CLIENT,
     unpack = function(msg, sz)
@@ -67,7 +67,7 @@ skynet.register_protocol {
             error "This example doesn't support request client"
         end
     end
-}
+})
 
 function CMD.start(conf)
     local fd = conf.client

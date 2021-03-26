@@ -4,13 +4,13 @@ require "skynet.manager"    -- inject skynet.forward_type
 
 local node, address = ...
 
-skynet.register_protocol {
+skynet.register_svc_msg_handler({
     msg_type_name = "system",
     msg_type = skynet.SERVICE_MSG_TYPE_SYSTEM,
     unpack = function(...)
         return ...
     end,
-}
+})
 
 local forward_map = {
     [skynet.SERVICE_MSG_TYPE_SNAX] = skynet.SERVICE_MSG_TYPE_SYSTEM,

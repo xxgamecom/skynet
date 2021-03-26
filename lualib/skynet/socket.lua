@@ -192,14 +192,14 @@ socket_message[7] = function(socket_id, size)
     end
 end
 
-skynet.register_protocol {
+skynet.register_svc_msg_handler({
     msg_type_name = "socket",
     msg_type = skynet.SERVICE_MSG_TYPE_SOCKET, -- SERVICE_MSG_TYPE_SOCKET = 6
     unpack = socketdriver.unpack,
     dispatch = function(_, _, t, ...)
         socket_message[t](...)
     end
-}
+})
 
 local function connect(socket_id, func)
     local newbuffer
@@ -212,8 +212,8 @@ local function connect(socket_id, func)
         pool = newbuffer and {},
         connected = false,
         connecting = true,
-        read_required = false,  --
-        co = false,             -- thread id
+        read_required = false, --
+        co = false, -- thread id
         callback = func,
         protocol = "TCP",
     }

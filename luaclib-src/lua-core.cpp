@@ -329,7 +329,7 @@ static int _traceback(lua_State* L)
 /**
  * service message callback
  * 最终会调用Lua层的dispatch_message，参数依次是：type, msg, sz, session, src_svc_handle。
- * 所以，snlua类型的服务收到消息时最终会调用Lua层的消息回调函数skynet.dispatch_message。
+ * 所以，snlua类型的服务收到消息时最终会调用Lua层的消息回调函数 skynet.dispatch_message。
  *
  * @return 0 need delete msg, 1 don't delete msg
  */
@@ -627,7 +627,7 @@ static int l_trace(lua_State* L)
  * lua examples:
  * 1) c.tostring(msg, sz)
  * 2) skynet.tostring = assert(c.tostring)
- * 3) skynet.register_protocol {
+ * 3) skynet.register_svc_msg_handler {
  *        unpack = skynet.tostring,
  *        ...
  *    }
