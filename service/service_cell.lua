@@ -22,6 +22,11 @@ end
 
 skynet.start(function()
     skynet.dispatch("lua", function(_, _, cmd, ...)
-        CMD[cmd](...)
+        local f = CMD[cmd]
+        if f then
+            f(...)
+        else
+            skynet.log(string.format("Invalid command %s", cmd))
+        end
     end)
 end)

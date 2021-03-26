@@ -37,6 +37,8 @@ function service.new(name, mainfunc, ...)
     return address
 end
 
+---
+--- @param name string
 function service.query(name)
     if not cache[name] then
         cache[name] = skynet.call(get_provider(), "lua", "query", name)

@@ -40,7 +40,7 @@ local function wait_for(name, func, ...)
     if type(s) == "number" then
         return s
     end
-    local co = coroutine.running()
+    local current_thread = coroutine.running()
 
     if s == nil then
         s = {}
@@ -57,13 +57,13 @@ local function wait_for(name, func, ...)
         s.launch = {
             session = session_id,
             source = src_svc_handle,
-            co = co,
+            co = current_thread,
         }
         return request(name, func, ...)
     end
 
     table.insert(s, {
-        co = co,
+        co = current_thread,
         session = session_id,
         source = src_svc_handle,
     })
@@ -182,18 +182,19 @@ skynet.start(function()
     skynet.dispatch("lua", function(session, address, cmd, ...)
         local f = CMD[cmd]
         if f == nil then
-            skynet.ret(skynet.pack(nil, "Invalid command " .. cmd))
+            skynet.ret_pack(nil, "Invalid command " .. cmd)
             return
         end
 
         local ok, r = pcall(f, ...)
-
         if ok then
-            skynet.ret(skynet.pack(r))
+            skynet.ret_pack(r)
         else
-            skynet.ret(skynet.pack(nil, r))
+            skynet.ret_pack(nil, r)
         end
     end)
+
+    --
     local handle = skynet.localname(".service")
     if handle then
         skynet.log(".service is already register by ", skynet.to_address(handle))
