@@ -646,7 +646,10 @@ static int l_concat(lua_State* L)
     return 2;
 }
 
-static int l_isname(lua_State* L)
+/**
+ *
+ */
+static int l_is_name(lua_State* L)
 {
     const char* name = lua_tostring(L, 1);
     if (name && name[0] == '@')
@@ -658,18 +661,25 @@ static int l_isname(lua_State* L)
     return 0;
 }
 
-static int l_nodename(lua_State* L)
+/**
+ * get cluster node name
+ *
+ * arguments:
+ *
+ * outputs:
+ * 1 - string, cluster node name, hostname + pid | noname + pid
+ *
+ * lua examples:
+ * local node_name = cluster_core.nodename()
+ */
+static int l_node_name(lua_State* L)
 {
-    pid_t pid = getpid();
+    pid_t pid = ::getpid();
     char hostname[256];
-    if (gethostname(hostname, sizeof(hostname)) == 0)
-    {
+    if (::gethostname(hostname, sizeof(hostname)) == 0)
         lua_pushfstring(L, "%s%d", hostname, (int)pid);
-    }
     else
-    {
         lua_pushfstring(L, "noname%d", (int)pid);
-    }
 
     return 1;
 }
@@ -691,8 +701,8 @@ static const luaL_Reg cluster_funcs[] = {
     { "unpackresponse", l_unpackresponse },
     { "append",         l_append },
     { "concat",         l_concat },
-    { "isname",         l_isname },
-    { "nodename",       l_nodename },
+    { "isname",         l_is_name },
+    { "nodename",       l_node_name },
 
     { nullptr,          nullptr },
 };

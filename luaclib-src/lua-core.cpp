@@ -329,7 +329,7 @@ static int _traceback(lua_State* L)
 /**
  * service message callback
  * 最终会调用Lua层的dispatch_message，参数依次是：type, msg, sz, session, src_svc_handle。
- * 所以，snlua类型的服务收到消息时最终会调用Lua层的消息回调函数 skynet.dispatch_message。
+ * 所以，snlua类型的服务收到消息时最终会调用Lua层的消息回调函数 skynet.handle_service_message。
  *
  * @return 0 need delete msg, 1 don't delete msg
  */
@@ -405,7 +405,7 @@ static int _forward_cb(skynet::service_context* svc_ctx, void* ud, int type, int
  * 2 message forward mode   - boolean
  *
  * lua examples:
- * c.callback(skynet.dispatch_message)
+ * c.callback(skynet.handle_service_message)
  * c.callback(function(ptype, msg, sz, ...) ... end, true)
  */
 static int l_set_service_callback(lua_State* L)

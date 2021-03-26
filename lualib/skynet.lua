@@ -82,10 +82,10 @@ local thread_trace_tag_map = {}         -- key: coroutine, value: trace tag (for
 --
 local unresponse = {}
 
-local wakeup_queue = {}
-local sleep_session = {}
+local wakeup_queue = {}                 --
+local sleep_session_map = {}            -- key: coroutine or token, value: session_id
 
-local watching_session = {}             --
+local watching_session_map = {}         -- key: session_id, value: service handle
 local fork_queue = {}                   -- fork coroutine exec queue
 
 -- thread suspend function
@@ -114,14 +114,14 @@ local function _error_dispatch(error_session_id, error_src_svc_handle)
                 unresponse[res] = nil
             end
         end
-        for session_id, svc_handle in pairs(watching_session) do
+        for session_id, svc_handle in pairs(watching_session_map) do
             if svc_handle == error_src_svc_handle then
                 table_insert(error_queue, session_id)
             end
         end
     else
         -- capture an error for error_session_id
-        if watching_session[error_session_id] then
+        if watching_session_map[error_session_id] then
             table_insert(error_queue, error_session_id)
         end
     end
@@ -161,10 +161,10 @@ local function co_create(func)
                 end
 
                 -- coroutine exit
-                local tag = thread_trace_tag_map[thread]
-                if tag ~= nil then
-                    if tag then
-                        skynet_core.trace(tag, "end")
+                local trace_tag = thread_trace_tag_map[thread]
+                if trace_tag ~= nil then
+                    if trace_tag then
+                        skynet_core.trace(trace_tag, "end")
                     end
                     thread_trace_tag_map[thread] = nil
                 end
@@ -194,12 +194,12 @@ end
 local function dispatch_wakeup()
     local token = table_remove(wakeup_queue, 1)
     if token then
-        local session_id = sleep_session[token]
+        local session_id = sleep_session_map[token]
         if session_id then
             local thread = session_thread_map[session_id]
-            local tag = thread_trace_tag_map[thread]
-            if tag then
-                skynet_core.trace(tag, "resume")
+            local trace_tag = thread_trace_tag_map[thread]
+            if trace_tag then
+                skynet_core.trace(trace_tag, "resume")
             end
             session_thread_map[session_id] = "BREAK"
             return suspend(thread, thread_resume(thread, false, "BREAK"))
@@ -207,8 +207,12 @@ local function dispatch_wakeup()
     end
 end
 
--- suspend is local function
-function suspend(thread, result, command)
+---
+--- suspend is local function
+--- @param thread
+--- @param result
+--- @param cmd
+function suspend(thread, result, cmd)
     if not result then
         local session_id = thread_session_map[thread]
         if session_id then
@@ -216,9 +220,9 @@ function suspend(thread, result, command)
             local addr = thread_svc_handle_map[thread]
             if session_id ~= 0 then
                 -- only call response error
-                local tag = thread_trace_tag_map[thread]
-                if tag then
-                    skynet_core.trace(tag, "error")
+                local trace_tag = thread_trace_tag_map[thread]
+                if trace_tag then
+                    skynet_core.trace(trace_tag, "error")
                 end
                 skynet_core.send(addr, skynet.SERVICE_MSG_TYPE_ERROR, session_id, "")
             end
@@ -226,24 +230,26 @@ function suspend(thread, result, command)
         end
         thread_svc_handle_map[thread] = nil
         thread_trace_tag_map[thread] = nil
+
+        -- trigger command "SUSPEND"
         skynet.fork(function()
-        end)    -- trigger command "SUSPEND"
-        error(traceback(thread, tostring(command)))
+        end)
+        error(traceback(thread, tostring(cmd)))
     end
-    if command == "SUSPEND" then
+    if cmd == "SUSPEND" then
         dispatch_wakeup()
         dispatch_error_queue()
-    elseif command == "QUIT" then
+    elseif cmd == "QUIT" then
         -- service exit
         return
-    elseif command == "USER" then
+    elseif cmd == "USER" then
         -- See skynet.coutine for detail
         error("Call skynet.coroutine.yield out of skynet.coroutine.resume\n" .. traceback(thread))
-    elseif command == nil then
+    elseif cmd == nil then
         -- debug trace
         return
     else
-        error("Unknown command : " .. command .. "\n" .. traceback(thread))
+        error("Unknown command : " .. cmd .. "\n" .. traceback(thread))
     end
 end
 
@@ -294,13 +300,16 @@ end
 
 --
 local function suspend_sleep(session_id, token)
-    local tag = thread_trace_tag_map[current_thread]
-    if tag then
-        skynet_core.trace(tag, "sleep", 2)
+    -- trace
+    local trace_tag = thread_trace_tag_map[current_thread]
+    if trace_tag then
+        skynet_core.trace(trace_tag, "sleep", 2)
     end
+
+    --
     session_thread_map[session_id] = current_thread
-    assert(sleep_session[token] == nil, "token duplicative")
-    sleep_session[token] = session_id
+    assert(sleep_session_map[token] == nil, "token duplicative")
+    sleep_session_map[token] = session_id
 
     return thread_yield("SUSPEND")
 end
@@ -310,15 +319,18 @@ end
 -- ------------------------------------------------------
 
 ---
---- sleep the current thread
+--- sleep current thread
 --- @param ti
 --- @param token
 function skynet.sleep(ti, token)
+    -- set timer
     local session_id = skynet_core.intcommand("TIMEOUT", ti)
     assert(session_id)
+
+    --
     token = token or thread_running()
     local succ, ret = suspend_sleep(session_id, token)
-    sleep_session[token] = nil
+    sleep_session_map[token] = nil
     if succ then
         return
     end
@@ -342,15 +354,15 @@ function skynet.wait(token)
     local session_id = skynet_core.gen_session_id()
     token = token or thread_running()
     local ret, msg = suspend_sleep(session_id, token)
-    sleep_session[token] = nil
+    sleep_session_map[token] = nil
     session_thread_map[session_id] = nil
 end
 
 ---
 --- wakeup a thread
---- @param token
+--- @param token thread
 function skynet.wakeup(token)
-    if sleep_session[token] then
+    if sleep_session_map[token] then
         table_insert(wakeup_queue, token)
         return true
     end
@@ -358,6 +370,7 @@ end
 
 ---
 --- fork a new thread & insert exec queue
+--- the fork thread will exec in handle_service_message
 --- @param func function thread function
 --- @return thread
 function skynet.fork(func, ...)
@@ -499,10 +512,10 @@ skynet.trash = assert(skynet_core.trash)
 
 --
 local function yield_call(svc_handle, session_id)
-    watching_session[session_id] = svc_handle
+    watching_session_map[session_id] = svc_handle
     session_thread_map[session_id] = current_thread
     local succ, msg, msg_sz = thread_yield("SUSPEND")
-    watching_session[session_id] = nil
+    watching_session_map[session_id] = nil
     if not succ then
         error "call failed"
     end
@@ -639,14 +652,19 @@ function skynet.context()
     return session_id, svc_handle
 end
 
+---
+---
 function skynet.ignoreret()
     -- We use session for other uses
     thread_session_map[current_thread] = nil
 end
 
+---
+--- @param pack
 function skynet.response(pack)
     pack = pack or skynet.pack
 
+    --
     local co_session_id = assert(thread_session_map[current_thread], "no session")
     thread_session_map[current_thread] = nil
     local co_svc_handle = thread_svc_handle_map[current_thread]
@@ -654,6 +672,8 @@ function skynet.response(pack)
         --  do not response when session_id == 0 (send)
         return function() end
     end
+
+    --
     local function response(ok, ...)
         if ok == "TEST" then
             return unresponse[response] ~= nil
@@ -710,6 +730,8 @@ local function unknown_request(session_id, address, msg, msg_sz, svc_msg_type)
     error(string.format("Unknown session : %d from %x", session_id, address))
 end
 
+---
+--- @param unknown
 function skynet.dispatch_unknown_request(unknown)
     local prev = unknown_request
     unknown_request = unknown
@@ -721,6 +743,8 @@ local function unknown_response(session_id, address, msg, msg_sz)
     error(string.format("Unknown session : %d from %x", session_id, address))
 end
 
+---
+--- @param unknown
 function skynet.dispatch_unknown_response(unknown)
     local prev = unknown_response
     unknown_response = unknown
@@ -807,17 +831,19 @@ local function raw_dispatch_message(svc_msg_type, msg, msg_sz, session_id, src_s
 end
 
 ---
---- service message callback
-function skynet.dispatch_message(...)
-    --
+--- handle service message (callback)
+function skynet.handle_service_message(...)
+    -- do dispatch
     local succ, err = pcall(raw_dispatch_message, ...)
 
-    --
+    -- do fork thread
     while true do
         local thread = table_remove(fork_queue, 1)
         if thread == nil then
             break
         end
+
+        -- exec fork thread
         local fork_succ, fork_err = pcall(suspend, thread, thread_resume(thread))
         if not fork_succ then
             if succ then
@@ -833,7 +859,7 @@ end
 
 ---
 --- create a new service, will use launcher service to load a new service
---- @param name string service name
+--- @param name string lua service mod filename
 function skynet.newservice(name, ...)
     return skynet.call(".launcher", "lua", "LAUNCH", "snlua", name, ...)
 end
@@ -979,7 +1005,10 @@ end
 --- start service
 --- @param start_func function service start function
 function skynet.start(start_func)
-    skynet_core.callback(skynet.dispatch_message)
+    -- set service message callback
+    skynet_core.callback(skynet.handle_service_message)
+
+    -- start
     init_thread = skynet.timeout(0, function()
         skynet.init_service(start_func)
         init_thread = nil
@@ -1003,7 +1032,7 @@ function skynet.exit()
     end
     -- report the sources I call but haven't return
     local tmp = {}
-    for session_id, svc_handle in pairs(watching_session) do
+    for session_id, svc_handle in pairs(watching_session_map) do
         tmp[svc_handle] = true
     end
     for svc_handle in pairs(tmp) do
@@ -1034,6 +1063,7 @@ function skynet.stat(what)
 end
 
 ---
+--- @param ret
 function skynet.task(ret)
     if ret == nil then
         local t = 0
@@ -1113,7 +1143,7 @@ end
 -- Inject internal debug framework
 local skynet_debug = require "skynet.debug"
 skynet_debug.init(skynet, {
-    dispatch = skynet.dispatch_message,
+    dispatch = skynet.handle_service_message,
     suspend = suspend,
 })
 

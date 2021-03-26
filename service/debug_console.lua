@@ -7,13 +7,14 @@ local memory = require "skynet.memory"
 local httpd = require "http.httpd"
 local sockethelper = require "http.sockethelper"
 
+--
 local arg = table.pack(...)
 assert(arg.n <= 2)
 local ip = (arg.n == 2 and arg[1] or "127.0.0.1")
 local port = tonumber(arg[arg.n])
 
-local COMMAND = {}
-local COMMANDX = {}
+local CMD = {}
+local CMD_X = {}
 
 local function format_table(t)
     local index = {}
@@ -62,12 +63,12 @@ end
 local function docmd(cmdline, print, fd)
     local split = split_cmdline(cmdline)
     local command = split[1]
-    local cmd = COMMAND[command]
+    local cmd = CMD[command]
     local ok, list
     if cmd then
         ok, list = pcall(cmd, table.unpack(split, 2))
     else
-        cmd = COMMANDX[command]
+        cmd = CMD_X[command]
         if cmd then
             split.fd = fd
             split[1] = cmdline
@@ -137,7 +138,7 @@ skynet.start(function()
     end)
 end)
 
-function COMMAND.help()
+function CMD.help()
     return {
         help = "This help message",
         list = "List all the service",
@@ -169,11 +170,11 @@ function COMMAND.help()
     }
 end
 
-function COMMAND.clearcache()
+function CMD.clearcache()
     codecache.clear()
 end
 
-function COMMAND.start(...)
+function CMD.start(...)
     local ok, addr = pcall(skynet.newservice, ...)
     if ok then
         if addr then
@@ -186,7 +187,7 @@ function COMMAND.start(...)
     end
 end
 
-function COMMAND.log(...)
+function CMD.log(...)
     local ok, addr = pcall(skynet.call, ".launcher", "lua", "LOGLAUNCH", "snlua", ...)
     if ok then
         if addr then
@@ -199,7 +200,7 @@ function COMMAND.log(...)
     end
 end
 
-function COMMAND.snax(...)
+function CMD.snax(...)
     local ok, s = pcall(snax.newservice, ...)
     if ok then
         local addr = s.handle
@@ -209,7 +210,7 @@ function COMMAND.snax(...)
     end
 end
 
-function COMMAND.service()
+function CMD.service()
     return skynet.call("SERVICE", "lua", "LIST")
 end
 
@@ -223,31 +224,31 @@ local function adjust_address(address)
     return address
 end
 
-function COMMAND.list()
+function CMD.list()
     return skynet.call(".launcher", "lua", "LIST")
 end
 
-function COMMAND.stat()
+function CMD.stat()
     return skynet.call(".launcher", "lua", "STAT")
 end
 
-function COMMAND.mem()
+function CMD.mem()
     return skynet.call(".launcher", "lua", "MEM")
 end
 
-function COMMAND.kill(address)
+function CMD.kill(address)
     return skynet.call(".launcher", "lua", "KILL", address)
 end
 
-function COMMAND.gc()
+function CMD.gc()
     return skynet.call(".launcher", "lua", "GC")
 end
 
-function COMMAND.exit(address)
+function CMD.exit(address)
     skynet.send(adjust_address(address), "debug", "EXIT")
 end
 
-function COMMAND.inject(address, filename, ...)
+function CMD.inject(address, filename, ...)
     address = adjust_address(address)
     local f = io.open(filename, "rb")
     if not f then
@@ -262,22 +263,22 @@ function COMMAND.inject(address, filename, ...)
     return output
 end
 
-function COMMAND.task(address)
+function CMD.task(address)
     address = adjust_address(address)
     return skynet.call(address, "debug", "TASK")
 end
 
-function COMMAND.uniqtask(address)
+function CMD.uniqtask(address)
     address = adjust_address(address)
     return skynet.call(address, "debug", "UNIQTASK")
 end
 
-function COMMAND.info(address, ...)
+function CMD.info(address, ...)
     address = adjust_address(address)
     return skynet.call(address, "debug", "INFO", ...)
 end
 
-function COMMANDX.debug(cmd)
+function CMD_X.debug(cmd)
     local address = adjust_address(cmd[2])
     local agent = skynet.newservice "debug_agent"
     local stop
@@ -316,17 +317,17 @@ function COMMANDX.debug(cmd)
     end
 end
 
-function COMMAND.logon(address)
+function CMD.logon(address)
     address = adjust_address(address)
     skynet_core.command("LOGON", skynet.to_address(address))
 end
 
-function COMMAND.logoff(address)
+function CMD.logoff(address)
     address = adjust_address(address)
     skynet_core.command("LOGOFF", skynet.to_address(address))
 end
 
-function COMMAND.signal(address, sig)
+function CMD.signal(address, sig)
     address = skynet.to_address(adjust_address(address))
     if sig then
         skynet_core.command("SIGNAL", string.format("%s %d", address, sig))
@@ -335,7 +336,7 @@ function COMMAND.signal(address, sig)
     end
 end
 
-function COMMAND.cmem()
+function CMD.cmem()
     local info = memory.info()
     local tmp = {}
     for k, v in pairs(info) do
@@ -347,7 +348,7 @@ function COMMAND.cmem()
     return tmp
 end
 
-function COMMAND.ping(address)
+function CMD.ping(address)
     address = adjust_address(address)
     local ti = skynet.now()
     skynet.call(address, "debug", "PING")
@@ -359,7 +360,7 @@ local function toboolean(x)
     return x and (x == "true" or x == "on")
 end
 
-function COMMAND.trace(address, proto, flag)
+function CMD.trace(address, proto, flag)
     address = adjust_address(address)
     if flag == nil then
         if proto == "on" or proto == "off" then
@@ -371,7 +372,7 @@ function COMMAND.trace(address, proto, flag)
     skynet.call(address, "debug", "TRACELOG", proto, flag)
 end
 
-function COMMANDX.call(cmd)
+function CMD_X.call(cmd)
     local address = adjust_address(cmd[2])
     local cmdline = assert(cmd[1]:match("%S+%s+%S+%s(.+)"), "need arguments")
     local args_func = assert(load("return " .. cmdline, "debug console", "t", {}), "Invalid arguments")
@@ -422,7 +423,7 @@ local function convert_stat(info)
     info.wtime = time(info.wtime)
 end
 
-function COMMAND.netstat()
+function CMD.netstat()
     local stat = socket.netstat()
     for _, info in ipairs(stat) do
         convert_stat(info)
@@ -430,11 +431,11 @@ function COMMAND.netstat()
     return stat
 end
 
-function COMMAND.dumpheap()
+function CMD.dumpheap()
     memory.dumpheap()
 end
 
-function COMMAND.profactive(flag)
+function CMD.profactive(flag)
     if flag ~= nil then
         if flag == "on" or flag == "off" then
             flag = toboolean(flag)

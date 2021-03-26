@@ -5,7 +5,7 @@ local cache = {}
 local provider
 
 local function get_provider()
-    provider = provider or skynet.uniqueservice "service_provider"
+    provider = provider or skynet.uniqueservice("service_provider")
     return provider
 end
 
@@ -15,6 +15,9 @@ local function check(func)
     assert(debug.getupvalue(func, 1) == "_ENV")
 end
 
+---
+--- @param name
+--- @param mainfunc function
 function service.new(name, mainfunc, ...)
     local p = get_provider()
     local addr, booting = skynet.call(p, "lua", "test", name)
