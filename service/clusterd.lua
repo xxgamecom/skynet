@@ -137,7 +137,7 @@ function CMD.sender(source, node)
 end
 
 function CMD.senders(source)
-    skynet.retpack(node_sender)
+    skynet.ret_pack(node_sender)
 end
 
 local proxy = {}

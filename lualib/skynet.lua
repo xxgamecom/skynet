@@ -400,7 +400,7 @@ function skynet.trace(info)
 end
 
 --- get trace current thread info
-function skynet.tracetag()
+function skynet.trace_tag()
     return thread_trace_tag_map[current_thread]
 end
 
@@ -442,12 +442,22 @@ end
 -- ------------------------------------------------------
 
 
+---
+--- send message to destination service
+--- @param addr string|number service name or service handle
+--- @param svc_msg_type string service message type, e.g. "lua", "debug", ...
 function skynet.send(addr, svc_msg_type, ...)
     local svc_msg_handler = svc_msg_handlers[svc_msg_type]
     return skynet_core.send(addr, svc_msg_handler.msg_type, 0, svc_msg_handler.pack(...))
 end
 
-function skynet.rawsend(addr, svc_msg_type, msg, msg_sz)
+---
+--- send message to destination service
+--- @param addr string|number service name or service handle
+--- @param svc_msg_type string service message type, e.g. "lua", "debug", ...
+--- @param msg string message
+--- @param msg_sz number message size
+function skynet.send_raw(addr, svc_msg_type, msg, msg_sz)
     local svc_msg_handler = svc_msg_handlers[svc_msg_type]
     return skynet_core.send(addr, svc_msg_handler.msg_type, 0, msg, msg_sz)
 end
@@ -456,6 +466,9 @@ end
 skynet.gen_session_id = assert(skynet_core.gen_session_id)
 
 --- redirect the message to destination service
+--- @param dst_svc_handle number destination service handle
+--- @param src_svc_handle number source service handle
+--- @param svc_msg_type string service message type, e.g. "lua", "debug", ...
 skynet.redirect = function(dst_svc_handle, src_svc_handle, svc_msg_type, ...)
     return skynet_core.redirect(dst_svc_handle, src_svc_handle, svc_msg_handlers[svc_msg_type].msg_type, ...)
 end
@@ -482,17 +495,21 @@ end
 --- @param addr string|number service name or service handle
 --- @param svc_msg_type string service message type, e.g. "lua", "debug", ...
 function skynet.call(addr, svc_msg_type, ...)
-    local tag = thread_trace_tag_map[current_thread]
-    if tag then
-        skynet_core.trace(tag, "call", 2)
-        skynet_core.send(addr, skynet.SERVICE_MSG_TYPE_TRACE, 0, tag)
+    -- trace call
+    local trace_tag = thread_trace_tag_map[current_thread]
+    if trace_tag then
+        skynet_core.trace(trace_tag, "call", 2)
+        skynet_core.send(addr, skynet.SERVICE_MSG_TYPE_TRACE, 0, trace_tag)
     end
 
+    -- call
     local svc_msg_handler = svc_msg_handlers[svc_msg_type]
     local session_id = skynet_core.send(addr, svc_msg_handler.msg_type, nil, svc_msg_handler.pack(...))
     if session_id == nil then
         error("call to invalid address " .. skynet.to_address(addr))
     end
+
+    -- suspend thread
     return svc_msg_handler.unpack(yield_call(addr, session_id))
 end
 
@@ -503,13 +520,18 @@ end
 --- @param msg string message
 --- @param msg_sz number message size
 function skynet.call_raw(addr, svc_msg_type, msg, msg_sz)
-    local tag = thread_trace_tag_map[current_thread]
-    if tag then
-        skynet_core.trace(tag, "call", 2)
-        skynet_core.send(addr, skynet.SERVICE_MSG_TYPE_TRACE, 0, tag)
+    -- trace call
+    local trace_tag = thread_trace_tag_map[current_thread]
+    if trace_tag then
+        skynet_core.trace(trace_tag, "call", 2)
+        skynet_core.send(addr, skynet.SERVICE_MSG_TYPE_TRACE, 0, trace_tag)
     end
+
+    -- call
     local svc_msg_handler = svc_msg_handlers[svc_msg_type]
     local session_id = assert(skynet_core.send(addr, svc_msg_handler.msg_type, nil, msg, msg_sz), "call to invalid address")
+
+    -- suspend thread
     return yield_call(addr, session_id)
 end
 
@@ -521,34 +543,49 @@ end
 --- @param msg string message
 --- @param msg_sz number message size
 function skynet.call_trace(tag, addr, svc_msg_type, msg, msg_sz)
+    --
     skynet_core.trace(tag, "call trace begin")
+
+    -- trace call
     skynet_core.send(addr, skynet.SERVICE_MSG_TYPE_TRACE, 0, tag)
+
+    -- call
     local svc_msg_handler = svc_msg_handlers[svc_msg_type]
     local session_id = assert(skynet_core.send(addr, svc_msg_handler.msg_type, nil, msg, msg_sz), "call to invalid address")
+
+    -- suspend thread
     local msg, msg_sz = yield_call(addr, session_id)
+
+    --
     skynet_core.trace(tag, "call trace end")
+
     return msg, msg_sz
 end
 
 ---
---- release message
---- @param msg string message
---- @param msg_sz number message size
+--- service response
+--- @param msg string response message
+--- @param msg_sz number response message size
 --- @return
 function skynet.ret(msg, msg_sz)
+    --
     msg = msg or ""
+
+    -- trace response
     local trace_tag = thread_trace_tag_map[current_thread]
     if trace_tag then
         skynet_core.trace(trace_tag, "response")
     end
 
+    --
     local co_session_id = thread_session_map[current_thread]
     thread_session_map[current_thread] = nil
     if co_session_id == 0 then
         if msg_sz ~= nil then
             skynet_core.trash(msg, msg_sz)
         end
-        return false    -- send don't need ret
+        -- send don't need ret
+        return false
     end
 
     local co_svc_handle = thread_svc_handle_map[current_thread]
@@ -556,7 +593,7 @@ function skynet.ret(msg, msg_sz)
         error "No session"
     end
 
-    --
+    -- response
     local ret = skynet_core.send(co_svc_handle, skynet.SERVICE_MSG_TYPE_RESPONSE, co_session_id, msg, msg_sz)
     if ret then
         return true
@@ -566,6 +603,12 @@ function skynet.ret(msg, msg_sz)
     end
 
     return false
+end
+
+---
+---
+function skynet.ret_pack(...)
+    return skynet.ret(skynet.pack(...))
 end
 
 ---
@@ -622,10 +665,6 @@ function skynet.response(pack)
     unresponse[response] = co_svc_handle
 
     return response
-end
-
-function skynet.retpack(...)
-    return skynet.ret(skynet.pack(...))
 end
 
 function skynet.dispatch(svc_msg_type, func)
@@ -760,6 +799,10 @@ function skynet.uniqueservice(global, ...)
     end
 end
 
+---
+--- query service
+--- @param global boolean
+--- @return
 function skynet.queryservice(global, ...)
     if global == true then
         return assert(skynet.call(".service", "lua", "GQUERY", ...))

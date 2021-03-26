@@ -91,7 +91,7 @@ local function dispatch_request(_, _, addr, session, msg, sz, padding, is_push)
         end
         if addr then
             if is_push then
-                skynet.rawsend(addr, "lua", msg, sz)
+                skynet.send_raw(addr, "lua", msg, sz)
                 return    -- no response
             else
                 if tracetag then

@@ -15,16 +15,16 @@ local function send_request(addr, msg, sz)
     local req, new_session, padding = cluster.packrequest(addr, session, msg, sz)
     session = new_session
 
-    local tracetag = skynet.tracetag()
-    if tracetag then
-        if tracetag:sub(1, 1) ~= "(" then
+    local trace_tag = skynet.trace_tag()
+    if trace_tag then
+        if trace_tag:sub(1, 1) ~= "(" then
             -- add nodename
-            local newtag = string.format("(%s-%s-%d)%s", nodename, node, session, tracetag)
-            skynet.tracelog(tracetag, string.format("session %s", newtag))
-            tracetag = newtag
+            local new_tag = string.format("(%s-%s-%d)%s", nodename, node, session, trace_tag)
+            skynet.tracelog(trace_tag, string.format("session %s", new_tag))
+            trace_tag = new_tag
         end
-        skynet.tracelog(tracetag, string.format("cluster %s", node))
-        channel:request(cluster.packtrace(tracetag))
+        skynet.tracelog(trace_tag, string.format("cluster %s", node))
+        channel:request(cluster.packtrace(trace_tag))
     end
     return channel:request(req, current_session, padding)
 end
