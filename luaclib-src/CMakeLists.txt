@@ -8,6 +8,7 @@ set(SKYNET_LUACLIB_HEADER
 )
 set(SKYNET_LUACLIB_SRC
     lsha1.c
+    lua-oo.cpp
     lua-crypt.cpp
     lua-seri.cpp
     lua-memory.cpp
@@ -22,6 +23,9 @@ set(SKYNET_LUACLIB_SRC
     lua-clientsocket.cpp
     lua-clientsocket_tcp.cpp
     lua-clientsocket_ws.cpp
+    lua-stm.cpp
+    lua-sharetable.cpp
+    lua-debugchannel.cpp
 )
 list(APPEND SKYNET_LUACLIB_SRC ${SKYNET_LUACLIB_HEADER})
 

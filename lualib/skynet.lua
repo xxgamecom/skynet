@@ -1,3 +1,4 @@
+require "class"
 local skynet_core = require "skynet.core"
 
 local profile = require "skynet.profile"
