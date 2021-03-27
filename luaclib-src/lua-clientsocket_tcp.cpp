@@ -7,56 +7,27 @@ extern "C" {
 #include <lauxlib.h>
 }
 
-#include <string.h>
-#include <stdint.h>
+#include <cstring>
+#include <cstdint>
+#include <cstdlib>
+#include <cerrno>
+#include <mutex>
+
 #include <pthread.h>
-#include <stdlib.h>
+
+#include <unistd.h>
+#include <fcntl.h>
 
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <unistd.h>
-#include <errno.h>
-#include <fcntl.h>
+
 
 #define CACHE_SIZE 0x1000
 
-static int l_connect(lua_State* L)
-{
-    const char* addr = luaL_checkstring(L, 1);
-    int port = luaL_checkinteger(L, 2);
-    int fd = socket(AF_INET, SOCK_STREAM, 0);
-    struct sockaddr_in my_addr;
 
-    my_addr.sin_addr.s_addr = inet_addr(addr);
-    my_addr.sin_family = AF_INET;
-    my_addr.sin_port = htons(port);
-
-    int r = connect(fd, (struct sockaddr*)&my_addr, sizeof(struct sockaddr_in));
-
-    if (r == -1)
-    {
-        return luaL_error(L, "Connect %s %d failed", addr, port);
-    }
-
-    int flag = fcntl(fd, F_GETFL, 0);
-    fcntl(fd, F_SETFL, flag | O_NONBLOCK);
-
-    lua_pushinteger(L, fd);
-
-    return 1;
-}
-
-static int l_close(lua_State* L)
-{
-    int fd = luaL_checkinteger(L, 1);
-    close(fd);
-
-    return 0;
-}
-
-static void block_send(lua_State* L, int fd, const char* buffer, int sz)
+static void _block_send(lua_State* L, int fd, const char* buffer, int sz)
 {
     while (sz > 0)
     {
@@ -72,20 +43,6 @@ static void block_send(lua_State* L, int fd, const char* buffer, int sz)
     }
 }
 
-/*
-	integer fd
-	string message
- */
-static int l_send(lua_State* L)
-{
-    size_t sz = 0;
-    int fd = luaL_checkinteger(L, 1);
-    const char* msg = luaL_checklstring(L, 2, &sz);
-
-    block_send(L, fd, msg, (int)sz);
-
-    return 0;
-}
 
 /*
 	intger fd
@@ -140,19 +97,19 @@ static int l_usleep(lua_State* L)
 
 struct queue
 {
-    pthread_mutex_t lock;
+    std::mutex lock;
     int head;
     int tail;
     char* queue[QUEUE_SIZE];
 };
 
-static void* readline_stdin(void* arg)
+static void* _readline_stdin(void* arg)
 {
     struct queue* q = (queue*)arg;
     char tmp[1024];
     while (!feof(stdin))
     {
-        if (fgets(tmp, sizeof(tmp), stdin) == NULL)
+        if (fgets(tmp, sizeof(tmp), stdin) == nullptr)
         {
             // read stdin failed
             exit(1);
@@ -163,7 +120,8 @@ static void* readline_stdin(void* arg)
         memcpy(str, tmp, n);
         str[n] = 0;
 
-        pthread_mutex_lock(&q->lock);
+        std::lock_guard<std::mutex> lock(q->lock);
+
         q->queue[q->tail] = str;
 
         if (++q->tail >= QUEUE_SIZE)
@@ -175,26 +133,77 @@ static void* readline_stdin(void* arg)
             // queue overflow
             exit(1);
         }
-        pthread_mutex_unlock(&q->lock);
     }
-    return NULL;
+
+    return nullptr;
 }
 
-static int lreadstdin(lua_State* L)
+static int l_connect(lua_State* L)
 {
-    struct queue* q = (queue*)lua_touserdata(L, lua_upvalueindex(1));
-    pthread_mutex_lock(&q->lock);
+    const char* addr = luaL_checkstring(L, 1);
+    int port = luaL_checkinteger(L, 2);
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in my_addr;
+
+    my_addr.sin_addr.s_addr = inet_addr(addr);
+    my_addr.sin_family = AF_INET;
+    my_addr.sin_port = htons(port);
+
+    int r = connect(fd, (struct sockaddr*)&my_addr, sizeof(struct sockaddr_in));
+
+    if (r == -1)
+    {
+        return luaL_error(L, "Connect %s %d failed", addr, port);
+    }
+
+    int flag = fcntl(fd, F_GETFL, 0);
+    fcntl(fd, F_SETFL, flag | O_NONBLOCK);
+
+    lua_pushinteger(L, fd);
+
+    return 1;
+}
+
+static int l_close(lua_State* L)
+{
+    int fd = luaL_checkinteger(L, 1);
+    close(fd);
+
+    return 0;
+}
+
+/*
+	integer fd
+	string message
+ */
+static int l_send(lua_State* L)
+{
+    size_t sz = 0;
+    int fd = luaL_checkinteger(L, 1);
+    const char* msg = luaL_checklstring(L, 2, &sz);
+
+    _block_send(L, fd, msg, (int)sz);
+
+    return 0;
+}
+
+static int l_read_stdin(lua_State* L)
+{
+    queue* q = (queue*)lua_touserdata(L, lua_upvalueindex(1));
+
+    std::lock_guard<std::mutex> lock(q->lock);
+
     if (q->head == q->tail)
     {
-        pthread_mutex_unlock(&q->lock);
         return 0;
     }
+
     char* str = q->queue[q->head];
     if (++q->head >= QUEUE_SIZE)
     {
         q->head = 0;
     }
-    pthread_mutex_unlock(&q->lock);
+
     lua_pushstring(L, str);
     delete[] str;
     return 1;
@@ -218,14 +227,15 @@ LUAMOD_API int luaopen_client_socket_tcp(lua_State* L)
     };
     luaL_newlib(L, l);
 
-    struct queue* q = (queue*)lua_newuserdata(L, sizeof(*q));
-    memset(q, 0, sizeof(*q));
-    pthread_mutex_init(&q->lock, NULL);
-    lua_pushcclosure(L, lreadstdin, 1);
+    queue* q = (queue*)lua_newuserdata(L, sizeof(queue));
+    ::memset(q, 0, sizeof(*q));
+
+    //
+    lua_pushcclosure(L, l_read_stdin, 1);
     lua_setfield(L, -2, "readstdin");
 
     pthread_t pid;
-    pthread_create(&pid, NULL, readline_stdin, q);
+    pthread_create(&pid, nullptr, _readline_stdin, q);
 
     return 1;
 }
