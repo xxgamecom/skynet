@@ -1,12 +1,25 @@
 --
--- OO support
+-- Object-Oriented support
 --
--- examples:
+-- 1 class method
+-- class.create()  -- instance factory
+-- class.new()     -- instance factory
+-- class.ctor()    -- constructor function
+--
+-- 2 helper function
+-- iskindof()      -- is kind of class
+--
+-- 3 examples
 --
 -- class_super.lua
 --
 -- -- define super class
 -- local class_super = class("class_super")
+--
+-- -- constructor
+-- function class_super:ctor()
+--     print("class_super ctor")
+-- end
 --
 -- function class_super:init()
 --     print("class_super init")
@@ -24,7 +37,8 @@
 -- -- override
 -- function class_sub:foo()
 --     -- call super
---     class_sub.super.foo(self)
+--     class_sub.super:foo()
+--     --
 --     print("class_sub foo")
 -- end
 --
@@ -63,6 +77,7 @@ end
 ---
 --- define a class
 --- @param classname string class name
+--- @param ... any
 function class(classname, ...)
     local cls = { __cname = classname }
 
@@ -123,6 +138,7 @@ function class(classname, ...)
         cls.ctor = function()
         end
     end
+    -- instance factory
     cls.new = function(...)
         local instance
         if cls.__create then
