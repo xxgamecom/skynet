@@ -757,6 +757,7 @@ static int l_hpc(lua_State* L)
     return 1;
 }
 
+
 /**
  * skynet luaclib - skynet.core
  */
@@ -786,15 +787,15 @@ LUAMOD_API int luaopen_skynet_core(lua_State* L)
 
     // without service_context upvalue
     luaL_Reg core_funcs_2[] = {
-        { "tostring",    l_tostring },
-        { "pack",        l_pack },
-        { "unpack",      l_unpack },
+        { "tostring", l_tostring },
+        { "pack", l_pack },
+        { "unpack", l_unpack },
         { "pack_string", l_pack_string },
-        { "trash",       l_trash },
-        { "now",         l_now },
-        { "hpc",         l_hpc },
+        { "trash", l_trash },
+        { "now", l_now },
+        { "hpc", l_hpc },
 
-        { nullptr,       nullptr },
+        { nullptr, nullptr },
     };
 
     lua_createtable(L, 0, sizeof(core_funcs_1) / sizeof(core_funcs_1[0]) + sizeof(core_funcs_2) / sizeof(core_funcs_2[0]) - 2);

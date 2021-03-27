@@ -4,8 +4,8 @@
 
 root = "./"
 cservice_path = root.."cservice/?.so"
-luaservice = root.."service/?.lua;" .. root.."examples/?.lua;" .. root.."tests/?.lua;" .. root.."tests/test/?.lua"
-lua_path = root.."lualib/?.lua"
+luaservice = root.."service/?.lua;" .. root.."examples/?.lua;" .. root.."tests/?.lua"
+lua_path = root.."lualib/?.lua;" .. root.."tests/?.lua"
 lua_cpath = root.."luaclib/?.so"
 lualoader = root.."lualib/loader.lua"
 snax = root.."examples/?.lua;" .. root.."tests/?.lua"
