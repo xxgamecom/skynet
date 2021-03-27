@@ -4,13 +4,20 @@
 -- examples:
 -- local msg_handler = require("skynet.msg_handler")
 --
--- skynet.add_handler("cmd", "agent_svc_cmd")           -- cmd message process script agent_svc_cmd.lua
--- skynet.add_handler("request", "agent_svc_request")   -- request message process script agent_svc_request.lua
--- skynet.add_handler("notice", "agent_svc_notice")     -- notice message process script agent_svc_notice.lua
+-- -- register "lua" service message dispatch function
+-- skynet.dispatch("lua", function(session, source, ...)
+--     msg_handler.process(session, source, "lua", ...)
+-- end)
 --
--- skynet.add_handler("cmd", "auth_svc_cmd")
--- skynet.add_handler("request", "auth_svc_request")
--- skynet.add_handler("auth", "auth_svc_auth")
+-- -- add message process script
+-- msg_handler.add_handler("cmd", "agent_svc_cmd")           -- cmd message process script agent_svc_cmd.lua
+-- msg_handler.add_handler("request", "agent_svc_request")   -- request message process script agent_svc_request.lua
+-- msg_handler.add_handler("notice", "agent_svc_notice")     -- notice message process script agent_svc_notice.lua
+--
+-- -- add message process script
+-- msg_handler.add_handler("cmd", "auth_svc_cmd")
+-- msg_handler.add_handler("request", "auth_svc_request")
+-- msg_handler.add_handler("auth", "auth_svc_auth")
 --
 
 local skynet = require "skynet"
