@@ -32,9 +32,10 @@ start = "main"
 -- ------------------------
 
 -- base info
-log_path = "."
+log_path = "."  -- service log path, for debug_console logon/logoff
 --log_file = "./skynet.log"  -- log to file
 log_file = nil  -- log to console
+log_service = nil
 
 -- log level
 log_level_error = true
