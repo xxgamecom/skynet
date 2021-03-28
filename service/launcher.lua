@@ -8,7 +8,7 @@ local pcall = pcall
 local tonumber = tonumber
 
 local services = {}
-local instance = {} -- for confirm (function CMD.LAUNCH / CMD.ERROR / CMD.LAUNCHOK)
+local instance = {} -- for confirm (function CMD.LAUNCH / CMD.ERROR / CMD.LAUNCH_OK)
 local launch_session = {} -- for CMD.QUERY, service_address -> session
 
 local function handle_to_address(handle)
@@ -123,7 +123,7 @@ function CMD.ERROR(address)
     return NORET
 end
 
-function CMD.LAUNCHOK(address)
+function CMD.LAUNCH_OK(address)
     -- init notice
     local response = instance[address]
     if response then
@@ -151,7 +151,7 @@ skynet.register_svc_msg_handler({
     unpack = skynet.tostring,
     dispatch = function(session, address, cmd)
         if cmd == "" then
-            CMD.LAUNCHOK(address)
+            CMD.LAUNCH_OK(address)
         elseif cmd == "ERROR" then
             CMD.ERROR(address)
         else

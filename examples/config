@@ -17,7 +17,7 @@ thread = 8                          -- the number of service work thread
 lualoader = root.."lualib/loader.lua"
 -- preload = "./examples/preload.lua"   -- run preload.lua before every lua service run
 bootstrap = "snlua bootstrap"       -- the service for bootstrap
--- pid_file = "./skynet.pid"        -- daemon mode
+-- daemon = "./skynet.pid"        -- daemon mode
 
 address = "127.0.0.1:2526"
 master = "127.0.0.1:2013"

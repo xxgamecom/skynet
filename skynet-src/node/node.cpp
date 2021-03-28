@@ -81,9 +81,9 @@ void node::fini()
 void node::start()
 {
     // daemon mode
-    if (config_.pid_file_ != nullptr)
+    if (config_.daemon_pid_file_ != nullptr)
     {
-        if (!daemon_helper::init(config_.pid_file_))
+        if (!daemon_helper::init(config_.daemon_pid_file_))
         {
             ::exit(1);
         }
@@ -122,9 +122,9 @@ void node::start()
     node_socket::instance()->fini();
 
     // clean daemon pid file
-    if (config_.pid_file_)
+    if (config_.daemon_pid_file_)
     {
-        daemon_helper::fini(config_.pid_file_);
+        daemon_helper::fini(config_.daemon_pid_file_);
     }
 }
 

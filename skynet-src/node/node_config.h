@@ -11,10 +11,10 @@ public:
     int thread_;                        // worker thread count (不要配置超过实际拥有的CPU核心数)
     int profile_;                       // enable/disable statistics (cpu cost each service), default enable
 
-    const char* pid_file_;              // daemon pid file, enable/disable daemon mode
-                                        // - enable:  pid_file = "./skynet.pid"
-                                        // - disable: pid_file = "" or
-                                        //            pid_file = nil or
+    const char* daemon_pid_file_;       // daemon pid file, enable/disable daemon mode
+                                        // - enable:  daemon = "./skynet.pid"
+                                        // - disable: daemon = "" or
+                                        //            daemon = nil or
                                         //            not set this variable
                                         // notice: need set logger when daemon mode enabled
 

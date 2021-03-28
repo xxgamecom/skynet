@@ -14,7 +14,7 @@ cpath = root.."cservice/?.so"
 bootstrap = "snlua bootstrap"	-- The service for bootstrap
 lualoader = "lualib/loader.lua"
 thread = 8
--- pid_file = "./skynet.pid"
+-- daemon = "./skynet.pid"
 
 -- main script
 start = "main_mysql"

@@ -442,20 +442,20 @@ end
 -- time functions
 -- ------------------------------------------------------
 
-local starttime
+local start_time
 
 ---
-function skynet.starttime()
-    if not starttime then
-        starttime = skynet_core.intcommand("START_TIME")
+function skynet.start_time()
+    if not start_time then
+        start_time = skynet_core.intcommand("START_TIME")
     end
-    return starttime
+    return start_time
 end
 
 ---
 --- get current time (seconds)
 function skynet.time()
-    return skynet.now() / 100 + (starttime or skynet.starttime())
+    return skynet.now() / 100 + (start_time or skynet.start_time())
 end
 
 -- ------------------------------------------------------
@@ -956,7 +956,7 @@ function skynet.init_service(start_func)
         skynet.send(".launcher", "lua", "ERROR")
         skynet.exit()
     else
-        skynet.send(".launcher", "lua", "LAUNCHOK")
+        skynet.send(".launcher", "lua", "LAUNCH_OK")
     end
 end
 
