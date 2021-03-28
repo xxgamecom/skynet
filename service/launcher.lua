@@ -105,7 +105,7 @@ end
 function CMD.LOGLAUNCH(_, service, ...)
     local inst = launch_service(service, ...)
     if inst then
-        skynet_core.command("LOGON", skynet.to_address(inst))
+        skynet_core.command("LOG_ON", skynet.to_address(inst))
     end
     return NORET
 end
