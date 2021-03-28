@@ -410,7 +410,7 @@ static int l_pop(lua_State* L)
  * 2 packed size            - integer
  *
  * lua examples:
- * socketdriver.send(fd, netpack.pack(result))
+ * socket_core.send(fd, netpack.pack(result))
  */
 static int l_pack(lua_State* L)
 {

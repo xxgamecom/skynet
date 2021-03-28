@@ -155,7 +155,7 @@ static int _new_pool(lua_State* L, int sz)
  * alloc socket buffer
  *
  * lua examples:
- * new_buffer = socketdriver.new_buffer()
+ * new_buffer = socket_core.new_buffer()
  */
 static int l_new_socket_buffer(lua_State* L)
 {
@@ -191,7 +191,7 @@ static int l_new_socket_buffer(lua_State* L)
  * l_pop_socket_buffer return the buffer_node back to table pool (By calling _return_free_node).
  *
  * lua examples:
- * local sz = socketdriver.push(s.buffer, s.pool, data, size)
+ * local sz = socket_core.push(s.buffer, s.buffer_pool, data, size)
  */
 static int l_push_socket_buffer(lua_State* L)
 {
@@ -267,27 +267,29 @@ static int l_push_socket_buffer(lua_State* L)
  *
  * arguments:
  * 1 socket buffer          - userdata (socket_buffer)
- * 2 table pool             - table
+ * 2 socket buffer pool     - table
  * 3 size                   - integer
  *
  * outputs:
- *
+ * 1
+ * 2
  *
  * lua examples:
- * ret = socketdriver.pop(s.buffer, s.pool, sz)
+ * ret = socket_core.pop(s.buffer, s.buffer_pool, sz)
  */
 static int l_pop_socket_buffer(lua_State* L)
 {
+    // socket buffer
     auto sb = (socket_buffer*)lua_touserdata(L, 1);
     if (sb == nullptr)
     {
         return luaL_error(L, "Need buffer object at param 1");
     }
 
-    //
+    // socket buffer pool
     luaL_checktype(L, 2, LUA_TTABLE);
 
-    //
+    // size
     int sz = luaL_checkinteger(L, 3);
     if (sb->size < sz || sz == 0)
     {
@@ -299,6 +301,7 @@ static int l_pop_socket_buffer(lua_State* L)
         sb->size -= sz;
     }
 
+    // socket buffer size
     lua_pushinteger(L, sb->size);
 
     return 2;
@@ -348,7 +351,7 @@ static int l_clear_socket_buffer(lua_State* L)
  * 1 message size           - integer
  *
  * lua examples:
- * socketdriver.drop(data, size)
+ * socket_core.drop(data, size)
  */
 static int l_drop(lua_State* L)
 {
@@ -373,7 +376,7 @@ static int l_drop(lua_State* L)
  *
  *
  * lua examples:
- * local ret = socketdriver.readall(s.buffer, s.pool)
+ * local ret = socket_core.readall(s.buffer, s.buffer_pool)
  */
 static int l_read_all(lua_State* L)
 {
@@ -437,7 +440,7 @@ static bool _check_sep(buffer_node* node, int from, const char* sep, int sep_len
  * 3 separate, end line tag     - string
  *
  * lua examples:
- * socketdriver.readline(s.buffer, s.pool, sep)
+ * socket_core.readline(s.buffer, s.buffer_pool, sep)
  */
 static int l_read_line(lua_State* L)
 {
@@ -499,7 +502,7 @@ static int l_read_line(lua_State* L)
  *
  *
  * lua examples:
- * socket.header = assert(socketdriver.header)
+ * socket.header = assert(socket_core.header)
  */
 static int l_header(lua_State* L)
 {
@@ -558,7 +561,7 @@ static int l_str2p(lua_State* L)
  * 5 udp address        - string (optional)
  *
  * lua examples:
- * local _, fd = socketdriver.unpack(msg, sz)
+ * local _, fd = socket_core.unpack(msg, sz)
  */
 static int l_unpack(lua_State* L)
 {
@@ -713,7 +716,7 @@ static void _get_socket_info(lua_State* L, socket_info& si)
 static int l_query_socket_info(lua_State* L)
 {
     // query socket info
-    std::list <socket_info> si_list;
+    std::list<socket_info> si_list;
     node_socket::instance()->get_socket_info(si_list);
 
     lua_newtable(L);
@@ -768,7 +771,7 @@ static const char* _address_port(lua_State* L, char* tmp, const char* addr, int 
         }
         port = ::strtoul(sep + 1, nullptr, 10);
     }
-    // ipv4: 192.168.0.1:port
+        // ipv4: 192.168.0.1:port
     else
     {
         // ip
@@ -801,8 +804,8 @@ static const char* _address_port(lua_State* L, char* tmp, const char* addr, int 
  * socket_id                - integer
  *
  * lua examples:
- * local socket_id = socketdriver.connect(addr, port)   --
- * local socket_id = socketdriver.connect(addr)         -- addr include ip & port
+ * local socket_id = socket_core.connect(addr, port)   --
+ * local socket_id = socket_core.connect(addr)         -- addr include ip & port
  */
 static int l_connect(lua_State* L)
 {
@@ -840,7 +843,7 @@ static int l_connect(lua_State* L)
  * 1 socket id              - integer
  *
  * lua examples:
- * socketdriver.close(socket_id)
+ * socket_core.close(socket_id)
  */
 static int l_close(lua_State* L)
 {
@@ -859,7 +862,7 @@ static int l_close(lua_State* L)
  * 1 socket id              - integer
  *
  * lua examples:
- * socketdriver.shutdown(socket_id)
+ * socket_core.shutdown(socket_id)
  */
 static int l_shutdown(lua_State* L)
 {
@@ -880,8 +883,8 @@ static int l_shutdown(lua_State* L)
  * 3 backlog            - integer, optional
  *
  * lua examples:
- * socketdriver.listen(address, port)
- * socketdriver.listen(address, port, backlog)
+ * socket_core.listen(address, port)
+ * socket_core.listen(address, port, backlog)
  */
 static int l_listen(lua_State* L)
 {
@@ -1004,8 +1007,8 @@ static void _get_message(lua_State* L, int msg_index, send_buffer& sb)
  * 2 message            - userdata | lightuserdata | table
  *
  * lua examples:
- * socket.write = assert(socketdriver.send)
- * socketdriver.send(fd, content)
+ * socket.write = assert(socket_core.send)
+ * socket_core.send(fd, content)
  */
 static int l_send(lua_State* L)
 {
@@ -1056,7 +1059,7 @@ static int l_send_low(lua_State* L)
  * bind std fd
  *
  * arguments:
- * - fd             - integer, stdin
+ * - os fd              - integer, e.g. stdin
  *
  * outputs:
  * socket id
@@ -1092,7 +1095,7 @@ static int l_bind(lua_State* L)
  *
  * lua examples:
  * function socket.start(id, func)
- *     socketdriver.start(id)
+ *     socket_core.start(id)
  *     return connect(id, func)
  * end
  */
@@ -1245,10 +1248,10 @@ static int l_udp_address(lua_State* L)
     return 2;
 }
 
-} }
+}}
 
 /**
- * skynet luaclib - skynet.socketdriver
+ * skynet luaclib - skynet.socket.core
  */
 
 #if __cplusplus
@@ -1257,19 +1260,19 @@ extern "C" {
 
 // functions without service_context
 static const luaL_Reg socket_funcs_1[] = {
-    { "new_buffer", skynet::luaclib::l_new_socket_buffer },
-    { "push",       skynet::luaclib::l_push_socket_buffer },
-    { "pop",        skynet::luaclib::l_pop_socket_buffer },
-    { "clear",      skynet::luaclib::l_clear_socket_buffer },
-    { "drop",       skynet::luaclib::l_drop },
-    { "readall",    skynet::luaclib::l_read_all },
-    { "readline",   skynet::luaclib::l_read_line },
-    { "str2p",      skynet::luaclib::l_str2p },
-    { "header",     skynet::luaclib::l_header },
-    { "info",       skynet::luaclib::l_query_socket_info },
-    { "unpack",     skynet::luaclib::l_unpack },
+    { "new_buffer",   skynet::luaclib::l_new_socket_buffer },
+    { "push_buffer",  skynet::luaclib::l_push_socket_buffer },
+    { "pop_buffer",   skynet::luaclib::l_pop_socket_buffer },
+    { "clear_buffer", skynet::luaclib::l_clear_socket_buffer },
+    { "drop",         skynet::luaclib::l_drop },
+    { "read_all",     skynet::luaclib::l_read_all },
+    { "read_line",    skynet::luaclib::l_read_line },
+    { "str2p",        skynet::luaclib::l_str2p },
+    { "header",       skynet::luaclib::l_header },
+    { "info",         skynet::luaclib::l_query_socket_info },
+    { "unpack",       skynet::luaclib::l_unpack },
 
-    { nullptr,      nullptr },
+    { nullptr,        nullptr },
 };
 
 // need service_context upvalue
@@ -1292,7 +1295,7 @@ static const luaL_Reg socket_funcs_2[] = {
     { nullptr,       nullptr },
 };
 
-LUAMOD_API int luaopen_skynet_socketdriver(lua_State* L)
+LUAMOD_API int luaopen_skynet_socket_core(lua_State* L)
 {
     luaL_checkversion(L);
 
@@ -1304,7 +1307,7 @@ LUAMOD_API int luaopen_skynet_socketdriver(lua_State* L)
     auto svc_ctx = (skynet::service_context*)lua_touserdata(L, -1);
     if (svc_ctx == nullptr)
     {
-        return luaL_error(L, "[skynet.socketdriver] Init skynet service context first");
+        return luaL_error(L, "[skynet.socket.core] Init skynet service context first");
     }
     luaL_setfuncs(L, socket_funcs_2, 1);
 

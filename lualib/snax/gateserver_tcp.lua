@@ -1,6 +1,6 @@
 local skynet = require "skynet"
 local netpack = require "skynet.netpack_tcp"
-local socketdriver = require "skynet.socketdriver"
+local socket_core = require "skynet.socket.core"
 
 local gateserver = {}
 local smallstring = 65536
@@ -17,7 +17,7 @@ local connection = {}
 
 function gateserver.openclient(fd)
     if connection[fd] then
-        socketdriver.start(fd)
+        socket_core.start(fd)
         return true
     end
     return false
@@ -27,7 +27,7 @@ function gateserver.closeclient(fd)
     local c = connection[fd]
     if c then
         connection[fd] = false
-        socketdriver.close(fd)
+        socket_core.close(fd)
     end
 end
 
@@ -42,8 +42,8 @@ function gateserver.start(handler)
         maxclient = conf.maxclient or 1024
         nodelay = conf.nodelay
         skynet.log(string.format("Listen on %s:%d", address, port))
-        socket = socketdriver.listen(address, port)
-        socketdriver.start(socket)
+        socket = socket_core.listen(address, port)
+        socket_core.start(socket)
         if handler.open then
             return handler.open(source, conf)
         end
@@ -51,7 +51,7 @@ function gateserver.start(handler)
 
     function CMD.close()
         assert(socket)
-        socketdriver.close(socket)
+        socket_core.close(socket)
     end
 
     local MSG = {}
@@ -88,11 +88,11 @@ function gateserver.start(handler)
 
     function MSG.open(fd, msg)
         if client_number >= maxclient then
-            socketdriver.close(fd)
+            socket_core.close(fd)
             return
         end
         if nodelay then
-            socketdriver.nodelay(fd)
+            socket_core.nodelay(fd)
         end
         connection[fd] = true
         client_number = client_number + 1
@@ -120,7 +120,7 @@ function gateserver.start(handler)
 
     function MSG.error(fd, msg)
         if fd == socket then
-            socketdriver.close(fd)
+            socket_core.close(fd)
             skynet.log(msg)
         else
             if handler.error then

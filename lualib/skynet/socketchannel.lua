@@ -1,6 +1,6 @@
 local skynet = require "skynet"
 local socket = require "skynet.socket"
-local socketdriver = require "skynet.socketdriver"
+local socket_core = require "skynet.socket.core"
 
 -- channel support auto reconnect , and capture socket error in request/response transaction
 -- { host = "", port = , auth = function(so) , response = function(so) session, data }
@@ -288,7 +288,7 @@ local function connect_once(self)
         term_dispatch_thread(self)
 
         if self.__nodelay then
-            socketdriver.nodelay(fd)
+            socket_core.nodelay(fd)
         end
 
         -- register overload warning

@@ -1,10 +1,11 @@
 local skynet = require "skynet"
 local netpack = require "skynet.netpack_ws"
-local socketdriver = require "skynet.socketdriver"
+local socket_core = require "skynet.socket.core"
 local httpd = require "http.httpd"
 local urllib = require "http.url"
 local string = require "string"
 local crypt = require "skynet.crypt"
+
 local gateserver = {}
 
 local max_packsize = 10 * 1024
@@ -99,9 +100,9 @@ end
 
 local function writefunc(fd)
     return function(content)
-        local ok = socketdriver.send(fd, content)
+        local ok = socket_core.send(fd, content)
         if not ok then
-            error(socket_error)
+            error(socket_error) -- TODO, socket_error
         end
     end
 end
@@ -110,7 +111,7 @@ end
 
 function gateserver.openclient(fd)
     if connection[fd] ~= nil and connection[fd].isconnect then
-        socketdriver.start(fd)
+        socket_core.start(fd)
         return true
     end
     return false
@@ -121,7 +122,7 @@ function gateserver.closeclient(fd)
     if c then
         client_number = client_number - 1
         connection[fd] = nil
-        socketdriver.close(fd)
+        socket_core.close(fd)
     end
 end
 
@@ -133,7 +134,7 @@ function gateserver.checkwebsocket(fd, header)
         gateserver.closeclient(fd)
         return false
     else
-        socketdriver.send(fd, result)
+        socket_core.send(fd, result)
         return true
     end
     return true
@@ -150,8 +151,8 @@ function gateserver.start(handler)
         maxclient = conf.maxclient or 1024
         nodelay = conf.nodelay
         skynet.log(string.format("Listen on %s:%d", address, port))
-        socket = socketdriver.listen(address, port)
-        socketdriver.start(socket)
+        socket = socket_core.listen(address, port)
+        socket_core.start(socket)
         if handler.open then
             return handler.open(source, conf)
         end
@@ -159,7 +160,7 @@ function gateserver.start(handler)
 
     function CMD.close()
         assert(socket)
-        socketdriver.close(socket)
+        socket_core.close(socket)
     end
 
     local MSG = {}
@@ -212,11 +213,11 @@ function gateserver.start(handler)
 
     function MSG.open(fd, msg)
         if client_number >= maxclient then
-            socketdriver.close(fd)
+            socket_core.close(fd)
             return
         end
         if nodelay then
-            socketdriver.nodelay(fd)
+            socket_core.nodelay(fd)
         end
         connection[fd] = {}
         connection[fd].isconnect = true
@@ -246,7 +247,7 @@ function gateserver.start(handler)
 
     function MSG.error(fd, msg)
         if fd == socket then
-            socketdriver.close(fd)
+            socket_core.close(fd)
             skynet.log(msg)
         else
             if handler.error then
@@ -266,7 +267,7 @@ function gateserver.start(handler)
         msg_type_name = "socket",
         msg_type = skynet.SERVICE_MSG_TYPE_SOCKET, -- SERVICE_MSG_TYPE_SOCKET = 6
         unpack = function(msg, sz)
-            local _, fd = socketdriver.unpack(msg, sz)
+            local _, fd = socket_core.unpack(msg, sz)
             if (connection[fd] == nil) then
                 return netpack.filter(queue, msg, sz, 1)
             elseif connection[fd].isconnect then
