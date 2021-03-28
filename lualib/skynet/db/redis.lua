@@ -1,6 +1,6 @@
 local skynet = require "skynet"
 local socket = require "skynet.socket"
-local socketchannel = require "skynet.socketchannel"
+local socket_channel = require "skynet.socket_channel"
 
 local table = table
 local string = string
@@ -143,7 +143,7 @@ local function redis_login(auth, db)
 end
 
 function redis.connect(db_conf)
-    local channel = socketchannel.channel {
+    local channel = socket_channel.channel {
         host = db_conf.host,
         port = db_conf.port or 6379,
         auth = redis_login(db_conf.auth, db_conf.db),
@@ -255,7 +255,7 @@ function redis.watch(db_conf)
         __subscribe = {},
         __psubscribe = {},
     }
-    local channel = socketchannel.channel {
+    local channel = socket_channel.channel {
         host = db_conf.host,
         port = db_conf.port or 6379,
         auth = watch_login(obj, db_conf.auth),

@@ -6,7 +6,7 @@
 
 -- protocol detail: https://mariadb.com/kb/en/clientserver-protocol/
 
-local socketchannel = require "skynet.socketchannel"
+local socket_channel = require "skynet.socket_channel"
 local crypt = require "skynet.crypt"
 
 local sub = string.sub
@@ -742,7 +742,7 @@ function _M.connect(opts)
     local password = opts.password or ""
     local charset = CHARSET_MAP[opts.charset or "_default"]
     local channel = 
-        socketchannel.channel {
+        socket_channel.channel {
         host = opts.host,
         port = opts.port or 3306,
         auth = _mysql_login(self, user, password, charset, database, opts.on_connect),

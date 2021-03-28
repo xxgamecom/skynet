@@ -1,7 +1,7 @@
 local skynet = require "skynet"
 local debugchannel = require "skynet.debugchannel"
 local socket_core = require "skynet.socket.core"
-local injectrun = require "skynet.injectcode"
+local injectrun = require "skynet.inject_code"
 
 local table = table
 local debug = debug

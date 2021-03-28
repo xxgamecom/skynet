@@ -1,5 +1,5 @@
 local skynet = require "skynet"
-local sc = require "skynet.socketchannel"
+local socket_channel = require "skynet.socket_channel"
 local socket = require "skynet.socket"
 local cluster = require "skynet.cluster.core"
 
@@ -67,7 +67,7 @@ end
 
 skynet.start(function()
     --
-    channel = sc.channel {
+    channel = socket_channel.channel {
         host = init_host,
         port = tonumber(init_port),
         response = read_response,

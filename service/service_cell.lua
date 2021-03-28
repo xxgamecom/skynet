@@ -13,7 +13,7 @@ function CMD.init(code, ...)
         error("No dispatch function")
     end)
     local mainfunc = assert(load(code, service_name))
-    assert(skynet.pcall(mainfunc, ...))
+    assert(pcall(mainfunc, ...))
     if start_func then
         start_func()
     end

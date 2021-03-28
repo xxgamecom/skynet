@@ -1,6 +1,6 @@
 local bson = require "bson"
 local socket = require "skynet.socket"
-local socketchannel = require "skynet.socketchannel"
+local socket_channel = require "skynet.socket_channel"
 local skynet = require "skynet"
 local driver = require "skynet.mongo.driver"
 local md5 = require "md5"
@@ -120,7 +120,7 @@ local function mongo_auth(mongoc)
                 mongoc.port = port
                 mongoc.__sock:changehost(host, port)
             else
-                -- socketchannel would try the next host in backup list
+                -- socket_channel would try the next host in backup list
                 error("No primary return : " .. tostring(rs_data.me))
             end
         end
@@ -144,7 +144,7 @@ function mongo.client(conf)
     }
 
     obj.__id = 0
-    obj.__sock = socketchannel.channel {
+    obj.__sock = socket_channel.channel {
         host = obj.host,
         port = obj.port,
         response = dispatch_reply,

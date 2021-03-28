@@ -1,3 +1,4 @@
+--
 local function getupvaluetable(u, func, unique)
     local i = 1
     while true do
@@ -56,7 +57,7 @@ return function(skynet, source, filename, args, ...)
     if not func then
         return false, { err }
     end
-    local ok, err = skynet.pcall(func, table.unpack(args, 1, args.n))
+    local ok, err = pcall(func, table.unpack(args, 1, args.n))
     if not ok then
         table.insert(output, err)
         return false, output

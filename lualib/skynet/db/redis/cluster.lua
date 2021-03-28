@@ -364,7 +364,7 @@ function rediscluster:call(...)
                     skynet.sleep(10)
                 end
             else
-                -- err: ./lualib/skynet/socketchannel.lua:371: xxx
+                -- err: ./lualib/skynet/socket_channel.lua:371: xxx
                 err = string.match(err, ".+:%d+:%s(.*)$") or err
                 local errlist = {}
                 for e in string.gmatch(err, "([^%s]+)%s?") do

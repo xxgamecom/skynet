@@ -65,7 +65,7 @@ function CMD.new(name, t, ...)
         else
             f = assert(load(t, "=" .. name, "bt", value))
         end
-        local _, ret = assert(skynet.pcall(f, ...))
+        local _, ret = assert(pcall(f, ...))
         setmetatable(value, nil)
         if type(ret) == "table" then
             value = ret
