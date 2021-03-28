@@ -9,13 +9,16 @@ local file_helper = require "utils.file_helper"
 local time_helper = require "utils.time_helper"
 local table_helper = require "utils.table_helper"
 
--- 文件信息表
-local fileInfoMap = {}
+local file_info_map = {}    -- key: file path, value: file info ({ fd, has_data, write_time })
 
--- 获取日志文件名
-local function getFilename(dirname, filename)
-    -- 日志分日期存储
-    local path = skynet.getenv("logpath")
+---
+--- get log filename
+---@param dirname
+---@param filename
+---@return string the full path of log
+local function get_filename(dirname, filename)
+    -- store divide by date
+    local path = skynet.getenv("log_path")
     if path == nil then
         path = "."
     end
@@ -23,65 +26,67 @@ local function getFilename(dirname, filename)
         dirname = "."
     end
 
-    -- 创建日志文件夹
-    local currentTime = os.date("%Y_%m_%d", time_helper.get_time())
-    local logPath = path .. "/" .. currentTime .. "/" .. dirname
-    if not file_helper.is_exists(logPath) then
-        os.execute("mkdir -p " .. logPath)
+    -- create log directory
+    local current_time = os.date("%Y_%m_%d", time_helper.get_time())
+    local log_path = path .. "/" .. current_time .. "/" .. dirname
+    if not file_helper.is_exists(log_path) then
+        os.execute("mkdir -p " .. log_path)
     end
 
-    -- 返回日志文件名完整路径
-    return logPath .. "/" .. filename
+    -- full path
+    return log_path .. "/" .. filename
 end
 
--- 清理日志文件
--- @param filePath 日志文件路径
-local function clearLog(filePath)
-    local fileInfo = fileInfoMap[filePath]
-    if not fileInfo then
-        fileInfo = {}
-        fileInfo.fileHandle = io.open(filePath, "w")
-        fileInfoMap[filePath] = fileInfo
+---
+--- clear log file
+---@param file_path the path of log file
+local function clear_log(file_path)
+    local file_info = file_info_map[file_path]
+    if not file_info then
+        file_info = {}
+        file_info.fd = io.open(file_path, "w")
+        file_info_map[file_path] = file_info
     else
-        local fileHandle = fileInfo.fileHandle
-        fileHandle:close()
-        fileInfo.fileHandle = io.open(filePath, "w")
+        local fd = file_info.fd
+        fd:close()
+        file_info.fd = io.open(file_path, "w")
     end
 
-    local fileHandle = fileInfo.fileHandle
-    if fileHandle ~= nil then
-        fileHandle:write("")
-        fileHandle:close()
+    local fd = file_info.fd
+    if fd ~= nil then
+        fd:write("")
+        fd:close()
     end
 
-    fileInfoMap[filePath] = nil
+    file_info_map[file_path] = nil
 end
 
--- 写普通日志
--- @param filePath 日志文件路径
-local function writeLog(filePath, ...)
+---
+--- write log info
+---@param file_path the path of log file
+local function write_log(file_path, ...)
     -- 打开日志文件
-    local fileInfo = fileInfoMap[filePath]
-    if not fileInfo then
-        fileInfo = {}
-        fileInfo.fileHandle = io.open(filePath, "a+")
-        fileInfoMap[filePath] = fileInfo
+    local file_info = file_info_map[file_path]
+    if not file_info then
+        file_info = {}
+        file_info.fd = io.open(file_path, "a+")
+        file_info_map[file_path] = file_info
     end
     -- 调整日志写入时间
-    fileInfo.writeTime = time_helper.get_time()
+    file_info.writeTime = time_helper.get_time()
 
-    local fileHandle = fileInfo.fileHandle
-    if fileHandle ~= nil then
-        fileInfo.hasData = true
-        fileHandle:write("-------------[" .. os.date("%Y-%m-%d %X", time_helper.get_time()) .. "]--------------\n")
+    local fd = file_info.fd
+    if fd ~= nil then
+        file_info.hasData = true
+        fd:write("-------------[" .. os.date("%Y-%m-%d %X", time_helper.get_time()) .. "]--------------\n")
         local arg = table.pack(...)
         if arg ~= nil then
             for key, value in pairs(arg) do
                 if key ~= "n" then
                     if type(value) ~= "table" then
-                        fileHandle:write(tostring(value) .. "\n")
+                        fd:write(tostring(value) .. "\n")
                     else
-                        fileHandle:write(table_helper.tostring(value) .. "\n")
+                        fd:write(table_helper.tostring(value) .. "\n")
                     end
                 end
             end
@@ -89,32 +94,33 @@ local function writeLog(filePath, ...)
     end
 end
 
--- 写协议日志
--- @param filePath 日志文件路径
--- @param msgName 消息名
-local function writeProtoLog(filePath, msgName, ...)
+---
+--- log net info
+---@param file_path 日志文件路径
+---@param msgName 消息名
+local function writeProtoLog(file_path, msgName, ...)
     -- 打开日志文件
-    local fileInfo = fileInfoMap[filePath]
-    if not fileInfo then
-        fileInfo = {}
-        fileInfo.fileHandle = io.open(filePath, "a+")
-        fileInfoMap[filePath] = fileInfo
+    local file_info = file_info_map[file_path]
+    if not file_info then
+        file_info = {}
+        file_info.fd = io.open(file_path, "a+")
+        file_info_map[file_path] = file_info
     end
     -- 调整日志写入时间
-    fileInfo.writeTime = time_helper.get_time()
+    file_info.writeTime = time_helper.get_time()
 
-    local fileHandle = fileInfo.fileHandle
-    if fileHandle ~= nil then
-        fileInfo.hasData = true
-        fileHandle:write("[" .. os.date("%Y-%m-%d %X", time_helper.get_time()) .. "] msgName: " .. msgName .. "\n")
+    local fd = file_info.fd
+    if fd ~= nil then
+        file_info.hasData = true
+        fd:write("[" .. os.date("%Y-%m-%d %X", time_helper.get_time()) .. "] msgName: " .. msgName .. "\n")
         local arg = table.pack(...)
         if arg ~= nil then
             for key, value in pairs(arg) do
                 if key ~= "n" then
                     if type(value) ~= "table" then
-                        fileHandle:write(tostring(value) .. "\n")
+                        fd:write(tostring(value) .. "\n")
                     else
-                        fileHandle:write(table_helper.tostring(value) .. "\n")
+                        fd:write(table_helper.tostring(value) .. "\n")
                     end
                 end
             end
@@ -136,20 +142,20 @@ end
 
 -- 写错误日志
 function CMD.error(...)
-    local filePath = getFilename(".", "error.log")
-    writeLog(filePath, ...)
+    local file_path = get_filename(".", "error.log")
+    write_log(file_path, ...)
 end
 
 -- 写信息日志
 function CMD.info(...)
-    local filePath = getFilename(".", "info.log")
-    writeLog(filePath, ...)
+    local file_path = get_filename(".", "info.log")
+    write_log(file_path, ...)
 end
 
 -- 写警告日志
 function CMD.warning(...)
-    local filePath = getFilename(".", "warning.log")
-    writeLog(filePath, ...)
+    local file_path = get_filename(".", "warning.log")
+    write_log(file_path, ...)
 end
 
 -- 写通信协议日志
@@ -160,8 +166,8 @@ function CMD.proto(msgName, ...)
         return
     end
 
-    local filePath = getFilename(".", "proto.log")
-    writeProtoLog(filePath, msgName, ...)
+    local file_path = get_filename(".", "proto.log")
+    writeProtoLog(file_path, msgName, ...)
 end
 
 -- 写对象日志
@@ -175,8 +181,8 @@ function CMD.obj(objName, objId, ...)
         objId = "unknown"
     end
 
-    local filePath = getFilename(objName, objId .. ".log")
-    writeLog(filePath, ...)
+    local file_path = get_filename(objName, objId .. ".log")
+    write_log(file_path, ...)
 end
 
 -- ----------------------------------------------
@@ -204,16 +210,16 @@ skynet.start(function()
             skynet.sleep(300)
 
             local now = time_helper.get_time()
-            for filename, fileInfo in pairs(fileInfoMap) do
-                local fileHandle = fileInfo.fileHandle
-                if fileInfo.hasData then
+            for filename, file_info in pairs(file_info_map) do
+                local fd = file_info.fd
+                if file_info.hasData then
                     -- 日志数据落地
-                    fileInfo.hasData = false
-                    fileHandle:flush()
-                elseif fileInfo.writeTime + 3600 < now then
+                    file_info.hasData = false
+                    fd:flush()
+                elseif file_info.writeTime + 3600 < now then
                     -- 关闭超过1小时没有数据写入的日志文件
-                    fileHandle:close()
-                    fileInfoMap[filename] = nil
+                    fd:close()
+                    file_info_map[filename] = nil
                 end
             end
         end
