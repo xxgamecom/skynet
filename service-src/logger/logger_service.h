@@ -11,12 +11,12 @@ namespace skynet { namespace service {
  * when skynet node start, the default logger is this service, you can config to use snlua logger.
  *
  * config file param:
- * logger     - lua logger service filename
- * logservice - lua logger service loader (snlua)
+ * log_file    - lua logger service filename
+ * log_service - lua logger service loader (snlua)
  *
  * config file examples:
- * logger = "userlog"
- * logservice = "snlua"
+ * log_file = "userlog"
+ * log_service = "snlua"
  *
  * log api:
  * skynet::log()

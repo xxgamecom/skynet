@@ -5,83 +5,90 @@
 local skynet = require "skynet"
 require "skynet.manager"
 
-local FileUtils = require "utils.FileUtils"
-local TimeUtils = require "utils.TimeUtils"
-local TableUtils = require "utils.TableUtils"
+local file_helper = require "utils.file_helper"
+local time_helper = require "utils.time_helper"
+local table_helper = require "utils.table_helper"
 
--- 文件信息表
-local fileInfoMap = {}
+local io = io
+local os = os
+local type = type
+local pairs = pairs
+local tostring = tostring
 
--- 获取日志文件名
-local function getFilename(dirname, filename)
-    -- 日志分日期存储
-    local path = skynet.getenv("logpath")
-    if path == nil then
-        path = "."
+local file_info_map = {}    -- key: file path, value: file info ({ fd, has_data, write_time })
+
+---
+--- get log filename
+---@param dirname string
+---@param filename string
+---@return string the full path of log
+local function get_filename(dirname, filename)
+    -- store divide by date
+    local path = skynet.getenv("log_path")
+    path = path or "."
+    dirname = dirname or "."
+
+    -- create log directory
+    local current_time = os.date("%Y_%m_%d", time_helper.get_time())
+    local log_path = path .. "/" .. current_time .. "/" .. dirname
+    if not file_helper.is_exists(log_path) then
+        os.execute("mkdir -p " .. log_path)
     end
-    if dirname == nil then
-        dirname = "."
-    end
 
-    -- 创建日志文件夹
-    local currentTime = os.date("%Y_%m_%d", TimeUtils.getTime())
-    local logPath = path .. "/" .. currentTime .. "/" .. dirname
-    if not FileUtils.is_exists(logPath) then
-        os.execute("mkdir -p " .. logPath)
-    end
-
-    -- 返回日志文件名完整路径
-    return logPath .. "/" .. filename
+    -- full path
+    return log_path .. "/" .. filename
 end
 
--- 清理日志文件
--- @param filePath 日志文件路径
-local function clearLog(filePath)
-    local fileInfo = fileInfoMap[filePath]
-    if not fileInfo then
-        fileInfo = {}
-        fileInfo.fileHandle = io.open(filePath, "w")
-        fileInfoMap[filePath] = fileInfo
+---
+--- clear log file
+---@param file_path string the path of log file
+local function clear_log(file_path)
+    local file_info = file_info_map[file_path]
+    if not file_info then
+        file_info = {}
+        file_info.fd = io.open(file_path, "w")
+        file_info_map[file_path] = file_info
     else
-        local fileHandle = fileInfo.fileHandle
-        fileHandle:close()
-        fileInfo.fileHandle = io.open(filePath, "w")
+        local fd = file_info.fd
+        fd:close()
+        file_info.fd = io.open(file_path, "w")
     end
 
-    local fileHandle = fileInfo.fileHandle
-    if fileHandle ~= nil then
-        fileHandle:write("")
-        fileHandle:close()
+    local fd = file_info.fd
+    if fd ~= nil then
+        fd:write("")
+        fd:close()
     end
 
-    fileInfoMap[filePath] = nil
+    file_info_map[file_path] = nil
 end
 
--- 写普通日志
--- @param filePath 日志文件路径
-local function writeLog(filePath, ...)
-    -- 打开日志文件
-    local fileInfo = fileInfoMap[filePath]
-    if not fileInfo then
-        fileInfo = {}
-        fileInfo.fileHandle = io.open(filePath, "a+")
-        fileInfoMap[filePath] = fileInfo
+---
+--- write log info
+---@param file_path string the path of log file
+local function write_log(file_path, ...)
+    -- open log file
+    local file_info = file_info_map[file_path]
+    if not file_info then
+        file_info = {}
+        file_info.fd = io.open(file_path, "a+")
+        file_info_map[file_path] = file_info
     end
-    -- 调整日志写入时间
-    fileInfo.writeTime = TimeUtils.getTime()
+    -- adjust log write time
+    file_info.write_time = time_helper.get_time()
 
-    local fileHandle = fileInfo.fileHandle
-    if fileHandle ~= nil then
-        fileInfo.hasData = true
-        fileHandle:write("-------------[" .. os.date("%Y-%m-%d %X", TimeUtils.getTime()) .. "]--------------\n")
+    local fd = file_info.fd
+    if fd ~= nil then
+        file_info.has_data = true
+        fd:write("-------------[" .. os.date("%Y-%m-%d %X", time_helper.get_time()) .. "]--------------\n")
         local arg = table.pack(...)
         if arg ~= nil then
             for key, value in pairs(arg) do
                 if key ~= "n" then
                     if type(value) ~= "table" then
-                        fileHandle:write(tostring(value) .. "\n")
+                        fd:write(tostring(value) .. "\n")
                     else
-                        fileHandle:write(TableUtils.tostring(value) .. "\n")
+                        fd:write(table_helper.tostring(value) .. "\n")
                     end
                 end
             end
@@ -89,32 +96,33 @@ local function writeLog(filePath, ...)
     end
 end
 
--- 写协议日志
--- @param filePath 日志文件路径
--- @param msgName 消息名
-local function writeProtoLog(filePath, msgName, ...)
-    -- 打开日志文件
-    local fileInfo = fileInfoMap[filePath]
-    if not fileInfo then
-        fileInfo = {}
-        fileInfo.fileHandle = io.open(filePath, "a+")
-        fileInfoMap[filePath] = fileInfo
+---
+--- log net info
+---@param file_path string the path of log file
+---@param msg_name string message name
+local function write_net_log(file_path, msg_name, ...)
+    -- open log file
+    local file_info = file_info_map[file_path]
+    if not file_info then
+        file_info = {}
+        file_info.fd = io.open(file_path, "a+")
+        file_info_map[file_path] = file_info
     end
-    -- 调整日志写入时间
-    fileInfo.writeTime = TimeUtils.getTime()
+    -- adjust log write time
+    file_info.write_time = time_helper.get_time()
 
-    local fileHandle = fileInfo.fileHandle
-    if fileHandle ~= nil then
-        fileInfo.hasData = true
-        fileHandle:write("[" .. os.date("%Y-%m-%d %X", TimeUtils.getTime()) .. "] msgName: " .. msgName .. "\n")
+    local fd = file_info.fd
+    if fd ~= nil then
+        file_info.has_data = true
+        fd:write("[" .. os.date("%Y-%m-%d %X", time_helper.get_time()) .. "] msg_name: " .. msg_name .. "\n")
         local arg = table.pack(...)
         if arg ~= nil then
             for key, value in pairs(arg) do
                 if key ~= "n" then
                     if type(value) ~= "table" then
-                        fileHandle:write(tostring(value) .. "\n")
+                        fd:write(tostring(value) .. "\n")
                     else
-                        fileHandle:write(TableUtils.tostring(value) .. "\n")
+                        fd:write(table_helper.tostring(value) .. "\n")
                     end
                 end
             end
@@ -124,68 +132,66 @@ end
 
 local CMD = {}
 
+--- start logger service, do initialize
 function CMD.start(...)
 end
 
+--- exit logger service, do clean
 function CMD.exit(...)
     skynet.exit()
 end
 
+--- reload logger service
 function CMD.reload(...)
 end
 
--- 写错误日志
+--- log error
 function CMD.error(...)
-    local filePath = getFilename(".", "error.log")
-    writeLog(filePath, ...)
+    local file_path = get_filename(".", "error.log")
+    write_log(file_path, ...)
 end
 
--- 写信息日志
+--- log info
 function CMD.info(...)
-    local filePath = getFilename(".", "info.log")
-    writeLog(filePath, ...)
+    local file_path = get_filename(".", "info.log")
+    write_log(file_path, ...)
 end
 
--- 写警告日志
+--- log warn
 function CMD.warning(...)
-    local filePath = getFilename(".", "warning.log")
-    writeLog(filePath, ...)
+    local file_path = get_filename(".", "warning.log")
+    write_log(file_path, ...)
 end
 
--- 写通信协议日志
-function CMD.proto(msgName, ...)
-    -- 过滤掉 clientMsg
+---
+--- log net message
+---@param msg_name string message name
+function CMD.proto(msg_name, ...)
+    -- filter `clientMsg`
     local param = { ... }
     if #param >= 2 and param[2] == "clientMsg" then
         return
     end
 
-    local filePath = getFilename(".", "proto.log")
-    writeProtoLog(filePath, msgName, ...)
+    local file_path = get_filename(".", "proto.log")
+    write_net_log(file_path, msg_name, ...)
 end
 
--- 写对象日志
--- @param objName, 对象名称, 会根据该对象名称创建对象日志目录, 将对象日志写到该名称的目录下
--- @param objId, 对象ID, 会根据该对象ID生成日志文件名
-function CMD.obj(objName, objId, ...)
-    if objName == nil then
-        objName = "."
-    end
-    if objId == nil then
-        objId = "unknown"
-    end
+---
+--- log object data
+---@param obj_name string object name, the log filename is generated based on the object name
+---@param obj_id string object id, the log filename is generated based on the object id
+function CMD.obj(obj_name, obj_id, ...)
+    obj_name = obj_name or "."
+    obj_id = obj_id or "unknown"
 
-    local filePath = getFilename(objName, objId .. ".log")
-    writeLog(filePath, ...)
+    local file_path = get_filename(obj_name, obj_id .. ".log")
+    write_log(file_path, ...)
 end
 
--- ----------------------------------------------
--- service function
--- ----------------------------------------------
-
--- 服务入口
+--
 skynet.start(function()
-    -- 注册lua消息处理
+    -- set "lua" service message dispatch function
     skynet.dispatch("lua", function(_, address, cmd, ...)
         local f = CMD[cmd]
         if f ~= nil then
@@ -193,27 +199,28 @@ skynet.start(function()
         end
     end)
 
-    --
+    -- start logger & register service name `.loggerd`
     CMD.start()
     skynet.register(".loggerd")
 
-    -- 日志数据落地协程
+    -- logger data writer thread
     skynet.fork(function()
         while true do
             -- 3 second
             skynet.sleep(300)
 
-            local now = TimeUtils.getTime()
-            for filename, fileInfo in pairs(fileInfoMap) do
-                local fileHandle = fileInfo.fileHandle
-                if fileInfo.hasData then
-                    -- 日志数据落地
-                    fileInfo.hasData = false
-                    fileHandle:flush()
-                elseif fileInfo.writeTime + 3600 < now then
-                    -- 关闭超过1小时没有数据写入的日志文件
-                    fileHandle:close()
-                    fileInfoMap[filename] = nil
+            -- get current seconds
+            local now = time_helper.get_time()
+            for filename, file_info in pairs(file_info_map) do
+                local fd = file_info.fd
+                if file_info.has_data then
+                    -- flush log data
+                    file_info.has_data = false
+                    fd:flush()
+                elseif file_info.write_time + 3600 < now then
+                    -- close log files that have not been written for more than 1 hour
+                    fd:close()
+                    file_info_map[filename] = nil
                 end
             end
         end

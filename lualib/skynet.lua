@@ -286,14 +286,15 @@ skynet.trace_timeout(false)
 
 ---
 --- start a timer
---- @param func function timer callback
-function skynet.timeout(ti, func)
+---@param ticks
+---@param func function timer callback
+function skynet.timeout(ticks, func)
     -- set timer
-    local session_id = skynet_core.intcommand("TIMEOUT", ti)
+    local session_id = skynet_core.intcommand("TIMEOUT", ticks)
     assert(session_id)
 
     -- start a thread, save session & thread relations (used to wait timer)
-    local thread = co_create_trace_timeout(func, ti)
+    local thread = co_create_trace_timeout(func, ticks)
     assert(session_thread_map[session_id] == nil)
     session_thread_map[session_id] = thread
 
@@ -322,11 +323,11 @@ end
 
 ---
 --- sleep current thread
---- @param ti
+--- @param ticks number sleep ticks
 --- @param token
-function skynet.sleep(ti, token)
+function skynet.sleep(ticks, token)
     -- set timer
-    local session_id = skynet_core.intcommand("TIMEOUT", ti)
+    local session_id = skynet_core.intcommand("TIMEOUT", ticks)
     assert(session_id)
 
     --
@@ -441,20 +442,20 @@ end
 -- time functions
 -- ------------------------------------------------------
 
-local starttime
+local start_time
 
 ---
-function skynet.starttime()
-    if not starttime then
-        starttime = skynet_core.intcommand("START_TIME")
+function skynet.start_time()
+    if not start_time then
+        start_time = skynet_core.intcommand("START_TIME")
     end
-    return starttime
+    return start_time
 end
 
 ---
 --- get current time (seconds)
 function skynet.time()
-    return skynet.now() / 100 + (starttime or skynet.starttime())
+    return skynet.now() / 100 + (start_time or skynet.start_time())
 end
 
 -- ------------------------------------------------------
@@ -955,7 +956,7 @@ function skynet.init_service(start_func)
         skynet.send(".launcher", "lua", "ERROR")
         skynet.exit()
     else
-        skynet.send(".launcher", "lua", "LAUNCHOK")
+        skynet.send(".launcher", "lua", "LAUNCH_OK")
     end
 end
 
@@ -1021,6 +1022,7 @@ function skynet.stat(what)
 end
 
 ---
+--- show service task detail
 --- @param ret
 function skynet.task(ret)
     if ret == nil then
@@ -1066,6 +1068,7 @@ function skynet.task(ret)
 end
 
 ---
+---  show service unique task detail
 function skynet.uniqtask()
     local stacks = {}
     for session_id, thread in pairs(session_thread_map) do

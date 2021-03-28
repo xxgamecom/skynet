@@ -2,13 +2,17 @@ local skynet = require "skynet"
 
 local list = {}
 
-local function timeout_check(ti)
+local function timeout_check(ticks)
     if not next(list) then
         return
     end
-    skynet.sleep(ti)    -- sleep 10 sec
+
+    --
+    skynet.sleep(ticks)
+
+    --
     for k, v in pairs(list) do
-        skynet.log("timout", ti, k, v)
+        skynet.log("timout", ticks, k, v)
     end
 end
 

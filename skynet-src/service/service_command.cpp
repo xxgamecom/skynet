@@ -329,7 +329,7 @@ const char* cmd_stat(service_context* svc_ctx, const char* param)
 
 // skynet cmd: log_on
 // set service file log on
-const char* cmd_log_on(service_context* context, const char* param)
+const char* cmd_service_log_on(service_context* context, const char* param)
 {
     uint32_t svc_handle = _to_svc_handle(context, param);
     if (svc_handle == 0)
@@ -361,7 +361,7 @@ const char* cmd_log_on(service_context* context, const char* param)
 
 // skynet cmd: log_off
 // set service file log off
-const char* cmd_log_off(service_context* context, const char* param)
+const char* cmd_service_log_off(service_context* context, const char* param)
 {
     uint32_t svc_handle = _to_svc_handle(context, param);
     if (svc_handle == 0)
@@ -431,8 +431,8 @@ static std::unordered_map<std::string, cmd_proc> cmd_map {
     { "ABORT", cmd_abort },
     { "MONITOR", cmd_monitor },
     { "STAT", cmd_stat },
-    { "LOG_ON", cmd_log_on },
-    { "LOG_OFF", cmd_log_off },
+    { "LOG_ON", cmd_service_log_on },
+    { "LOG_OFF", cmd_service_log_off },
     { "SIGNAL", cmd_signal },
 };
 

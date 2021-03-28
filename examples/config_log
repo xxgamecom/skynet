@@ -1,9 +1,27 @@
-thread = 8
-mqueue = 256
+-- ------------------------
+-- path
+-- ------------------------
+
 cpath = "./cservice/?.so"
-logger = nil
-address = "127.0.0.1:2527"
-master = "127.0.0.1:2013"
-start = "main_log"
 luaservice ="./service/?.lua;./test/?.lua;./examples/?.lua"
 snax = "./examples/?.lua;./test/?.lua"
+
+-- ------------------------
+-- skynet node config
+-- ------------------------
+
+thread = 8
+mqueue = 256
+
+address = "127.0.0.1:2527"
+master = "127.0.0.1:2013"
+
+-- main script
+start = "main_log"
+
+-- ------------------------
+-- logger
+-- ------------------------
+
+log_file = nil
+

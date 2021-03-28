@@ -321,12 +321,12 @@ end
 
 function CMD.logon(address)
     address = adjust_address(address)
-    skynet_core.command("LOGON", skynet.to_address(address))
+    skynet_core.command("LOG_ON", skynet.to_address(address))
 end
 
 function CMD.logoff(address)
     address = adjust_address(address)
-    skynet_core.command("LOGOFF", skynet.to_address(address))
+    skynet_core.command("LOG_OFF", skynet.to_address(address))
 end
 
 function CMD.signal(address, sig)

@@ -1,13 +1,14 @@
 local skynet = require "skynet"
 local skynet_core = require "skynet.core"
-require "skynet.manager"    -- import manager apis
+require "skynet.manager"
 
 local string = string
 local pairs = pairs
 local pcall = pcall
+local tonumber = tonumber
 
 local services = {}
-local instance = {} -- for confirm (function CMD.LAUNCH / CMD.ERROR / CMD.LAUNCHOK)
+local instance = {} -- for confirm (function CMD.LAUNCH / CMD.ERROR / CMD.LAUNCH_OK)
 local launch_session = {} -- for CMD.QUERY, service_address -> session
 
 local function handle_to_address(handle)
@@ -104,7 +105,7 @@ end
 function CMD.LOGLAUNCH(_, service, ...)
     local inst = launch_service(service, ...)
     if inst then
-        skynet_core.command("LOGON", skynet.to_address(inst))
+        skynet_core.command("LOG_ON", skynet.to_address(inst))
     end
     return NORET
 end
@@ -122,7 +123,7 @@ function CMD.ERROR(address)
     return NORET
 end
 
-function CMD.LAUNCHOK(address)
+function CMD.LAUNCH_OK(address)
     -- init notice
     local response = instance[address]
     if response then
@@ -150,7 +151,7 @@ skynet.register_svc_msg_handler({
     unpack = skynet.tostring,
     dispatch = function(session, address, cmd)
         if cmd == "" then
-            CMD.LAUNCHOK(address)
+            CMD.LAUNCH_OK(address)
         elseif cmd == "ERROR" then
             CMD.ERROR(address)
         else
@@ -159,18 +160,21 @@ skynet.register_svc_msg_handler({
     end,
 })
 
+-- set "lua" service message dispatch function
 skynet.dispatch("lua", function(session, address, cmd, ...)
     cmd = string.upper(cmd)
     local f = CMD[cmd]
     if f then
         local ret = f(address, ...)
         if ret ~= NORET then
-            skynet.ret(skynet.pack(ret))
+            skynet.ret_pack(ret)
         end
     else
-        skynet.ret(skynet.pack { "Unknown command" })
+        skynet.ret_pack({ "Unknown command" })
     end
 end)
 
+--
 skynet.start(function()
+
 end)

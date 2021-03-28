@@ -1,7 +1,23 @@
-thread = 8
-logger = nil
-start = "main"
-bootstrap = "snlua bootstrap"	-- The service for bootstrap
+-- ------------------------
+-- path
+-- ------------------------
+
 luaservice = "./service/?.lua;./examples/login/?.lua"
-lualoader = "lualib/loader.lua"
 cpath = "./cservice/?.so"
+
+-- ------------------------
+-- skynet node config
+-- ------------------------
+
+thread = 8
+bootstrap = "snlua bootstrap"   -- The service for bootstrap
+lualoader = "lualib/loader.lua"
+
+-- main script
+start = "main"
+
+-- ------------------------
+-- logger
+-- ------------------------
+
+log_file = nil

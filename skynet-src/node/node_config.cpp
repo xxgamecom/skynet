@@ -101,7 +101,7 @@ bool node_config::load(const std::string& config_file)
     int err =  luaL_loadbufferx(L, lua_script, ::strlen(lua_script), "=[skynet config]", "t");
     assert(err == LUA_OK);
 
-    // 加载配置文件
+    // load config file
     lua_pushstring(L, config_file.c_str());
     err = lua_pcall(L, 1, 1, 0);
     if (err != 0)
@@ -111,15 +111,15 @@ bool node_config::load(const std::string& config_file)
         return false;
     }
 
-    // 初始化skynet节点环境(读取配置文件的环境配置)
+    // init node env (read from config file)
     _init_env(L);
 
-    // 从节点环境中读取配置数据
+    // read config from node env
     thread_ = skynet::node_env::instance()->get_int32("thread", 8);                                 // work thread count
     cservice_path_ = skynet::node_env::instance()->get_string("cservice_path", "./cservice/?.so");  // c service mod search path
     bootstrap_ = skynet::node_env::instance()->get_string("bootstrap","snlua bootstrap");           // bootstrap服务
-    pid_file_ = skynet::node_env::instance()->get_string("pid_file", nullptr);                      // enable/disable daemon mode
-    logger_ = skynet::node_env::instance()->get_string("logger", nullptr);                          // log output file
+    daemon_pid_file_ = skynet::node_env::instance()->get_string("daemon", nullptr);                 // enable/disable daemon mode
+    log_file_ = skynet::node_env::instance()->get_string("log_file", nullptr);                      // log output file
     log_service_ = skynet::node_env::instance()->get_string("log_service", "logger");               // skynet::log输出logger服务, 可以使用外部自定义的lua logger服务
     profile_ = skynet::node_env::instance()->get_boolean("profile", 1);                             // enable/disable statistics
 
