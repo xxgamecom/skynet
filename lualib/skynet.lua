@@ -398,7 +398,7 @@ end
 ---
 --- self service handle
 function skynet.self()
-    return skynet_core.addresscommand("REG")
+    return skynet_core.addresscommand("REGISTER")
 end
 
 ---
@@ -463,12 +463,12 @@ end
 -- ------------------------------------------------------
 
 function skynet.getenv(key)
-    return (skynet_core.command("GETENV", key))
+    return (skynet_core.command("GET_ENV", key))
 end
 
 function skynet.setenv(key, value)
-    assert(skynet_core.command("GETENV", key) == nil, "Can't setenv exist key : " .. key)
-    skynet_core.command("SETENV", key .. " " .. value)
+    assert(skynet_core.command("GET_ENV", key) == nil, "Can't setenv exist key : " .. key)
+    skynet_core.command("SET_ENV", key .. " " .. value)
 end
 
 

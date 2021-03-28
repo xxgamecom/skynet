@@ -96,9 +96,9 @@ const char* cmd_timeout(service_context* svc_ctx, const char* param)
     return svc_ctx->cmd_result_;
 }
 
-// skynet指令: reg, 给自身起一个名字（支持多个）
+// skynet cmd: reg, register service name（支持多个）
 // cmd_name给指定ctx起一个名字，即将ctx->handle绑定一个名称(service_manager::instance()->set_handle_by_name)
-const char* cmd_reg(service_context* svc_ctx, const char* param)
+const char* cmd_register(service_context* svc_ctx, const char* param)
 {
     if (param == nullptr || param[0] == '\0')
     {
@@ -419,14 +419,14 @@ typedef const char* (*cmd_proc)(service_context* context, const char* param);
 //
 static std::unordered_map<std::string, cmd_proc> cmd_map {
     { "TIMEOUT", cmd_timeout },
-    { "REG", cmd_reg },
+    { "REGISTER", cmd_register },
     { "QUERY", cmd_query },
     { "NAME", cmd_name },
     { "EXIT", cmd_exit },
     { "KILL", cmd_kill },
     { "LAUNCH", cmd_launch },
-    { "GETENV", cmd_get_env },
-    { "SETENV", cmd_set_env },
+    { "GET_ENV", cmd_get_env },
+    { "SET_ENV", cmd_set_env },
     { "START_TIME", cmd_start_time },
     { "ABORT", cmd_abort },
     { "MONITOR", cmd_monitor },

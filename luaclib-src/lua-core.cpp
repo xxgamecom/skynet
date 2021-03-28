@@ -260,7 +260,7 @@ static int l_service_command_int(lua_State* L)
  * 2 service cmd param  - string
  *
  * examples:
- * c.addresscommand("REG")
+ * c.addresscommand("REGISTER")
  * c.addresscommand("QUERY", name)
  */
 static int l_service_command_address(lua_State* L)
@@ -362,7 +362,7 @@ static int _cb(skynet::service_context* svc_ctx, void* ud, int type, int session
         return 0;
     }
 
-    const char* self = skynet::service_command::exec(svc_ctx, "REG");
+    const char* self = skynet::service_command::exec(svc_ctx, "REGISTER");
     switch (r)
     {
     case LUA_ERRRUN:

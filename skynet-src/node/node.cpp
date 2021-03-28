@@ -21,6 +21,7 @@
 #include "../utils/daemon_helper.h"
 #include "../utils/time_helper.h"
 
+#include <regex>
 #include <iostream>
 #include <mutex>
 
@@ -217,24 +218,36 @@ mq_private* node::dispatch_message(service_monitor& svc_monitor, mq_private* q, 
 }
 
 
-// 启动 lua bootstrap 服务
-// snlua bootstrap
+// use snlua to start lua service `bootstrap`
 void node::_bootstrap(service_context* log_svc_ctx, const char* cmdline)
 {
-    // 命令行长度
-    int sz = ::strlen(cmdline);
-    char svc_name[sz + 1];
-    char svc_args[sz + 1];
-    // 命令行字符串按照格式分割成两部分, 前部分为服务模块名, 后部分为服务模块初始化参数
-    ::sscanf(cmdline, "%s %s", svc_name, svc_args);
+    std::string cmdline_string = cmdline;
+
+    // split command line by ' '
+    std::regex re {' '};
+    std::vector<std::string> cmdline_info {
+        std::sregex_token_iterator(cmdline_string.begin(), cmdline_string.end(), re, -1),
+        std::sregex_token_iterator()
+    };
+
+    // check command line
+    if (cmdline_info.size() < 2)
+    {
+        log(nullptr, "Bootstrap error : ", cmdline);
+        // output all error message in mq
+        _dispatch_all(log_svc_ctx);
+
+        ::exit(1);
+    }
 
     // create service
-    service_context* svc_ctx = service_manager::instance()->create_service(svc_name, svc_args);
+    std::string svc_name = cmdline_info[0];
+    std::string svc_args = cmdline_info[1];
+    service_context* svc_ctx = service_manager::instance()->create_service(svc_name.c_str(), svc_args.c_str());
     if (svc_ctx == nullptr)
     {
-        // 通过传入的logger服务接口构建错误信息加入logger的消息队列
         log(nullptr, "Bootstrap error : %s\n", cmdline);
-        // 输出消息队列中的错误信息
+        // output all error message in mq
         _dispatch_all(log_svc_ctx);
 
         ::exit(1);
@@ -258,10 +271,10 @@ void node::_dispatch_all(service_context* svc_ctx)
 void node::_do_dispatch_message(service_context* svc_ctx, service_message* msg)
 {
     int svc_msg_type = msg->data_size >> MESSAGE_TYPE_SHIFT;
-    size_t sz = msg->data_size & MESSAGE_TYPE_MASK;
+    size_t msg_sz = msg->data_size & MESSAGE_TYPE_MASK;
     if (svc_ctx->log_fd_ != nullptr)
     {
-        service_log::log(svc_ctx->log_fd_, msg->src_svc_handle, svc_msg_type, msg->session_id, msg->data_ptr, sz);
+        service_log::log(svc_ctx->log_fd_, msg->src_svc_handle, svc_msg_type, msg->session_id, msg->data_ptr, msg_sz);
     }
 
     //
@@ -273,7 +286,7 @@ void node::_do_dispatch_message(service_context* svc_ctx, service_message* msg)
         svc_ctx->cpu_start_ = time_helper::thread_time();
 
         // message callback
-        reserve_msg = svc_ctx->msg_callback_(svc_ctx, svc_ctx->cb_ud_, svc_msg_type, msg->session_id, msg->src_svc_handle, msg->data_ptr, sz);
+        reserve_msg = svc_ctx->msg_callback_(svc_ctx, svc_ctx->cb_ud_, svc_msg_type, msg->session_id, msg->src_svc_handle, msg->data_ptr, msg_sz);
 
         uint64_t cost_time = time_helper::thread_time() - svc_ctx->cpu_start_;
         svc_ctx->cpu_cost_ += cost_time;
@@ -281,7 +294,7 @@ void node::_do_dispatch_message(service_context* svc_ctx, service_message* msg)
     else
     {
         // message callback
-        reserve_msg = svc_ctx->msg_callback_(svc_ctx, svc_ctx->cb_ud_, svc_msg_type, msg->session_id, msg->src_svc_handle, msg->data_ptr, sz);
+        reserve_msg = svc_ctx->msg_callback_(svc_ctx, svc_ctx->cb_ud_, svc_msg_type, msg->session_id, msg->src_svc_handle, msg->data_ptr, msg_sz);
     }
 
     //

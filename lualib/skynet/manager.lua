@@ -30,7 +30,7 @@ end
 ---
 --- @param name string
 function skynet.register(name)
-    skynet_core.command("REG", name)
+    skynet_core.command("REGISTER", name)
 end
 
 ---
