@@ -9,22 +9,24 @@ local file_helper = require "utils.file_helper"
 local time_helper = require "utils.time_helper"
 local table_helper = require "utils.table_helper"
 
+local io = io
+local os = os
+local type = type
+local pairs = pairs
+local tostring = tostring
+
 local file_info_map = {}    -- key: file path, value: file info ({ fd, has_data, write_time })
 
 ---
 --- get log filename
----@param dirname
----@param filename
+---@param dirname string
+---@param filename string
 ---@return string the full path of log
 local function get_filename(dirname, filename)
     -- store divide by date
     local path = skynet.getenv("log_path")
-    if path == nil then
-        path = "."
-    end
-    if dirname == nil then
-        dirname = "."
-    end
+    path = path or "."
+    dirname = dirname or "."
 
     -- create log directory
     local current_time = os.date("%Y_%m_%d", time_helper.get_time())
@@ -39,7 +41,7 @@ end
 
 ---
 --- clear log file
----@param file_path the path of log file
+---@param file_path string the path of log file
 local function clear_log(file_path)
     local file_info = file_info_map[file_path]
     if not file_info then
@@ -63,21 +65,21 @@ end
 
 ---
 --- write log info
----@param file_path the path of log file
+---@param file_path string the path of log file
 local function write_log(file_path, ...)
-    -- 打开日志文件
+    -- open log file
     local file_info = file_info_map[file_path]
     if not file_info then
         file_info = {}
         file_info.fd = io.open(file_path, "a+")
         file_info_map[file_path] = file_info
     end
-    -- 调整日志写入时间
-    file_info.writeTime = time_helper.get_time()
+    -- adjust log write time
+    file_info.write_time = time_helper.get_time()
 
     local fd = file_info.fd
     if fd ~= nil then
-        file_info.hasData = true
+        file_info.has_data = true
         fd:write("-------------[" .. os.date("%Y-%m-%d %X", time_helper.get_time()) .. "]--------------\n")
         local arg = table.pack(...)
         if arg ~= nil then
@@ -96,23 +98,23 @@ end
 
 ---
 --- log net info
----@param file_path 日志文件路径
----@param msgName 消息名
-local function writeProtoLog(file_path, msgName, ...)
-    -- 打开日志文件
+---@param file_path string the path of log file
+---@param msg_name string message name
+local function write_net_log(file_path, msg_name, ...)
+    -- open log file
     local file_info = file_info_map[file_path]
     if not file_info then
         file_info = {}
         file_info.fd = io.open(file_path, "a+")
         file_info_map[file_path] = file_info
     end
-    -- 调整日志写入时间
-    file_info.writeTime = time_helper.get_time()
+    -- adjust log write time
+    file_info.write_time = time_helper.get_time()
 
     local fd = file_info.fd
     if fd ~= nil then
-        file_info.hasData = true
-        fd:write("[" .. os.date("%Y-%m-%d %X", time_helper.get_time()) .. "] msgName: " .. msgName .. "\n")
+        file_info.has_data = true
+        fd:write("[" .. os.date("%Y-%m-%d %X", time_helper.get_time()) .. "] msg_name: " .. msg_name .. "\n")
         local arg = table.pack(...)
         if arg ~= nil then
             for key, value in pairs(arg) do
@@ -130,64 +132,62 @@ end
 
 local CMD = {}
 
+--- start logger service, do initialize
 function CMD.start(...)
 end
 
+--- exit logger service, do clean
 function CMD.exit(...)
     skynet.exit()
 end
 
+--- reload logger service
 function CMD.reload(...)
 end
 
--- 写错误日志
+--- log error
 function CMD.error(...)
     local file_path = get_filename(".", "error.log")
     write_log(file_path, ...)
 end
 
--- 写信息日志
+--- log info
 function CMD.info(...)
     local file_path = get_filename(".", "info.log")
     write_log(file_path, ...)
 end
 
--- 写警告日志
+--- log warn
 function CMD.warning(...)
     local file_path = get_filename(".", "warning.log")
     write_log(file_path, ...)
 end
 
--- 写通信协议日志
-function CMD.proto(msgName, ...)
-    -- 过滤掉 clientMsg
+---
+--- log net message
+---@param msg_name string message name
+function CMD.proto(msg_name, ...)
+    -- filter `clientMsg`
     local param = { ... }
     if #param >= 2 and param[2] == "clientMsg" then
         return
     end
 
     local file_path = get_filename(".", "proto.log")
-    writeProtoLog(file_path, msgName, ...)
+    write_net_log(file_path, msg_name, ...)
 end
 
--- 写对象日志
--- @param objName, 对象名称, 会根据该对象名称创建对象日志目录, 将对象日志写到该名称的目录下
--- @param objId, 对象ID, 会根据该对象ID生成日志文件名
-function CMD.obj(objName, objId, ...)
-    if objName == nil then
-        objName = "."
-    end
-    if objId == nil then
-        objId = "unknown"
-    end
+---
+--- log object data
+---@param obj_name string object name, the log filename is generated based on the object name
+---@param obj_id string object id, the log filename is generated based on the object id
+function CMD.obj(obj_name, obj_id, ...)
+    obj_name = obj_name or "."
+    obj_id = obj_id or "unknown"
 
-    local file_path = get_filename(objName, objId .. ".log")
+    local file_path = get_filename(obj_name, obj_id .. ".log")
     write_log(file_path, ...)
 end
-
--- ----------------------------------------------
--- service function
--- ----------------------------------------------
 
 --
 skynet.start(function()
@@ -209,15 +209,16 @@ skynet.start(function()
             -- 3 second
             skynet.sleep(300)
 
+            -- get current seconds
             local now = time_helper.get_time()
             for filename, file_info in pairs(file_info_map) do
                 local fd = file_info.fd
-                if file_info.hasData then
-                    -- 日志数据落地
-                    file_info.hasData = false
+                if file_info.has_data then
+                    -- flush log data
+                    file_info.has_data = false
                     fd:flush()
-                elseif file_info.writeTime + 3600 < now then
-                    -- 关闭超过1小时没有数据写入的日志文件
+                elseif file_info.write_time + 3600 < now then
+                    -- close log files that have not been written for more than 1 hour
                     fd:close()
                     file_info_map[filename] = nil
                 end

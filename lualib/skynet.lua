@@ -286,14 +286,15 @@ skynet.trace_timeout(false)
 
 ---
 --- start a timer
---- @param func function timer callback
-function skynet.timeout(ti, func)
+---@param ticks
+---@param func function timer callback
+function skynet.timeout(ticks, func)
     -- set timer
-    local session_id = skynet_core.intcommand("TIMEOUT", ti)
+    local session_id = skynet_core.intcommand("TIMEOUT", ticks)
     assert(session_id)
 
     -- start a thread, save session & thread relations (used to wait timer)
-    local thread = co_create_trace_timeout(func, ti)
+    local thread = co_create_trace_timeout(func, ticks)
     assert(session_thread_map[session_id] == nil)
     session_thread_map[session_id] = thread
 
@@ -322,11 +323,11 @@ end
 
 ---
 --- sleep current thread
---- @param ti
+--- @param ticks number sleep ticks
 --- @param token
-function skynet.sleep(ti, token)
+function skynet.sleep(ticks, token)
     -- set timer
-    local session_id = skynet_core.intcommand("TIMEOUT", ti)
+    local session_id = skynet_core.intcommand("TIMEOUT", ticks)
     assert(session_id)
 
     --

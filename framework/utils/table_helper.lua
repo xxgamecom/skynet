@@ -23,8 +23,8 @@ local mt_defaultvalue = {
         return t.__
     end
 }
-function M.set_default(t, defaultvalue)
-    t.__ = defaultvalue
+function M.set_default(t, default_value)
+    t.__ = default_value
     setmetatable(t, mt_defaultvalue)
 end
 
