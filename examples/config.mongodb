@@ -1,10 +1,27 @@
+-- ------------------------
+-- path
+-- ------------------------
+
 root = "./"
-thread = 8
-logger = nil
-start = "main_mongodb"	-- main script
-bootstrap = "snlua bootstrap"	-- The service for bootstrap
 luaservice = root.."service/?.lua;"..root.."test/?.lua;"..root.."examples/?.lua"
-lualoader = "lualib/loader.lua"
 snax = root.."examples/?.lua;"..root.."test/?.lua"
 cpath = root.."cservice/?.so"
--- daemon = "./skynet.pid"
+
+-- ------------------------
+-- skynet node config
+-- ------------------------
+
+bootstrap = "snlua bootstrap"   -- The service for bootstrap
+lualoader = "lualib/loader.lua"
+thread = 8
+-- pid_file = "./skynet.pid"
+
+-- main script
+start = "main_mongodb"
+
+-- ------------------------
+-- logger
+-- ------------------------
+
+log_file = nil
+

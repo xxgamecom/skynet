@@ -1,22 +1,22 @@
---
+-- ------------------------
 -- path
---
+-- ------------------------
 
 root = "./"
 cservice_path = root.."cservice/?.so"
 luaservice = root.."service/?.lua;" .. root.."examples/?.lua;" .. root.."tests/?.lua"
 lua_path = root.."lualib/?.lua;" .. root.."tests/?.lua"
 lua_cpath = root.."luaclib/?.so"
-lualoader = root.."lualib/loader.lua"
 snax = root.."examples/?.lua;" .. root.."tests/?.lua"
 
---
+-- ------------------------
 -- skynet node config
---
+-- ------------------------
 
+thread = 8                          -- the number of service work thread
+lualoader = root.."lualib/loader.lua"
 -- preload = "./examples/preload.lua"   -- run preload.lua before every lua service run
 bootstrap = "snlua bootstrap"       -- the service for bootstrap
-thread = 8                          -- the number of service work thread
 -- pid_file = "./skynet.pid"        -- daemon mode
 
 address = "127.0.0.1:2526"
@@ -31,9 +31,12 @@ start = "main"
 -- logger
 -- ------------------------
 
---logger = "./skynet.log"  -- log to file
-logger = nil  -- log to console
+-- base info
 log_path = "."
+--log_file = "./skynet.log"  -- log to file
+log_file = nil  -- log to console
+
+-- log level
 log_level_error = true
 log_level_info = true
 log_level_warn = true
