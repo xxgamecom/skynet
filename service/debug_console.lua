@@ -98,7 +98,7 @@ local function console_main_loop(stdin, print)
     skynet.log(stdin, "connected")
     local ok, err = pcall(function()
         while true do
-            local cmdline = socket.readline(stdin, "\n")
+            local cmdline = socket.read_line(stdin, "\n")
             if not cmdline then
                 break
             end
@@ -287,9 +287,9 @@ function CMD_X.debug(cmd)
     local term_co = coroutine.running()
     local function forward_cmd()
         repeat
-            -- notice :  It's a bad practice to call socket.readline from two threads (this one and console_main_loop), be careful.
+            -- notice :  It's a bad practice to call socket.read_line from two threads (this one and console_main_loop), be careful.
             skynet.call(agent, "lua", "ping")    -- detect agent alive, if agent exit, raise error
-            local cmdline = socket.readline(cmd.fd, "\n")
+            local cmdline = socket.read_line(cmd.fd, "\n")
             cmdline = cmdline and cmdline:gsub("(.*)\r$", "%1")
             if not cmdline then
                 skynet.send(agent, "lua", "cmd", "cont")

@@ -79,7 +79,7 @@ end
 function tlshelper.readallfunc(fd, tls_ctx)
     local readfunc = socket.readfunc(fd)
     return function ()
-        local ds = socket.readall(fd)
+        local ds = socket.read_all(fd)
         local s = tls_ctx:read(ds)
         return s
     end

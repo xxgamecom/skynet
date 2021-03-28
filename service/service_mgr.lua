@@ -87,6 +87,9 @@ end
 
 local CMD = {}
 
+---
+---@param service_name
+---@param subname
 function CMD.LAUNCH(service_name, subname, ...)
     local realname = read_name(service_name)
 
@@ -97,6 +100,9 @@ function CMD.LAUNCH(service_name, subname, ...)
     end
 end
 
+---
+---@param service_name
+---@param subname
 function CMD.QUERY(service_name, subname)
     local realname = read_name(service_name)
 
@@ -141,41 +147,45 @@ local function list_service()
     return result
 end
 
-local function register_global()
-    function CMD.GLAUNCH(name, ...)
-        local global_name = "@" .. name
-        return CMD.LAUNCH(global_name, ...)
-    end
+---
+---@param name
+function CMD.GLAUNCH(name, ...)
+    local global_name = "@" .. name
+    return CMD.LAUNCH(global_name, ...)
+end
 
-    function CMD.GQUERY(name, ...)
-        local global_name = "@" .. name
-        return CMD.QUERY(global_name, ...)
-    end
+function CMD.GQUERY(name, ...)
+    local global_name = "@" .. name
+    return CMD.QUERY(global_name, ...)
+end
 
-    local mgr = {}
+local mgr = {}
 
-    function CMD.REPORT(m)
-        mgr[m] = true
-    end
+---
+---@param m
+function CMD.REPORT(m)
+    mgr[m] = true
+end
 
-    local function add_list(all, m)
-        local result = skynet.call(m, "lua", "LIST")
-        for k, v in pairs(result) do
-            all[k .. "@0"] = v
-        end
+local function add_list(all, m)
+    local result = skynet.call(m, "lua", "LIST")
+    for k, v in pairs(result) do
+        all[k .. "@0"] = v
     end
+end
 
-    function CMD.LIST()
-        local result = {}
-        for k in pairs(mgr) do
-            pcall(add_list, result, k)
-        end
-        local l = list_service()
-        for k, v in pairs(l) do
-            result[k] = v
-        end
-        return result
+---
+---
+function CMD.LIST()
+    local result = {}
+    for k in pairs(mgr) do
+        pcall(add_list, result, k)
     end
+    local l = list_service()
+    for k, v in pairs(l) do
+        result[k] = v
+    end
+    return result
 end
 
 skynet.start(function()
@@ -202,6 +212,4 @@ skynet.start(function()
     else
         skynet.register(".service")
     end
-
-    register_global()
 end)

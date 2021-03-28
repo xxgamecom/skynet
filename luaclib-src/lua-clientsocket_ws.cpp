@@ -272,7 +272,7 @@ static int _block_read(int fd, char* buffer, int sz, int time_out)
     return 0;
 }
 
-// quick and dirty none block stdin readline
+// quick and dirty none block stdin read_line
 
 #define QUEUE_SIZE 1024
 

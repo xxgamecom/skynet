@@ -2,6 +2,7 @@ local skynet = require "skynet"
 require "skynet.manager"
 local socket = require "skynet.socket"
 local crypt = require "skynet.crypt"
+
 local table = table
 local string = string
 local assert = assert
@@ -10,26 +11,26 @@ local assert = assert
 
 Protocol:
 
-	line (\n) based text protocol
+    line (\n) based text protocol
 
-	1. Server->Client : base64(8bytes random challenge)
-	2. Client->Server : base64(8bytes handshake client key)
-	3. Server: Gen a 8bytes handshake server key
-	4. Server->Client : base64(DH-Exchange(server key))
-	5. Server/Client secret := DH-Secret(client key/server key)
-	6. Client->Server : base64(HMAC(challenge, secret))
-	7. Client->Server : DES(secret, base64(token))
-	8. Server : call auth_handler(token) -> server, uid (A user defined method)
-	9. Server : call login_handler(server, uid, secret) ->subid (A user defined method)
-	10. Server->Client : 200 base64(subid)
+    1. Server->Client : base64(8bytes random challenge)
+    2. Client->Server : base64(8bytes handshake client key)
+    3. Server: Gen a 8bytes handshake server key
+    4. Server->Client : base64(DH-Exchange(server key))
+    5. Server/Client secret := DH-Secret(client key/server key)
+    6. Client->Server : base64(HMAC(challenge, secret))
+    7. Client->Server : DES(secret, base64(token))
+    8. Server : call auth_handler(token) -> server, uid (A user defined method)
+    9. Server : call login_handler(server, uid, secret) ->subid (A user defined method)
+    10. Server->Client : 200 base64(subid)
 
 Error Code:
-	401 Unauthorized . unauthorized by auth_handler
-	403 Forbidden . login_handler failed
-	406 Not Acceptable . already in login (disallow multi login)
+    401 Unauthorized . unauthorized by auth_handler
+    403 Forbidden . login_handler failed
+    406 Not Acceptable . already in login (disallow multi login)
 
 Success:
-	200 base64(subid)
+    200 base64(subid)
 ]]
 
 local socket_error = {}
@@ -55,7 +56,7 @@ local function launch_slave(auth_handler)
         local challenge = crypt.randomkey()
         write("auth", fd, crypt.base64encode(challenge) .. "\n")
 
-        local handshake = assert_socket("auth", socket.readline(fd), fd)
+        local handshake = assert_socket("auth", socket.read_line(fd), fd)
         local clientkey = crypt.base64decode(handshake)
         if #clientkey ~= 8 then
             error "Invalid client key"
@@ -65,14 +66,14 @@ local function launch_slave(auth_handler)
 
         local secret = crypt.dhsecret(clientkey, serverkey)
 
-        local response = assert_socket("auth", socket.readline(fd), fd)
+        local response = assert_socket("auth", socket.read_line(fd), fd)
         local hmac = crypt.hmac64(challenge, secret)
 
         if hmac ~= crypt.base64decode(response) then
             error "challenge failed"
         end
 
-        local etoken = assert_socket("auth", socket.readline(fd), fd)
+        local etoken = assert_socket("auth", socket.read_line(fd), fd)
 
         local token = crypt.desdecode(secret, crypt.base64decode(etoken))
 
@@ -177,7 +178,7 @@ local function launch_master(conf)
                 skynet.log(string.format("invalid client (fd = %d) error = %s", fd, err))
             end
         end
-        socket.close_fd(fd)    -- We haven't call socket.start, so use socket.close_fd rather than socket.close.
+        socket.close(fd)
     end)
 end
 

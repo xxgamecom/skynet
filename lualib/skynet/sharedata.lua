@@ -4,7 +4,7 @@ local sd = require "skynet.sharedata.corelib"
 local service
 
 skynet.init(function()
-    service = skynet.uniqueservice "sharedatad"
+    service = skynet.uniqueservice("sharedatad")
 end)
 
 local sharedata = {}

@@ -1,3 +1,7 @@
+--
+-- http client
+--
+
 local skynet = require "skynet"
 local socket = require "http.sockethelper"
 local url = require "http.url"
@@ -40,8 +44,8 @@ local function gen_interface(protocol, fd)
             close = nil,
             read = socket.readfunc(fd),
             write = socket.writefunc(fd),
-            readall = function()
-                return socket.readall(fd)
+            read_all = function()
+                return socket.read_all(fd)
             end,
         }
     elseif protocol == "https" then
@@ -53,7 +57,7 @@ local function gen_interface(protocol, fd)
             close = tls.closefunc(tls_ctx),
             read = tls.readfunc(fd, tls_ctx),
             write = tls.writefunc(fd, tls_ctx),
-            readall = tls.readallfunc(fd, tls_ctx),
+            read_all = tls.readallfunc(fd, tls_ctx),
         }
     else
         error(string.format("Invalid protocol: %s", protocol))

@@ -58,7 +58,7 @@ function sockethelper.readfunc(fd, pre)
     end
 end
 
-sockethelper.readall = socket.readall
+sockethelper.read_all = socket.read_all
 
 function sockethelper.writefunc(fd)
     return function(content)

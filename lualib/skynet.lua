@@ -1,5 +1,6 @@
 require "class"
 local skynet_core = require "skynet.core"
+local skynet_require = require "skynet.require"
 
 local profile = require "skynet.profile"
 local profile_resume = profile.resume
@@ -935,64 +936,20 @@ skynet.register_svc_msg_handler({
 })
 
 -- ------------------------------------------------------
--- skynet module two-step initialize.
--- When you require a skynet module:
--- 1. Run module main function as official lua module behavior.
--- 2. Run the functions register by skynet.init() during the step 1, unless calling `require` in main thread .
 --
--- If you call `require` in main thread ( service main function ), the functions
--- registered by skynet.init() do not execute immediately, they will be executed
--- by skynet.start() before start function.
 -- ------------------------------------------------------
 
-local init_func = {}
-
---
-function skynet.init(func, name)
-    assert(type(func) == "function")
-    if init_func == nil then
-        func()
-    else
-        table_insert(init_func, func)
-        if name then
-            assert(type(name) == "string")
-            assert(init_func[name] == nil)
-            init_func[name] = func
-        end
-    end
-end
-
---
-local function init_all()
-    local funcs = init_func
-    init_func = nil
-    if funcs then
-        for _, func in ipairs(funcs) do
-            func()
-        end
-    end
-end
-
-local function ret(func, ...)
-    func()
-    return ...
-end
-
-local function init_template(start_func, ...)
-    init_all()
-    init_func = {}
-    return ret(init_all, start_func(...))
-end
-
-function skynet.pcall(start_func, ...)
-    return xpcall(init_template, traceback, start_func, ...)
-end
+skynet.init = skynet_require.init
 
 ---
 --- initialize service
 --- @param start_func function service start function
 function skynet.init_service(start_func)
-    local ok, err = skynet.pcall(start_func)
+    local function main()
+        skynet_require.init_all()
+        start_func()
+    end
+    local ok, err = xpcall(main, traceback)
     if not ok then
         skynet.log("init service failed: " .. tostring(err))
         skynet.send(".launcher", "lua", "ERROR")
@@ -1108,6 +1065,7 @@ function skynet.task(ret)
     end
 end
 
+---
 function skynet.uniqtask()
     local stacks = {}
     for session_id, thread in pairs(session_thread_map) do

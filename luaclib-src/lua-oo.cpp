@@ -84,7 +84,7 @@ static int _isusertype(lua_State* L, int lo, const char* type, int def)
     return 0;
 }
 
-static int l_bnd_setpeer(lua_State* L)
+static int l_setpeer(lua_State* L)
 {
     /* stack: userdata, table */
     if (!lua_isuserdata(L, -2))
@@ -103,7 +103,7 @@ static int l_bnd_setpeer(lua_State* L)
     return 0;
 };
 
-static int l_bnd_getpeer(lua_State* L)
+static int l_getpeer(lua_State* L)
 {
     /* stack: userdata */
     lua_getuservalue(L, -1);
@@ -115,7 +115,7 @@ static int l_bnd_getpeer(lua_State* L)
     return 1;
 };
 
-static int l_bnd_iskindof(lua_State* L)
+static int l_iskindof(lua_State* L)
 {
     const char* type = luaL_checkstring(L, 2);
     if (lua_gettop(L) < 2)
@@ -141,7 +141,7 @@ static int l_bnd_iskindof(lua_State* L)
 }
 
 /**
- * skynet luaclib - skynet.core
+ * skynet luaclib - skynet.oo
  */
 
 #if __cplusplus
@@ -153,9 +153,9 @@ LUAMOD_API int luaopen_skynet_oo(lua_State* L)
     luaL_checkversion(L);
 
     luaL_Reg oo_funcs[] = {
-        { "getpeer", l_bnd_getpeer },
-        { "setpeer", l_bnd_setpeer },
-        { "iskindof", l_bnd_iskindof },
+        { "getpeer", l_getpeer },
+        { "setpeer", l_setpeer },
+        { "iskindof", l_iskindof },
 
         { nullptr,   nullptr },
     };

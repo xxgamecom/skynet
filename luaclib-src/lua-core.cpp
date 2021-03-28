@@ -405,8 +405,8 @@ static int _forward_cb(skynet::service_context* svc_ctx, void* ud, int type, int
  * 2 message forward mode   - boolean
  *
  * lua examples:
- * c.callback(skynet.handle_service_message)
- * c.callback(function(ptype, msg, sz, ...) ... end, true)
+ * skynet_core.callback(skynet.handle_service_message)
+ * skynet_core.callback(function(ptype, msg, sz, ...) ... end, true)
  */
 static int l_set_service_callback(lua_State* L)
 {

@@ -2,7 +2,8 @@ local skynet = require "skynet"
 local gateserver = require "snax.gateserver"
 local netpack = require "skynet.netpack"
 local crypt = require "skynet.crypt"
-local socketdriver = require "skynet.socketdriver"
+local socket_core = require "skynet.socket.core"
+
 local assert = assert
 local b64encode = crypt.base64encode
 local b64decode = crypt.base64decode
@@ -203,7 +204,7 @@ function server.start(conf)
             result = "200 OK"
         end
 
-        socketdriver.send(fd, netpack.pack(result))
+        socket_core.send(fd, netpack.pack(result))
 
         if close then
             gateserver.closeclient(fd)
@@ -284,7 +285,7 @@ function server.start(conf)
         -- the return fd is p[1] (fd may change by multi request) check connect
         fd = p[1]
         if connection[fd] then
-            socketdriver.send(fd, p[2])
+            socket_core.send(fd, p[2])
         end
         p[1] = nil
         retire_response(u)

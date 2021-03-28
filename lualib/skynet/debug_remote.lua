@@ -1,7 +1,8 @@
 local skynet = require "skynet"
 local debugchannel = require "skynet.debugchannel"
-local socketdriver = require "skynet.socketdriver"
-local injectrun = require "skynet.injectcode"
+local socket_core = require "skynet.socket.core"
+local injectrun = require "skynet.inject_code"
+
 local table = table
 local debug = debug
 local coroutine = coroutine
@@ -56,7 +57,7 @@ local function gen_print(fd)
             tmp[i] = tostring(tmp[i])
         end
         table.insert(tmp, "\n")
-        socketdriver.send(fd, table.concat(tmp, "\t"))
+        socket_core.send(fd, table.concat(tmp, "\t"))
     end
 end
 
@@ -211,7 +212,7 @@ local function hook_dispatch(dispatcher, resp, fd, channel)
     local function debug_hook()
         while true do
             if newline then
-                socketdriver.send(fd, prompt)
+                socket_core.send(fd, prompt)
                 newline = false
             end
             local cmd = channel:read()
