@@ -9,6 +9,7 @@
 .vscode
 .idea
 /skynet
+/*.log
 /lua
 /luac
 

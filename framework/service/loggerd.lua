@@ -5,9 +5,9 @@
 local skynet = require "skynet"
 require "skynet.manager"
 
-local FileUtils = require "utils.FileUtils"
-local TimeUtils = require "utils.TimeUtils"
-local TableUtils = require "utils.TableUtils"
+local file_helper = require "utils.file_helper"
+local time_helper = require "utils.time_helper"
+local table_helper = require "utils.table_helper"
 
 -- 文件信息表
 local fileInfoMap = {}
@@ -24,9 +24,9 @@ local function getFilename(dirname, filename)
     end
 
     -- 创建日志文件夹
-    local currentTime = os.date("%Y_%m_%d", TimeUtils.getTime())
+    local currentTime = os.date("%Y_%m_%d", time_helper.get_time())
     local logPath = path .. "/" .. currentTime .. "/" .. dirname
-    if not FileUtils.is_exists(logPath) then
+    if not file_helper.is_exists(logPath) then
         os.execute("mkdir -p " .. logPath)
     end
 
@@ -68,12 +68,12 @@ local function writeLog(filePath, ...)
         fileInfoMap[filePath] = fileInfo
     end
     -- 调整日志写入时间
-    fileInfo.writeTime = TimeUtils.getTime()
+    fileInfo.writeTime = time_helper.get_time()
 
     local fileHandle = fileInfo.fileHandle
     if fileHandle ~= nil then
         fileInfo.hasData = true
-        fileHandle:write("-------------[" .. os.date("%Y-%m-%d %X", TimeUtils.getTime()) .. "]--------------\n")
+        fileHandle:write("-------------[" .. os.date("%Y-%m-%d %X", time_helper.get_time()) .. "]--------------\n")
         local arg = table.pack(...)
         if arg ~= nil then
             for key, value in pairs(arg) do
@@ -81,7 +81,7 @@ local function writeLog(filePath, ...)
                     if type(value) ~= "table" then
                         fileHandle:write(tostring(value) .. "\n")
                     else
-                        fileHandle:write(TableUtils.tostring(value) .. "\n")
+                        fileHandle:write(table_helper.tostring(value) .. "\n")
                     end
                 end
             end
@@ -101,12 +101,12 @@ local function writeProtoLog(filePath, msgName, ...)
         fileInfoMap[filePath] = fileInfo
     end
     -- 调整日志写入时间
-    fileInfo.writeTime = TimeUtils.getTime()
+    fileInfo.writeTime = time_helper.get_time()
 
     local fileHandle = fileInfo.fileHandle
     if fileHandle ~= nil then
         fileInfo.hasData = true
-        fileHandle:write("[" .. os.date("%Y-%m-%d %X", TimeUtils.getTime()) .. "] msgName: " .. msgName .. "\n")
+        fileHandle:write("[" .. os.date("%Y-%m-%d %X", time_helper.get_time()) .. "] msgName: " .. msgName .. "\n")
         local arg = table.pack(...)
         if arg ~= nil then
             for key, value in pairs(arg) do
@@ -114,7 +114,7 @@ local function writeProtoLog(filePath, msgName, ...)
                     if type(value) ~= "table" then
                         fileHandle:write(tostring(value) .. "\n")
                     else
-                        fileHandle:write(TableUtils.tostring(value) .. "\n")
+                        fileHandle:write(table_helper.tostring(value) .. "\n")
                     end
                 end
             end
@@ -183,9 +183,9 @@ end
 -- service function
 -- ----------------------------------------------
 
--- 服务入口
+--
 skynet.start(function()
-    -- 注册lua消息处理
+    -- set "lua" service message dispatch function
     skynet.dispatch("lua", function(_, address, cmd, ...)
         local f = CMD[cmd]
         if f ~= nil then
@@ -193,17 +193,17 @@ skynet.start(function()
         end
     end)
 
-    --
+    -- start logger & register service name `.loggerd`
     CMD.start()
     skynet.register(".loggerd")
 
-    -- 日志数据落地协程
+    -- logger data writer thread
     skynet.fork(function()
         while true do
             -- 3 second
             skynet.sleep(300)
 
-            local now = TimeUtils.getTime()
+            local now = time_helper.get_time()
             for filename, fileInfo in pairs(fileInfoMap) do
                 local fileHandle = fileInfo.fileHandle
                 if fileInfo.hasData then

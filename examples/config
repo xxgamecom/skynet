@@ -19,13 +19,23 @@ bootstrap = "snlua bootstrap"       -- the service for bootstrap
 thread = 8                          -- the number of service work thread
 -- pid_file = "./skynet.pid"        -- daemon mode
 
--- logger
-logger = nil
-log_path = "."
-
 address = "127.0.0.1:2526"
 master = "127.0.0.1:2013"
 -- snax_interface_g = "snax_g"
 
 -- main script
 start = "main"
+
+
+-- ------------------------
+-- logger
+-- ------------------------
+
+--logger = "./skynet.log"  -- log to file
+logger = nil  -- log to console
+log_path = "."
+log_level_error = true
+log_level_info = true
+log_level_warn = true
+log_level_obj = true
+log_level_net = true

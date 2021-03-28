@@ -5,7 +5,7 @@ local core = require "skynet.datasheet.core"
 local datasheet_svr
 
 skynet.init(function()
-    datasheet_svr = service.query "datasheet"
+    datasheet_svr = service.query("datasheet")
 end)
 
 local datasheet = {}
