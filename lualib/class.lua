@@ -83,18 +83,18 @@ function class(classname, ...)
 
     local supers = { ... }
     for _, super in ipairs(supers) do
-        local superType = type(super)
-        assert(superType == "nil" or superType == "table" or superType == "function",
+        local super_type = type(super)
+        assert(super_type == "nil" or super_type == "table" or super_type == "function",
             string.format("class() - create class \"%s\" with invalid super class type \"%s\"",
-                classname, superType))
+                classname, super_type))
 
-        if superType == "function" then
+        if super_type == "function" then
             assert(cls.__create == nil,
                 string.format("class() - create class \"%s\" with more than one creating function", classname)
             );
             -- if super is function, set it to __create
             cls.__create = super
-        elseif superType == "table" then
+        elseif super_type == "table" then
             if super[".isclass"] then
                 -- super is native class
                 assert(cls.__create == nil,

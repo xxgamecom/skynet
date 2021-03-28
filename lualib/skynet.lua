@@ -947,12 +947,16 @@ skynet.register_svc_msg_handler({
 
 local init_func = {}
 
---
+---
+--- register init function
+---@param func function init function
+---@param name string init function name
 function skynet.init(func, name)
     assert(type(func) == "function")
     if init_func == nil then
         func()
     else
+        -- register
         table_insert(init_func, func)
         if name then
             assert(type(name) == "string")
@@ -984,6 +988,8 @@ local function init_template(start_func, ...)
     return ret(init_all, start_func(...))
 end
 
+---
+---
 function skynet.pcall(start_func, ...)
     return xpcall(init_template, traceback, start_func, ...)
 end
@@ -1108,6 +1114,7 @@ function skynet.task(ret)
     end
 end
 
+---
 function skynet.uniqtask()
     local stacks = {}
     for session_id, thread in pairs(session_thread_map) do

@@ -26,7 +26,7 @@ local function getFilename(dirname, filename)
     -- 创建日志文件夹
     local currentTime = os.date("%Y_%m_%d", TimeUtils.getTime())
     local logPath = path .. "/" .. currentTime .. "/" .. dirname
-    if not FileUtils.isFileExists(logPath) then
+    if not FileUtils.is_exists(logPath) then
         os.execute("mkdir -p " .. logPath)
     end
 

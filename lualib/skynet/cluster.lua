@@ -101,6 +101,7 @@ function cluster.query(node, name)
     return skynet.call(get_sender(node), "lua", "req", 0, skynet.pack(name))
 end
 
+--- register init function
 skynet.init(function()
     clusterd = skynet.uniqueservice("clusterd")
 end)
