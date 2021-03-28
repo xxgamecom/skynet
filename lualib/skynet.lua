@@ -1021,6 +1021,7 @@ function skynet.stat(what)
 end
 
 ---
+--- show service task detail
 --- @param ret
 function skynet.task(ret)
     if ret == nil then
@@ -1066,6 +1067,7 @@ function skynet.task(ret)
 end
 
 ---
+---  show service unique task detail
 function skynet.uniqtask()
     local stacks = {}
     for session_id, thread in pairs(session_thread_map) do

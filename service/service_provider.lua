@@ -94,6 +94,7 @@ skynet.start(function()
     skynet.dispatch("lua", function(session, address, cmd, ...)
         CMD[cmd](...)
     end)
+
     skynet.info_func(function()
         local info = {}
         for k, v in pairs(svr) do
