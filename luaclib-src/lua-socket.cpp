@@ -376,7 +376,7 @@ static int l_drop(lua_State* L)
  *
  *
  * lua examples:
- * local ret = socket_core.readall(s.buffer, s.buffer_pool)
+ * local ret = socket_core.read_all(s.buffer, s.buffer_pool)
  */
 static int l_read_all(lua_State* L)
 {
@@ -440,7 +440,7 @@ static bool _check_sep(buffer_node* node, int from, const char* sep, int sep_len
  * 3 separate, end line tag     - string
  *
  * lua examples:
- * socket_core.readline(s.buffer, s.buffer_pool, sep)
+ * socket_core.read_line(s.buffer, s.buffer_pool, sep)
  */
 static int l_read_line(lua_State* L)
 {
@@ -1065,7 +1065,7 @@ static int l_send_low(lua_State* L)
  * socket id
  *
  * see:
- * readline()
+ * read_line()
  *
  * lua examples:
  * function socket.stdin()

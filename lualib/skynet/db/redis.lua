@@ -43,7 +43,7 @@ redcmd[58] = function(fd, data)
 end
 
 local function read_response(fd)
-    local result = fd:readline "\r\n"
+    local result = fd:readline("\r\n")
     local firstchar = string.byte(result)
     local data = string.sub(result, 2)
     return redcmd[firstchar](fd, data)

@@ -13,7 +13,7 @@ end
 local function console_main_loop()
     local stdin = socket.stdin()
     while true do
-        local cmdline = socket.readline(stdin, "\n")
+        local cmdline = socket.read_line(stdin, "\n")
         local split = split_cmdline(cmdline)
         local cmd = split[1]
         if cmd == "snax" then

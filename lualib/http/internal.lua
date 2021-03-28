@@ -215,7 +215,7 @@ function M.request(interface, method, host, url, recvheader, header, content)
             return code, body
         else
             -- no content-length, read all
-            body = body .. interface.readall()
+            body = body .. interface.read_all()
         end
     end
 

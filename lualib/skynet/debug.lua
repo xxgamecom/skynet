@@ -71,8 +71,8 @@ local function init(skynet, export)
         end
 
         function dbg_cmd.REMOTEDEBUG(...)
-            local remotedebug = require "skynet.remotedebug"
-            remotedebug.start(export, ...)
+            local debug_remote = require "skynet.debug_remote"
+            debug_remote.start(export, ...)
         end
 
         function dbg_cmd.SUPPORT(pname)

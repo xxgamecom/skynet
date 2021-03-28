@@ -239,7 +239,7 @@ end
 
 ---
 ---@param socket_id
-function socket.readall(socket_id)
+function socket.read_all(socket_id)
     local sock_obj = socket_pool[socket_id]
     assert(sock_obj)
     if not sock_obj.connected then
@@ -256,7 +256,7 @@ end
 ---
 ---@param socket_id
 ---@param sep
-function socket.readline(socket_id, sep)
+function socket.read_line(socket_id, sep)
     sep = sep or "\n"
     local sock_obj = socket_pool[socket_id]
     assert(sock_obj)
@@ -267,6 +267,7 @@ function socket.readline(socket_id, sep)
     if not sock_obj.connected then
         return false, socket_core.read_all(sock_obj.buffer, sock_obj.buffer_pool)
     end
+
     assert(not sock_obj.read_required)
     sock_obj.read_required = sep
     suspend_socket(sock_obj)

@@ -40,7 +40,7 @@ static void _block_send(lua_State* L, int fd, const char* buffer, int sz)
     }
 }
 
-// quick and dirty none block stdin readline
+// quick and dirty none block stdin read_line
 
 #define QUEUE_SIZE 1024
 

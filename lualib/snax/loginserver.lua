@@ -56,7 +56,7 @@ local function launch_slave(auth_handler)
         local challenge = crypt.randomkey()
         write("auth", fd, crypt.base64encode(challenge) .. "\n")
 
-        local handshake = assert_socket("auth", socket.readline(fd), fd)
+        local handshake = assert_socket("auth", socket.read_line(fd), fd)
         local clientkey = crypt.base64decode(handshake)
         if #clientkey ~= 8 then
             error "Invalid client key"
@@ -66,14 +66,14 @@ local function launch_slave(auth_handler)
 
         local secret = crypt.dhsecret(clientkey, serverkey)
 
-        local response = assert_socket("auth", socket.readline(fd), fd)
+        local response = assert_socket("auth", socket.read_line(fd), fd)
         local hmac = crypt.hmac64(challenge, secret)
 
         if hmac ~= crypt.base64decode(response) then
             error "challenge failed"
         end
 
-        local etoken = assert_socket("auth", socket.readline(fd), fd)
+        local etoken = assert_socket("auth", socket.read_line(fd), fd)
 
         local token = crypt.desdecode(secret, crypt.base64decode(etoken))
 

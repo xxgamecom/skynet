@@ -49,7 +49,7 @@ local http_status_msg = {
     [505] = "HTTP Version not supported",
 }
 
-local function readall(readbytes, bodylimit)
+local function read_all(readbytes, bodylimit)
     local tmpline = {}
     local body = internal.recvheader(readbytes, tmpline, "")
     if not body then
@@ -101,7 +101,7 @@ local function readall(readbytes, bodylimit)
 end
 
 function httpd.read_request(...)
-    local ok, code, url, method, header, body = pcall(readall, ...)
+    local ok, code, url, method, header, body = pcall(read_all, ...)
     if ok then
         return code, url, method, header, body
     else

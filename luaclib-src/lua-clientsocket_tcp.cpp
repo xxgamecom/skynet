@@ -91,7 +91,7 @@ static int l_usleep(lua_State* L)
     return 0;
 }
 
-// quick and dirty none block stdin readline
+// quick and dirty none block stdin read_line
 
 #define QUEUE_SIZE 1024
 

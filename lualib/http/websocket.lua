@@ -294,8 +294,8 @@ local function _new_client_ws(socket_id, protocol)
             end,
             read = sockethelper.readfunc(socket_id),
             write = sockethelper.writefunc(socket_id),
-            readall = function()
-                return socket.readall(socket_id)
+            read_all = function()
+                return socket.read_all(socket_id)
             end,
         }
     elseif protocol == "wss" then
@@ -312,7 +312,7 @@ local function _new_client_ws(socket_id, protocol)
             end,
             read = tls.readfunc(socket_id, tls_ctx),
             write = tls.writefunc(socket_id, tls_ctx),
-            readall = tls.readallfunc(socket_id, tls_ctx),
+            read_all = tls.readallfunc(socket_id, tls_ctx),
         }
     else
         error(string.format("invalid websocket protocol:%s", tostring(protocol)))

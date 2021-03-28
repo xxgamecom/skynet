@@ -551,6 +551,6 @@ local function wrapper_socket_function(f)
 end
 
 channel_socket.read = wrapper_socket_function(socket.read)
-channel_socket.readline = wrapper_socket_function(socket.readline)
+channel_socket.read_line = wrapper_socket_function(socket.read_line)
 
 return socket_channel
