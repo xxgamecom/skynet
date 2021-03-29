@@ -144,6 +144,8 @@ bool logger_service::init(service_context* svc_ctx, const char* param)
     }
     logger->set_level(to_spdlog_level(log_config_.base_.level_));
     spdlog::set_default_logger(logger);
+    spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+    spdlog::flush_on(to_spdlog_level(LOG_LEVEL_INFO));
 
     //
     svc_ctx->set_callback(logger_cb, this);
@@ -152,6 +154,9 @@ bool logger_service::init(service_context* svc_ctx, const char* param)
 
 void logger_service::fini()
 {
+    // Release all spdlog resources, and drop all loggers in the registry.
+    // This is optional (only mandatory if using windows + async log).
+    spdlog::shutdown();
 }
 
 void logger_service::signal(int signal)

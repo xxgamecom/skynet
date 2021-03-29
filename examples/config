@@ -33,7 +33,7 @@ start = "main"
 
 logger = {
     -- base
-    type = "console, daily",                -- "null", "console", "console_color", "hourly", "daily", "rotating", "[console|console_color], [hourly|daily|rotating]"
+    type = "console_color, daily",          -- "null", "console", "console_color", "hourly", "daily", "rotating", "[console|console_color], [hourly|daily|rotating]"
     log_level = "info",                     -- info, warn, error, off
     file_basename = "./logs/skynet.log",    -- log basename (include file extension)
 
