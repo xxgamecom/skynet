@@ -7,23 +7,18 @@ namespace skynet {
 // logger type
 enum logger_type
 {
-    LOG_TYPE_NULL = 0,              // log null
-    LOG_TYPE_CONSOLE = 1,           // log to console
-    LOG_TYPE_CONSOLE_COLOR = 2,     // log to console
-    LOG_TYPE_HOURLY = 3,            // log to hourly file
-    LOG_TYPE_DAILY = 4,             // log daily file
-    LOG_TYPE_ROTATING = 5,          // log to rotating file
+    LOG_TYPE_NULL = 0,                  // log null
+
+    LOG_TYPE_CONSOLE = 0x01,            // log to console
+    LOG_TYPE_CONSOLE_COLOR = 0x02,      // log to console
+
+    LOG_TYPE_HOURLY = 0x04,             // log to hourly file
+    LOG_TYPE_DAILY = 0x08,              // log daily file
+    LOG_TYPE_ROTATING = 0x10,           // log to rotating file
 };
 
 // log level string
 static const char* logger_type_names[] { "null", "console", "console_color", "hourly", "daily", "rotating" };
-
-// convert logger_type to string
-inline const char* log_type_to_string(logger_type type)
-{
-    assert(type >= LOG_TYPE_NULL && type <= LOG_TYPE_ROTATING);
-    return logger_type_names[type];
-}
 
 // convert string to logger_type
 inline logger_type string_to_logger_type(const char* type)
@@ -82,18 +77,17 @@ inline spdlog::level::level_enum to_spdlog_level(log_level level)
 }
 
 // base info
-#define DEFAULT_LOG_TYPE                "rotating"          // default log type
-#define DEFAULT_LOG_FILE_EXTENSION      "log"               // default log file extension
-#define DEFAULT_LOG_FILE_DIR            "./logs"            // default log file directory
-#define DEFAULT_LOG_LEVEL               "info"              // default log level
+#define DEFAULT_LOG_TYPE                    "console"           // default log type
+#define DEFAULT_LOG_BASENAME                "./logs/skynet.log" // default log basename
+#define DEFAULT_LOG_LEVEL                   "info"              // default log level
 
 // log rotating file
-#define DEFAULT_LOG_ROTATING_FILE_NUMS  5                   // default the number of rotatiing file
-#define DEFAULT_LOG_ROTATING_FILE_SIZE  (50 * 1024 * 1024)  // default the size of rotating file, 50MB
+#define DEFAULT_LOG_ROTATING_MAX_FILES      5                   // default the number of rotatiing file
+#define DEFAULT_LOG_ROTATING_MAX_SIZE       50                  // default the size of rotating file, 50MB
 
 // log daily file
-
-// log hourly file
+#define DEFAULT_LOG_DAILY_ROTATING_HOUR     23                  //
+#define DEFAULT_LOG_DAILY_ROTATING_MINUTE   59                  //
 
 }
 

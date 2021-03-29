@@ -20,4 +20,3 @@ start = "main"
 -- logger
 -- ------------------------
 
-log_file = nil

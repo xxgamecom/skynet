@@ -105,10 +105,10 @@ void node::start()
     enable_profiler(config_.profile_);
 
     // create c service: logger
-    service_context* log_svc_ctx = service_manager::instance()->create_service(config_.log_service_, config_.log_file_);
+    service_context* log_svc_ctx = service_manager::instance()->create_service("logger", nullptr);
     if (log_svc_ctx == nullptr)
     {
-        std::cerr << "Can't launch " << config_.log_service_ << " service" << std::endl;
+        std::cerr << "Can't launch logger service" << std::endl;
         ::exit(1);
     }
     service_manager::instance()->set_handle_by_name("logger", log_svc_ctx->svc_handle_);

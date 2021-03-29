@@ -11,29 +11,13 @@ namespace skynet { namespace service {
  * this is the first service in skynet node.
  * when skynet node start, the default logger is this service, you can config to use snlua logger.
  *
- * config file param:
- * log_file    - lua logger service filename
- * log_service - lua logger service loader (snlua)
- *
- * config file examples:
- * log_file = "userlog"
- * log_service = "snlua"
- *
  * log api:
  * skynet::log()
  */
 class logger_service : public cservice
 {
 private:
-    log_config log_config_;                 //
-
-private:
-    FILE*                       log_handle_ = nullptr;          // log handle, it can be a file handle (log to file) or stdout (log to stdout)
-    std::string                 log_filename_ = "";             // log file name;
-
-    bool                        is_log_to_file_ = false;        // log to file flag
-                                                                // true - log to file;
-                                                                // false - log to stdout.
+    log_config log_config_;
 
 public:
     logger_service() = default;

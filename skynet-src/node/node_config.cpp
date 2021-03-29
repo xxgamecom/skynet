@@ -148,18 +148,7 @@ bool node_config::load(const std::string& config_file)
     daemon_pid_file_ = skynet::node_env::instance()->get_string("daemon", nullptr);                 // enable/disable daemon mode
     profile_ = skynet::node_env::instance()->get_boolean("profile", 1);                             // enable/disable statistics
 
-    // log config
-    load_log_config();
-
     return true;
-}
-
-bool node_config::load_log_config()
-{
-    // log output file
-    log_file_ = skynet::node_env::instance()->get_string("log_file", nullptr);
-    // skynet::log输出logger服务, 可以使用外部自定义的lua logger服务
-    log_service_ = skynet::node_env::instance()->get_string("log_service", "logger");
 }
 
 }

@@ -33,23 +33,24 @@ start = "main"
 
 logger = {
     -- base
-    type = "console_color",     -- null, console, console_color, hourly, daily, rotating
-    log_level = "info",         -- info, warn, error, off
-    file_basename = "skynet",
-    file_extension = "log",
-    file_dir = "logs",
+    type = "console, daily",                -- "null", "console", "console_color", "hourly", "daily", "rotating", "[console|console_color], [hourly|daily|rotating]"
+    log_level = "info",                     -- info, warn, error, off
+    file_basename = "./logs/skynet.log",    -- log basename (include file extension)
 
     -- rotating log file
-    file_size = 500,
-    file_nums = 3,
+    rotating = {
+        max_size = 500,                     -- 500MB
+        max_files = 3,                      --
+    },
 
     -- daily log file
-    daily_rotating_hour = 23,
-    daily_rotation_minute = 59,
+    daily = {
+        rotating_hour = 23,                 --
+        rotation_minute = 59,               --
+    },
+
 }
 
 -- base info
 log_path = "."  -- service log path, for debug_console logon/logoff
-log_file = nil  -- log to console -- log_file = "./skynet.log"  -- log to file
-log_service = nil
 
