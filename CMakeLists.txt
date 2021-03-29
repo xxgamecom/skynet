@@ -62,6 +62,7 @@ set(EXECUTABLE_OUTPUT_PATH "${SKYNET_BIN_PATH}")
 # include path
 include_directories("${SKYNET_ROOT_PATH}/deps/lua")
 include_directories("${SKYNET_ROOT_PATH}/deps/asio/include")
+include_directories("${SKYNET_ROOT_PATH}/deps/spdlog/include")
 
 #------------------------------------------------------
 # build

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "skynet.h"
+#include "log_config.h"
 
 namespace skynet { namespace service {
 
@@ -23,6 +24,9 @@ namespace skynet { namespace service {
  */
 class logger_service : public cservice
 {
+private:
+    log_config log_config_;                 //
+
 private:
     FILE*                       log_handle_ = nullptr;          // log handle, it can be a file handle (log to file) or stdout (log to stdout)
     std::string                 log_filename_ = "";             // log file name;

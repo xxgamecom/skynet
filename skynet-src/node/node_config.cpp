@@ -14,62 +14,86 @@ extern "C" {
 namespace skynet {
 
 
-// initialize skynet node env
-static void _init_env(lua_State* L)
+// initialize skynet node env (load config)
+static void _init_env(lua_State* L, std::string parent_key = "")
 {
-    // first key 
+    // first key
     lua_pushnil(L);
-
-    // table放在索引 -2 处, 获取表的第一个key和value，压入栈
-    while (lua_next(L, -2) != 0)
+    // table position: -2
+    while (lua_next(L, -2) != 0) /* after call next, key position: -2, value position: -1 */
     {
-        // 下一个key在-2处, value在-1处
-        int keyt = lua_type(L, -2);
-        if (keyt != LUA_TSTRING)
+        // key type must string
+        int key_type = lua_type(L, -2);
+        if (key_type != LUA_TSTRING)
         {
             std::cerr << "Invalid config table" << std::endl;
             exit(1);
         }
+        // get key
+        std::string key = lua_tostring(L, -2);
 
-        const char* key = lua_tostring(L, -2);
-        if (lua_type(L, -1) == LUA_TBOOLEAN)
+        // get value
+        int value_type = lua_type(L, -1);
+        // boolean value
+        if (value_type == LUA_TBOOLEAN)
         {
-            int b = lua_toboolean(L, -1);
-            skynet::node_env::instance()->set_boolean(key, b);
+            int value = lua_toboolean(L, -1);
+            if (!parent_key.empty())
+            {
+                key = parent_key + "_" + key;
+            }
+            skynet::node_env::instance()->set_boolean(key.c_str(), value);
         }
+        // table value
+        else if (value_type == LUA_TTABLE)
+        {
+            if (!parent_key.empty())
+            {
+                key = parent_key + "_" + key;
+            }
+            _init_env(L, key);
+        }
+        // other
         else
         {
             const char* value = lua_tostring(L, -1);
             if (value == nullptr)
             {
-                std::cerr << "Invalid config table key =" << key << std::endl;
+                std::cerr << "Invalid config table, key=" << key << std::endl;
                 exit(1);
             }
 
-            skynet::node_env::instance()->set_string(key, value);
+            if (!parent_key.empty())
+            {
+                key = parent_key + "_" + key;
+            }
+            skynet::node_env::instance()->set_string(key.c_str(), value);
         }
 
-        // clean, 保留key做下一次迭代
+        // pop value & keep key in stack for next iteration
         lua_pop(L, 1);
     }
 
     // clean
-    lua_pop(L,1);
+    if (parent_key.empty())
+    {
+        lua_pop(L,1);
+    }
 }
 
-// 加载配置的lua脚本
+// load config lua script
 static const char* lua_script = "\
     local result = {}\n\
     local function getenv(name)\n\
         return assert(os.getenv(name), [[os.getenv() failed: ]] .. name)\n\
     end\n\
-    local sep = package.config:sub(1,1)\n\
-    local current_path = [[.]]..sep\n\
+    local sep = package.config:sub(1, 1)\n\
+    local current_path = [[.]] .. sep\n\
     local function include(filename)\n\
         local last_path = current_path\n\
-        local path, name = filename:match([[(.*]]..sep..[[)(.*)$]])\n\
+        local path, name = filename:match([[(.*]] .. sep .. [[)(.*)$]])\n\
         if path then\n\
-            if path:sub(1,1) == sep then	-- root\n\
+            if path:sub(1, 1) == sep then    -- root\n\
                 current_path = path\n\
             else\n\
                 current_path = current_path .. path\n\
@@ -78,10 +102,10 @@ static const char* lua_script = "\
             name = filename\n\
         end\n\
         local f = assert(io.open(current_path .. name))\n\
-        local code = assert(f:read [[*a]])\n\
+        local code = assert(f:read([[*a]]))\n\
         code = string.gsub(code, [[%$([%w_%d]+)]], getenv)\n\
         f:close()\n\
-        assert(load(code,[[@]]..filename,[[t]],result))()\n\
+        assert(load(code, [[@]] .. filename, [[t]], result))()\n\
         current_path = last_path\n\
     end\n\
     setmetatable(result, { __index = { include = include } })\n\
@@ -97,8 +121,8 @@ bool node_config::load(const std::string& config_file)
     lua_State* L = luaL_newstate();
     luaL_openlibs(L);
 
-    // 执行加载节点配置lua脚本字符串
-    int err =  luaL_loadbufferx(L, lua_script, ::strlen(lua_script), "=[skynet config]", "t");
+    // load lua_script
+    int err = luaL_loadbufferx(L, lua_script, ::strlen(lua_script), "=[skynet config]", "t");
     assert(err == LUA_OK);
 
     // load config file
@@ -114,19 +138,28 @@ bool node_config::load(const std::string& config_file)
     // init node env (read from config file)
     _init_env(L);
 
+    // close VM
+    lua_close(L);
+
     // read config from node env
     thread_ = skynet::node_env::instance()->get_int32("thread", 8);                                 // work thread count
     cservice_path_ = skynet::node_env::instance()->get_string("cservice_path", "./cservice/?.so");  // c service mod search path
     bootstrap_ = skynet::node_env::instance()->get_string("bootstrap","snlua bootstrap");           // bootstrap服务
     daemon_pid_file_ = skynet::node_env::instance()->get_string("daemon", nullptr);                 // enable/disable daemon mode
-    log_file_ = skynet::node_env::instance()->get_string("log_file", nullptr);                      // log output file
-    log_service_ = skynet::node_env::instance()->get_string("log_service", "logger");               // skynet::log输出logger服务, 可以使用外部自定义的lua logger服务
     profile_ = skynet::node_env::instance()->get_boolean("profile", 1);                             // enable/disable statistics
 
-    // close VM
-    lua_close(L);
+    // log config
+    load_log_config();
 
     return true;
+}
+
+bool node_config::load_log_config()
+{
+    // log output file
+    log_file_ = skynet::node_env::instance()->get_string("log_file", nullptr);
+    // skynet::log输出logger服务, 可以使用外部自定义的lua logger服务
+    log_service_ = skynet::node_env::instance()->get_string("log_service", "logger");
 }
 
 }

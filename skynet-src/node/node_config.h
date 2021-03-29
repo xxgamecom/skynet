@@ -7,6 +7,7 @@ namespace skynet {
 // skynet node config
 class node_config final
 {
+    // base info
 public:
     int thread_;                        // worker thread count (不要配置超过实际拥有的CPU核心数)
     int profile_;                       // enable/disable statistics (cpu cost each service), default enable
@@ -21,6 +22,13 @@ public:
     const char* cservice_path_;         // C service module search path (.so search path)
     const char* bootstrap_;             // skynet 启动的第一个服务以及其启动参数。默认配置为 snlua bootstrap ，即启动一个名为 bootstrap 的 lua 服务。通常指的是 service/bootstrap.lua 这段代码。
 
+    // logger
+public:
+    int log_level_;                     // log level
+    std::string log_basename_;          // log file basename
+    std::string log_extension_;         // log file extension
+    std::string log_dir_;               // log file directory
+
     const char* log_file_;              // log to file | log to console
                                         // - log_file = nil or log_file = "": log to console
                                         // - log_file = "./skynet.log": log to skynet.log
@@ -34,6 +42,11 @@ public:
 public:
     // load config
     bool load(const std::string& config_file);
+
+
+private:
+    //
+    bool load_log_config();
 };
 
 }

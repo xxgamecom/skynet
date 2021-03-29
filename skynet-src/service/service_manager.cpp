@@ -64,7 +64,7 @@ service_context* service_manager::create_service(const char* svc_name, const cha
             return nullptr;
     }
 
-    // create service mod own data block (如: struct snlua, struct logger,  struct gate)
+    // create service mod own data block (e.g. struct snlua, struct logger, struct gate)
     cservice* svc_ptr = mod_ptr->create_func_();
     if (svc_ptr == nullptr)
         return nullptr;

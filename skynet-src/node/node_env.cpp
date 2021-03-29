@@ -30,8 +30,6 @@ const char* node_env::get_env(const char* key)
     // from _ENV
     lua_getglobal(L_, key);
     const char* result = lua_tostring(L_, -1);
-    
-    // clear stack
     lua_pop(L_, 1);
 
     return result;
@@ -41,9 +39,9 @@ void node_env::set_env(const char* key, const char* value)
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    // check old
+    // check old, must not exists
     lua_getglobal(L_, key);
-    assert(lua_isnil(L_, -1)); // 环境变量不可修改?
+    assert(lua_isnil(L_, -1)); // immutable
     lua_pop(L_,1);
 
     // set new
