@@ -138,5 +138,6 @@ $ make
 ## Dependences
 * lua 5.3.5
 * asio 1.18.1
+* spdlog 1.8.5
 * cmake 3.12+
 

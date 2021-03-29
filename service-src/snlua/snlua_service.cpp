@@ -51,7 +51,7 @@ static int codecache(lua_State* L)
 
 static const char* _get_env(service_context* ctx, const char* key, const char* default_value)
 {
-    const char* ret = service_command::exec(ctx, "GETENV", key);
+    const char* ret = service_command::exec(ctx, "GET_ENV", key);
     if (ret == nullptr)
     {
         return default_value;
@@ -110,7 +110,7 @@ bool snlua_service::init(service_context* svc_ctx, const char* param)
     svc_ctx->set_callback(snlua_cb, this);
 
     // query self service handle
-    std::string self_svc_handle_string = service_command::exec(svc_ctx, "REG");
+    std::string self_svc_handle_string = service_command::exec(svc_ctx, "REGISTER");
     uint32_t self_svc_handle = std::stoi(self_svc_handle_string.substr(1), nullptr, 16);
 
     // send param to self, it must be first message
@@ -202,7 +202,7 @@ bool snlua_service::init_lua_cb(snlua_service* svc_ptr, service_context* svc_ctx
     lua_setglobal(L, "LUA_SERVICE");
 
     // preload, before lua service
-    const char* preload = service_command::exec(svc_ctx, "GETENV", "preload");
+    const char* preload = service_command::exec(svc_ctx, "GET_ENV", "preload");
     lua_pushstring(L, preload);
     lua_setglobal(L, "LUA_PRELOAD");
 

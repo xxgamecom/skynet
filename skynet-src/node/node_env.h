@@ -17,7 +17,7 @@ public:
 
 private:
     std::mutex                  mutex_;
-    lua_State*                  L_ = nullptr;
+    lua_State*                  L_ = nullptr;               // lua VM used for skynet node env
 
 public:
     // set/get node environment variable

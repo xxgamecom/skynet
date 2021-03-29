@@ -23,4 +23,3 @@ start = "main_mysql"
 -- logger
 -- ------------------------
 
-log_file = nil

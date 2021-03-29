@@ -23,5 +23,4 @@ start = "main_mongodb"
 -- logger
 -- ------------------------
 
-log_file = nil
 
