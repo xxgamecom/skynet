@@ -13,10 +13,6 @@ namespace skynet {
 
 #define LOG_MESSAGE_SIZE            256
 
-/**
- * log
- * - find logger service and push log message to the logger service
- */
 void log(service_context* svc_ctx, const char* msg, ...)
 {
     // find logger service 'logger'
@@ -87,6 +83,26 @@ void log(service_context* svc_ctx, const char* msg, ...)
     smsg.data_ptr = data_ptr;
     smsg.data_size = len | ((size_t)SERVICE_MSG_TYPE_TEXT << MESSAGE_TYPE_SHIFT);
     service_manager::instance()->push_service_message(log_svc_handle, &smsg);
+}
+
+void log_debug(service_context* svc_ctx, const char* msg, ...)
+{
+//    log(svc_ctx, msg, ...);
+}
+
+void log_info(service_context* svc_ctx, const char* msg, ...)
+{
+//    log(svc_ctx, msg, ...);
+}
+
+void log_warn(service_context* svc_ctx, const char* msg, ...)
+{
+//    log(svc_ctx, msg, ...);
+}
+
+void log_error(service_context* svc_ctx, const char* msg, ...)
+{
+//    log(svc_ctx, msg, ...);
 }
 
 }

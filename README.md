@@ -139,5 +139,6 @@ $ make
 * lua 5.3.5
 * asio 1.18.1
 * spdlog 1.8.5
+* fmtlib 7.1.3
 * cmake 3.12+
 
