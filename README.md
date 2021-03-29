@@ -15,7 +15,7 @@ skynet++
 * [x] 移除了分布式harbor模式(harbor模式有点鸡肋), 只支持cluster模式
 * [x] 为上层提供OO封装
 * [x] 为上层提供更方便的服务消息处理机制 skynet.msg_handler
-* [ ] 提供更完善的logger
+* [x] 提供更完善的logger
 * [ ] 支持protobuf3
 * [ ] 提供简单完善的服务RPC接口
 * [ ] 网络层使用独立asio替换

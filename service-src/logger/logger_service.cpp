@@ -145,7 +145,7 @@ bool logger_service::init(service_context* svc_ctx, const char* param)
     logger->set_level(to_spdlog_level(log_config_.base_.level_));
     spdlog::set_default_logger(logger);
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
-    spdlog::flush_on(to_spdlog_level(LOG_LEVEL_INFO));
+    spdlog::flush_on(to_spdlog_level(LOG_LEVEL_DEBUG));
 
     //
     svc_ctx->set_callback(logger_cb, this);
@@ -167,6 +167,7 @@ int logger_service::logger_cb(service_context* svc_ctx, void* ud, int svc_msg_ty
 {
     auto svc_ptr = (logger_service*)ud;
 
+    // TODO: support debug, warn, error, log message
     switch (svc_msg_type)
     {
     case SERVICE_MSG_TYPE_SYSTEM:
