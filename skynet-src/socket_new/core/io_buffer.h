@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdlib>
+#include <cstring>
+#include <cassert>
 #include <memory>
 
 namespace skynet { namespace network {

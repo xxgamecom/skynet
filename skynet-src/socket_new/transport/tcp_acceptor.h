@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../core/io_service.h"
+#include "../core/socket_option_def.h"
 
-#include "socket_option_def.h"
 #include "tcp_acceptor_def.h"
 #include "tcp_acceptor_handler.h"
 

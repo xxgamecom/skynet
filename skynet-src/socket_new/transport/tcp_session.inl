@@ -20,8 +20,7 @@ inline void tcp_session::start_read()
     assert(state_ == SESSION_STATE_OPEN);
 
     // 更新读写时间
-    last_read_time_ = time_helper::steady_now();
-    last_write_time_ = time_helper::steady_now();
+    last_read_time_ = last_write_time_ = std::chrono::steady_clock::steady_clock::now();
 
     async_read_once();
 }

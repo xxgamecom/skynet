@@ -7,8 +7,6 @@ set(SKYNET_SOCKET_NEW_HEADER
     socket_new/uri/uri_port.inl
     socket_new/uri/uri_scheme.h
     socket_new/uri/uri_scheme.inl
-    socket_new/core/time_helper.h
-    socket_new/core/time_helper.inl
     socket_new/core/object_pool.h
     socket_new/core/object_pool.inl
     socket_new/core/io_buffer.h
@@ -18,18 +16,18 @@ set(SKYNET_SOCKET_NEW_HEADER
     socket_new/core/io_service_pool.h
     socket_new/core/io_service_pool.inl
     socket_new/core/socket_option_def.h
-    socket_new/core/tcp_acceptor_def.h
-    socket_new/core/tcp_acceptor.h
-    socket_new/core/tcp_acceptor.inl
-    socket_new/core/tcp_connector.h
-    socket_new/core/tcp_connector.inl
-    socket_new/core/tcp_connector_handler.h
-    socket_new/core/tcp_session_def.h
-    socket_new/core/tcp_session.h
-    socket_new/core/tcp_session.inl
-    socket_new/core/tcp_session_handler.h
-    socket_new/core/tcp_session_write_queue.h
-    socket_new/core/tcp_session_write_queue.inl
+    socket_new/transport/tcp_acceptor_def.h
+    socket_new/transport/tcp_acceptor.h
+    socket_new/transport/tcp_acceptor.inl
+    socket_new/transport/tcp_connector.h
+    socket_new/transport/tcp_connector.inl
+    socket_new/transport/tcp_connector_handler.h
+    socket_new/transport/tcp_session_def.h
+    socket_new/transport/tcp_session.h
+    socket_new/transport/tcp_session.inl
+    socket_new/transport/tcp_session_handler.h
+    socket_new/transport/tcp_session_write_queue.h
+    socket_new/transport/tcp_session_write_queue.inl
     socket_new/service/io_statistics.h
     socket_new/service/io_statistics.inl
     socket_new/service/tcp_client.h
@@ -56,10 +54,10 @@ set(SKYNET_SOCKET_NEW_SRC
     socket_new/core/io_buffer.cpp
     socket_new/core/io_service.cpp
     socket_new/core/io_service_pool.cpp
-    socket_new/core/tcp_acceptor.cpp
-    socket_new/core/tcp_connector.cpp
-    socket_new/core/tcp_session.cpp
-    socket_new/core/tcp_session_write_queue.cpp
+    socket_new/transport/tcp_acceptor.cpp
+    socket_new/transport/tcp_connector.cpp
+    socket_new/transport/tcp_session.cpp
+    socket_new/transport/tcp_session_write_queue.cpp
     socket_new/service/io_statistics.cpp
     socket_new/service/tcp_client.cpp
     socket_new/service/tcp_server.cpp

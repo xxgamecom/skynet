@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../core/tcp_session_def.h"
+#include "../transport/tcp_session_def.h"
 
 #include <cstdint>
 #include <thread>

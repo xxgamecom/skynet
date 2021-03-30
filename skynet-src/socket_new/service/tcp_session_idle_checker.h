@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../core/io_service.h"
-#include "../core/tcp_session_def.h"
+#include "../transport/tcp_session_def.h"
 
 namespace skynet { namespace network {
 

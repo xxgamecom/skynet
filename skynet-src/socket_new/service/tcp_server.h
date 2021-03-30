@@ -3,7 +3,7 @@
 #include "../uri/uri_codec.h"
 
 #include "../core/io_service_pool.h"
-#include "../core/tcp_acceptor.h"
+#include "../transport/tcp_acceptor.h"
 
 #include "io_statistics.h"
 #include "tcp_server_config.h"
