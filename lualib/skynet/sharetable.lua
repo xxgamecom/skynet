@@ -103,7 +103,7 @@ local function sharetable_service()
                     if ref.count == 0 then
                         if files[ref.filename] ~= ref.matrix then
                             -- It's a history version
-                            skynet.log(string.format("Delete a version (%s) of %s", ptr, ref.filename))
+                            skynet.log_info(string.format("Delete a version (%s) of %s", ptr, ref.filename))
                             ref.matrix:close()
                             matrix[ptr] = nil
                         end

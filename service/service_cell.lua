@@ -26,7 +26,7 @@ skynet.start(function()
         if f then
             f(...)
         else
-            skynet.log(string.format("Invalid command %s", cmd))
+            skynet.log_error(string.format("Invalid command %s", cmd))
         end
     end)
 end)

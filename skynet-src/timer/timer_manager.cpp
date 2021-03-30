@@ -256,7 +256,7 @@ void timer_manager::update_time()
     //
     if (ct < TI_->current_tick)
     {
-        log(nullptr, "time diff error: change from %lld to %lld", ct, TI_->current_tick);
+        log_error(nullptr, fmt::format("time diff error: change from {} to {}", ct, TI_->current_tick));
         TI_->current_tick = ct;
     }
     //

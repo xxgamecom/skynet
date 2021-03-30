@@ -157,7 +157,7 @@ function snax.hotfix(obj, source, ...)
 end
 
 function snax.printf(fmt, ...)
-    skynet.log(string.format(fmt, ...))
+    skynet.log_info(string.format(fmt, ...))
 end
 
 function snax.profile_info(obj)

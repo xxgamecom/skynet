@@ -236,7 +236,7 @@ static int l_push_socket_buffer(lua_State* L)
         lua_rawseti(L, pool_index, tsz + 1);
         if (tsz > POOL_SIZE_WARNING)
         {
-            log(nullptr, "Too many socket pool (%d)", tsz);
+            log_warn(nullptr, fmt::format("Too many socket pool ({})", tsz));
         }
     }
     lua_pushlightuserdata(L, free_node->next);

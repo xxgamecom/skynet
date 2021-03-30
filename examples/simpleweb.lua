@@ -15,7 +15,7 @@ if mode == "agent" then
         local ok, err = httpd.write_response(write, ...)
         if not ok then
             -- if err == sockethelper.socket_error , that means socket closed.
-            skynet.log(string.format("fd = %d, %s", id, err))
+            skynet.log_error(string.format("fd = %d, %s", id, err))
         end
     end
 
@@ -85,9 +85,9 @@ if mode == "agent" then
                 end
             else
                 if url == sockethelper.socket_error then
-                    skynet.log("socket closed")
+                    skynet.log_info("socket closed")
                 else
-                    skynet.log(url)
+                    skynet.log_info(url)
                 end
             end
             socket.close(id)
@@ -107,9 +107,9 @@ else
         end
         local balance = 1
         local id = socket.listen("0.0.0.0", 8001)
-        skynet.log(string.format("Listen web port 8001 protocol:%s", protocol))
+        skynet.log_info(string.format("Listen web port 8001 protocol:%s", protocol))
         socket.start(id, function(id, addr)
-            skynet.log(string.format("%s connected, pass it to agent :%08x", addr, agent[balance]))
+            skynet.log_info(string.format("%s connected, pass it to agent :%08x", addr, agent[balance]))
             skynet.send(agent[balance], "lua", id)
             balance = balance + 1
             if balance > #agent then

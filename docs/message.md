@@ -18,6 +18,9 @@ SERVICE_MSG_TYPE_TEXT
 SERVICE_MSG_TYPE_REPONSE  
 ...
 
+注意：
+需要将要发送的消息拷贝后，再发送到服务的消息队列
+
 ## skynet socket message
 skynet网络消息
 

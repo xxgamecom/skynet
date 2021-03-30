@@ -51,6 +51,6 @@ logger = {
 
 }
 
--- base info
-log_path = "."  -- service log path, for debug_console logon/logoff
+-- service log path, for debug_console logon/logoff
+log_path = "."
 

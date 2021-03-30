@@ -38,7 +38,7 @@ local function open_channel(t, key)
         local current_thread = coroutine.running()
         assert(connecting_info.namequery_thread == nil)
         connecting_info.namequery_thread = current_thread
-        skynet.log("Waiting for cluster node [" .. key .. "]")
+        skynet.log_info("Waiting for cluster node [" .. key .. "]")
         -- wait query cluster node success
         skynet.wait(current_thread)
         node_address = node_map[key]
@@ -123,7 +123,7 @@ local function load_config(env)
         if node_name:sub(1, 2) == "__" then
             node_name = node_name:sub(3)
             config_map[node_name] = node_address
-            skynet.log(string.format("Config %s = %s", node_name, node_address))
+            skynet.log_info(string.format("Config %s = %s", node_name, node_address))
         else
             -- cluster node config
 
@@ -140,7 +140,7 @@ local function load_config(env)
             -- reslove cluster node
             local connecting_info = connecting[node_name]
             if connecting_info and connecting_info.namequery_thread and not config_map.nowaiting then
-                skynet.log(string.format("Cluster node [%s] resloved : %s", node_name, node_address))
+                skynet.log_info(string.format("Cluster node [%s] resloved : %s", node_name, node_address))
                 skynet.wakeup(connecting_info.namequery_thread)
             end
         end
@@ -233,7 +233,7 @@ function CMD.register(source, name, addr)
     register_name[addr] = name
     register_name[name] = addr
     skynet.ret(nil)
-    skynet.log(string.format("Register [%s] :%08x", name, addr))
+    skynet.log_info(string.format("Register [%s] :%08x", name, addr))
 end
 
 function CMD.queryname(source, name)
@@ -242,7 +242,7 @@ end
 
 function CMD.socket(source, subcmd, fd, msg)
     if subcmd == "open" then
-        skynet.log(string.format("socket accept from %s", msg))
+        skynet.log_info(string.format("socket accept from %s", msg))
 
         -- new cluster agent
         cluster_agent[fd] = false
@@ -264,7 +264,7 @@ function CMD.socket(source, subcmd, fd, msg)
                 cluster_agent[fd] = nil
             end
         else
-            skynet.log(string.format("socket %s %d %s", subcmd, fd, msg or ""))
+            skynet.log_info(string.format("socket %s %d %s", subcmd, fd, msg or ""))
         end
     end
 end

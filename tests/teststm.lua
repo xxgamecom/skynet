@@ -10,7 +10,7 @@ if mode == "slave" then
             local obj = stm.newcopy(obj)
             print("read:", obj(skynet.unpack))
             skynet.ret()
-            skynet.log("sleep and read")
+            skynet.log_info("sleep and read")
             for i = 1, 10 do
                 skynet.sleep(10)
                 print("read:", obj(skynet.unpack))

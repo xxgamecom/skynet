@@ -15,7 +15,7 @@ end
 local function service_mainfunc(...)
     local skynet = require "skynet"
 
-    skynet.log(...)    -- (...) passed from service.new
+    skynet.log_info(...)    -- (...) passed from service.new
 
     local db = {}
 

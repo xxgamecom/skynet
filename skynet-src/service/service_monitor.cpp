@@ -41,7 +41,7 @@ void service_monitor::check()
             service_manager::instance()->process_blocked_service(dst_svc_handle_);
 
             // just output a log message
-            log(nullptr, "A message from [ :%08x ] to [ :%08x ] maybe in an dead loop (last_version = %d)", src_svc_handle_, dst_svc_handle_, last_version_.load());
+            log_warn(nullptr, fmt::format("A message from [ :{:08X} ] to [ :{:08X} ] maybe in an dead loop (last_version = {})", src_svc_handle_, dst_svc_handle_, last_version_.load()));
         }
     }
     else

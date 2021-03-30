@@ -110,14 +110,14 @@ service_context* service_manager::create_service(const char* svc_name, const cha
         // put service private queue into global mq. service can recv message now.
         mq_global::instance()->push(queue);
         if (ret != nullptr)
-            log(ret, "LAUNCH %s %s", svc_name, svc_args != nullptr ? svc_args : "");
+            log_info(ret, fmt::format("LAUNCH {} {}", svc_name, svc_args != nullptr ? svc_args : ""));
 
         return ret;
     }
     // service mod initialize failed
     else
     {
-        log(svc_ctx, "FAILED launch %s", svc_name);
+        log_error(svc_ctx, fmt::format("FAILED launch {}", svc_name));
 
         uint32_t svc_handle = svc_ctx->svc_handle_;
         release_service(svc_ctx);
@@ -337,7 +337,7 @@ uint32_t service_manager::query_by_name(service_context* svc_ctx, const char* na
     else
     {
         // not support query global service, just log a message
-        log(svc_ctx, "Don't support query global name %s", name_or_addr);
+        log_error(svc_ctx, fmt::format("Don't support query global name {}", name_or_addr));
         return 0;
     }
 }
@@ -460,7 +460,7 @@ int service_manager::send(service_context* svc_ctx, uint32_t src_svc_handle, uin
 {
     if ((msg_sz & MESSAGE_TYPE_MASK) != msg_sz)
     {
-        log(svc_ctx, "The message to %x is too large", dst_svc_handle);
+        log_error(svc_ctx, fmt::format("The message to {:08X} is too large", dst_svc_handle));
         if (svc_msg_type & MESSAGE_TAG_DONT_COPY)
         {
             delete[] msg;
@@ -493,7 +493,7 @@ int service_manager::send(service_context* svc_ctx, uint32_t src_svc_handle, uin
     {
         if (msg != nullptr)
         {
-            log(svc_ctx, "Destination service handle can't be 0");
+            log_error(svc_ctx, "Destination service handle can't be 0");
             delete[] msg;
             return -1;
         }

@@ -83,7 +83,7 @@ int prepare_ctrl_cmd_request_open(ctrl_cmd_package& cmd, uint64_t svc_handle, in
     // request_open结构体尾部的host字段为地址数据, 整体长度不能超过256
     if (sizeof(cmd.u.open) + len >= 256)
     {
-        log(nullptr, "socket-server : Invalid addr %s.", addr);
+        log_error(nullptr, fmt::format("socket-server : Invalid addr {}.", addr));
         return -1;
     }
 

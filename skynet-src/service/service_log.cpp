@@ -62,12 +62,12 @@ FILE* service_log::open_log_file(service_context* svc_ctx, uint32_t svc_handle)
     FILE* f = ::fopen(tmp, "ab");
     if (f == nullptr)
     {
-        skynet::log(svc_ctx, "Open log file %s fail", tmp);
+        skynet::log_error(svc_ctx, fmt::format("Open log file {} fail", (char*)tmp));
         return nullptr;
     }
 
     // log to logger service
-    skynet::log(svc_ctx, "Open log file %s", tmp);
+    skynet::log_info(svc_ctx, fmt::format("Open log file {}", (char*)tmp));
 
     uint32_t start_time = timer_manager::instance()->start_seconds();
     uint64_t now = timer_manager::instance()->now();
@@ -80,7 +80,7 @@ FILE* service_log::open_log_file(service_context* svc_ctx, uint32_t svc_handle)
 
 void service_log::close_log_file(service_context* svc_ctx, FILE* f, uint32_t svc_handle)
 {
-    skynet::log(svc_ctx, "Close log file :%08x", svc_handle);
+    skynet::log_info(svc_ctx, fmt::format("Close log file :{:08X}", svc_handle));
     
     ::fprintf(f, "close time: %u\n", (uint32_t)timer_manager::instance()->now());
     ::fclose(f);

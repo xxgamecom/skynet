@@ -25,7 +25,7 @@ local req_step = {
 }
 
 local function logger_msg(msg_type, format, ...)
-    skynet.log(string.format("[%s %s] " .. format, os.date("%Y-%m-%d %H:%M:%S"), msg_type, ...))
+    skynet.log_info(string.format("[%s %s] " .. format, os.date("%Y-%m-%d %H:%M:%S"), msg_type, ...))
 end
 
 local logger = {
@@ -54,7 +54,7 @@ end
 
 local function handle_err(e)
     e = debug.traceback(coroutine.running(), tostring(e), 2)
-    skynet.log(e)
+    skynet.log_error(e)
     return e
 end
 

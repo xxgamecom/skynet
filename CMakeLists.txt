@@ -61,12 +61,16 @@ set(EXECUTABLE_OUTPUT_PATH "${SKYNET_BIN_PATH}")
 
 # include path
 include_directories("${SKYNET_ROOT_PATH}/deps/lua")
+include_directories("${SKYNET_ROOT_PATH}/deps/fmt/include")
 include_directories("${SKYNET_ROOT_PATH}/deps/asio/include")
 include_directories("${SKYNET_ROOT_PATH}/deps/spdlog/include")
 
 #------------------------------------------------------
 # build
 #------------------------------------------------------
+
+# fmt header-only
+add_definitions(-DFMT_HEADER_ONLY)
 
 # build options
 option(BUILD_SKYNET_DEPS "Build skynet deps" ON)

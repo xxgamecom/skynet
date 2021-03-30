@@ -32,11 +32,11 @@ end
 local index = {}
 local mt_monitor = {
     __index = function(t, k)
-        skynet.log("table_helper monitor *access to element " .. tostring(k))
+        skynet.log_info("table_helper monitor *access to element " .. tostring(k))
         return t[index][k]
     end,
     __newindex = function(t, k, v)
-        skynet.log("table_helper monitor *update to element " .. tostring(k) .. " to " .. tostring(v))
+        skynet.log_info("table_helper monitor *update to element " .. tostring(k) .. " to " .. tostring(v))
         t[index][k] = v
     end
 }
@@ -262,7 +262,7 @@ local function write_to_file(fd, obj, index, flag)
             fd:write(spaces .. "}\n")
         end
     else
-        skynet.log("can't serialize, type " .. szType)
+        skynet.log_error("can't serialize, type " .. szType)
     end
 
     if index > 1 then

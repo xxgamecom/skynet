@@ -17,7 +17,10 @@
 #include "mq/mq_msg.h"
 
 // log api:
-// log()
+// log_debug()
+// log_info()
+// log_warn()
+// log_error()
 #include "log/log.h"
 
 // service api:

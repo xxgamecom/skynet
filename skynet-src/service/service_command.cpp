@@ -40,7 +40,7 @@ static uint32_t _to_svc_handle(service_context* svc_ctx, const char* param)
     //
     else
     {
-        log(svc_ctx, "Can't convert %s to svc_handle", param);
+        log_error(svc_ctx, fmt::format("Can't convert {} to svc_handle", param));
     }
 
     return svc_handle;
@@ -64,11 +64,11 @@ static void _handle_exit(service_context* svc_ctx, uint32_t svc_handle)
     if (svc_handle == 0)
     {
         svc_handle = svc_ctx->svc_handle_;
-        log(svc_ctx, "KILL self");
+        log_info(svc_ctx, "KILL self");
     }
     else
     {
-        log(svc_ctx, "KILL :%0x", svc_handle);
+        log_info(svc_ctx, fmt::format("KILL :{:0X}", svc_handle));
     }
 
     if (node::instance()->get_monitor_exit() != 0)
@@ -111,7 +111,7 @@ const char* cmd_register(service_context* svc_ctx, const char* param)
     }
     else
     {
-        log(svc_ctx, "Can't register global name %s in C", param);
+        log_error(svc_ctx, fmt::format("Can't register global name {} in C", param));
         return nullptr;
     }
 }
@@ -154,7 +154,7 @@ const char* cmd_name(service_context* svc_ctx, const char* param)
     }
     else
     {
-        log(svc_ctx, "Can't set global name %s in C", name);
+        log_error(svc_ctx, fmt::format("Can't set global name {} in C", (char*)name));
     }
 
     return nullptr;

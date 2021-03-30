@@ -239,7 +239,7 @@ function auth_method:auth_scram_sha1(username, password)
     local rnonce = parsed_t['r']
 
     if not string.sub(rnonce, 1, 12) == nonce then
-        skynet.log("Server returned an invalid nonce.")
+        skynet.log_error("Server returned an invalid nonce.")
         return false
     end
     local without_proof = "c=biws,r=" .. rnonce
@@ -265,7 +265,7 @@ function auth_method:auth_scram_sha1(username, password)
         parsed_t[k] = v
     end
     if parsed_t['v'] ~= server_sig then
-        skynet.log("Server returned an invalid signature.")
+        skynet.log_error("Server returned an invalid signature.")
         return false
     end
     if not r.done then
@@ -274,7 +274,7 @@ function auth_method:auth_scram_sha1(username, password)
             return false
         end
         if not r.done then
-            skynet.log("SASL conversation failed to complete.")
+            skynet.log_error("SASL conversation failed to complete.")
             return false
         end
     end

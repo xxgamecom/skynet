@@ -76,7 +76,7 @@ static void _do_dispatch_message(gate_service* svc_ptr, connection* c, int id, v
             {
                 data_buffer_clear(&c->buffer, &svc_ptr->mp_);
                 node_socket::instance()->close(svc_ptr->svc_ctx_, id);
-                log(svc_ptr->svc_ctx_, "Recv socket message > 16M");
+                log_warn(svc_ptr->svc_ctx_, "Recv socket message > 16M");
                 return;
             }
             else
@@ -102,7 +102,7 @@ static void _dispatch_socket_message(gate_service* svc_ptr, const skynet_socket_
         }
         else
         {
-            log(svc_ptr->svc_ctx_, "Drop unknown connection %d message", msg_ptr->socket_id);
+            log_warn(svc_ptr->svc_ctx_, fmt::format("Drop unknown connection {} message", msg_ptr->socket_id));
             node_socket::instance()->close(svc_ptr->svc_ctx_, msg_ptr->socket_id);
             delete[] msg_ptr->buffer;
         }
@@ -117,7 +117,7 @@ static void _dispatch_socket_message(gate_service* svc_ptr, const skynet_socket_
         int idx = hash_id_lookup(&svc_ptr->hash_, msg_ptr->socket_id);
         if (idx < 0)
         {
-            log(svc_ptr->svc_ctx_, "Close unknown connection %d", msg_ptr->socket_id);
+            log_warn(svc_ptr->svc_ctx_, fmt::format("Close unknown connection {}", msg_ptr->socket_id));
             node_socket::instance()->close(svc_ptr->svc_ctx_, msg_ptr->socket_id);
         }
         break;
@@ -158,12 +158,12 @@ static void _dispatch_socket_message(gate_service* svc_ptr, const skynet_socket_
         ::memcpy(c->remote_name, msg_ptr + 1, sz);
         c->remote_name[sz] = '\0';
         _report(svc_ptr, "%d open %d %s:0", c->socket_id, c->socket_id, c->remote_name);
-        log(svc_ptr->svc_ctx_, "socket open: %x", c->socket_id);
+        log_info(svc_ptr->svc_ctx_, fmt::format("socket open: {:x}", c->socket_id));
 
         break;
     }
     case SKYNET_SOCKET_EVENT_WARNING:
-        log(svc_ptr->svc_ctx_, "fd (%d) send buffer (%d)K", msg_ptr->socket_id, msg_ptr->ud);
+        log_warn(svc_ptr->svc_ctx_, fmt::format("fd ({}) send buffer ({})K", msg_ptr->socket_id, msg_ptr->ud));
         break;
     }
 }
@@ -179,7 +179,7 @@ static int _start_listen(gate_service* svc_ptr, const std::string& listen_addr)
     };
     if (host_info.empty())
     {
-        log(svc_ptr->svc_ctx_, "Invalid gate address %s", listen_addr.c_str());
+        log_error(svc_ptr->svc_ctx_, fmt::format("Invalid gate address {}", listen_addr.c_str()));
         return 1;
     }
 
@@ -204,7 +204,7 @@ static int _start_listen(gate_service* svc_ptr, const std::string& listen_addr)
     }
     catch (...)
     {
-        log(svc_ptr->svc_ctx_, "Invalid gate address %s", listen_addr.c_str());
+        log_error(svc_ptr->svc_ctx_, fmt::format("Invalid gate address {}", listen_addr.c_str()));
         return 1;
     }
 
@@ -244,7 +244,7 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
         };
         if (param_array.size() < 4)
         {
-            log(svc_ctx, "Invalid gate param %s", param);
+            log_error(svc_ctx, fmt::format("Invalid gate param {}", param));
             break;
         }
 
@@ -252,7 +252,7 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
         char header = param_array[0].at(0);
         if (header != 'S' && header != 'L')
         {
-            log(svc_ctx, "Invalid data header style");
+            log_error(svc_ctx, "Invalid data header style");
             break;
         }
 
@@ -267,7 +267,7 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
             watchdog_svc_handle_ = service_manager::instance()->query_by_name(svc_ctx, watchdog.c_str());
             if (watchdog_svc_handle_ == 0)
             {
-                log(svc_ctx, "Invalid watchdog %s", watchdog.c_str());
+                log_error(svc_ctx, fmt::format("Invalid watchdog {}", watchdog.c_str()));
                 break;
             }
         }
@@ -283,7 +283,7 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
         }
         catch (...)
         {
-            log(svc_ctx, "Invalid gate param %s", param);
+            log_error(svc_ctx, fmt::format("Invalid gate param {}", param));
             break;
         }
         if (svc_msg_type == 0)
@@ -299,12 +299,12 @@ bool gate_service::init(service_context* svc_ctx, const char* param)
         }
         catch (...)
         {
-            log(svc_ctx, "Need max connection");
+            log_error(svc_ctx, "Invalid gate param, need max connection param");
             break;
         }
         if (max <= 0)
         {
-            log(svc_ctx, "Need max connection");
+            log_error(svc_ctx, "Invalid gate param, need max connection param");
             break;
         }
 
@@ -373,7 +373,7 @@ int gate_service::gate_cb(service_context* svc_ctx, void* ud, int svc_msg_type, 
     {
         if (msg_sz <= 4)
         {
-            log(svc_ctx, "Invalid client message from %x", src_svc_handle);
+            log_error(svc_ctx, fmt::format("Invalid client message from {:x}", src_svc_handle));
             break;
         }
 
@@ -390,7 +390,7 @@ int gate_service::gate_cb(service_context* svc_ctx, void* ud, int svc_msg_type, 
         }
         else
         {
-            log(svc_ctx, "Invalid client id %d from %x", (int)socket_id, src_svc_handle);
+            log_error(svc_ctx, fmt::format("Invalid client id {} from {:x}", (int)socket_id, src_svc_handle));
             break;
         }
     }
