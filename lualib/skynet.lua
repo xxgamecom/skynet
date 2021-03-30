@@ -901,7 +901,6 @@ function skynet.to_address(addr)
 end
 
 -- logger api
-skynet.log = skynet_core.log_info
 skynet.log_debug = skynet_core.log_debug
 skynet.log_info = skynet_core.log_info
 skynet.log_error = skynet_core.log_error
