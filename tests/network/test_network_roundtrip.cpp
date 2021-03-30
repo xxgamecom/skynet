@@ -6,17 +6,17 @@
 class tcp_server_handler : public skynet::network::tcp_server_handler
 {
 private:
-    int32_t                             block_size_ = 0;
+    int32_t block_size_ = 0;
 
-    std::shared_ptr<char>               write_data_ptr_;
-    std::shared_ptr<char>               read_data_ptr_;
+    std::shared_ptr<char> write_data_ptr_;
+    std::shared_ptr<char> read_data_ptr_;
 
-    size_t                              read_data_length_ = 0;
+    size_t read_data_length_ = 0;
 
 public:
     tcp_server_handler(int32_t block_size)
-    :
-    block_size_(block_size)
+        :
+        block_size_(block_size)
     {
         write_data_ptr_.reset(new char[block_size_], std::default_delete<char[]>());
         read_data_ptr_.reset(new char[block_size_], std::default_delete<char[]>());
@@ -24,7 +24,7 @@ public:
 
     virtual ~tcp_server_handler() = default;
 
-	// tcp_server_handler impl
+    // tcp_server_handler impl
 public:
     // 接收连接成功
     virtual void handle_accept(std::shared_ptr<skynet::network::tcp_session> session_ptr) override
@@ -62,8 +62,8 @@ public:
 class stress_server
 {
 private:
-    std::shared_ptr<skynet::network::tcp_server>    server_ptr_;
-    int32_t                                     block_size_ = 0;
+    std::shared_ptr<skynet::network::tcp_server> server_ptr_;
+    int32_t block_size_ = 0;
 
 public:
     stress_server() = default;
@@ -80,9 +80,9 @@ public:
         // 设置服务端会话选项
         //server_ptr_->get_session_config().msg_read_buf_size(32*1024);
         //server_ptr_->get_session_config().msg_write_buf_size(32*1024);
-        server_ptr_->get_session_config().session_thread_num(thread_count-1);
-        server_ptr_->get_session_config().socket_recv_buf_size(32*1024);
-        server_ptr_->get_session_config().socket_send_buf_size(32*1024);
+        server_ptr_->get_session_config().session_thread_num(thread_count - 1);
+        server_ptr_->get_session_config().socket_recv_buf_size(32 * 1024);
+        server_ptr_->get_session_config().socket_send_buf_size(32 * 1024);
 
         if (server_ptr_->open(local_ip, local_port) == false)
         {
@@ -92,14 +92,16 @@ public:
 
     void stop()
     {
-        boost::format fmt("read_bytes: %lld, read_bytes_throughput: %lf, largest_read_bytes_throughput: %lf.\r\n"
-                          "write_bytes: %lld, write_bytes_throughput: %lf, largest_write_bytes_throughput: %lf.\r\n");
-        std::cout << fmt % server_ptr_->get_io_statistics()->read_bytes()
-                         % server_ptr_->get_io_statistics()->read_bytes_throughput()
-                         % server_ptr_->get_io_statistics()->largest_read_bytes_throughput()
-                         % server_ptr_->get_io_statistics()->write_bytes()
-                         % server_ptr_->get_io_statistics()->write_bytes_throughput()
-                         % server_ptr_->get_io_statistics()->largest_write_bytes_throughput();
+        std::cout << fmt::format("read_bytes: %lld, read_bytes_throughput: %lf, largest_read_bytes_throughput: %lf.",
+                                 server_ptr_->get_io_statistics()->read_bytes(),
+                                 server_ptr_->get_io_statistics()->read_bytes_throughput(),
+                                 server_ptr_->get_io_statistics()->largest_read_bytes_throughput())
+                  << std::endl
+                  << fmt::format("write_bytes: %lld, write_bytes_throughput: %lf, largest_write_bytes_throughput: %lf.",
+                                 server_ptr_->get_io_statistics()->write_bytes(),
+                                 server_ptr_->get_io_statistics()->write_bytes_throughput(),
+                                 server_ptr_->get_io_statistics()->largest_write_bytes_throughput())
+                  << std::endl;
 
         server_ptr_->close();
     }

@@ -26,12 +26,12 @@ target_link_libraries(test_network_echo_client  ${MY_LINK_LIBRARIES})
 add_executable(test_network_echo_server test_network_echo_server.cpp)
 target_link_libraries(test_network_echo_server  ${MY_LINK_LIBRARIES})
 
-# test boost asio stress
-add_executable(test_network_stress_asio_client test_network_stress_asio_client.cpp)
-target_link_libraries(test_network_stress_asio_client ${MY_LINK_LIBRARIES})
-
-add_executable(test_network_stress_asio_server test_network_stress_asio_server.cpp)
-target_link_libraries(test_network_stress_asio_server ${MY_LINK_LIBRARIES})
+## test boost asio stress
+#add_executable(test_network_stress_asio_client test_network_stress_asio_client.cpp)
+#target_link_libraries(test_network_stress_asio_client ${MY_LINK_LIBRARIES})
+#
+#add_executable(test_network_stress_asio_server test_network_stress_asio_server.cpp)
+#target_link_libraries(test_network_stress_asio_server ${MY_LINK_LIBRARIES})
 
 # test network stress
 add_executable(test_network_stress_client test_network_stress_client.cpp)

@@ -69,7 +69,7 @@ int32_t main(int32_t argc, char* argv[])
     if (argc < 5)
     {
         std::cout << "usage: " << std::endl;
-        std::cout << argv[0] << " hostname port echo_msg repeate_cout" << std::endl << std::endl;
+        std::cout << argv[0] << " hostname port echo_msg repeate_times" << std::endl << std::endl;
         return 0;
     }
 
