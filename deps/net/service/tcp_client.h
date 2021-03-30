@@ -1,8 +1,9 @@
 #pragma once
 
 #include "../core/io_service.h"
-#include "../core/tcp_connector.h"
-#include "../core/tcp_session.h"
+
+#include "../transport/tcp_connector.h"
+#include "../transport/tcp_session.h"
 
 #include "tcp_client_config.h"
 

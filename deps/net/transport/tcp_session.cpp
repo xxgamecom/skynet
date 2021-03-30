@@ -71,8 +71,7 @@ bool tcp_session::open(std::shared_ptr<io_service> ios_ptr,
     delta_write_bytes_ = 0;
 
     // 更新读写时间
-    last_read_time_ = time_helper::steady_now();
-    last_write_time_ = time_helper::steady_now();
+    last_read_time_ = last_write_time_ = std::chrono::steady_clock::steady_clock::now();
 
     // 会话状态切换到 '打开'
     state_ = SESSION_STATE_OPEN;
@@ -147,7 +146,7 @@ void tcp_session::check_idle(idle_type check_type, int32_t check_seconds)
     if (state_ != SESSION_STATE_OPEN) return;
 
     // 获取当前时间和最近读写时间差值
-    auto now = time_helper::steady_now();
+    auto now = std::chrono::steady_clock::steady_clock::now();
     int64_t read_idle_seconds = std::chrono::duration_cast<std::chrono::seconds>(now - last_read_time_).count();
     int64_t write_idle_seconds = std::chrono::duration_cast<std::chrono::seconds>(now - last_write_time_).count();
 
@@ -268,7 +267,7 @@ void tcp_session::handle_async_read(const asio::error_code& ec, size_t bytes_tra
         delta_read_bytes_ += bytes_transferred;
 
         // 更新读时间
-        last_read_time_ = time_helper::steady_now();
+        last_read_time_ = std::chrono::steady_clock::steady_clock::now();
 
         if (bytes_transferred > 0)
         {
@@ -310,7 +309,7 @@ void tcp_session::handle_async_write(const asio::error_code& ec, size_t bytes_tr
         delta_write_bytes_ += bytes_transferred;
 
         // 更新写时间
-        last_write_time_ = time_helper::steady_now();
+        last_write_time_ = std::chrono::steady_clock::steady_clock::now();
 
         std::shared_ptr<io_buffer> buf_ptr = msg_write_queue_.front();
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../core/object_pool.h"
-#include "../core/tcp_session.h"
+#include "../transport/tcp_session.h"
 
 #include <map>
 #include <mutex>

@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cassert>
 #include <cstdint>
+#include <memory>
 #include <list>
 
 namespace skynet { namespace network {
