@@ -7,12 +7,12 @@ if mode == "slave" then
     local CMD = {}
 
     function CMD.sum(n)
-        skynet.log("for loop begin")
+        skynet.log_info("for loop begin")
         local s = 0
         for i = 1, n do
             s = s + i
         end
-        skynet.log("for loop end")
+        skynet.log_info("for loop end")
     end
 
     function CMD.blackhole()
@@ -30,14 +30,14 @@ else
     skynet.start(function()
         local slave = skynet.newservice(SERVICE_NAME, "slave")
         for step = 1, 20 do
-            skynet.log("overload test " .. step)
+            skynet.log_info("overload test " .. step)
             for i = 1, 512 * step do
                 skynet.send(slave, "lua", "blackhole")
             end
             skynet.sleep(step)
         end
         local n = 1000000000
-        skynet.log(string.format("endless test n=%d", n))
+        skynet.log_info(string.format("endless test n=%d", n))
         skynet.send(slave, "lua", "sum", n)
     end)
 

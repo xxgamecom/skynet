@@ -13,7 +13,7 @@ local CMD = {}
 
 function CMD.login(source, uid, sid, secret)
     -- you may use secret to make a encrypted data stream
-    skynet.log(string.format("%s is login", uid))
+    skynet.log_info(string.format("%s is login", uid))
     gate = source
     userid = uid
     subid = sid
@@ -29,13 +29,13 @@ end
 
 function CMD.logout(source)
     -- NOTICE: The logout MAY be reentry
-    skynet.log(string.format("%s is logout", userid))
+    skynet.log_info(string.format("%s is logout", userid))
     logout()
 end
 
 function CMD.afk(source)
     -- the connection is broken, but the user may back
-    skynet.log(string.format("AFK"))
+    skynet.log_info(string.format("AFK"))
 end
 
 skynet.start(function()

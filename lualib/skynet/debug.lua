@@ -92,7 +92,7 @@ local function init(skynet, export)
                 flag = proto
                 proto = "lua"
             end
-            skynet.log(string.format("Turn trace log %s for %s", flag, proto))
+            skynet.log_info(string.format("Turn trace log %s for %s", flag, proto))
             skynet.traceproto(proto, flag)
             skynet.ret()
         end

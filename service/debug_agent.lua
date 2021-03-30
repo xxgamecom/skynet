@@ -7,7 +7,7 @@ local channel
 
 function CMD.start(address, fd)
     assert(channel == nil, "start more than once")
-    skynet.log(string.format("Attach to :%08x", address))
+    skynet.log_info(string.format("Attach to :%08x", address))
 
     --
     local handle

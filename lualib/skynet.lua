@@ -154,7 +154,7 @@ local function co_create(func)
                 local session_id = thread_session_map[thread]
                 if session_id and session_id ~= 0 then
                     local source = debug.getinfo(func, "S")
-                    skynet.log(string.format("Maybe forgot response session %s from %s : %s:%d",
+                    skynet.log_warn(string.format("Maybe forgot response session %s from %s : %s:%d",
                         session_id,
                         skynet.to_address(thread_svc_handle_map[thread]),
                         source.source,
@@ -416,7 +416,7 @@ local trace_id = 0
 --- trace thread info
 --- @param info string trace thread info
 function skynet.trace(info)
-    skynet.log("TRACE", thread_trace_tag_map[current_thread])
+    skynet.log_info("TRACE", thread_trace_tag_map[current_thread])
 
     -- force off trace log
     if thread_trace_tag_map[current_thread] == false then
@@ -729,7 +729,7 @@ function skynet.dispatch(svc_msg_type, func)
 end
 
 local function unknown_request(session_id, address, msg, msg_sz, svc_msg_type)
-    skynet.log(string.format("Unknown request (%s): %s", svc_msg_type, skynet_core.tostring(msg, msg_sz)))
+    skynet.log_error(string.format("Unknown request (%s): %s", svc_msg_type, skynet_core.tostring(msg, msg_sz)))
     error(string.format("Unknown session : %d from %x", session_id, address))
 end
 
@@ -742,7 +742,7 @@ function skynet.dispatch_unknown_request(unknown)
 end
 
 local function unknown_response(session_id, address, msg, msg_sz)
-    skynet.log(string.format("Response message : %s", skynet_core.tostring(msg, msg_sz)))
+    skynet.log_error(string.format("Response message : %s", skynet_core.tostring(msg, msg_sz)))
     error(string.format("Unknown session : %d from %x", session_id, address))
 end
 
@@ -900,7 +900,12 @@ function skynet.to_address(addr)
     end
 end
 
-skynet.log = skynet_core.log
+-- logger api
+skynet.log = skynet_core.log_info
+skynet.log_debug = skynet_core.log_debug
+skynet.log_info = skynet_core.log_info
+skynet.log_error = skynet_core.log_error
+skynet.log_warn = skynet_core.log_warn
 skynet.tracelog = skynet_core.trace
 
 --- enable/disable proto trace
@@ -952,7 +957,7 @@ function skynet.init_service(start_func)
     end
     local ok, err = xpcall(main, traceback)
     if not ok then
-        skynet.log("init service failed: " .. tostring(err))
+        skynet.log_error("init service failed: " .. tostring(err))
         skynet.send(".launcher", "lua", "ERROR")
         skynet.exit()
     else

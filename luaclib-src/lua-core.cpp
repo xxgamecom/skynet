@@ -13,10 +13,6 @@ extern "C" {
 #include <cinttypes>
 
 //
-#define KNRM  "\x1B[0m"
-#define KRED  "\x1B[31m"
-
-//
 static const char* _get_dst_svc_handle_string(lua_State* L, int index)
 {
     const char* dst_svc_handle_string = lua_tostring(L, index);
@@ -366,16 +362,16 @@ static int _cb(skynet::service_context* svc_ctx, void* ud, int type, int session
     switch (r)
     {
     case LUA_ERRRUN:
-        log(svc_ctx, "lua call [%x to %s : %d msgsz = %d] error : " KRED "%s" KNRM, src_svc_handle, self, session, sz, lua_tostring(L, -1));
+        log_error(svc_ctx, fmt::format("lua call [{:x} to {} : {} msgsz = {}] error : {}", src_svc_handle, self, session, sz, lua_tostring(L, -1)));
         break;
     case LUA_ERRMEM:
-        log(svc_ctx, "lua memory error : [%x to %s : %d]", src_svc_handle, self, session);
+        log_error(svc_ctx, fmt::format("lua memory error : [{:x} to {} : {}]", src_svc_handle, self, session));
         break;
     case LUA_ERRERR:
-        log(svc_ctx, "lua error in error : [%x to %s : %d]", src_svc_handle, self, session);
+        log_error(svc_ctx, fmt::format("lua error in error : [{:x} to {} : {}]", src_svc_handle, self, session));
         break;
     case LUA_ERRGCMM:
-        log(svc_ctx, "lua gc error : [%x to %s : %d]", src_svc_handle , self, session);
+        log_error(svc_ctx, fmt::format("lua gc error : [{:x} to {} : {}]", src_svc_handle, self, session));
         break;
     };
 
@@ -459,26 +455,9 @@ static int l_gen_session_id(lua_State* L)
     return 1;
 }
 
-/**
- * log
- *
- * arguments:
- * args num <= 1
- * 1 log message    - string
- * args num > 1
- * 1
- *
- * lua examples:
- * skynet.log("Server start")
- * skynet.log(string.format("socket accept from %s", msg))
- * skynet.log(addr, "connected")
- * ...
- */
-static int l_log(lua_State* L)
-{
-    // service context upvalue
-    auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
+static const char* _get_log_msg(lua_State* L)
+{
     //
     const char* log_msg = nullptr;
 
@@ -512,10 +491,124 @@ static int l_log(lua_State* L)
         log_msg = lua_tostring(L, -1);
     }
 
-    // do log
+    return log_msg;
+}
+
+/**
+ * log debug
+ *
+ * arguments:
+ * args num <= 1
+ * 1 log message    - string
+ * args num > 1
+ * 1
+ *
+ * lua examples:
+ * skynet.log_info("Server start")
+ * skynet.log_info(string.format("socket accept from %s", msg))
+ * skynet.log_info(addr, "connected")
+ * ...
+ */
+static int l_log_debug(lua_State* L)
+{
+    // service context upvalue
+    auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
+
+    //
+    const char* log_msg = _get_log_msg(L);
     if (log_msg != nullptr)
     {
-        log(svc_ctx, "%s", log_msg);
+        log_debug(svc_ctx, fmt::format("{}", log_msg));
+    }
+
+    return 0;
+}
+
+/**
+ * log info
+ *
+ * arguments:
+ * args num <= 1
+ * 1 log message    - string
+ * args num > 1
+ * 1
+ *
+ * lua examples:
+ * skynet.log_info("Server start")
+ * skynet.log_info(string.format("socket accept from %s", msg))
+ * skynet.log_info(addr, "connected")
+ * ...
+ */
+static int l_log_info(lua_State* L)
+{
+    // service context upvalue
+    auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
+
+    //
+    const char* log_msg = _get_log_msg(L);
+    if (log_msg != nullptr)
+    {
+        log_info(svc_ctx, fmt::format("{}", log_msg));
+    }
+
+    return 0;
+}
+
+/**
+ * log warn
+ *
+ * arguments:
+ * args num <= 1
+ * 1 log message    - string
+ * args num > 1
+ * 1
+ *
+ * lua examples:
+ * skynet.log_info("Server start")
+ * skynet.log_info(string.format("socket accept from %s", msg))
+ * skynet.log_info(addr, "connected")
+ * ...
+ */
+static int l_log_warn(lua_State* L)
+{
+    // service context upvalue
+    auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
+
+    //
+    const char* log_msg = _get_log_msg(L);
+    if (log_msg != nullptr)
+    {
+        log_warn(svc_ctx, fmt::format("{}", log_msg));
+    }
+
+    return 0;
+}
+
+/**
+ * log error
+ *
+ * arguments:
+ * args num <= 1
+ * 1 log message    - string
+ * args num > 1
+ * 1
+ *
+ * lua examples:
+ * skynet.log_info("Server start")
+ * skynet.log_info(string.format("socket accept from %s", msg))
+ * skynet.log_info(addr, "connected")
+ * ...
+ */
+static int l_log_error(lua_State* L)
+{
+    // service context upvalue
+    auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
+
+    //
+    const char* log_msg = _get_log_msg(L);
+    if (log_msg != nullptr)
+    {
+        log_error(svc_ctx, fmt::format("{}", log_msg));
     }
 
     return 0;
@@ -555,7 +648,7 @@ static int l_trace(lua_State* L)
     // only 2 arguments
     if (lua_isnoneornil(L, 3))
     {
-        log(svc_ctx, "<TRACE %s> %lld %s", tag, skynet::time_helper::get_time_ns(), user);
+        log_info(svc_ctx, fmt::format("<TRACE {}> {} {}", tag, skynet::time_helper::get_time_ns(), user));
         return 0;
     }
 
@@ -595,18 +688,18 @@ static int l_trace(lua_State* L)
     switch (index)
     {
     case 1:
-        log(svc_ctx, "<TRACE %s> %lld %s : %s:%d", tag, skynet::time_helper::get_time_ns(), user, si[0].source, si[0].line);
+        log_info(svc_ctx, fmt::format("<TRACE {}> {} {} : {}:{}", tag, skynet::time_helper::get_time_ns(), user, si[0].source, si[0].line));
         break;
     case 2:
-        log(svc_ctx, "<TRACE %s> %lld %s : %s:%d %s:%d", tag, skynet::time_helper::get_time_ns(), user,
-            si[0].source, si[0].line, si[1].source, si[1].line);
+        log_info(svc_ctx, fmt::format("<TRACE {}> {} {} : {}:{} {}:{}", tag, skynet::time_helper::get_time_ns(), user,
+                                      si[0].source, si[0].line, si[1].source, si[1].line));
         break;
     case 3:
-        log(svc_ctx, "<TRACE %s> %lld %s : %s:%d %s:%d %s:%d", tag, skynet::time_helper::get_time_ns(), user,
-            si[0].source, si[0].line, si[1].source, si[1].line, si[2].source, si[2].line);
+        log_info(svc_ctx, fmt::format("<TRACE {}> {} {} : {}:{} {}:{} {}:{}", tag, skynet::time_helper::get_time_ns(), user,
+                                      si[0].source, si[0].line, si[1].source, si[1].line, si[2].source, si[2].line));
         break;
     default:
-        log(svc_ctx, "<TRACE %s> %lld %s", tag, skynet::time_helper::get_time_ns(), user);
+        log_info(svc_ctx, fmt::format("<TRACE {}> {} {}", tag, skynet::time_helper::get_time_ns(), user));
         break;
     }
 
@@ -779,7 +872,10 @@ LUAMOD_API int luaopen_skynet_core(lua_State* L)
         { "addresscommand", l_service_command_address },
         { "callback",       l_set_service_callback },
         { "gen_session_id", l_gen_session_id },
-        { "log",            l_log },
+        { "log_debug",      l_log_debug },
+        { "log_info",       l_log_info },
+        { "log_warn",       l_log_warn },
+        { "log_error",      l_log_error },
         { "trace",          l_trace },
 
         { nullptr,          nullptr },
@@ -787,15 +883,15 @@ LUAMOD_API int luaopen_skynet_core(lua_State* L)
 
     // without service_context upvalue
     luaL_Reg core_funcs_2[] = {
-        { "tostring", l_tostring },
-        { "pack", l_pack },
-        { "unpack", l_unpack },
+        { "tostring",    l_tostring },
+        { "pack",        l_pack },
+        { "unpack",      l_unpack },
         { "pack_string", l_pack_string },
-        { "trash", l_trash },
-        { "now", l_now },
-        { "hpc", l_hpc },
+        { "trash",       l_trash },
+        { "now",         l_now },
+        { "hpc",         l_hpc },
 
-        { nullptr, nullptr },
+        { nullptr,       nullptr },
     };
 
     lua_createtable(L, 0, sizeof(core_funcs_1) / sizeof(core_funcs_1[0]) + sizeof(core_funcs_2) / sizeof(core_funcs_2[0]) - 2);

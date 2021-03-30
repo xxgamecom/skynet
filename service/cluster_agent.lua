@@ -156,7 +156,7 @@ skynet.start(function()
         if f then
             f(...)
         else
-            skynet.log(string.format("Invalid command %s from %s", cmd, skynet.to_address(source)))
+            skynet.log_error(string.format("Invalid command %s from %s", cmd, skynet.to_address(source)))
         end
     end)
 end)

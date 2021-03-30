@@ -130,7 +130,7 @@ void snlua_service::fini()
 
 void snlua_service::signal(int signal)
 {
-    log(svc_ctx_, "recv a signal %d", signal);
+    log_info(svc_ctx_, fmt::format("recv a signal {}", signal));
 
     if (signal == 0)
     {
@@ -141,7 +141,7 @@ void snlua_service::signal(int signal)
     }
     else if (signal == 1)
     {
-        log(svc_ctx_, "Current Memory %.3fK", (float)mem_ / 1024);
+        log_info(svc_ctx_, fmt::format("Current Memory {:.3f}K", (float)mem_ / 1024));
     }
 }
 
@@ -215,7 +215,7 @@ bool snlua_service::init_lua_cb(snlua_service* svc_ptr, service_context* svc_ctx
     int r = luaL_loadfile(L, loader);
     if (r != LUA_OK)
     {
-        log(svc_ctx, "Can't load %s : %s", loader, lua_tostring(L, -1));
+        log_error(svc_ctx, fmt::format("Can't load {} : {}", loader, lua_tostring(L, -1)));
         report_launcher_error(svc_ctx);
         return false;
     }
@@ -225,7 +225,7 @@ bool snlua_service::init_lua_cb(snlua_service* svc_ptr, service_context* svc_ctx
     r = lua_pcall(L, 1, 0, 1);
     if (r != LUA_OK)
     {
-        log(svc_ctx, "lua loader error : %s", lua_tostring(L, -1));
+        log_error(svc_ctx, fmt::format("lua loader error : {}", lua_tostring(L, -1)));
         report_launcher_error(svc_ctx);
         return false;
     }
@@ -238,7 +238,7 @@ bool snlua_service::init_lua_cb(snlua_service* svc_ptr, service_context* svc_ctx
     {
         size_t limit = lua_tointeger(L, -1);
         svc_ptr->mem_limit_ = limit;
-        log(svc_ctx, "Set memory limit to %.2f M", (float)limit / (1024 * 1024));
+        log_info(svc_ctx, fmt::format("Set memory limit to {:.2f}M", (float)limit / (1024 * 1024)));
         lua_pushnil(L);
         lua_setfield(L, LUA_REGISTRYINDEX, "memlimit");
     }
@@ -277,7 +277,7 @@ void* snlua_service::lalloc(void* ud, void* ptr, size_t osize, size_t nsize)
     if (svc_ptr->mem_ > svc_ptr->mem_report_)
     {
         svc_ptr->mem_report_ *= 2;
-        log(svc_ptr->svc_ctx_, "Memory warning %.2f M", (float)svc_ptr->mem_ / (1024 * 1024));
+        log_warn(svc_ptr->svc_ctx_, fmt::format("Memory warning {:.2f}M", (float)svc_ptr->mem_ / (1024 * 1024)));
     }
 
     return skynet_lalloc(ptr, osize, nsize);

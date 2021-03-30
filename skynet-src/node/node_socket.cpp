@@ -141,7 +141,7 @@ int node_socket::poll_socket_event()
         forward_message(SKYNET_SOCKET_EVENT_WARNING, false, &result);
         break;
     default:
-        log(nullptr, "Unknown socket message type %d.", type);
+        log_error(nullptr, fmt::format("Unknown socket message type {}.", type));
         return -1;
     }
 

@@ -12,12 +12,12 @@ local function timeout_check(ticks)
 
     --
     for k, v in pairs(list) do
-        skynet.log("timout", ticks, k, v)
+        skynet.log_info("timout", ticks, k, v)
     end
 end
 
 skynet.start(function()
-    skynet.log("ping all")
+    skynet.log_info("ping all")
     local list_ret = skynet.call(".launcher", "lua", "LIST")
     for addr, desc in pairs(list_ret) do
         list[addr] = desc

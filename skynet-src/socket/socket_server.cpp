@@ -67,14 +67,14 @@ bool socket_server::init(uint64_t time/* = 0*/)
     // 创建poll fd (epoll or kqueue)
     if (!event_poller_.init())
     {
-        log(nullptr, "socket-server: create event poll fd failed.");
+        log_error(nullptr, "socket-server: create event poll fd failed.");
         return false;
     }
 
     //    
     if (!pipe_.init())
     {
-        log(nullptr, "socket-server: create pipe failed.");
+        log_error(nullptr, "socket-server: create pipe failed.");
         return false;
     }
 
@@ -82,7 +82,7 @@ bool socket_server::init(uint64_t time/* = 0*/)
     int pipe_read_fd = pipe_.read_fd();
     if (!event_poller_.add(pipe_read_fd, nullptr))
     {
-        log(nullptr, "socket-server: can't add server socket fd to event poll.");
+        log_error(nullptr, "socket-server: can't add server socket fd to event poll.");
 
         pipe_.fini();
         return false;
@@ -353,7 +353,7 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
             break;
         }
         case SOCKET_STATUS_INVALID:
-            log(nullptr, "socket-server : invalid socket");
+            log_error(nullptr, "socket-server : invalid socket");
             break;
         default:
             // 如果socket已连接且事件可读，通过forward_message_tcp接收数据
@@ -484,7 +484,7 @@ int socket_server::send(send_buffer* buf)
                 int sa_sz = sa.from_udp_address(socket_ref.protocol_type, socket_ref.p.udp_address);
                 if (sa_sz == 0)
                 {
-                    log(nullptr, "socket-server : set udp (%d) address first.", socket_id);
+                    log_error(nullptr, fmt::format("socket-server : set udp ({}) address first.", socket_id));
 
                     so.free_func((void*)buf->data_ptr);
                     return -1;
@@ -781,7 +781,7 @@ void socket_server::_send_ctrl_cmd(ctrl_cmd_package* cmd)
         {
             if (errno != EINTR)
             {
-                log(nullptr, "socket-server : send ctrl command error %s.", ::strerror(errno));
+                log_error(nullptr, fmt::format("socket-server : send ctrl command error {}.", ::strerror(errno)));
             }
 
             continue;
@@ -800,7 +800,7 @@ int socket_server::_recv_ctrl_cmd(socket_message* result)
     uint8_t header[2] = { 0 };
     if (pipe_.read((char*)header, 2) == -1)
     {
-        log(nullptr, "socket-server : read header from pipe error %s.", ::strerror(errno));
+        log_error(nullptr, fmt::format("socket-server : read header from pipe error {}.", ::strerror(errno)));
         return -1;
     }
 
@@ -812,7 +812,7 @@ int socket_server::_recv_ctrl_cmd(socket_message* result)
     uint8_t buf[256] = { 0 };
     if (pipe_.read((char*)buf, len) == -1)
     {
-        log(nullptr, "socket-server : read data from pipe error %s.", ::strerror(errno));
+        log_error(nullptr, fmt::format("socket-server : read data from pipe error {}.", ::strerror(errno)));
         return -1;
     }
 
@@ -861,7 +861,7 @@ int socket_server::_recv_ctrl_cmd(socket_message* result)
     }
 
     //
-    log(nullptr, "socket-server : Unknown ctrl command %c.", ctrl_cmd);
+    log_error(nullptr, fmt::format("socket-server : Unknown ctrl command {}.", ctrl_cmd));
     return -1;
 }
 
@@ -1159,7 +1159,7 @@ int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message
     // can't send data to a listen fd
     if (socket_ref.status == SOCKET_STATUS_PREPARE_LISTEN || socket_ref.status == SOCKET_STATUS_LISTEN)
     {
-        log(nullptr, "socket-server : write to listen %d.", socket_id);
+        log_error(nullptr, fmt::format("socket-server : write to listen {}.", socket_id));
         so.free_func((void*)cmd->data_ptr);
         return -1;
     }
@@ -1186,7 +1186,7 @@ int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message
             if (sa_sz == 0)
             {
                 // udp type mismatch, just drop it.
-                log(nullptr, "socket-server : udp (%d) type mismatch.", socket_id);
+                log_error(nullptr, fmt::format("socket-server : udp ({}) type mismatch.", socket_id));
 
                 so.free_func((void*)cmd->data_ptr);
                 return -1;
@@ -1762,7 +1762,7 @@ int socket_server::send_write_buffer_list_udp(socket* socket_ptr, write_buffer_l
         socklen_t sa_sz = sa.from_udp_address(socket_ptr->protocol_type, tmp->udp_address);
         if (sa_sz == 0)
         {
-            log(nullptr, "socket-server : udp (%d) type mismatch.", socket_ptr->socket_id);
+            log_error(nullptr, fmt::format("socket-server : udp ({}) type mismatch.", socket_ptr->socket_id));
             drop_udp(socket_ptr, wb_list, tmp);
             return -1;
         }
@@ -1775,7 +1775,7 @@ int socket_server::send_write_buffer_list_udp(socket* socket_ptr, write_buffer_l
             if (errno == EINTR || errno == AGAIN_WOULDBLOCK)
                 return -1;
 
-            log(nullptr, "socket-server : udp (%d) sendto error %s.", socket_ptr->socket_id, ::strerror(errno));
+            log_error(nullptr, fmt::format("socket-server : udp ({}) sendto error {}.", socket_ptr->socket_id, ::strerror(errno)));
             drop_udp(socket_ptr, wb_list, tmp);
             return -1;
         }
@@ -2104,7 +2104,7 @@ int socket_server::forward_message_tcp(socket* socket_ptr, socket_lock& sl, sock
             return -1;
         if (errno == AGAIN_WOULDBLOCK)
         {
-            log(nullptr, "socket-server : EAGAIN capture.");
+            log_error(nullptr, "socket-server : EAGAIN capture.");
             return -1;
         }
 

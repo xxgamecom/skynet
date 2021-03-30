@@ -60,7 +60,7 @@ skynet.register_svc_msg_handler({
                     send_package(result)
                 end
             else
-                skynet.log(result)
+                skynet.log_error(result)
             end
         else
             assert(type == "RESPONSE")

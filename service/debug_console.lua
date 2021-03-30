@@ -95,7 +95,7 @@ end
 
 local function console_main_loop(stdin, print)
     print("Welcome to skynet console")
-    skynet.log(stdin, "connected")
+    skynet.log_info(stdin, "connected")
     local ok, err = pcall(function()
         while true do
             local cmdline = socket.read_line(stdin, "\n")
@@ -115,15 +115,15 @@ local function console_main_loop(stdin, print)
         end
     end)
     if not ok then
-        skynet.log(stdin, err)
+        skynet.log_error(stdin, err)
     end
-    skynet.log(stdin, "disconnected")
+    skynet.log_info(stdin, "disconnected")
     socket.close(stdin)
 end
 
 skynet.start(function()
     local listen_socket = socket.listen(ip, port)
-    skynet.log("Start debug console at " .. ip .. ":" .. port)
+    skynet.log_info("Start debug console at " .. ip .. ":" .. port)
     socket.start(listen_socket, function(id, addr)
         local function print(...)
             local t = { ... }

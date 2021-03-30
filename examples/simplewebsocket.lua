@@ -79,7 +79,7 @@ else
         local balance = 1
         local protocol = "ws"
         local id = socket.listen("0.0.0.0", 9948)
-        skynet.log(string.format("Listen websocket port 9948 protocol:%s", protocol))
+        skynet.log_info(string.format("Listen websocket port 9948 protocol:%s", protocol))
         socket.start(id, function(id, addr)
             print(string.format("accept client socket_id: %s addr:%s", id, addr))
             skynet.send(agent[balance], "lua", id, protocol, addr)

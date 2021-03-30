@@ -39,7 +39,7 @@ function gateserver.start(handler)
         local port = assert(conf.port)
         maxclient = conf.maxclient or 1024
         nodelay = conf.nodelay
-        skynet.log(string.format("Listen on %s:%d", address, port))
+        skynet.log_info(string.format("Listen on %s:%d", address, port))
         socket = socket_core.listen(address, port)
         socket_core.start(socket)
         if handler.open then
@@ -58,7 +58,7 @@ function gateserver.start(handler)
         if connection[fd] then
             handler.message(fd, msg, sz)
         else
-            skynet.log(string.format("Drop message from fd (%d) : %s", fd, netpack.tostring(msg, sz)))
+            skynet.log_warn(string.format("Drop message from fd (%d) : %s", fd, netpack.tostring(msg, sz)))
         end
     end
 
@@ -115,7 +115,7 @@ function gateserver.start(handler)
     function MSG.error(fd, msg)
         if fd == socket then
             socket_core.close(fd)
-            skynet.log("gateserver close listen socket, accpet error:", msg)
+            skynet.log_error("gateserver close listen socket, accpet error:", msg)
         else
             if handler.error then
                 handler.error(fd, msg)

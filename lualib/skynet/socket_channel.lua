@@ -107,7 +107,7 @@ local function dispatch_by_session(self)
                 end
             else
                 self.__thread[session] = nil
-                skynet.log("socket: unknown session :", session)
+                skynet.log_error("socket: unknown session :", session)
             end
         else
             close_channel_socket(self)
@@ -136,7 +136,7 @@ local function autoclose_cb(self, fd)
     local sock = self.__sock
     if self.__wait_response and sock and sock[1] == fd then
         -- closed by peer
-        skynet.log("socket closed by peer : ", self.__host, self.__port)
+        skynet.log_info("socket closed by peer : ", self.__host, self.__port)
         close_channel_socket(self)
     end
 end
@@ -264,7 +264,7 @@ local function connect_once(self)
     local function _next_addr()
         local addr = table.remove(addr_list, 1)
         if addr then
-            skynet.log("socket: connect to backup host", addr.host, addr.port)
+            skynet.log_info("socket: connect to backup host", addr.host, addr.port)
         end
         return addr
     end
@@ -307,7 +307,7 @@ local function connect_once(self)
                             self.__overload = true
                             overload(true)
                         else
-                            skynet.log(string.format("WARNING: %d K bytes need to send out (fd = %d %s:%s)", size, id, self.__host, self.__port))
+                            skynet.log_warn(string.format("WARNING: %d K bytes need to send out (fd = %d %s:%s)", size, id, self.__host, self.__port))
                         end
                     end
                 end
@@ -336,7 +336,7 @@ local function connect_once(self)
                 close_channel_socket(self)
                 if message ~= socket_error then
                     self.__authcoroutine = false
-                    skynet.log("socket: auth failed", message)
+                    skynet.log_error("socket: auth failed", message)
                 end
             end
             self.__authcoroutine = false
@@ -370,16 +370,16 @@ local function try_connect(self, once)
         local ok, err = connect_once(self)
         if ok then
             if not once then
-                skynet.log("socket: connect to", self.__host, self.__port)
+                skynet.log_info("socket: connect to", self.__host, self.__port)
             end
             return
         elseif once then
             return err
         else
-            skynet.log("socket: connect", err)
+            skynet.log_info("socket: connect", err)
         end
         if t > 1000 then
-            skynet.log("socket: try to reconnect", self.__host, self.__port)
+            skynet.log_info("socket: try to reconnect", self.__host, self.__port)
             skynet.sleep(t)
             t = 0
         else
@@ -393,7 +393,7 @@ local function check_connection(self)
     if self.__sock then
         if socket.disconnected(self.__sock[1]) then
             -- closed by peer
-            skynet.log("socket: disconnect detected ", self.__host, self.__port)
+            skynet.log_info("socket: disconnect detected ", self.__host, self.__port)
             close_channel_socket(self)
             return
         end
@@ -436,7 +436,7 @@ local function block_connect(self, once)
 
     r = check_connection(self)
     if r == nil then
-        skynet.log(string.format("Connect to %s:%d failed (%s)", self.__host, self.__port, err))
+        skynet.log_error(string.format("Connect to %s:%d failed (%s)", self.__host, self.__port, err))
         error(socket_error)
     else
         return r

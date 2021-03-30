@@ -179,7 +179,7 @@ mq_private* node::dispatch_message(service_monitor& svc_monitor, mq_private* q, 
         int overload = q->overload();
         if (overload != 0)
         {
-            log(svc_ctx, "May overload, message queue length = %d", overload);
+            log_warn(svc_ctx, fmt::format("May overload, message queue length = {}", overload));
         }
 
         // process message
@@ -233,7 +233,7 @@ void node::_bootstrap(service_context* log_svc_ctx, const char* cmdline)
     // check command line
     if (cmdline_info.size() < 2)
     {
-        log(nullptr, "Bootstrap error : ", cmdline);
+        log_error(nullptr, fmt::format("Bootstrap error : {}", cmdline));
         // output all error message in mq
         _dispatch_all(log_svc_ctx);
 
@@ -246,7 +246,7 @@ void node::_bootstrap(service_context* log_svc_ctx, const char* cmdline)
     service_context* svc_ctx = service_manager::instance()->create_service(svc_name.c_str(), svc_args.c_str());
     if (svc_ctx == nullptr)
     {
-        log(nullptr, "Bootstrap error : %s\n", cmdline);
+        log_error(nullptr, fmt::format("Bootstrap error : {}", cmdline));
         // output all error message in mq
         _dispatch_all(log_svc_ctx);
 

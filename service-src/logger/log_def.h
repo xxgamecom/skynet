@@ -31,7 +31,6 @@ inline logger_type string_to_logger_type(const char* type)
     else return LOG_TYPE_CONSOLE;
 }
 
-
 // log level
 enum log_level
 {

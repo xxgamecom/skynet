@@ -12,7 +12,7 @@ static bool _handle_ctrl_cmd_kick(gate_service* gate_svc_ptr, std::vector<std::s
     // check param num
     if (param_info.size() < 1)
     {
-        log(gate_svc_ptr->svc_ctx_, "[gate] kick failed, the number of param must == 1");
+        log_warn(gate_svc_ptr->svc_ctx_, "[gate] kick failed, the number of param must == 1");
         return false;
     }
 
@@ -23,7 +23,7 @@ static bool _handle_ctrl_cmd_kick(gate_service* gate_svc_ptr, std::vector<std::s
     }
     catch (...)
     {
-        log(gate_svc_ptr->svc_ctx_, "[gate] kick failed, invalid socket id");
+        log_warn(gate_svc_ptr->svc_ctx_, "[gate] kick failed, invalid socket id");
         return false;
     }
 
@@ -41,7 +41,7 @@ static bool _handle_ctrl_cmd_forward(gate_service* gate_svc_ptr, std::vector<std
     // check param num
     if (param_info.size() < 3)
     {
-        log(gate_svc_ptr->svc_ctx_, "[gate] forward failed, the number of param must == 3");
+        log_warn(gate_svc_ptr->svc_ctx_, "[gate] forward failed, the number of param must == 3");
         return false;
     }
 
@@ -52,7 +52,7 @@ static bool _handle_ctrl_cmd_forward(gate_service* gate_svc_ptr, std::vector<std
     }
     catch (...)
     {
-        log(gate_svc_ptr->svc_ctx_, "[gate] forward failed, invalid socket id");
+        log_warn(gate_svc_ptr->svc_ctx_, "[gate] forward failed, invalid socket id");
         return false;
     }
 
@@ -64,7 +64,7 @@ static bool _handle_ctrl_cmd_forward(gate_service* gate_svc_ptr, std::vector<std
     }
     catch (...)
     {
-        log(gate_svc_ptr->svc_ctx_, "[gate] forward failed, invalid agent service handle");
+        log_warn(gate_svc_ptr->svc_ctx_, "[gate] forward failed, invalid agent service handle");
         return false;
     }
 
@@ -76,7 +76,7 @@ static bool _handle_ctrl_cmd_forward(gate_service* gate_svc_ptr, std::vector<std
     }
     catch (...)
     {
-        log(gate_svc_ptr->svc_ctx_, "[gate] forward failed, invalid client service handle");
+        log_warn(gate_svc_ptr->svc_ctx_, "[gate] forward failed, invalid client service handle");
         return false;
     }
 
@@ -97,7 +97,7 @@ static bool _handle_ctrl_cmd_broker(gate_service* gate_svc_ptr, std::vector<std:
     // check param num
     if (param_info.size() < 1)
     {
-        log(gate_svc_ptr->svc_ctx_, "[gate] forward failed, the number of param must == 1");
+        log_error(gate_svc_ptr->svc_ctx_, "[gate] forward failed, the number of param must == 1");
         return false;
     }
 
@@ -112,7 +112,7 @@ static bool _handle_ctrl_cmd_start(gate_service* gate_svc_ptr, std::vector<std::
     // check param num
     if (param_info.size() < 1)
     {
-        log(gate_svc_ptr->svc_ctx_, "[gate] start failed, the number of param must == 1");
+        log_error(gate_svc_ptr->svc_ctx_, "[gate] start failed, the number of param must == 1");
         return false;
     }
 
@@ -123,7 +123,7 @@ static bool _handle_ctrl_cmd_start(gate_service* gate_svc_ptr, std::vector<std::
     }
     catch (...)
     {
-        log(gate_svc_ptr->svc_ctx_, "[gate] start failed, invalid socket id");
+        log_error(gate_svc_ptr->svc_ctx_, "[gate] start failed, invalid socket id");
         return false;
     }
 
@@ -173,7 +173,7 @@ void handle_ctrl_cmd(gate_service* gate_svc_ptr, const char* msg, int sz)
     {
         if (!_handle_ctrl_cmd_kick(gate_svc_ptr, param_info))
         {
-            log(gate_svc_ptr->svc_ctx_, "[gate] command : ", cmd_string.c_str());
+            log_error(gate_svc_ptr->svc_ctx_, fmt::format("[gate] command : {}", cmd_string));
         }
     }
     // cmd - "forward socket_id agent_svc_handle client_svc_handle"
@@ -181,7 +181,7 @@ void handle_ctrl_cmd(gate_service* gate_svc_ptr, const char* msg, int sz)
     {
         if (!_handle_ctrl_cmd_forward(gate_svc_ptr, param_info))
         {
-            log(gate_svc_ptr->svc_ctx_, "[gate] command : ", cmd_string.c_str());
+            log_error(gate_svc_ptr->svc_ctx_, fmt::format("[gate] command : {}", cmd_string));
         }
     }
     // cmd - "broker name_or_addr"
@@ -189,7 +189,7 @@ void handle_ctrl_cmd(gate_service* gate_svc_ptr, const char* msg, int sz)
     {
         if (!_handle_ctrl_cmd_broker(gate_svc_ptr, param_info))
         {
-            log(gate_svc_ptr->svc_ctx_, "[gate] command : ", cmd_string.c_str());
+            log_error(gate_svc_ptr->svc_ctx_, fmt::format("[gate] command : {}", cmd_string));
         }
     }
     // cmd - "start socket_id"
@@ -197,7 +197,7 @@ void handle_ctrl_cmd(gate_service* gate_svc_ptr, const char* msg, int sz)
     {
         if (!_handle_ctrl_cmd_start(gate_svc_ptr, param_info))
         {
-            log(gate_svc_ptr->svc_ctx_, "[gate] command : ", cmd_string.c_str());
+            log_error(gate_svc_ptr->svc_ctx_, fmt::format("[gate] command : {}", cmd_string));
         }
     }
     // cmd - "close"
@@ -207,7 +207,7 @@ void handle_ctrl_cmd(gate_service* gate_svc_ptr, const char* msg, int sz)
     }
     else
     {
-        log(gate_svc_ptr->svc_ctx_, "[gate] Unknown command : %s", cmd_string.c_str());
+        log_error(gate_svc_ptr->svc_ctx_, fmt::format("[gate] Unknown command : {}", cmd_string));
     }
 }
 

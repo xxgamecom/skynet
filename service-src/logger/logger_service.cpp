@@ -45,7 +45,7 @@ bool logger_service::init(service_context* svc_ctx, const char* param)
     // type
     value = _get_env(svc_ctx, "logger_type", DEFAULT_LOG_TYPE);
     // split type by ','
-    std::regex re {','};
+    std::regex re { ',' };
     std::vector<std::string> type_info {
         std::sregex_token_iterator(value.begin(), value.end(), re, -1),
         std::sregex_token_iterator()
@@ -112,7 +112,7 @@ bool logger_service::init(service_context* svc_ctx, const char* param)
             // read rotation log config
             value = _get_env(svc_ctx, "logger_rotating_max_size", "");
             if (value.empty())
-                log_config_.rotating_.max_size_= DEFAULT_LOG_ROTATING_MAX_SIZE * 1024 * 1024;
+                log_config_.rotating_.max_size_ = DEFAULT_LOG_ROTATING_MAX_SIZE * 1024 * 1024;
             else
                 log_config_.rotating_.max_size_ = std::stoi(value) * 1024 * 1024;
 
@@ -177,11 +177,32 @@ int logger_service::logger_cb(service_context* svc_ctx, void* ud, int svc_msg_ty
 //        }
         break;
     case SERVICE_MSG_TYPE_TEXT:
-        spdlog::info("[:{:08X}] {}", src_svc_handle, std::string((const char*)msg, sz));
+    {
+        int log_level = 0;
+        int log_level_len = sizeof(log_level);
+        if (sz <= log_level_len)
+            break;
+
+        // get log level
+        ::memcpy(&log_level, (int*)msg, log_level_len);
+
+        // get log message
+        const char* log_msg = (const char*)msg + log_level_len;
+        int log_msg_len = sz - log_level_len;
+
+        if (log_level == LOG_LEVEL_DEBUG)
+            spdlog::debug("[:{:08X}] {}", src_svc_handle, std::string(log_msg, log_msg_len));
+        else if (log_level == LOG_LEVEL_INFO)
+            spdlog::info("[:{:08X}] {}", src_svc_handle, std::string(log_msg, log_msg_len));
+        else if (log_level == LOG_LEVEL_WARN)
+            spdlog::warn("[:{:08X}] {}", src_svc_handle, std::string(log_msg, log_msg_len));
+        else if (log_level == LOG_LEVEL_ERROR)
+            spdlog::error("[:{:08X}] {}", src_svc_handle, std::string(log_msg, log_msg_len));
+    }
         break;
     }
 
     return 0;
 }
 
-} }
+}}

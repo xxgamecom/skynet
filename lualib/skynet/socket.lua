@@ -45,9 +45,9 @@ local function pause_socket(sock_obj, size)
 
     -- pause socket thread
     if size then
-        skynet.log(string.format("Pause socket (%d) size : %d", sock_obj.socket_id, size))
+        skynet.log_info(string.format("Pause socket (%d) size : %d", sock_obj.socket_id, size))
     else
-        skynet.log(string.format("Pause socket (%d)", sock_obj.socket_id))
+        skynet.log_info(string.format("Pause socket (%d)", sock_obj.socket_id))
     end
     socket_core.pause(sock_obj.socket_id)
     sock_obj.is_pause = true
@@ -60,7 +60,7 @@ local function suspend_socket(sock_obj)
     assert(not sock_obj.thread)
     sock_obj.thread = coroutine.running()
     if sock_obj.is_pause then
-        skynet.log(string.format("Resume socket (%d)", sock_obj.socket_id))
+        skynet.log_info(string.format("Resume socket (%d)", sock_obj.socket_id))
         socket_core.start(sock_obj.socket_id)
         skynet.wait(sock_obj.thread)
         sock_obj.is_pause = nil
@@ -431,7 +431,7 @@ do
     socket_message[socket.SKYNET_SOCKET_EVENT_DATA] = function(socket_id, size, data)
         local sock_obj = socket_pool[socket_id]
         if sock_obj == nil then
-            skynet.log("socket: drop package from " .. socket_id)
+            skynet.log_error("socket: drop package from " .. socket_id)
             socket_core.drop(data, size)
             return
         end
@@ -452,7 +452,7 @@ do
         else
             -- check socket buffer limit
             if sock_obj.buffer_limit and sz > sock_obj.buffer_limit then
-                skynet.log(string.format("socket buffer overflow: fd=%d size=%d", socket_id, sz))
+                skynet.log_error(string.format("socket buffer overflow: fd=%d size=%d", socket_id, sz))
                 socket_core.close(socket_id)
                 return
             end
@@ -511,15 +511,15 @@ do
         local sock_obj = socket_pool[socket_id]
         if sock_obj == nil then
             socket_core.shutdown(socket_id)
-            skynet.log("socket: error on unknown", socket_id, err)
+            skynet.log_error("socket: error on unknown", socket_id, err)
             return
         end
         if sock_obj.callback then
-            skynet.log("socket: accpet error:", err)
+            skynet.log_error("socket: accpet error:", err)
             return
         end
         if sock_obj.connected then
-            skynet.log("socket: error on", socket_id, err)
+            skynet.log_error("socket: error on", socket_id, err)
         elseif sock_obj.connecting then
             sock_obj.connecting = err
         end
@@ -532,7 +532,7 @@ do
     socket_message[socket.SKYNET_SOCKET_EVENT_UDP] = function(socket_id, size, data, address)
         local sock_obj = socket_pool[socket_id]
         if sock_obj == nil or sock_obj.callback == nil then
-            skynet.log("socket: drop udp package from " .. socket_id)
+            skynet.log_warn("socket: drop udp package from " .. socket_id)
             socket_core.drop(data, size)
             return
         end
@@ -546,7 +546,7 @@ do
         if not sock_obj then
             return
         end
-        skynet.log(string.format("WARNING: %d K bytes need to send out (fd = %d)", size, socket_id))
+        skynet.log_warn(string.format("WARNING: %d K bytes need to send out (fd = %d)", size, socket_id))
     end
 
     socket_message[socket.SKYNET_SOCKET_EVENT_WARNING] = function(socket_id, size)
