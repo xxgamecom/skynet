@@ -1,0 +1,33 @@
+#pragma once
+
+#include <sstream>
+#include <regex>
+
+namespace skynet { namespace network {
+
+// uri scheme部分
+class uri_scheme final
+{
+private:
+    std::string             value_ = "tcp";
+    bool                    is_splash_splash_ = true;
+
+public:
+    uri_scheme() = default;
+    explicit uri_scheme(std::string src, bool is_splash_splash = true);
+
+public:
+    const std::string& value() const;
+    bool is_splash_splash() const;
+
+public:
+    static uri_scheme from_string(std::string str, std::string* out_ptr = nullptr);
+    static std::string to_string(const uri_scheme& scheme);
+
+    static bool find_splash_splash(std::string str, std::string* out_ptr);
+};
+
+} }
+
+#include "uri_scheme.inl"
+
