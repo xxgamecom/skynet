@@ -20,7 +20,7 @@ io_statistics::io_statistics(std::shared_ptr<tcp_session_manager> session_manage
 bool io_statistics::start()
 {
     asio::error_code ec;
-    calc_timer_.expires_from_now(boost::posix_time::seconds(UPDATE_READ_WRITE_INTERVAL_SECONDS), ec);
+    calc_timer_.expires_from_now(std::chrono::seconds(UPDATE_READ_WRITE_INTERVAL_SECONDS), ec);
     if (ec)
     {
         return false;
@@ -90,7 +90,7 @@ void io_statistics::handle_timeout(const asio::error_code& ec)
 
         // 启动下一次计算
         asio::error_code ec;
-        calc_timer_.expires_from_now(boost::posix_time::seconds(UPDATE_READ_WRITE_INTERVAL_SECONDS), ec);
+        calc_timer_.expires_from_now(std::chrono::seconds(UPDATE_READ_WRITE_INTERVAL_SECONDS), ec);
         if (ec)
         {
             return;

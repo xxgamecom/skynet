@@ -12,17 +12,20 @@ namespace skynet { namespace network {
 
 class tcp_session;
 
-// tcp主动连接器, 连接成功后会初始化外部传入的tcp会话对象
+/**
+ * tcp connector
+ * after successful connection, the external incoming tcp session object will be initialized
+ */
 class tcp_connector : public std::enable_shared_from_this<tcp_connector>
 {
 protected:
-    std::shared_ptr<io_service> ios_ptr_;                       // ios(取自io_service_pool)
+    std::shared_ptr<io_service> ios_ptr_;                       // ios (from io_service_pool)
 
-    asio::ip::tcp::resolver resolver_;                          // 地址解析器
-    std::shared_ptr<asio::deadline_timer> connect_timer_ptr_;   // 连接定时器, 连接超时控制
-    bool is_connecting_ = false;                                // 是否正在连接
+    asio::ip::tcp::resolver resolver_;                          // address resolver
+    std::shared_ptr<asio::steady_timer> connect_timer_ptr_;     // connect timer
+    bool is_connecting_ = false;
 
-    std::shared_ptr<tcp_connector_handler> event_handler_ptr_;  // 外部主动连接事件处理器
+    std::shared_ptr<tcp_connector_handler> event_handler_ptr_;
 
 public:
     explicit tcp_connector(std::shared_ptr<io_service> ios_ptr);
@@ -40,23 +43,22 @@ public:
                  const std::string local_ip = "",
                  const uint16_t local_port = 0);
 
-    // 连接定时器
+    // connect timer
 protected:
-    // 启动连接定时器
+    // start/stop connect timer
     bool start_connect_timer(std::shared_ptr<tcp_session> session_ptr, int32_t timeout_seconds);
-    // 关闭连接定时器
     void stop_connect_timer();
 
-    // 处理函数
+    // handle function
 protected:
-    // 处理异步地址解析
+    // handle async address resolve
     void handle_async_resolve(std::shared_ptr<tcp_session> session_ptr,
-                              asio::ip::tcp::resolver::iterator endpoint_itr,
-                              const asio::error_code& ec);
-    // 处理异步连接
+                              const asio::error_code& ec,
+                              asio::ip::tcp::resolver::iterator endpoint_itr);
+    // handle async connect
     void handle_async_connect(std::shared_ptr<tcp_session> session_ptr, const asio::error_code& ec);
 
-    // 处理连接超时
+    // handle timeout
     void handle_timeout(std::shared_ptr<tcp_session> session_ptr, const asio::error_code& ec);
 
     // noncopyable

@@ -9,12 +9,12 @@ inline bool tcp_connector::start_connect_timer(std::shared_ptr<tcp_session> sess
 {
     if (timeout_seconds > 0)
     {
-        connect_timer_ptr_ = std::make_shared<asio::deadline_timer>(ios_ptr_->get_raw_ios());
+        connect_timer_ptr_ = std::make_shared<asio::steady_timer>(ios_ptr_->get_raw_ios());
         if (connect_timer_ptr_ == nullptr)
             return false;
 
         asio::error_code ec;
-        connect_timer_ptr_->expires_from_now(boost::posix_time::seconds(timeout_seconds), ec);
+        connect_timer_ptr_->expires_from_now(std::chrono::seconds(timeout_seconds), ec);
         if (ec)
         {
             connect_timer_ptr_.reset();

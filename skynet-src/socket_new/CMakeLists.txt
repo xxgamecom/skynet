@@ -1,4 +1,12 @@
 set(SKYNET_SOCKET_NEW_HEADER
+    socket_new/uri/uri_codec.h
+    socket_new/uri/uri_codec.inl
+    socket_new/uri/uri_host.h
+    socket_new/uri/uri_host.inl
+    socket_new/uri/uri_port.h
+    socket_new/uri/uri_port.inl
+    socket_new/uri/uri_scheme.h
+    socket_new/uri/uri_scheme.inl
     socket_new/core/time_helper.h
     socket_new/core/time_helper.inl
     socket_new/core/object_pool.h
@@ -41,6 +49,10 @@ set(SKYNET_SOCKET_NEW_HEADER
 )
 
 set(SKYNET_SOCKET_NEW_SRC
+    socket_new/uri/uri_codec.cpp
+    socket_new/uri/uri_host.cpp
+    socket_new/uri/uri_port.cpp
+    socket_new/uri/uri_scheme.cpp
     socket_new/core/io_buffer.cpp
     socket_new/core/io_service.cpp
     socket_new/core/io_service_pool.cpp

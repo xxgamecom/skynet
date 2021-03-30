@@ -15,8 +15,8 @@ private:
 private:
     std::shared_ptr<tcp_session_manager> session_manager_ptr_;      // 会话管理引用
     std::shared_ptr<io_service> ios_ptr_;                           // ios和acceptor的公用
-    asio::deadline_timer idle_check_timer_;                         // 闲置检测定时器
-    idle_type idle_check_type_ = IDLE_TYPE_BOTH;                    // 检测闲置类型
+    asio::steady_timer idle_check_timer_;                           // idle check timer
+    idle_type idle_check_type_ = IDLE_TYPE_BOTH;                    // idle check type
     int32_t idle_check_seconds_ = 0;                                // 用于判定为闲置的时间, 为0时不检测(单位: 秒)
 
 public:

@@ -1,4 +1,4 @@
-#include "game.codec/uri/uri_codec.h"
+#include "uri_codec.h"
 
 namespace skynet { namespace network {
 

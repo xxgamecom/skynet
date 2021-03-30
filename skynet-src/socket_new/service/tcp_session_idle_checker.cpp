@@ -21,7 +21,7 @@ bool tcp_session_idle_checker::start(idle_type check_type, int32_t idle_interval
     if (idle_check_seconds_ > 0)
     {
         asio::error_code ec;
-        idle_check_timer_.expires_from_now(boost::posix_time::seconds(CHECK_INTERVAL), ec);
+        idle_check_timer_.expires_from_now(std::chrono::seconds(CHECK_INTERVAL), ec);
         if (ec) return false;
 
         idle_check_timer_.async_wait(std::bind(&tcp_session_idle_checker::handle_timeout,
@@ -63,7 +63,7 @@ void tcp_session_idle_checker::handle_timeout(const asio::error_code& ec)
         if (idle_check_seconds_ > 0)
         {
             asio::error_code ec;
-            idle_check_timer_.expires_from_now(boost::posix_time::seconds(CHECK_INTERVAL), ec);
+            idle_check_timer_.expires_from_now(std::chrono::seconds(CHECK_INTERVAL), ec);
             if (ec) return;
 
             idle_check_timer_.async_wait(std::bind(&tcp_session_idle_checker::handle_timeout,

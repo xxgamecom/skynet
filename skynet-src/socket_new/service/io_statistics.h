@@ -26,7 +26,7 @@ private:
 private:
     std::shared_ptr<tcp_session_manager> session_manager_ptr_;      // 会话管理引用
     std::shared_ptr<io_service> ios_ptr_;                           // ios和acceptor的公用
-    asio::deadline_timer calc_timer_;                               // 计算吞吐量定时器
+    asio::steady_timer calc_timer_;                                 // 计算吞吐量定时器
 
     int32_t timeout_count_ = 0;                                     // 超时计数(用于计算控制吞吐时间)
 
