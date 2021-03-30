@@ -1,9 +1,9 @@
-#include "game.network/network.h"
+#include "network.h"
 
-#include <boost/format.hpp>
+#include "fmt/format.h"
 #include <iostream>
 
-class tcp_client_handler : public skynet::newwork::tcp_client_handler
+class tcp_client_handler : public skynet::network::tcp_client_handler
 {
 public:
     tcp_client_handler() = default;
@@ -12,7 +12,7 @@ public:
     // tcp_client_handler impl
 public:
     // 主动连接成功
-    virtual void handle_connect_success(std::shared_ptr<skynet::newwork::tcp_session> session_ptr) override
+    virtual void handle_connect_success(std::shared_ptr<skynet::network::tcp_session> session_ptr) override
     {
         std::cout << "connect success" << std::endl;
 
@@ -31,22 +31,19 @@ public:
     }
 
     // 主动连接失败
-    virtual void handle_connect_failed(std::shared_ptr<skynet::newwork::tcp_session> session_ptr, int32_t err_code, std::string err_msg) override
+    virtual void handle_connect_failed(std::shared_ptr<skynet::network::tcp_session> session_ptr, int32_t err_code, std::string err_msg) override
     {
-        boost::format fmt("connec failed(%d:%s)");
-        fmt % err_code
-            % err_msg;
-        std::cout << fmt.str() << std::endl;
+        std::cout << fmt::format("connec failed({}:{})", err_code, err_msg) << std::endl;
     }
 
     // 超时处理
-    virtual void handle_connect_timeout(std::shared_ptr<skynet::newwork::tcp_session> session_ptr) override
+    virtual void handle_connect_timeout(std::shared_ptr<skynet::network::tcp_session> session_ptr) override
     {
         std::cout << "connect timeout" << std::endl;
     }
 
     // tcp会话读完成
-    virtual void handle_session_read(std::shared_ptr<skynet::newwork::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
+    virtual void handle_session_read(std::shared_ptr<skynet::network::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
     {
         std::cout << std::endl;
         std::cout << "read: " << std::endl << data_ptr << std::endl;
@@ -54,13 +51,13 @@ public:
     }
 
     // tcp会话写完成
-    virtual void handle_session_write(std::shared_ptr<skynet::newwork::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
+    virtual void handle_session_write(std::shared_ptr<skynet::network::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
     {
         std::cout << "write completed bytes: " << data_len  << std::endl;
     }
 
     // tcp会话关闭
-    virtual void handle_sessoin_close(std::shared_ptr<skynet::newwork::tcp_session> session_ptr) override
+    virtual void handle_sessoin_close(std::shared_ptr<skynet::network::tcp_session> session_ptr) override
     {
         std::cout << "session close" << std::endl;
     }
@@ -83,7 +80,7 @@ int32_t main(int32_t argc, char* argv[])
     // create client
     std::cout << "create client" << std::endl;
     std::shared_ptr<tcp_client_handler> service_handler_ptr = std::make_shared<tcp_client_handler>();
-    std::shared_ptr<skynet::newwork::tcp_client> client_ptr = std::make_shared<skynet::newwork::tcp_client>();
+    std::shared_ptr<skynet::network::tcp_client> client_ptr = std::make_shared<skynet::network::tcp_client>();
     client_ptr->set_event_handler(service_handler_ptr);
 
     // open client

@@ -1,8 +1,9 @@
-#include "game.network/network.h"
+#include "network.h"
 
-#include <boost/format.hpp>
+#include "fmt/format.h"
+#include <iostream>
 
-class tcp_server_handler : public skynet::newwork::tcp_server_handler
+class tcp_server_handler : public skynet::network::tcp_server_handler
 {
 public:
     tcp_server_handler() = default;
@@ -10,13 +11,13 @@ public:
 
 public:
     // 接收连接成功
-    virtual void handle_accept(std::shared_ptr<skynet::newwork::tcp_session> session_ptr) override
+    virtual void handle_accept(std::shared_ptr<skynet::network::tcp_session> session_ptr) override
     {
         std::cout << "accept success" << std::endl;
     }
 
     // tcp会话读完成
-    virtual void handle_session_read(std::shared_ptr<skynet::newwork::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
+    virtual void handle_session_read(std::shared_ptr<skynet::network::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
     {
         std::cout << std::endl;
         std::cout << "recv: " << data_ptr << std::endl;
@@ -28,18 +29,18 @@ public:
     }
 
     // tcp会话写完成
-    virtual void handle_session_write(std::shared_ptr<skynet::newwork::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
+    virtual void handle_session_write(std::shared_ptr<skynet::network::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
     {
     }
 
     // tcp会话闲置
-    virtual void handle_session_idle(std::shared_ptr<skynet::newwork::tcp_session> session_ptr, skynet::newwork::idle_type type) override
+    virtual void handle_session_idle(std::shared_ptr<skynet::network::tcp_session> session_ptr, skynet::network::idle_type type) override
     {
         std::cout << "session idle" << std::endl;
     }
 
     // tcp会话关闭
-    virtual void handle_sessoin_close(std::shared_ptr<skynet::newwork::tcp_session> session_ptr) override
+    virtual void handle_sessoin_close(std::shared_ptr<skynet::network::tcp_session> session_ptr) override
     {
         std::cout << "session close" << std::endl;
     }
@@ -52,7 +53,7 @@ int32_t main(int32_t argc, char* argv[])
 
     // create server
     std::cout << "create server" << std::endl;
-    std::shared_ptr<skynet::newwork::tcp_server> server_ptr = std::make_shared<skynet::newwork::tcp_server>();
+    std::shared_ptr<skynet::network::tcp_server> server_ptr = std::make_shared<skynet::network::tcp_server>();
 
     std::shared_ptr<tcp_server_handler> server_handler_ptr = std::make_shared<tcp_server_handler>();
     server_ptr->set_event_handler(server_handler_ptr);

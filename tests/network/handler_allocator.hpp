@@ -19,8 +19,12 @@
 // requests. If the memory is in use when an allocation request is made, the
 // allocator delegates allocation to the global heap.
 class handler_allocator
-  : private boost::noncopyable
 {
+    // noncopyable
+private:
+    handler_allocator(const handler_allocator&) = delete;
+    handler_allocator& operator=(const handler_allocator&) = delete;
+
 public:
   handler_allocator()
     : in_use_(false)

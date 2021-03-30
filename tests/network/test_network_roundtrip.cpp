@@ -1,8 +1,9 @@
-#include "game.network/network.h"
+#include "network.h"
 
-#include <boost/format.hpp>
+#include "fmt/format.h"
+#include <iostream>
 
-class tcp_server_handler : public skynet::newwork::tcp_server_handler
+class tcp_server_handler : public skynet::network::tcp_server_handler
 {
 private:
     int32_t                             block_size_ = 0;
@@ -26,14 +27,14 @@ public:
 	// tcp_server_handler impl
 public:
     // 接收连接成功
-    virtual void handle_accept(std::shared_ptr<skynet::newwork::tcp_session> session_ptr) override
+    virtual void handle_accept(std::shared_ptr<skynet::network::tcp_session> session_ptr) override
     {
         //std::cout << "accept success" << std::endl;
-        session_ptr->set_sock_option(skynet::newwork::SOCK_OPT_NODELAY, 1);
+        session_ptr->set_sock_option(skynet::network::SOCK_OPT_NODELAY, 1);
     }
 
     // tcp会话读完成
-    virtual void handle_session_read(std::shared_ptr<skynet::newwork::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
+    virtual void handle_session_read(std::shared_ptr<skynet::network::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
     {
         read_data_length_ = data_len;
         std::swap(read_data_ptr_, write_data_ptr_);
@@ -41,18 +42,18 @@ public:
     }
 
     // tcp会话写完成
-    virtual void handle_session_write(std::shared_ptr<skynet::newwork::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
+    virtual void handle_session_write(std::shared_ptr<skynet::network::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
     {
     }
 
     // tcp会话闲置
-    virtual void handle_session_idle(std::shared_ptr<skynet::newwork::tcp_session> session_ptr, skynet::newwork::idle_type type) override
+    virtual void handle_session_idle(std::shared_ptr<skynet::network::tcp_session> session_ptr, skynet::network::idle_type type) override
     {
         //std::cout << "session idle" << std::endl;
     }
 
     // tcp会话关闭
-    virtual void handle_sessoin_close(std::shared_ptr<skynet::newwork::tcp_session> session_ptr) override
+    virtual void handle_sessoin_close(std::shared_ptr<skynet::network::tcp_session> session_ptr) override
     {
         //std::cout << "session " << session_ptr->session_id() << " close" << std::endl;
     }
@@ -61,7 +62,7 @@ public:
 class stress_server
 {
 private:
-    std::shared_ptr<skynet::newwork::tcp_server>    server_ptr_;
+    std::shared_ptr<skynet::network::tcp_server>    server_ptr_;
     int32_t                                     block_size_ = 0;
 
 public:
@@ -71,7 +72,7 @@ public:
 public:
     void start(std::string local_ip, uint16_t local_port, int32_t thread_count, int32_t block_size)
     {
-        server_ptr_ = std::make_shared<skynet::newwork::tcp_server>();
+        server_ptr_ = std::make_shared<skynet::network::tcp_server>();
 
         std::shared_ptr<tcp_server_handler> server_handler_ptr = std::make_shared<tcp_server_handler>(block_size);
         server_ptr_->set_event_handler(server_handler_ptr);

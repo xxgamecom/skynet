@@ -1,4 +1,4 @@
-#include "game.network/network.h"
+#include "network.h"
 
 #include <boost/format.hpp>
 #include <iostream>
@@ -8,14 +8,14 @@
 class statistics
 {
 private:
-    std::atomic<int64_t> 	total_bytes_write_;
-    std::atomic<int64_t>    total_bytes_read_;
+    std::atomic<int64_t> total_bytes_write_;
+    std::atomic<int64_t> total_bytes_read_;
 
 public:
     statistics()
-    :
-    total_bytes_write_(0),
-    total_bytes_read_(0)
+        :
+        total_bytes_write_(0),
+        total_bytes_read_(0)
     {
     }
     ~statistics() = default;
@@ -24,7 +24,7 @@ public:
     void add(int64_t bytes_written, int64_t bytes_read)
     {
         total_bytes_write_ += bytes_written;
-        total_bytes_read_  += bytes_read;
+        total_bytes_read_ += bytes_read;
     }
 
     void reset()
@@ -35,36 +35,36 @@ public:
 
     void print()
     {
-        std::cout << (total_bytes_write_/1024/1024) << "MB written\n";
-        std::cout << (total_bytes_read_/1024/1024) << "MB read\n";
+        std::cout << (total_bytes_write_ / 1024 / 1024) << "MB written\n";
+        std::cout << (total_bytes_read_ / 1024 / 1024) << "MB read\n";
     }
 };
 
-class client_handler : public skynet::newwork::tcp_connector_handler,
-                       public skynet::newwork::tcp_session_handler
+class client_handler : public skynet::network::tcp_connector_handler,
+                       public skynet::network::tcp_session_handler
 {
 private:
-    statistics&                         stats_ref_;
-    int32_t                             block_size_ = 0;
+    statistics& stats_ref_;
+    int32_t block_size_ = 0;
 
-    int64_t                             bytes_written_ = 0;             // 本client的写字节数统计量
-    int64_t                             bytes_read_ = 0;                // 本client的读字节数统计量
+    int64_t bytes_written_ = 0;             // 本client的写字节数统计量
+    int64_t bytes_read_ = 0;                // 本client的读字节数统计量
 
-    std::shared_ptr<char>               write_data_ptr_;
-    std::shared_ptr<char>               read_data_ptr_;
+    std::shared_ptr<char> write_data_ptr_;
+    std::shared_ptr<char> read_data_ptr_;
 
-    size_t                              read_data_length_ = 0;
+    size_t read_data_length_ = 0;
 
 public:
     client_handler(statistics& stats_ref, int32_t block_size)
-    :
-    stats_ref_(stats_ref),
-    block_size_(block_size)
+        :
+        stats_ref_(stats_ref),
+        block_size_(block_size)
     {
         write_data_ptr_.reset(new char[block_size_], std::default_delete<char[]>());
         read_data_ptr_.reset(new char[block_size_], std::default_delete<char[]>());
 
-        for (int32_t i=0; i<block_size_; ++i)
+        for (int32_t i = 0; i < block_size_; ++i)
         {
             write_data_ptr_.get()[i] = static_cast<char>(i % 128);
         }
@@ -76,21 +76,21 @@ public:
     // tcp_connector_handler impl
 protected:
     // 地址解析成功
-    virtual void handle_resolve_success(std::shared_ptr<skynet::newwork::tcp_session> session_ptr, std::string addr, uint16_t port) override
+    virtual void handle_resolve_success(std::shared_ptr<skynet::network::tcp_session> session_ptr, std::string addr, uint16_t port) override
     {
     }
 
     // 地址解析失败
-    virtual void handle_resolve_failed(std::shared_ptr<skynet::newwork::tcp_session> session_ptr, int32_t err_code, std::string err_msg) override
+    virtual void handle_resolve_failed(std::shared_ptr<skynet::network::tcp_session> session_ptr, int32_t err_code, std::string err_msg) override
     {
     }
 
     // 主动连接成功
-    virtual void handle_connect_success(std::shared_ptr<skynet::newwork::tcp_session> session_ptr) override
+    virtual void handle_connect_success(std::shared_ptr<skynet::network::tcp_session> session_ptr) override
     {
-        session_ptr->set_sock_option(skynet::newwork::SOCK_OPT_RECV_BUFFER, 32*1024);
-        session_ptr->set_sock_option(skynet::newwork::SOCK_OPT_SEND_BUFFER, 32*1024);
-        session_ptr->set_sock_option(skynet::newwork::SOCK_OPT_NODELAY, 1);
+        session_ptr->set_sock_option(skynet::network::SOCK_OPT_RECV_BUFFER, 32 * 1024);
+        session_ptr->set_sock_option(skynet::network::SOCK_OPT_SEND_BUFFER, 32 * 1024);
+        session_ptr->set_sock_option(skynet::network::SOCK_OPT_NODELAY, 1);
 
         session_ptr->write(write_data_ptr_.get(), block_size_);
 
@@ -98,18 +98,18 @@ protected:
     }
 
     // 主动连接失败
-    virtual void handle_connect_failed(std::shared_ptr<skynet::newwork::tcp_session> session_ptr, int32_t err_code, std::string err_msg) override
+    virtual void handle_connect_failed(std::shared_ptr<skynet::network::tcp_session> session_ptr, int32_t err_code, std::string err_msg) override
     {
         boost::format fmt("connec failed(%d:%s)");
         fmt % err_code
-            % err_msg;
+        % err_msg;
         std::cout << fmt.str() << std::endl;
 
         session_ptr->close();
     }
 
     // 超时处理
-    virtual void handle_connect_timeout(std::shared_ptr<skynet::newwork::tcp_session> session_ptr) override
+    virtual void handle_connect_timeout(std::shared_ptr<skynet::network::tcp_session> session_ptr) override
     {
         session_ptr->close();
     }
@@ -117,7 +117,7 @@ protected:
     // tcp_session_handler impl
 protected:
     // tcp会话读完成
-    virtual void handle_session_read(std::shared_ptr<skynet::newwork::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
+    virtual void handle_session_read(std::shared_ptr<skynet::network::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
     {
         bytes_read_ += data_len;
         read_data_length_ = data_len;
@@ -127,18 +127,18 @@ protected:
     }
 
     // tcp会话写完成
-    virtual void handle_session_write(std::shared_ptr<skynet::newwork::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
+    virtual void handle_session_write(std::shared_ptr<skynet::network::tcp_session> session_ptr, char* data_ptr, size_t data_len) override
     {
         bytes_written_ += data_len;
     }
 
     // tcp会话闲置
-    virtual void handle_session_idle(std::shared_ptr<skynet::newwork::tcp_session> session_ptr, skynet::newwork::idle_type type) override
+    virtual void handle_session_idle(std::shared_ptr<skynet::network::tcp_session> session_ptr, skynet::network::idle_type type) override
     {
     }
 
     // tcp会话关闭
-    virtual void handle_sessoin_close(std::shared_ptr<skynet::newwork::tcp_session> session_ptr) override
+    virtual void handle_sessoin_close(std::shared_ptr<skynet::network::tcp_session> session_ptr) override
     {
         stats_ref_.add(bytes_written_, bytes_read_);
         //std::cout << "session close" << std::endl;
@@ -150,19 +150,19 @@ class stress_client
 private:
     struct client
     {
-        std::shared_ptr<skynet::newwork::tcp_connector>     connector_ptr_;
-        std::shared_ptr<skynet::newwork::tcp_session>       session_ptr_;
-        std::shared_ptr<client_handler>                 client_handler_ptr_;
+        std::shared_ptr<skynet::network::tcp_connector> connector_ptr_;
+        std::shared_ptr<skynet::network::tcp_session> session_ptr_;
+        std::shared_ptr<client_handler> client_handler_ptr_;
     };
 
 private:
-    statistics                                          stats_;                 // 收发计数统计
+    statistics stats_;                 // 收发计数统计
 
-    std::shared_ptr<skynet::newwork::io_service>            ios_ptr_;               // timer的ios
-    std::shared_ptr<skynet::newwork::io_service_pool>       ios_pool_ptr_;          // 线程池
+    std::shared_ptr<skynet::network::io_service> ios_ptr_;               // timer的ios
+    std::shared_ptr<skynet::network::io_service_pool> ios_pool_ptr_;          // 线程池
 
-    std::vector<std::shared_ptr<client>>                clients_;               // 模拟客户端
-    std::shared_ptr<boost::asio::deadline_timer>        stop_timer_ptr_;        // 
+    std::vector<std::shared_ptr<client>> clients_;               // 模拟客户端
+    std::shared_ptr<asio::steady_timer> stop_timer_ptr_;        //
 
 public:
     stress_client() = default;
@@ -174,10 +174,10 @@ public:
         // 重置统计量
         stats_.reset();
 
-        ios_pool_ptr_ = std::make_shared<skynet::newwork::io_service_pool>(thread_count);
+        ios_pool_ptr_ = std::make_shared<skynet::network::io_service_pool>(thread_count);
 
         // 创建client
-        for (int32_t i=0; i<session_count; ++i)
+        for (int32_t i = 0; i < session_count; ++i)
         {
             std::shared_ptr<client> client_ptr = std::make_shared<client>();
 
@@ -185,12 +185,12 @@ public:
             client_ptr->client_handler_ptr_ = std::make_shared<client_handler>(stats_, block_size);
 
             // session
-            client_ptr->session_ptr_ = std::make_shared<skynet::newwork::tcp_session>(32*1024, 32*1024, 4);
-            client_ptr->session_ptr_->set_event_handler(std::dynamic_pointer_cast<skynet::newwork::tcp_session_handler>(client_ptr->client_handler_ptr_));
+            client_ptr->session_ptr_ = std::make_shared<skynet::network::tcp_session>(32 * 1024, 32 * 1024, 4);
+            client_ptr->session_ptr_->set_event_handler(std::dynamic_pointer_cast<skynet::network::tcp_session_handler>(client_ptr->client_handler_ptr_));
 
             // connector
-            client_ptr->connector_ptr_ = std::make_shared<skynet::newwork::tcp_connector>(ios_pool_ptr_->select_one());
-            client_ptr->connector_ptr_->set_event_handler(std::dynamic_pointer_cast<skynet::newwork::tcp_connector_handler>(client_ptr->client_handler_ptr_));
+            client_ptr->connector_ptr_ = std::make_shared<skynet::network::tcp_connector>(ios_pool_ptr_->select_one());
+            client_ptr->connector_ptr_->set_event_handler(std::dynamic_pointer_cast<skynet::network::tcp_connector_handler>(client_ptr->client_handler_ptr_));
 
             // save client object
             clients_.push_back(client_ptr);
@@ -203,11 +203,11 @@ public:
         }
 
         // 测试结束定时器
-        ios_ptr_ = std::make_shared<skynet::newwork::io_service>();
-        stop_timer_ptr_ = std::make_shared<boost::asio::deadline_timer>(ios_ptr_->get_raw_ios());
-        stop_timer_ptr_->expires_from_now(boost::posix_time::seconds(test_seconds));
-        stop_timer_ptr_->async_wait(boost::bind(&stress_client::handle_timeout, this));
-    
+        ios_ptr_ = std::make_shared<skynet::network::io_service>();
+        stop_timer_ptr_ = std::make_shared<asio::steady_timer>(ios_ptr_->get_raw_ios());
+        stop_timer_ptr_->expires_from_now(std::chrono::seconds(test_seconds));
+        stop_timer_ptr_->async_wait(std::bind(&stress_client::handle_timeout, this));
+
         // 
         ios_ptr_->run();
         ios_pool_ptr_->run();

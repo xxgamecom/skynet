@@ -10,7 +10,7 @@
 
 #include "asio.hpp"
 #include <algorithm>
-#include <boost/bind.hpp>
+#include <functional>
 #include <iostream>
 #include <list>
 #include "handler_allocator.hpp"
@@ -53,13 +53,12 @@ public:
       socket_.async_read_some(asio::buffer(read_data_, block_size_),
           strand_.wrap(
             make_custom_alloc_handler(read_allocator_,
-              boost::bind(&session::handle_read, this,
-                asio::placeholders::error,
-                asio::placeholders::bytes_transferred))));
+              std::bind(&session::handle_read, this,
+                std::placeholders::_1, std::placeholders::_2))));
     }
     else
     {
-      io_service_.post(boost::bind(&session::destroy, this));
+      io_service_.post(std::bind(&session::destroy, this));
     }
   }
 
@@ -78,19 +77,19 @@ public:
         async_write(socket_, asio::buffer(write_data_, read_data_length_),
             strand_.wrap(
               make_custom_alloc_handler(write_allocator_,
-                boost::bind(&session::handle_write, this,
-                  asio::placeholders::error))));
+                std::bind(&session::handle_write, this,
+                  std::placeholders::_1))));
         socket_.async_read_some(asio::buffer(read_data_, block_size_),
             strand_.wrap(
               make_custom_alloc_handler(read_allocator_,
-                boost::bind(&session::handle_read, this,
-                  asio::placeholders::error,
-                  asio::placeholders::bytes_transferred))));
+                std::bind(&session::handle_read, this,
+                  std::placeholders::_1,
+                          std::placeholders::_1))));
       }
     }
 
     if (op_count_ == 0)
-      io_service_.post(boost::bind(&session::destroy, this));
+      io_service_.post(std::bind(&session::destroy, this));
   }
 
   void handle_write(const asio::error_code& err)
@@ -107,19 +106,19 @@ public:
         async_write(socket_, asio::buffer(write_data_, read_data_length_),
             strand_.wrap(
               make_custom_alloc_handler(write_allocator_,
-                boost::bind(&session::handle_write, this,
-                  asio::placeholders::error))));
+                std::bind(&session::handle_write, this,
+                  std::placeholders::_1))));
         socket_.async_read_some(asio::buffer(read_data_, block_size_),
             strand_.wrap(
               make_custom_alloc_handler(read_allocator_,
-                boost::bind(&session::handle_read, this,
-                  asio::placeholders::error,
-                  asio::placeholders::bytes_transferred))));
+                std::bind(&session::handle_read, this,
+                  std::placeholders::_1,
+                          std::placeholders::_1))));
       }
     }
 
     if (op_count_ == 0)
-      io_service_.post(boost::bind(&session::destroy, this));
+      io_service_.post(std::bind(&session::destroy, this));
   }
 
   static void destroy(session* s)
@@ -157,8 +156,8 @@ public:
 
     session* new_session = new session(io_service_, block_size_);
     acceptor_.async_accept(new_session->socket(),
-        boost::bind(&server::handle_accept, this, new_session,
-          asio::placeholders::error));
+        std::bind(&server::handle_accept, this, new_session,
+                  std::placeholders::_1));
   }
 
   void handle_accept(session* new_session, const asio::error_code& err)
@@ -168,8 +167,8 @@ public:
       new_session->start();
       new_session = new session(io_service_, block_size_);
       acceptor_.async_accept(new_session->socket(),
-          boost::bind(&server::handle_accept, this, new_session,
-            asio::placeholders::error));
+                             std::bind(&server::handle_accept, this, new_session,
+                                       std::placeholders::_1));
     }
     else
     {
@@ -207,9 +206,10 @@ int main(int argc, char* argv[])
     std::list<asio::thread*> threads;
     while (--thread_count > 0)
     {
-      asio::thread* new_thread = new asio::thread(
-          boost::bind(&asio::io_service::run, &ios));
-      threads.push_back(new_thread);
+        asio::thread* new_thread = new asio::thread([&]() {
+            ios.run();
+        });
+        threads.push_back(new_thread);
     }
 
     ios.run();

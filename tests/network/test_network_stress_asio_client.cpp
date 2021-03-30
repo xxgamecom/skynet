@@ -10,7 +10,7 @@
 
 #include "asio.hpp"
 #include <algorithm>
-#include <boost/bind.hpp>
+#include <functional>
 #include <boost/mem_fn.hpp>
 #include <iostream>
 #include <list>
@@ -78,13 +78,13 @@ public:
   {
     asio::ip::tcp::endpoint endpoint = *endpoint_iterator;
     socket_.async_connect(endpoint,
-        strand_.wrap(boost::bind(&session::handle_connect, this,
-            asio::placeholders::error, ++endpoint_iterator)));
+        strand_.wrap(std::bind(&session::handle_connect, this,
+            std::placeholders::_1, ++endpoint_iterator)));
   }
 
   void stop()
   {
-    strand_.post(boost::bind(&session::close_socket, this));
+    strand_.post(std::bind(&session::close_socket, this));
   }
 
 private:
@@ -102,15 +102,15 @@ private:
         async_write(socket_, asio::buffer(write_data_, block_size_),
             strand_.wrap(
               make_custom_alloc_handler(write_allocator_,
-                boost::bind(&session::handle_write, this,
-                  asio::placeholders::error,
-                  asio::placeholders::bytes_transferred))));
+                std::bind(&session::handle_write, this,
+                  std::placeholders::_1,
+                            std::placeholders::_2))));
         socket_.async_read_some(asio::buffer(read_data_, block_size_),
             strand_.wrap(
               make_custom_alloc_handler(read_allocator_,
-                boost::bind(&session::handle_read, this,
-                  asio::placeholders::error,
-                  asio::placeholders::bytes_transferred))));
+                std::bind(&session::handle_read, this,
+                  std::placeholders::_1,
+                  std::placeholders::_2))));
       }
     }
     else if (endpoint_iterator != asio::ip::tcp::resolver::iterator())
@@ -118,8 +118,8 @@ private:
       socket_.close();
       asio::ip::tcp::endpoint endpoint = *endpoint_iterator;
       socket_.async_connect(endpoint,
-          strand_.wrap(boost::bind(&session::handle_connect, this,
-              asio::placeholders::error, ++endpoint_iterator)));
+          strand_.wrap(std::bind(&session::handle_connect, this,
+              std::placeholders::_1, ++endpoint_iterator)));
     }
   }
 
@@ -137,15 +137,15 @@ private:
         async_write(socket_, asio::buffer(write_data_, read_data_length_),
             strand_.wrap(
               make_custom_alloc_handler(write_allocator_,
-                boost::bind(&session::handle_write, this,
-                  asio::placeholders::error,
-                  asio::placeholders::bytes_transferred))));
+                                        std::bind(&session::handle_write, this,
+                  std::placeholders::_1,
+                            std::placeholders::_2))));
         socket_.async_read_some(asio::buffer(read_data_, block_size_),
             strand_.wrap(
               make_custom_alloc_handler(read_allocator_,
-                boost::bind(&session::handle_read, this,
-                  asio::placeholders::error,
-                  asio::placeholders::bytes_transferred))));
+                                        std::bind(&session::handle_read, this,
+                  std::placeholders::_1,
+                            std::placeholders::_2))));
       }
     }
   }
@@ -163,15 +163,15 @@ private:
         async_write(socket_, asio::buffer(write_data_, read_data_length_),
             strand_.wrap(
               make_custom_alloc_handler(write_allocator_,
-                boost::bind(&session::handle_write, this,
-                  asio::placeholders::error,
-                  asio::placeholders::bytes_transferred))));
+                                        std::bind(&session::handle_write, this,
+                                                  std::placeholders::_1,
+                                                  std::placeholders::_2))));
         socket_.async_read_some(asio::buffer(read_data_, block_size_),
             strand_.wrap(
               make_custom_alloc_handler(read_allocator_,
-                boost::bind(&session::handle_read, this,
-                  asio::placeholders::error,
-                  asio::placeholders::bytes_transferred))));
+                                        std::bind(&session::handle_read, this,
+                                                  std::placeholders::_1,
+                                                  std::placeholders::_2))));
       }
     }
   }
@@ -207,8 +207,8 @@ public:
       sessions_(),
       stats_()
   {
-    stop_timer_.expires_from_now(boost::posix_time::seconds(timeout));
-    stop_timer_.async_wait(boost::bind(&client::handle_timeout, this));
+    stop_timer_.expires_from_now(std::chrono::seconds(timeout));
+    stop_timer_.async_wait(std::bind(&client::handle_timeout, this));
 
     for (size_t i = 0; i < session_count; ++i)
     {
@@ -237,7 +237,7 @@ public:
 
 private:
   asio::io_service& io_service_;
-  asio::deadline_timer stop_timer_;
+  asio::steady_timer stop_timer_;
   std::list<session*> sessions_;
   stats stats_;
 };
@@ -271,8 +271,9 @@ int main(int argc, char* argv[])
     std::list<asio::thread*> threads;
     while (--thread_count > 0)
     {
-      asio::thread* new_thread = new asio::thread(
-          boost::bind(&asio::io_service::run, &ios));
+        asio::thread* new_thread = new asio::thread([&]() {
+            ios.run();
+        });
       threads.push_back(new_thread);
     }
 
