@@ -35,9 +35,9 @@ list(APPEND SKYNET_CORE_SRC ${SKYNET_CORE_HEADER})
 # target executable (skynet)
 add_executable(skynet ${SKYNET_CORE_SRC})
 if (MACOSX)
-    target_link_libraries(skynet ${SKYNET_EXPORT} pthread m dl liblua)
+    target_link_libraries(skynet ${SKYNET_EXPORT} pthread m dl liblua net)
 elseif(LINUX OR FREEBSD)
-    target_link_libraries(skynet ${SKYNET_EXPORT} pthread m dl rt liblua)
+    target_link_libraries(skynet ${SKYNET_EXPORT} pthread m dl rt liblua net)
 endif()
 
 
