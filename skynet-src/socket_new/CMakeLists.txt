@@ -1,0 +1,56 @@
+set(SKYNET_SOCKET_NEW_HEADER
+    socket_new/core/time_helper.h
+    socket_new/core/time_helper.inl
+    socket_new/core/object_pool.h
+    socket_new/core/object_pool.inl
+    socket_new/core/io_buffer.h
+    socket_new/core/io_buffer.inl
+    socket_new/core/io_service.h
+    socket_new/core/io_service.inl
+    socket_new/core/io_service_pool.h
+    socket_new/core/io_service_pool.inl
+    socket_new/core/socket_option_def.h
+    socket_new/core/tcp_acceptor_def.h
+    socket_new/core/tcp_acceptor.h
+    socket_new/core/tcp_acceptor.inl
+    socket_new/core/tcp_connector.h
+    socket_new/core/tcp_connector.inl
+    socket_new/core/tcp_connector_handler.h
+    socket_new/core/tcp_session_def.h
+    socket_new/core/tcp_session.h
+    socket_new/core/tcp_session.inl
+    socket_new/core/tcp_session_handler.h
+    socket_new/core/tcp_session_write_queue.h
+    socket_new/core/tcp_session_write_queue.inl
+    socket_new/service/io_statistics.h
+    socket_new/service/io_statistics.inl
+    socket_new/service/tcp_client.h
+    socket_new/service/tcp_client.inl
+    socket_new/service/tcp_client_config.h
+    socket_new/service/tcp_client_config.inl
+    socket_new/service/tcp_client_handler.h
+    socket_new/service/tcp_server.h
+    socket_new/service/tcp_server.inl
+    socket_new/service/tcp_server_config.h
+    socket_new/service/tcp_server_config.inl
+    socket_new/service/tcp_server_handler.h
+    socket_new/service/tcp_session_idle_checker.h
+    socket_new/service/tcp_session_manager.h
+    socket_new/service/tcp_session_manager.inl
+    socket_new/network.h
+)
+
+set(SKYNET_SOCKET_NEW_SRC
+    socket_new/core/io_buffer.cpp
+    socket_new/core/io_service.cpp
+    socket_new/core/io_service_pool.cpp
+    socket_new/core/tcp_acceptor.cpp
+    socket_new/core/tcp_connector.cpp
+    socket_new/core/tcp_session.cpp
+    socket_new/core/tcp_session_write_queue.cpp
+    socket_new/service/io_statistics.cpp
+    socket_new/service/tcp_client.cpp
+    socket_new/service/tcp_server.cpp
+    socket_new/service/tcp_session_idle_checker.cpp
+    socket_new/service/tcp_session_manager.cpp
+)
