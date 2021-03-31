@@ -1,16 +1,20 @@
 #pragma once
 
-#include "core/object_pool.h"
+#include "../core/object_pool.h"
 
 #include "tcp_session.h"
 
 #include <map>
 #include <mutex>
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet { namespace net {
+
+class tcp_session;
+
+namespace impl {
 
 // tcp会话管理
-class tcp_session_manager final : public asio::noncopyable
+class tcp_session_manager : public asio::noncopyable
 {
 public:
     typedef std::map<session_id_t, std::weak_ptr<tcp_session>> session_map;
@@ -38,11 +42,11 @@ public:
     void fini();
 
     // 创建/释放会话实例
-    std::shared_ptr<tcp_session_impl> create_session();
-    void release_session(std::shared_ptr<tcp_session_impl> session_ptr);
+    std::shared_ptr<tcp_session> create_session();
+    void release_session(std::shared_ptr<tcp_session> session_ptr);
 
     // 获取所有会话
-    size_t get_sessions(std::vector<std::weak_ptr<tcp_session_impl>>& sessions);
+    size_t get_sessions(std::vector<std::weak_ptr<tcp_session>>& sessions);
     // 获取会话数量
     size_t get_session_count();
 
@@ -51,7 +55,7 @@ private:
     session_id_t generate_session_id();
 };
 
-}}}
+} } }
 
 #include "tcp_session_manager.inl"
 

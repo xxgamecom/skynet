@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tcp_session_def.h"
+
 #include <string>
 #include <cstdint>
 #include <memory>

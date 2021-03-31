@@ -2,9 +2,9 @@
 
 #include "tcp_server_i.h"
 
-#include "uri/uri_codec.h"
+#include "../uri/uri_codec.h"
 
-#include "core/io_service_pool.h"
+#include "../core/io_service_pool.h"
 
 #include "io_statistics.h"
 #include "tcp_acceptor.h"
@@ -63,7 +63,7 @@ public:
     bool open(const std::string local_uri, bool is_reuse_addr = true) override;
     bool open(const std::string local_ip, const uint16_t local_port, bool is_reuse_addr = true) override;
     bool open(std::initializer_list<std::pair<std::string, uint16_t>> local_endpoints, bool is_reuse_addr = true) override;
-    void close();
+    void close() override;
 
     // get config
     tcp_server_acceptor_config& get_acceptor_config();

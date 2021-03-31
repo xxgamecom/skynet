@@ -57,7 +57,7 @@ inline int64_t io_statistics::read_bytes()
 {
     return read_bytes_.load(std::memory_order_relaxed);
 }
-    
+
 // 写字节数
 inline int64_t io_statistics::write_bytes()
 {

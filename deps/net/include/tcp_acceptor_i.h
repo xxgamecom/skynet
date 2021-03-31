@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tcp_acceptor_def.h"
+#include "socket_option_def.h"
 
 namespace skynet { namespace net {
 
@@ -26,9 +27,9 @@ public:
     // 关闭acceptor
     virtual void close() = 0;
 
-//    // 投递一次异步accept
-//    void accept_once(std::shared_ptr<tcp_session> session_ptr);
-//
+    // 投递一次异步accept
+    virtual void accept_once(std::shared_ptr<tcp_session> session_ptr) = 0;
+
 //    // 本地端点信息
 //    asio::ip::tcp::endpoint local_endpoint() const;
 

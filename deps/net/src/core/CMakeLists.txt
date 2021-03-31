@@ -1,10 +1,12 @@
 set(SKYNET_NET_CORE_HEADER
-    core/io_buffer.h
-    core/io_buffer.inl
-    core/io_service.h
-    core/io_service.inl
-    core/io_service_pool.h
-    core/io_service_pool.inl
+    src/core/io_buffer.h
+    src/core/io_buffer.inl
+    src/core/io_service.h
+    src/core/io_service.inl
+    src/core/io_service_pool.h
+    src/core/io_service_pool.inl
+    src/core/object_pool.h
+    src/core/object_pool.inl
 )
 
 set(SKYNET_NET_CORE_SRC

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/io_service.h"
+#include "../core/io_service.h"
 
 #include "tcp_connector_i.h"
 #include "tcp_connector_handler_i.h"
@@ -23,7 +23,7 @@ namespace impl {
  */
 class tcp_connector_impl : public asio::noncopyable,
                            public tcp_connector,
-                           public std::enable_shared_from_this<tcp_connector>
+                           public std::enable_shared_from_this<tcp_connector_impl>
 {
 protected:
     std::shared_ptr<io_service> ios_ptr_;                       // ios (from io_service_pool)

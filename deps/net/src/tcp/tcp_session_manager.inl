@@ -21,12 +21,12 @@ inline bool tcp_session_manager::init(int32_t session_pool_size,
 inline void tcp_session_manager::fini()
 {
     std::lock_guard<std::mutex> guard(sessions_mutex_);
- 
+
     session_used_map_.clear();
 }
 
 // 创建/是否会话实例
-inline std::shared_ptr<tcp_session_impl> tcp_session_manager::create_session()
+inline std::shared_ptr<tcp_session> tcp_session_manager::create_session()
 {
     std::lock_guard<std::mutex> guard(sessions_mutex_);
 
@@ -42,14 +42,14 @@ inline std::shared_ptr<tcp_session_impl> tcp_session_manager::create_session()
     return session_ptr;
 }
 
-inline void tcp_session_manager::release_session(std::shared_ptr<tcp_session_impl> session_ptr)
+inline void tcp_session_manager::release_session(std::shared_ptr<tcp_session> session_ptr)
 {
     std::lock_guard<std::mutex> guard(sessions_mutex_);
 
     if (session_ptr != nullptr)
     {
         session_used_map_.erase(session_ptr->session_id());
-        session_pool_ptr_->free(session_ptr);
+        session_pool_ptr_->free(std::dynamic_pointer_cast<tcp_session_impl>(session_ptr));
     }
 }
 

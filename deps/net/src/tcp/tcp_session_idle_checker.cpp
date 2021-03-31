@@ -46,12 +46,12 @@ void tcp_session_idle_checker::handle_timeout(const asio::error_code& ec)
     if (!ec)
     {
         // 检查超时
-        std::vector<std::weak_ptr<tcp_session_impl>> sessions;
+        std::vector<std::weak_ptr<tcp_session>> sessions;
         if (session_manager_ptr_->get_sessions(sessions) > 0)
         {
             for (auto& itr : sessions)
             {
-                std::shared_ptr<tcp_session_impl> ptr(itr.lock());
+                std::shared_ptr<tcp_session> ptr(itr.lock());
                 if (ptr != nullptr)
                 {
                     ptr->check_idle(idle_check_type_, idle_check_seconds_);

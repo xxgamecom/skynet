@@ -3,7 +3,7 @@
 #include "tcp_session_i.h"
 #include "tcp_session_handler_i.h"
 
-#include "core/io_service.h"
+#include "../core/io_service.h"
 
 #include "socket_option_def.h"
 #include "tcp_session_write_queue.h"
@@ -20,7 +20,7 @@ namespace skynet { namespace net { namespace impl {
 // msg_read_buf_size_ + msg_write_buf_size_ * msg_write_queue_size_
 class tcp_session_impl : public asio::noncopyable,
                          public tcp_session,
-                         public std::enable_shared_from_this<tcp_session>
+                         public std::enable_shared_from_this<tcp_session_impl>
 {
 public:
     // 会话状态

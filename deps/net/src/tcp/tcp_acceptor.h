@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/io_service.h"
+#include "../core/io_service.h"
 
 #include "socket_option_def.h"
 
@@ -17,7 +17,7 @@ namespace impl {
 // tcp被动连接器(用于接收来自远端的连接)
 class tcp_acceptor_impl : public asio::noncopyable,
                           public tcp_acceptor,
-                          public std::enable_shared_from_this<tcp_acceptor>
+                          public std::enable_shared_from_this<tcp_acceptor_impl>
 {
 protected:
     std::shared_ptr<io_service> ios_ptr_;                       // acceptor使用独立的ios, 不和会话公用
@@ -42,7 +42,7 @@ public:
 
 public:
     // 投递一次异步accept
-    void accept_once(std::shared_ptr<tcp_session> session_ptr);
+    void accept_once(std::shared_ptr<tcp_session> session_ptr) override;
 
     // 本地端点信息
     asio::ip::tcp::endpoint local_endpoint() const;

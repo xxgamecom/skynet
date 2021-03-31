@@ -3,13 +3,13 @@
 #include "tcp_client_i.h"
 #include "tcp_client_handler_i.h"
 
-#include "core/io_service.h"
+#include "../core/io_service.h"
 
 #include "tcp_connector.h"
 #include "tcp_session.h"
 #include "tcp_client_config.h"
 
-#include "uri/uri_codec.h"
+#include "../uri/uri_codec.h"
 
 #include <memory>
 
