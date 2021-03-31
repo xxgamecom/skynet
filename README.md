@@ -96,24 +96,6 @@ skynet                              // skynet源码目录
 └── skynet                          // skynet可执行文件
 ```
 
-## 安装依赖库
-
-1. Mac
-```shell
-brew install openssl
-```
-
-2. Centos
-```shell
-sudo yum install openssl
-```
-
-3. Ubuntu
-```shell
-sudo apt-get install openssl
-sudo apt-get install libssl-dev
-```
-
 ## Build
 skynet++使用CMake构建。
 
