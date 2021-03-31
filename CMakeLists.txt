@@ -64,7 +64,7 @@ include_directories("${SKYNET_ROOT_PATH}/deps/lua")
 include_directories("${SKYNET_ROOT_PATH}/deps/fmt/include")
 include_directories("${SKYNET_ROOT_PATH}/deps/asio/include")
 include_directories("${SKYNET_ROOT_PATH}/deps/spdlog/include")
-include_directories("${SKYNET_ROOT_PATH}/deps/net")
+include_directories("${SKYNET_ROOT_PATH}/deps/net/include")
 
 #------------------------------------------------------
 # build
@@ -112,5 +112,5 @@ if (BUILD_SKYNET_TESTS)
     add_subdirectory(${SKYNET_ROOT_PATH}/tests)
 endif()
 
-add_subdirectory(${SKYNET_ROOT_PATH}/tests/net)
+#add_subdirectory(${SKYNET_ROOT_PATH}/tests/net)
 

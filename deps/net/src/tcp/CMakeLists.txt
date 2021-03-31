@@ -1,0 +1,36 @@
+set(SKYNET_NET_TCP_HEADER
+    tcp/tcp_acceptor.h
+    tcp/tcp_acceptor.inl
+    tcp/tcp_connector.h
+    tcp/tcp_connector.inl
+    tcp/tcp_session.h
+    tcp/tcp_session.inl
+    tcp/tcp_session_write_queue.h
+    tcp/tcp_session_write_queue.inl
+    tcp/tcp_client.h
+    tcp/tcp_client.inl
+    tcp/tcp_client_config.h
+    tcp/tcp_client_config.inl
+    tcp/tcp_server.h
+    tcp/tcp_server.inl
+    tcp/tcp_server_config.h
+    tcp/tcp_server_config.inl
+    tcp/tcp_session_idle_checker.h
+    tcp/tcp_session_manager.h
+    tcp/tcp_session_manager.inl
+    tcp/io_statistics.h
+    tcp/io_statistics.inl
+)
+
+set(SKYNET_NET_TCP_SRC
+    src/tcp/tcp_acceptor.cpp
+    src/tcp/tcp_connector.cpp
+    src/tcp/tcp_session.cpp
+    src/tcp/tcp_session_write_queue.cpp
+    src/tcp/tcp_client.cpp
+    src/tcp/tcp_server.cpp
+    src/tcp/tcp_session_idle_checker.cpp
+    src/tcp/tcp_session_manager.cpp
+    src/tcp/io_statistics.cpp
+)
+
