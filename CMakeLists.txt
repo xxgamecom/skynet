@@ -112,5 +112,5 @@ if (BUILD_SKYNET_TESTS)
     add_subdirectory(${SKYNET_ROOT_PATH}/tests)
 endif()
 
-add_subdirectory(${SKYNET_ROOT_PATH}/tests/network)
+add_subdirectory(${SKYNET_ROOT_PATH}/tests/net)
 

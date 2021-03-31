@@ -1,5 +1,5 @@
 # Set output path
-set(EXECUTABLE_OUTPUT_PATH "${SKYNET_BIN_PATH_TESTS}/network")
+set(EXECUTABLE_OUTPUT_PATH "${SKYNET_BIN_PATH_TESTS}/net")
 
 # Set link libraries
 if (MACOSX)
