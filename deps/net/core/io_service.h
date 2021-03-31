@@ -2,13 +2,16 @@
 
 #include "asio.hpp"
 
+#include "../base/noncopyable.h"
+
 #include <thread>
 #include <functional>
 
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
 // io service wrapper (one asio::io_service per cpu)
-class io_service final : public std::enable_shared_from_this<io_service>
+class io_service final : private noncopyable,
+                         public std::enable_shared_from_this<io_service>
 {
 private:
     asio::io_service ios_;                              // asio::io_service
@@ -24,13 +27,8 @@ public:
     void stop();
 
     asio::io_service& get_raw_ios();
-
-    // noncopyable
-private:
-    io_service(const io_service&) = delete;
-    io_service& operator=(const io_service&) = delete;
 };
 
-} }
+}}
 
 #include "io_service.inl"

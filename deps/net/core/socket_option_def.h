@@ -1,6 +1,6 @@
 #pragma once
 
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
 //------------------------------------------------------------------------------
 // socket options

@@ -4,17 +4,21 @@
 #include <sstream>
 #include <regex>
 
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
-// uri端口部分
+// uri port part
 class uri_port final
 {
 private:
-    uint16_t                value_ = 0;
+    uint16_t value_ = 0;
 
 public:
     uri_port() = default;
-    explicit uri_port(uint16_t _val);
+    explicit uri_port(uint16_t val)
+    :
+    value_(val)
+    {
+    }
 
 public:
     uint16_t value() const;

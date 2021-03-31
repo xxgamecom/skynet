@@ -5,7 +5,7 @@
 #include <vector>
 #include <mutex>
 
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
 class io_service;
 

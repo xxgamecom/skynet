@@ -5,7 +5,7 @@
 #include <cassert>
 #include <memory>
 
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
 // socket io buffer
 class io_buffer

@@ -1,4 +1,4 @@
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
 inline asio::io_service& io_service::get_raw_ios()
 {

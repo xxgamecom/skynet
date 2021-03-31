@@ -1,4 +1,4 @@
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
 inline uint16_t uri_port::value() const
 {

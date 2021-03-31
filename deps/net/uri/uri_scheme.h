@@ -3,18 +3,23 @@
 #include <sstream>
 #include <regex>
 
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
-// uri scheme部分
+// uri scheme part
 class uri_scheme final
 {
 private:
-    std::string             value_ = "tcp";
-    bool                    is_splash_splash_ = true;
+    std::string value_ = "tcp";
+    bool is_splash_splash_ = true;
 
 public:
     uri_scheme() = default;
-    explicit uri_scheme(std::string src, bool is_splash_splash = true);
+    explicit uri_scheme(std::string src, bool is_splash_splash = true)
+    :
+    value_(std::move(src)),
+    is_splash_splash_(is_splash_splash)
+    {
+    }
 
 public:
     const std::string& value() const;

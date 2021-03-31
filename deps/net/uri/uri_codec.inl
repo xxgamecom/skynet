@@ -1,4 +1,4 @@
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
 inline void uri_codec::scheme(uri_scheme scheme)
 {
@@ -32,8 +32,8 @@ inline const uri_port& uri_codec::port() const
 
 inline bool uri_codec::is_valid() const
 {
-    return (host_.value().empty() == false &&
-            scheme_.value().empty() == false &&
+    return (!host_.value().empty() &&
+            !scheme_.value().empty() &&
             port_.value() != 0);
 }
 

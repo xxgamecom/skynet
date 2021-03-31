@@ -3,7 +3,7 @@
 
 #include <cassert>
 
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
 io_service_pool::io_service_pool(const uint32_t pool_size)
 :

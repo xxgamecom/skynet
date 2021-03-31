@@ -1,4 +1,4 @@
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
 inline char* io_buffer::data()
 {

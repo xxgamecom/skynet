@@ -1,6 +1,6 @@
 #pragma once
 
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
 inline const std::string& uri_scheme::value() const
 {

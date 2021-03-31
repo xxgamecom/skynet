@@ -1,4 +1,4 @@
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
 inline std::shared_ptr<io_service>& io_service_pool::select_one()
 {

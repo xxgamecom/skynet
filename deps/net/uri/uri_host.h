@@ -3,17 +3,22 @@
 #include <string>
 #include <regex>
 
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
-// uri主机部分
+// uri host part
 class uri_host final
 {
 private:
-    std::string                 value_ = "";
+    std::string value_ = "";
 
 public:
     uri_host() = default;
-    explicit uri_host(std::string str);
+    explicit uri_host(std::string str)
+    :
+    value_(std::move(str))
+    {
+        if (value_ == "*") value_ = "0.0.0.0";
+    }
 
 public:
     const std::string& value() const;

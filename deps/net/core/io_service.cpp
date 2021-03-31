@@ -1,6 +1,6 @@
 #include "io_service.h"
 
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
 io_service::io_service()
 :

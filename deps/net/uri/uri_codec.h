@@ -7,25 +7,32 @@
 #include <sstream>
 #include <regex>
 
-namespace skynet { namespace network {
+namespace skynet { namespace net {
 
-// uri编码器
-// ~~~~~~~~~
-// tcp://www.host.com:1080
-// udp://www.host.com:1080
-// \____/\___________/\__/
-// scheme    host     port
-// 
+/**
+ * uri codec
+ * ~~~~~~~~~
+ * tcp://www.host.com:1080
+ * udp://www.host.com:1080
+ * \____/\___________/\__/
+ * scheme    host     port
+ */
 class uri_codec final
 {
 private:
-    uri_scheme              scheme_;
-    uri_host                host_;
-    uri_port                port_;
+    uri_scheme scheme_;
+    uri_host host_;
+    uri_port port_;
 
 public:
     uri_codec() = default;
-    uri_codec(uri_scheme scheme, uri_host host, uri_port port);
+    uri_codec(uri_scheme scheme, uri_host host, uri_port port)
+    :
+    scheme_(std::move(scheme)),
+    host_(std::move(host)),
+    port_(std::move(port))
+    {
+    }
 
 public:
     const uri_scheme& scheme() const;
