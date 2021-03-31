@@ -2,8 +2,8 @@
 
 #include "../core/io_service.h"
 
-#include "tcp_connector_i.h"
-#include "tcp_connector_handler_i.h"
+#include "tcp/tcp_connector_i.h"
+#include "tcp/tcp_connector_handler_i.h"
 
 #include <string>
 #include <memory>

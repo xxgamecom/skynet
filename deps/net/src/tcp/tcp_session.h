@@ -1,11 +1,11 @@
 #pragma once
 
-#include "tcp_session_i.h"
-#include "tcp_session_handler_i.h"
+#include "tcp/tcp_session_i.h"
+#include "tcp/tcp_session_handler_i.h"
 
 #include "../core/io_service.h"
 
-#include "socket_option_def.h"
+#include "base/socket_option_def.h"
 #include "tcp_session_write_queue.h"
 
 #include <deque>

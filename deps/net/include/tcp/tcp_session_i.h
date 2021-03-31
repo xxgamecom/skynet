@@ -1,7 +1,8 @@
 #pragma once
 
+#include "base/socket_option_def.h"
+
 #include "tcp_session_def.h"
-#include "socket_option_def.h"
 
 #include "asio.hpp"
 

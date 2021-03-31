@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tcp_client_i.h"
-#include "tcp_client_handler_i.h"
+#include "tcp/tcp_client_i.h"
+#include "tcp/tcp_client_handler_i.h"
 
 #include "../core/io_service.h"
 

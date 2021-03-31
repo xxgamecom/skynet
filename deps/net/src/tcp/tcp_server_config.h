@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tcp_server_config_i.h"
+#include "tcp/tcp_server_config_i.h"
 
 #include <cstdint>
 #include <thread>

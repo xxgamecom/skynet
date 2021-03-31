@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tcp_server_i.h"
-#include "io_statistics_i.h"
+#include "tcp/tcp_server_i.h"
+#include "base/io_statistics_i.h"
 
 #include "../uri/uri_codec.h"
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tcp_acceptor_def.h"
-#include "socket_option_def.h"
+#include "tcp/tcp_acceptor_def.h"
+#include "base/socket_option_def.h"
 
 namespace skynet { namespace net {
 
