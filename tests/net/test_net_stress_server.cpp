@@ -15,8 +15,8 @@ private:
 
 public:
     tcp_server_handler(int32_t block_size)
-        :
-        block_size_(block_size)
+    :
+    block_size_(block_size)
     {
         write_data_ptr_.reset(new char[block_size_], std::default_delete<char[]>());
         read_data_ptr_.reset(new char[block_size_], std::default_delete<char[]>());
@@ -72,7 +72,7 @@ public:
 public:
     void start(std::string local_ip, uint16_t local_port, int32_t thread_count, int32_t block_size)
     {
-        server_ptr_ = std::make_shared<skynet::net::tcp_server>();
+        server_ptr_ = skynet::net::create_tcp_server();
 
         std::shared_ptr<tcp_server_handler> server_handler_ptr = std::make_shared<tcp_server_handler>(block_size);
         server_ptr_->set_event_handler(server_handler_ptr);

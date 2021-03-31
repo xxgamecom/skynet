@@ -1,16 +1,17 @@
 #pragma once
 
-#include "asio.hpp"
+#include "io_service_i.h"
 
 #include <thread>
 #include <memory>
 #include <functional>
 
-namespace skynet { namespace net {
+namespace skynet { namespace net { namespace impl {
 
 // io service wrapper (one asio::io_service per cpu)
-class io_service final : public asio::noncopyable,
-                         public std::enable_shared_from_this<io_service>
+class io_service_impl : public asio::noncopyable,
+                        public io_service,
+                        public std::enable_shared_from_this<io_service>
 {
 private:
     asio::io_service ios_;                              // asio::io_service
@@ -18,16 +19,16 @@ private:
     std::shared_ptr<std::thread> ios_thread_ptr_;       // ios thread
 
 public:
-    io_service();
-    ~io_service() = default;
+    io_service_impl();
+    ~io_service_impl() = default;
 
 public:
-    void run();
-    void stop();
+    void run() override;
+    void stop() override;
 
-    asio::io_service& get_raw_ios();
+    asio::io_service& get_raw_ios() override;
 };
 
-} }
+} } }
 
 #include "io_service.inl"

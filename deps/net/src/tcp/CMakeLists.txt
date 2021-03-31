@@ -1,6 +1,4 @@
 set(SKYNET_NET_TCP_HEADER
-    src/tcp/io_statistics.h
-    src/tcp/io_statistics.inl
     src/tcp/tcp_acceptor.h
     src/tcp/tcp_acceptor.inl
     src/tcp/tcp_client.h
@@ -9,6 +7,8 @@ set(SKYNET_NET_TCP_HEADER
     src/tcp/tcp_client_config.inl
     src/tcp/tcp_connector.h
     src/tcp/tcp_connector.inl
+    src/tcp/tcp_io_statistics.h
+    src/tcp/tcp_io_statistics.inl
     src/tcp/tcp_server.h
     src/tcp/tcp_server.inl
     src/tcp/tcp_server_config.h
@@ -23,10 +23,10 @@ set(SKYNET_NET_TCP_HEADER
 )
 
 set(SKYNET_NET_TCP_SRC
-    src/tcp/io_statistics.cpp
     src/tcp/tcp_acceptor.cpp
     src/tcp/tcp_client.cpp
     src/tcp/tcp_connector.cpp
+    src/tcp/tcp_io_statistics.cpp
     src/tcp/tcp_server.cpp
     src/tcp/tcp_session.cpp
     src/tcp/tcp_session_idle_checker.cpp

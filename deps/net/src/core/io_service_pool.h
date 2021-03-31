@@ -1,5 +1,7 @@
 #pragma once
 
+#include "io_service_pool_i.h"
+
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -9,8 +11,10 @@ namespace skynet { namespace net {
 
 class io_service;
 
+namespace impl {
+
 // io service pool
-class io_service_pool final
+class io_service_pool_impl : public io_service_pool
 {
 private:
     uint32_t pool_size_ = 0;                                    // io_service array size
@@ -20,21 +24,21 @@ private:
     uint32_t select_index_ = 0;                                 // io_service select index
 
 public:
-    explicit io_service_pool(const uint32_t pool_size);
-    ~io_service_pool() = default;
+    explicit io_service_pool_impl(uint32_t pool_size);
+    ~io_service_pool_impl() = default;
 
 public:
-    void run();
-    void stop();
+    void run() override;
+    void stop() override;
 
 public:
     // choose one ios
-    std::shared_ptr<io_service>& select_one();
+    std::shared_ptr<io_service>& select_one() override;
     //
-    uint32_t pool_size() const;
+    uint32_t pool_size() const override;
 };
 
-} }
+} } }
 
 #include "io_service_pool.inl"
 

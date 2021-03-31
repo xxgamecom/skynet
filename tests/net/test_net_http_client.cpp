@@ -79,8 +79,8 @@ int32_t main(int32_t argc, char* argv[])
 
     // create client
     std::cout << "create client" << std::endl;
-    std::shared_ptr<tcp_client_handler> service_handler_ptr = std::make_shared<tcp_client_handler>();
-    std::shared_ptr<skynet::net::tcp_client> client_ptr = std::make_shared<skynet::net::tcp_client>();
+    auto service_handler_ptr = std::make_shared<tcp_client_handler>();
+    auto client_ptr = skynet::net::create_tcp_client();
     client_ptr->set_event_handler(service_handler_ptr);
 
     // open client

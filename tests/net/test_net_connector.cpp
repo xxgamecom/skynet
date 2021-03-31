@@ -89,19 +89,19 @@ int32_t main(int32_t argc, char* argv[])
     std::cout << "create ios pool" << std::endl;
 
     // ios pool
-    skynet::net::io_service_pool ios_pool(1);
-    ios_pool.run();
+    auto ios_pool = skynet::net::create_io_service_pool(1);
+    ios_pool->run();
 
     // socket connector
     std::cout << "create connector" << std::endl;
-    std::shared_ptr<connect_handler> connect_handler_ptr = std::make_shared<connect_handler>();
-    std::shared_ptr<skynet::net::tcp_connector> connector_ptr = std::make_shared<skynet::net::tcp_connector>(ios_pool.select_one());
+    auto connect_handler_ptr = std::make_shared<connect_handler>();
+    auto connector_ptr = skynet::net::create_tcp_connector(ios_pool->select_one());
     connector_ptr->set_event_handler(connect_handler_ptr);
 
     // socket session
     std::cout << "create session" << std::endl;
-    std::shared_ptr<stream_handler> stream_handler_ptr = std::make_shared<stream_handler>();
-    std::shared_ptr<skynet::net::tcp_session> session_ptr = std::make_shared<skynet::net::tcp_session>(8192, 4096, 4);
+    auto stream_handler_ptr = std::make_shared<stream_handler>();
+    auto session_ptr = skynet::net::create_tcp_session(8192, 4096, 4);
     session_ptr->set_event_handler(stream_handler_ptr);
     
     std::cout << "connect: " << remote_host << ":" << remote_port << std::endl;
@@ -116,7 +116,7 @@ int32_t main(int32_t argc, char* argv[])
     getchar();
 
     session_ptr->close();
-    ios_pool.stop();
+    ios_pool->stop();
 
     return 0;
 }

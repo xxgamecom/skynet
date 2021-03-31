@@ -1,10 +1,10 @@
-#include "io_statistics.h"
+#include "tcp_io_statistics.h"
 #include "tcp_session_manager.h"
 
 namespace skynet { namespace net { namespace impl {
 
-io_statistics::io_statistics(std::shared_ptr<tcp_session_manager> session_manager_ptr,
-                             std::shared_ptr<io_service> ios_ptr)
+tcp_io_statistics_impl::tcp_io_statistics_impl(std::shared_ptr<tcp_session_manager> session_manager_ptr,
+                                               std::shared_ptr<io_service> ios_ptr)
 :
 session_manager_ptr_(session_manager_ptr),
 ios_ptr_(ios_ptr),
@@ -17,7 +17,7 @@ last_write_bytes_(0)
     assert(session_manager_ptr_ != nullptr);
 }
 
-bool io_statistics::start()
+bool tcp_io_statistics_impl::start()
 {
     asio::error_code ec;
     calc_timer_.expires_from_now(std::chrono::seconds(UPDATE_READ_WRITE_INTERVAL_SECONDS), ec);
@@ -26,7 +26,7 @@ bool io_statistics::start()
         return false;
     }
 
-    calc_timer_.async_wait(std::bind(&io_statistics::handle_timeout,
+    calc_timer_.async_wait(std::bind(&tcp_io_statistics_impl::handle_timeout,
                                      shared_from_this(), std::placeholders::_1));
 
     reset();
@@ -34,13 +34,13 @@ bool io_statistics::start()
     return true;
 }
 
-void io_statistics::stop()
+void tcp_io_statistics_impl::stop()
 {
     calc_timer_.cancel();
 }
 
 // 重置
-void io_statistics::reset()
+void tcp_io_statistics_impl::reset()
 {
     read_bytes_.store(0, std::memory_order_relaxed);
     write_bytes_.store(0, std::memory_order_relaxed);
@@ -59,7 +59,7 @@ void io_statistics::reset()
     timeout_count_ = 0;
 }
 
-void io_statistics::handle_timeout(const asio::error_code& ec)
+void tcp_io_statistics_impl::handle_timeout(const asio::error_code& ec)
 {
     if (!ec)
     {
@@ -96,7 +96,7 @@ void io_statistics::handle_timeout(const asio::error_code& ec)
             return;
         }
 
-        calc_timer_.async_wait(std::bind(&io_statistics::handle_timeout,
+        calc_timer_.async_wait(std::bind(&tcp_io_statistics_impl::handle_timeout,
                                          shared_from_this(), std::placeholders::_1));
     }
 }

@@ -1,12 +1,12 @@
 #pragma once
 
 #include "tcp_server_i.h"
+#include "io_statistics_i.h"
 
 #include "../uri/uri_codec.h"
 
 #include "../core/io_service_pool.h"
 
-#include "io_statistics.h"
 #include "tcp_acceptor.h"
 #include "tcp_server_config.h"
 #include "tcp_session_manager.h"
@@ -30,8 +30,8 @@ protected:
 
     // 服务配置
 protected:
-    tcp_server_acceptor_config acceptor_config_;                            // 服务端的acceptor配置
-    tcp_server_session_config session_config_;                              // 服务端的session配置
+    tcp_server_acceptor_config_impl acceptor_config_;                       // 服务端的acceptor配置
+    tcp_server_session_config_impl session_config_;                         // 服务端的session配置
 
     // 外部处理器
 protected:
@@ -66,11 +66,11 @@ public:
     void close() override;
 
     // get config
-    tcp_server_acceptor_config& get_acceptor_config();
-    tcp_server_session_config& get_session_config();
+    tcp_server_acceptor_config& get_acceptor_config() override;
+    tcp_server_session_config& get_session_config() override;
 
     // get io statistics
-    std::shared_ptr<io_statistics> get_io_statistics();
+    std::shared_ptr<io_statistics> get_io_statistics() override;
 
 protected:
     // do accept

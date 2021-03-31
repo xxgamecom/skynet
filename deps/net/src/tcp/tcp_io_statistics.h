@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../core/io_service.h"
+#include "io_statistics_i.h"
 
 #include "fmt/format.h"
 
@@ -13,8 +14,9 @@ namespace skynet { namespace net { namespace impl {
 class tcp_session_manager;
 
 // IO常用统计量
-class io_statistics : public asio::noncopyable,
-                      public std::enable_shared_from_this<io_statistics>
+class tcp_io_statistics_impl : public asio::noncopyable,
+                               public io_statistics,
+                               public std::enable_shared_from_this<tcp_io_statistics_impl>
 {
 private:
     enum
@@ -49,31 +51,31 @@ private:
     double largest_write_bytes_throughput_ = 0;                     // 最大写吞吐量
 
 public:
-    io_statistics(std::shared_ptr<tcp_session_manager> session_manager_ptr,
-                  std::shared_ptr<io_service> ios_ptr);
-    ~io_statistics() = default;
+    tcp_io_statistics_impl(std::shared_ptr<tcp_session_manager> session_manager_ptr,
+                           std::shared_ptr<io_service> ios_ptr);
+    ~tcp_io_statistics_impl() = default;
 
 public:
-    bool start();
-    void stop();
-    void reset();
+    bool start() override;
+    void stop() override;
+    void reset() override;
 
     // 吞吐量
 public:
     // 更新吞吐量计数器
-    void update_throughput();
+    void update_throughput() override;
 
     // 读写字节数
-    int64_t read_bytes();
-    int64_t write_bytes();
+    int64_t read_bytes() override;
+    int64_t write_bytes() override;
 
     // 读写字节数吞吐量(每秒字节数)
-    double read_bytes_throughput();
-    double write_bytes_throughput();
+    double read_bytes_throughput()override;
+    double write_bytes_throughput() override;
 
     // 最大读写字节数吞吐量(每秒读字节数)
-    double largest_read_bytes_throughput();
-    double largest_write_bytes_throughput();
+    double largest_read_bytes_throughput() override;
+    double largest_write_bytes_throughput() override;
 
 private:
     void handle_timeout(const asio::error_code& ec);
@@ -81,5 +83,5 @@ private:
 
 } } }
 
-#include "io_statistics.inl"
+#include "tcp_io_statistics.inl"
 

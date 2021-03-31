@@ -3,9 +3,9 @@
 
 #include <cassert>
 
-namespace skynet { namespace net {
+namespace skynet { namespace net { namespace impl {
 
-io_service_pool::io_service_pool(const uint32_t pool_size)
+io_service_pool_impl::io_service_pool_impl(uint32_t pool_size)
 :
 pool_size_(pool_size)
 {
@@ -13,12 +13,12 @@ pool_size_(pool_size)
     std::shared_ptr<io_service> ios_ptr;
     for (uint32_t i=0; i<pool_size_; ++i)
     {
-        ios_ptr = std::make_shared<io_service>();
+        ios_ptr = std::make_shared<io_service_impl>();
         if (ios_ptr != nullptr) io_services_.push_back(ios_ptr);
     }
 }
 
-void io_service_pool::run()
+void io_service_pool_impl::run()
 {
     for (auto& itr : io_services_)
     {
@@ -26,7 +26,7 @@ void io_service_pool::run()
     }
 }
 
-void io_service_pool::stop()
+void io_service_pool_impl::stop()
 {
     for (auto& itr : io_services_)
     {
@@ -37,5 +37,5 @@ void io_service_pool::stop()
     select_index_ = 0;
 }
 
-} }
+} } }
 

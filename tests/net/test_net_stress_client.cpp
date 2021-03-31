@@ -174,7 +174,7 @@ public:
         // 重置统计量
         stats_.reset();
 
-        ios_pool_ptr_ = std::make_shared<skynet::net::io_service_pool>(thread_count);
+        ios_pool_ptr_ = skynet::net::create_io_service_pool(thread_count);
 
         // 创建client
         for (int32_t i = 0; i < session_count; ++i)
@@ -185,11 +185,11 @@ public:
             client_ptr->client_handler_ptr_ = std::make_shared<client_handler>(stats_, block_size);
 
             // session
-            client_ptr->session_ptr_ = std::make_shared<skynet::net::tcp_session>(32 * 1024, 32 * 1024, 4);
+            client_ptr->session_ptr_ = skynet::net::create_tcp_session(32 * 1024, 32 * 1024, 4);
             client_ptr->session_ptr_->set_event_handler(std::dynamic_pointer_cast<skynet::net::tcp_session_handler>(client_ptr->client_handler_ptr_));
 
             // connector
-            client_ptr->connector_ptr_ = std::make_shared<skynet::net::tcp_connector>(ios_pool_ptr_->select_one());
+            client_ptr->connector_ptr_ = skynet::net::create_tcp_connector(ios_pool_ptr_->select_one());
             client_ptr->connector_ptr_->set_event_handler(std::dynamic_pointer_cast<skynet::net::tcp_connector_handler>(client_ptr->client_handler_ptr_));
 
             // save client object
@@ -203,7 +203,7 @@ public:
         }
 
         // 测试结束定时器
-        ios_ptr_ = std::make_shared<skynet::net::io_service>();
+        ios_ptr_ = skynet::net::create_io_service();
         stop_timer_ptr_ = std::make_shared<asio::steady_timer>(ios_ptr_->get_raw_ios());
         stop_timer_ptr_->expires_from_now(std::chrono::seconds(test_seconds));
         stop_timer_ptr_->async_wait(std::bind(&stress_client::handle_timeout, this));

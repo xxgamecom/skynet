@@ -14,7 +14,7 @@ void tcp_client_impl::set_event_handler(std::shared_ptr<tcp_client_handler> even
 bool tcp_client_impl::open()
 {
     // 创建ios
-    ios_ptr_ = std::make_shared<io_service>();
+    ios_ptr_ = std::make_shared<io_service_impl>();
     if (ios_ptr_ == nullptr) return false;
     ios_ptr_->run();
 

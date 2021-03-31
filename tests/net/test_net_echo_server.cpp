@@ -53,7 +53,7 @@ int32_t main(int32_t argc, char* argv[])
 
     // create server
     std::cout << "create server" << std::endl;
-    std::shared_ptr<skynet::net::tcp_server> server_ptr = std::make_shared<skynet::net::tcp_server>();
+    auto server_ptr = skynet::net::create_tcp_server();
 
     std::shared_ptr<tcp_server_handler> server_handler_ptr = std::make_shared<tcp_server_handler>();
     server_ptr->set_event_handler(server_handler_ptr);
