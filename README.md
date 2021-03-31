@@ -16,7 +16,7 @@ skynet++
 * [x] 为上层提供OO封装
 * [x] 配置文件支持table, 原skynet只支持单kv格式
 * [x] 为上层提供更方便的服务消息处理机制 skynet.msg_handler
-* [x] 提供更完善的logger, 支持 log_debug, log_info, log_warn, log_error, 支持设置log_level, console | console_color | rotating | hour | daily 等方式的log sink
+* [x] 提供更完善的logger, 支持 log_debug, log_info, log_warn, log_error, 支持设置log_level, console | console_color | rotating | hourly | daily 等方式的log sink
 * [x] 基于asio的net库替换, 网络层独立放入deps中
 * [ ] 支持protobuf3
 * [ ] 提供简单完善的服务RPC接口
