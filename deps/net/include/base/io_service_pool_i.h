@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <memory>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 class io_service;
 
@@ -26,4 +26,4 @@ public:
     virtual uint32_t pool_size() const = 0;
 };
 
-} }
+}

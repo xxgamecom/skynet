@@ -10,7 +10,7 @@
 #include <string>
 #include <memory>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 // forward declare
 class io_service;
@@ -88,6 +88,6 @@ public:
 //    void handle_async_write(const asio::error_code& ec, size_t bytes_transferred);
 };
 
-} }
+}
 
 

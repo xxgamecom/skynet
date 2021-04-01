@@ -5,7 +5,7 @@
 #include <memory>
 #include <cstdint>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 class io_buffer;
 class tcp_session;
@@ -27,5 +27,5 @@ public:
     virtual void handle_sessoin_close(std::shared_ptr<tcp_session> session_ptr) = 0;
 };
 
-} }
+}
 

@@ -1,4 +1,4 @@
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 inline tcp_server_acceptor_config& tcp_server_impl::get_acceptor_config()
 {
@@ -48,5 +48,5 @@ inline std::string tcp_server_impl::make_key(const std::string& ip, uint16_t por
     return ip + ":" + std::to_string(port);
 }
 
-} } }
+}
 

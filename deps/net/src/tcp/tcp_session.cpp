@@ -1,6 +1,6 @@
 #include "tcp_session.h"
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 tcp_session_impl::tcp_session_impl(int32_t msg_read_buf_size,
                                    int32_t msg_write_buf_size,
@@ -335,5 +335,5 @@ void tcp_session_impl::handle_async_write(const asio::error_code& ec, size_t byt
     }
 }
 
-}}}
+}
 

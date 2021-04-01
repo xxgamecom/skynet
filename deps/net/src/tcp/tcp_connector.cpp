@@ -1,7 +1,7 @@
 #include "tcp_connector.h"
 #include "tcp_session.h"
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 tcp_connector_impl::tcp_connector_impl(std::shared_ptr<io_service> ios_ptr)
 :
@@ -135,5 +135,5 @@ void tcp_connector_impl::handle_timeout(std::shared_ptr<tcp_session> session_ptr
     is_connecting_ = false;
 }
 
-} } }
+}
 

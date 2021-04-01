@@ -8,7 +8,7 @@
 #include "tcp/tcp_acceptor_i.h"
 #include "tcp/tcp_acceptor_handler_i.h"
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 class tcp_session;
 
@@ -58,7 +58,7 @@ protected:
     void handle_async_accept(std::shared_ptr<tcp_session> session_ptr, const asio::error_code& ec);
 };
 
-} } }
+} }
 
 #include "tcp_acceptor.inl"
 

@@ -2,7 +2,7 @@
 #include "tcp_connector.h"
 #include "tcp_session.h"
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 // 设置客户端服务外部处理器
 void tcp_client_impl::set_event_handler(std::shared_ptr<tcp_client_handler> event_handler_ptr)
@@ -190,4 +190,4 @@ void tcp_client_impl::handle_sessoin_close(std::shared_ptr<tcp_session> session_
         event_handler_ptr_->handle_sessoin_close(session_ptr);
 }
 
-} } }
+}

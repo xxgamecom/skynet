@@ -3,7 +3,7 @@
 #include "tcp/tcp_acceptor_def.h"
 #include "base/socket_option_def.h"
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 // forward declare
 class tcp_session;
@@ -39,4 +39,4 @@ public:
     virtual bool get_sock_option(sock_options opt, int32_t& value) = 0;
 };
 
-} }
+}

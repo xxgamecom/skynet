@@ -10,12 +10,12 @@
 #include <cstdint>
 
 
-namespace skynet { namespace net {
-
 // forward declare
+namespace skynet::net {
 class tcp_session;
+}
 
-namespace impl {
+namespace skynet::net::impl {
 
 /**
  * tcp connector
@@ -70,7 +70,7 @@ protected:
     void handle_timeout(std::shared_ptr<tcp_session> session_ptr, const asio::error_code& ec);
 };
 
-} } }
+}
 
 #include "tcp_connector.inl"
 

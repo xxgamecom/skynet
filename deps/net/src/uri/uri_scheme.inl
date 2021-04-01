@@ -1,6 +1,6 @@
 #pragma once
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 inline const std::string& uri_scheme::value() const
 {
@@ -52,5 +52,5 @@ inline bool uri_scheme::find_splash_splash(std::string str, std::string* out_ptr
     }
 }
 
-} }
+}
 

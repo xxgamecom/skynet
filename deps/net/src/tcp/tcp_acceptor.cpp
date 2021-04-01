@@ -1,7 +1,7 @@
 #include "tcp_acceptor.h"
 #include "tcp_session.h"
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 tcp_acceptor_impl::tcp_acceptor_impl(std::shared_ptr<io_service> ios_ptr,
                                      std::shared_ptr<tcp_acceptor_handler> event_handler_ptr/* = nullptr*/)
@@ -192,5 +192,5 @@ void tcp_acceptor_impl::handle_async_accept(std::shared_ptr<tcp_session> session
     }
 }
 
-} } }
+}
 

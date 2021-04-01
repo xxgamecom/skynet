@@ -1,6 +1,6 @@
 #include "tcp_session_write_queue.h"
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 // 初始化
 bool tcp_session_write_queue::init(size_t write_msg_buf_size, size_t write_msg_queue_size)
@@ -96,5 +96,5 @@ size_t tcp_session_write_queue::push_back(const char* data_ptr, size_t data_len)
     return write_size;
 }
 
-} } }
+}
 

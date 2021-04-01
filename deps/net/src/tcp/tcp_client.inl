@@ -1,4 +1,4 @@
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 inline tcp_client_session_config& tcp_client_impl::get_session_config()
 {
@@ -17,4 +17,4 @@ inline bool tcp_client_impl::send(const char* data_ptr, int32_t data_len)
     return true;
 }
 
-} } }
+}

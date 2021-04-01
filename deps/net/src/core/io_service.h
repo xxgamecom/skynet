@@ -6,7 +6,7 @@
 #include <memory>
 #include <functional>
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 // io service wrapper (one asio::io_service per cpu)
 class io_service_impl : public asio::noncopyable,
@@ -29,6 +29,6 @@ public:
     asio::io_service& get_raw_ios() override;
 };
 
-} } }
+}
 
 #include "io_service.inl"

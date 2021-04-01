@@ -13,7 +13,7 @@
 
 #include <memory>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 class tcp_client_handler;
 
@@ -95,7 +95,7 @@ protected:
     void handle_sessoin_close(std::shared_ptr<tcp_session> session_ptr) override;
 };
 
-} } }
+} }
 
 #include "tcp_client.inl"
 

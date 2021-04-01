@@ -1,4 +1,4 @@
-namespace skynet { namespace net {
+namespace skynet::net {
 
 inline char* io_buffer::data()
 {
@@ -33,5 +33,5 @@ inline void io_buffer::clear()
     data_size_ = 0;
 }
 
-} }
+}
 

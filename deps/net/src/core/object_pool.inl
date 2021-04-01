@@ -1,4 +1,4 @@
-namespace skynet { namespace net {
+namespace skynet::net {
 
 template<typename T>
 template<typename ...Args>
@@ -59,5 +59,5 @@ inline size_t object_pool<T>::used_count()
     return pool_size_ - pool_.size();
 }
 
-} }
+}
 

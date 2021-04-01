@@ -1,4 +1,4 @@
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 inline void tcp_client_session_config_impl::socket_recv_buf_size(int32_t size)
 {
@@ -80,5 +80,5 @@ inline int32_t tcp_client_session_config_impl::msg_write_queue_size()
     return msg_write_queue_size_;
 }
 
-} } }
+}
 

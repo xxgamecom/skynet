@@ -7,11 +7,12 @@
 #include <map>
 #include <mutex>
 
-namespace skynet { namespace net {
-
+// forward declare
+namespace skynet::net {
 class tcp_session;
+}
 
-namespace impl {
+namespace skynet::net::impl {
 
 // tcp会话管理
 class tcp_session_manager : public asio::noncopyable
@@ -55,7 +56,7 @@ private:
     session_id_t generate_session_id();
 };
 
-} } }
+}
 
 #include "tcp_session_manager.inl"
 

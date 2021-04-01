@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 // tcp_client的session配置项
 class tcp_client_session_config_impl : public tcp_client_session_config
@@ -66,7 +66,7 @@ public:
     int32_t msg_write_queue_size() override;
 };
 
-} } }
+}
 
 #include "tcp_client_config.inl"
 

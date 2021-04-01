@@ -3,7 +3,7 @@
 #include "tcp/tcp_client.h"
 #include "tcp/tcp_server.h"
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 // create io service
 std::shared_ptr<io_service> create_io_service()
@@ -17,9 +17,7 @@ std::shared_ptr<io_service_pool> create_io_service_pool(uint32_t pool_size)
 }
 
 // create tcp session
-std::shared_ptr<tcp_session> create_tcp_session(int32_t msg_read_buf_size,
-                                                int32_t msg_write_buf_size,
-                                                int32_t msg_write_queue_size)
+std::shared_ptr<tcp_session> create_tcp_session(int32_t msg_read_buf_size, int32_t msg_write_buf_size, int32_t msg_write_queue_size)
 {
     return std::make_shared<impl::tcp_session_impl>(msg_read_buf_size, msg_write_buf_size, msg_write_queue_size);
 }
@@ -42,5 +40,5 @@ std::shared_ptr<tcp_server> create_tcp_server()
     return std::make_shared<impl::tcp_server_impl>();
 }
 
-} }
+}
 

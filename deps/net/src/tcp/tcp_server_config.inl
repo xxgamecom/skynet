@@ -1,4 +1,4 @@
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 //--------------------------------------------------------------------------
 // tcp_server_acceptor_config_impl
@@ -241,4 +241,4 @@ inline int32_t tcp_server_session_config_impl::idle_check_seconds()
     return idle_check_seconds_;
 }
 
-} } }
+}

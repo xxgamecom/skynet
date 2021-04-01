@@ -4,7 +4,7 @@
 #include <memory>
 #include <cstdint>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 // forward declare
 class tcp_session;
@@ -31,4 +31,4 @@ public:
                          uint16_t local_port = 0) = 0;
 };
 
-} }
+}

@@ -4,7 +4,7 @@
 
 #include <cstdint>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 //------------------------------------------
 // tcp_server_acceptor_config
@@ -118,4 +118,4 @@ public:
     virtual int32_t idle_check_seconds() = 0;
 };
 
-} }
+}

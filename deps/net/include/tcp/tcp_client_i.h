@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <memory>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 // forward declare
 class tcp_client_handler;
@@ -45,5 +45,5 @@ public:
     virtual bool send(const char* data_ptr, int32_t data_len) = 0;
 };
 
-} }
+}
 

@@ -7,7 +7,7 @@
 #include <sstream>
 #include <regex>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 /**
  * uri codec
@@ -51,7 +51,7 @@ public:
     static std::string to_string(const uri_codec& uri);
 };
 
-} }
+}
 
 #include "uri_codec.inl"
 

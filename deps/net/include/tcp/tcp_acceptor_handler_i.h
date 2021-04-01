@@ -5,7 +5,7 @@
 #include <memory>
 #include <cstdint>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 class io_buffer;
 class tcp_acceptor;
@@ -27,5 +27,5 @@ public:
                                       int32_t err_code, std::string err_msg) = 0;
 };
 
-} }
+}
 

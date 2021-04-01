@@ -1,7 +1,7 @@
 #include "tcp_session_idle_checker.h"
 #include "tcp_session_manager.h"
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 tcp_session_idle_checker::tcp_session_idle_checker(std::shared_ptr<tcp_session_manager> session_manager_ptr,
                                                    std::shared_ptr<io_service> ios_ptr)
@@ -72,5 +72,5 @@ void tcp_session_idle_checker::handle_timeout(const asio::error_code& ec)
     }
 }
 
-} } }
+}
 

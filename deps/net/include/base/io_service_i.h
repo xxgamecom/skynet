@@ -2,7 +2,7 @@
 
 #include "asio.hpp"
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 // io service wrapper (one asio::io_service per cpu)
 class io_service
@@ -17,4 +17,4 @@ public:
     virtual asio::io_service& get_raw_ios() = 0;
 };
 
-} }
+}

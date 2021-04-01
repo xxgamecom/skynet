@@ -3,7 +3,7 @@
 #include <string>
 #include <regex>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 // uri host part
 class uri_host final
@@ -28,7 +28,7 @@ public:
     static std::string to_string(const uri_host& host);
 };
 
-} }
+}
 
 #include "uri_host.inl"
 

@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <memory>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 class tcp_server_handler;
 class tcp_server_acceptor_config;
@@ -36,4 +36,4 @@ public:
     virtual std::shared_ptr<io_statistics> get_io_statistics() = 0;
 };
 
-} }
+}

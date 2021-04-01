@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 // tcp_client的session配置项
 class tcp_client_session_config
@@ -45,4 +45,4 @@ public:
     virtual int32_t msg_write_queue_size() = 0;
 };
 
-} }
+}

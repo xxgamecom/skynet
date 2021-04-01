@@ -1,7 +1,7 @@
 #include "tcp_io_statistics.h"
 #include "tcp_session_manager.h"
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 tcp_io_statistics_impl::tcp_io_statistics_impl(std::shared_ptr<tcp_session_manager> session_manager_ptr,
                                                std::shared_ptr<io_service> ios_ptr)
@@ -101,4 +101,4 @@ void tcp_io_statistics_impl::handle_timeout(const asio::error_code& ec)
     }
 }
 
-} } }
+}

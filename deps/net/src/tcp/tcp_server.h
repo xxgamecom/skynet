@@ -12,11 +12,13 @@
 #include "tcp_session_manager.h"
 #include "tcp_session_idle_checker.h"
 
-namespace skynet { namespace net {
 
+// forward delcare
+namespace skynet::net {
 class tcp_server_handler;
+}
 
-namespace impl {
+namespace skynet::net::impl {
 
 // tcp服务端
 class tcp_server_impl : public asio::noncopyable,
@@ -102,7 +104,7 @@ private:
     std::string make_key(const std::string& ip, uint16_t port);
 };
 
-} } }
+}
 
 #include "tcp_server.inl"
 

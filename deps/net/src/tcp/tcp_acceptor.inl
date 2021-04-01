@@ -1,4 +1,4 @@
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 inline void tcp_acceptor_impl::set_event_handler(std::shared_ptr<tcp_acceptor_handler> event_handler_ptr)
 {
@@ -14,4 +14,4 @@ inline asio::ip::tcp::endpoint tcp_acceptor_impl::local_endpoint() const
     return acceptor_ptr_->local_endpoint(ec);
 }
 
-} } }
+}
