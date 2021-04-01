@@ -24,7 +24,7 @@ public:
 public:
     // start/close
     virtual bool open(const std::string local_uri, bool is_reuse_addr = true) = 0;
-    virtual bool open(const std::string local_ip, const uint16_t local_port, bool is_reuse_addr = true) = 0;
+    virtual bool open(const std::string local_ip, uint16_t local_port, bool is_reuse_addr = true) = 0;
     virtual bool open(std::initializer_list<std::pair<std::string, uint16_t>> local_endpoints, bool is_reuse_addr = true) = 0;
     virtual void close() = 0;
 

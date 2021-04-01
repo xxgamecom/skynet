@@ -20,7 +20,7 @@ private:
 
 public:
     io_service_impl();
-    ~io_service_impl() = default;
+    ~io_service_impl() override = default;
 
 public:
     void run() override;

@@ -13,7 +13,7 @@ event_handler_ptr_(event_handler_ptr)
 
 // 打开acceptor
 bool tcp_acceptor_impl::open(const std::string local_ip,
-                             const uint16_t local_port,
+                             uint16_t local_port,
                              bool is_reuse_addr/* = true*/,
                              int32_t backlog/* = DEFAULT_BACKLOG*/)
 {

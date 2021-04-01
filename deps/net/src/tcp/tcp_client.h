@@ -27,7 +27,7 @@ class tcp_client_impl : public asio::noncopyable,
                         public std::enable_shared_from_this<tcp_client_impl>
 {
 protected:
-    tcp_client_session_config session_config_;              // 会话配置
+    tcp_client_session_config_impl session_config_;         // 会话配置
 
 protected:
     std::shared_ptr<io_service> ios_ptr_;                   // ios
@@ -39,7 +39,7 @@ protected:
 
 public:
     tcp_client_impl() = default;
-    virtual ~tcp_client_impl() = default;
+    ~tcp_client_impl() override = default;
 
 public:
     // 设置客户端服务外部处理器
@@ -52,19 +52,19 @@ public:
     bool connect(const std::string remote_uri,
                  int32_t timeout_seconds = 0,
                  const std::string local_ip = "",
-                 const uint16_t local_port = 0) override;
+                 uint16_t local_port = 0) override;
     // 发起连接(单独提供地址和端口形式)
     bool connect(const std::string remote_addr,
-                 const uint16_t remote_port,
+                 uint16_t remote_port,
                  int32_t timeout_seconds = 0,
                  const std::string local_ip = "",
-                 const uint16_t local_port = 0) override;
+                 uint16_t local_port = 0) override;
 
     // 关闭客户端服务
     void close() override;
 
     // 获取会话配置
-    tcp_client_session_config& get_session_config();
+    tcp_client_session_config& get_session_config() override;
 
     // 发送数据
     bool send(const char* data_ptr, int32_t data_len) override;
@@ -72,27 +72,27 @@ public:
     // tcp_connector_handler impl
 protected:
     // 地址解析成功
-    virtual void handle_resolve_success(std::shared_ptr<tcp_session> session_ptr, std::string addr, uint16_t port) override;
+    void handle_resolve_success(std::shared_ptr<tcp_session> session_ptr, std::string addr, uint16_t port) override;
     // 地址解析失败
-    virtual void handle_resolve_failed(std::shared_ptr<tcp_session> session_ptr, int32_t err_code, std::string err_msg) override;
+    void handle_resolve_failed(std::shared_ptr<tcp_session> session_ptr, int32_t err_code, std::string err_msg) override;
 
     // 主动连接成功
-    virtual void handle_connect_success(std::shared_ptr<tcp_session> session_ptr) override;
+    void handle_connect_success(std::shared_ptr<tcp_session> session_ptr) override;
     // 主动连接失败
-    virtual void handle_connect_failed(std::shared_ptr<tcp_session> session_ptr, int32_t err_code, std::string err_msg) override;
+    void handle_connect_failed(std::shared_ptr<tcp_session> session_ptr, int32_t err_code, std::string err_msg) override;
     // 超时处理
-    virtual void handle_connect_timeout(std::shared_ptr<tcp_session> session_ptr) override;
+    void handle_connect_timeout(std::shared_ptr<tcp_session> session_ptr) override;
 
     // tcp_session_handler impl
 protected:
     // tcp会话读完成
-    virtual void handle_session_read(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
+    void handle_session_read(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
     // tcp会话写完成
-    virtual void handle_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
+    void handle_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
     // tcp会话闲置
-    virtual void handle_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type) override;
+    void handle_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type) override;
     // tcp会话关闭
-    virtual void handle_sessoin_close(std::shared_ptr<tcp_session> session_ptr) override;
+    void handle_sessoin_close(std::shared_ptr<tcp_session> session_ptr) override;
 };
 
 } } }

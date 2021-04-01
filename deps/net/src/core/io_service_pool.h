@@ -25,7 +25,7 @@ private:
 
 public:
     explicit io_service_pool_impl(uint32_t pool_size);
-    ~io_service_pool_impl() = default;
+    ~io_service_pool_impl() override = default;
 
 public:
     void run() override;

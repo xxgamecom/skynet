@@ -37,7 +37,7 @@ bool tcp_client_impl::open()
 bool tcp_client_impl::connect(const std::string remote_uri,
                          int32_t timeout_seconds/* = 0*/,
                          const std::string local_ip/* = ""*/,
-                         const uint16_t local_port/* = 0*/)
+                         uint16_t local_port/* = 0*/)
 {
     // 连接之前确保已初始化
     assert(connector_ptr_ != nullptr && session_ptr_ != nullptr);
@@ -57,10 +57,10 @@ bool tcp_client_impl::connect(const std::string remote_uri,
 
 // 发起连接(单独提供地址和端口形式)
 bool tcp_client_impl::connect(const std::string remote_addr,
-                         const uint16_t remote_port,
+                         uint16_t remote_port,
                          int32_t timeout_seconds/* = 0*/,
                          const std::string local_ip/* = ""*/,
-                         const uint16_t local_port/* = 0*/)
+                         uint16_t local_port/* = 0*/)
 {
     // 连接之前确保已初始化
     assert(connector_ptr_ != nullptr && session_ptr_ != nullptr);

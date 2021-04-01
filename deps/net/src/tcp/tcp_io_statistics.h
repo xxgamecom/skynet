@@ -53,7 +53,7 @@ private:
 public:
     tcp_io_statistics_impl(std::shared_ptr<tcp_session_manager> session_manager_ptr,
                            std::shared_ptr<io_service> ios_ptr);
-    ~tcp_io_statistics_impl() = default;
+    ~tcp_io_statistics_impl() override = default;
 
 public:
     bool start() override;

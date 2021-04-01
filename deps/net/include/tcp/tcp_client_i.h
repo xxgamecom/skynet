@@ -8,6 +8,7 @@ namespace skynet { namespace net {
 
 // forward declare
 class tcp_client_handler;
+class tcp_client_session_config;
 
 // tcp client
 class tcp_client
@@ -26,19 +27,19 @@ public:
     virtual bool connect(const std::string remote_uri,
                          int32_t timeout_seconds = 0,
                          const std::string local_ip = "",
-                         const uint16_t local_port = 0) = 0;
+                         uint16_t local_port = 0) = 0;
     // 发起连接(单独提供地址和端口形式)
     virtual bool connect(const std::string remote_addr,
-                         const uint16_t remote_port,
+                         uint16_t remote_port,
                          int32_t timeout_seconds = 0,
                          const std::string local_ip = "",
-                         const uint16_t local_port = 0) = 0;
+                         uint16_t local_port = 0) = 0;
 
     // 关闭客户端服务
     virtual void close() = 0;
 
-//    // 获取会话配置
-//    virtual tcp_client_session_config& get_session_config() = 0;
+    // 获取会话配置
+    virtual tcp_client_session_config& get_session_config() = 0;
 
     // 发送数据
     virtual bool send(const char* data_ptr, int32_t data_len) = 0;

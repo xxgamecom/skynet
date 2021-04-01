@@ -12,10 +12,10 @@ resolver_(ios_ptr->get_raw_ios())
 
 bool tcp_connector_impl::connect(std::shared_ptr<tcp_session> session_ptr,
                                  const std::string remote_addr,
-                                 const uint16_t remote_port,
+                                 uint16_t remote_port,
                                  int32_t timeout_seconds/* = 0*/,
                                  const std::string local_ip/* = ""*/,
-                                 const uint16_t local_port/* = 0*/)
+                                 uint16_t local_port/* = 0*/)
 {
     // 检查会话, 确保处于关闭状态
     assert(session_ptr != nullptr && session_ptr->is_open() == false);
@@ -23,8 +23,8 @@ bool tcp_connector_impl::connect(std::shared_ptr<tcp_session> session_ptr,
         return false;
 
     // 检查地址
-    assert(remote_addr != "" && remote_port != 0);
-    if (remote_addr == "" || remote_port == 0)
+    assert(!remote_addr.empty() && remote_port != 0);
+    if (remote_addr.empty() || remote_port == 0)
         return false;
 
     // 正在连接

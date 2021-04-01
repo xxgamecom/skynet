@@ -18,6 +18,7 @@
 #include "tcp/tcp_session_handler_i.h"
 
 #include "tcp/tcp_client_i.h"
+#include "tcp/tcp_client_config_i.h"
 #include "tcp/tcp_client_handler_i.h"
 
 #include "tcp/tcp_server_i.h"
