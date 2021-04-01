@@ -4,7 +4,7 @@
 #include "hash_id.h"
 #include "data_buffer.h"
 
-namespace skynet { namespace service {
+namespace skynet::service {
 
 struct connection
 {
@@ -49,4 +49,4 @@ public:
 
 };
 
-} }
+}

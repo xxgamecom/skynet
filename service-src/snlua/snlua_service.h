@@ -12,7 +12,7 @@ namespace skynet {
 class service_context;
 }
 
-namespace skynet { namespace service {
+namespace skynet::service {
 
 /**
  * snlua_service c service mod
@@ -61,6 +61,6 @@ public:
     static void* lalloc(void* ud, void* ptr, size_t osize, size_t nsize);
 };
 
-} }
+}
 
 

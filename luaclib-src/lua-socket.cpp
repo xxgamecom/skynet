@@ -15,7 +15,7 @@ extern "C" {
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-namespace skynet { namespace luaclib {
+namespace skynet::luaclib {
 
 #define DEFAULT_BACKLOG     32
 
@@ -1248,7 +1248,7 @@ static int l_udp_address(lua_State* L)
     return 2;
 }
 
-}}
+}
 
 /**
  * skynet luaclib - skynet.socket.core

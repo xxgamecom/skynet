@@ -9,7 +9,7 @@ extern "C" {
 
 #include <cassert>
 
-namespace skynet { namespace service {
+namespace skynet::service {
 
 
 /**
@@ -283,5 +283,5 @@ void* snlua_service::lalloc(void* ud, void* ptr, size_t osize, size_t nsize)
     return skynet_lalloc(ptr, osize, nsize);
 }
 
-} }
+}
 

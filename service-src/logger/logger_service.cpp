@@ -10,7 +10,7 @@
 #include <string>
 #include <regex>
 
-namespace skynet { namespace service {
+namespace skynet::service {
 
 static const char* _get_env(service_context* svc_ctx, const char* key, const char* default_value)
 {
@@ -205,4 +205,4 @@ int logger_service::logger_cb(service_context* svc_ctx, void* ud, int svc_msg_ty
     return 0;
 }
 
-}}
+}

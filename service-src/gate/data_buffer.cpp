@@ -5,7 +5,7 @@
 #include <string>
 #include <cassert>
 
-namespace skynet { namespace service {
+namespace skynet::service {
 
 static inline void _return_message(data_buffer* db, message_pool* mp)
 {
@@ -153,4 +153,4 @@ void data_buffer_clear(data_buffer* db, message_pool* mp)
     memset(db, 0, sizeof(*db));
 }
 
-} }
+}

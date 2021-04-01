@@ -1,6 +1,6 @@
 #pragma once
 
-namespace skynet { namespace service {
+namespace skynet::service {
 
 struct hash_id_node
 {
@@ -29,4 +29,4 @@ int hash_id_insert(hash_id* hi, int id);
 
 int hash_id_full(hash_id* hi);
 
-} }
+}
