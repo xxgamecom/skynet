@@ -1,4 +1,4 @@
-namespace skynet { namespace net {
+namespace skynet::net {
 
 inline void uri_codec::scheme(uri_scheme scheme)
 {
@@ -56,5 +56,5 @@ inline std::string uri_codec::to_string(const uri_codec& uri)
     return ss.str();
 }
 
-} }
+}
 

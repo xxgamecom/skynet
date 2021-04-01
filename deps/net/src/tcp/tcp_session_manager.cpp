@@ -1,6 +1,6 @@
 #include "tcp_session_manager.h"
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 // 获取所有会话
 size_t tcp_session_manager::get_sessions(std::vector<std::weak_ptr<tcp_session>>& sessions)
@@ -13,5 +13,5 @@ size_t tcp_session_manager::get_sessions(std::vector<std::weak_ptr<tcp_session>>
     return session_used_map_.size();
 }
 
-} } }
+}
 

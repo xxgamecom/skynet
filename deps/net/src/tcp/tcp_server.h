@@ -12,11 +12,13 @@
 #include "tcp_session_manager.h"
 #include "tcp_session_idle_checker.h"
 
-namespace skynet { namespace net {
 
+// forward delcare
+namespace skynet::net {
 class tcp_server_handler;
+}
 
-namespace impl {
+namespace skynet::net::impl {
 
 // tcp服务端
 class tcp_server_impl : public asio::noncopyable,
@@ -61,7 +63,7 @@ public:
 public:
     // start/close
     bool open(const std::string local_uri, bool is_reuse_addr = true) override;
-    bool open(const std::string local_ip, const uint16_t local_port, bool is_reuse_addr = true) override;
+    bool open(const std::string local_ip, uint16_t local_port, bool is_reuse_addr = true) override;
     bool open(std::initializer_list<std::pair<std::string, uint16_t>> local_endpoints, bool is_reuse_addr = true) override;
     void close() override;
 
@@ -79,30 +81,30 @@ protected:
     // tcp_acceptor_handler impl
 protected:
     // 接收连接成功
-    virtual void handle_accept_success(std::shared_ptr<tcp_acceptor> acceptor_ptr,
-                                       std::shared_ptr<tcp_session> session_ptr) override;
+    void handle_accept_success(std::shared_ptr<tcp_acceptor> acceptor_ptr,
+                               std::shared_ptr<tcp_session> session_ptr) override;
     // 接收连接失败
-    virtual void handle_accept_failed(std::shared_ptr<tcp_acceptor> acceptor_ptr,
-                                      std::shared_ptr<tcp_session> session_ptr,
-                                      int32_t err_code, std::string err_msg) override;
+    void handle_accept_failed(std::shared_ptr<tcp_acceptor> acceptor_ptr,
+                              std::shared_ptr<tcp_session> session_ptr,
+                              int32_t err_code, std::string err_msg) override;
 
     // tcp_session_handler impl
 protected:
     // tc session read complete
-    virtual void handle_session_read(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
+    void handle_session_read(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
     // tcp session write complete
-    virtual void handle_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
+    void handle_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
     // tcp session idle
-    virtual void handle_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type) override;
+    void handle_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type) override;
     // tcp session closed
-    virtual void handle_sessoin_close(std::shared_ptr<tcp_session> session_ptr) override;
+    void handle_sessoin_close(std::shared_ptr<tcp_session> session_ptr) override;
 
 private:
     std::string make_key(const asio::ip::tcp::endpoint& ep);
-    std::string make_key(const std::string& ip, const uint16_t port);
+    std::string make_key(const std::string& ip, uint16_t port);
 };
 
-} } }
+}
 
 #include "tcp_server.inl"
 

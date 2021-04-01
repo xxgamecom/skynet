@@ -1,4 +1,4 @@
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 // 初始化
 inline bool tcp_session_manager::init(int32_t session_pool_size,
@@ -70,5 +70,5 @@ inline session_id_t tcp_session_manager::generate_session_id()
     return id_generator_;
 }
 
-} } }
+}
 

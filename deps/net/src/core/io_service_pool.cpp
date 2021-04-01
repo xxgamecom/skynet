@@ -3,7 +3,7 @@
 
 #include <cassert>
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 io_service_pool_impl::io_service_pool_impl(uint32_t pool_size)
 :
@@ -37,5 +37,5 @@ void io_service_pool_impl::stop()
     select_index_ = 0;
 }
 
-} } }
+}
 

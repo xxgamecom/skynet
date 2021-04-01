@@ -3,7 +3,7 @@
 #include <sstream>
 #include <regex>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 // uri scheme part
 class uri_scheme final
@@ -32,7 +32,7 @@ public:
     static bool find_splash_splash(std::string str, std::string* out_ptr);
 };
 
-} }
+}
 
 #include "uri_scheme.inl"
 

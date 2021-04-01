@@ -9,7 +9,7 @@
 #include <atomic>
 #include <mutex>
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 class tcp_session_manager;
 
@@ -53,7 +53,7 @@ private:
 public:
     tcp_io_statistics_impl(std::shared_ptr<tcp_session_manager> session_manager_ptr,
                            std::shared_ptr<io_service> ios_ptr);
-    ~tcp_io_statistics_impl() = default;
+    ~tcp_io_statistics_impl() override = default;
 
 public:
     bool start() override;
@@ -81,7 +81,7 @@ private:
     void handle_timeout(const asio::error_code& ec);
 };
 
-} } }
+}
 
 #include "tcp_io_statistics.inl"
 

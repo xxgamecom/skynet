@@ -1,4 +1,4 @@
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 // 更新吞吐量计数器
 inline void tcp_io_statistics_impl::update_throughput()
@@ -97,4 +97,4 @@ inline double tcp_io_statistics_impl::largest_write_bytes_throughput()
     return largest_write_bytes_throughput_;
 }
 
-} } }
+}

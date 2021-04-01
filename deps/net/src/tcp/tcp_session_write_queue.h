@@ -7,7 +7,7 @@
 #include <deque>
 #include <mutex>
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 // tcp会话内部写消息队列, 线程不是完全安全(用于发送大数据时进行切片用)
 // 这里的内部保护只保证1个线程写的情况是安全的, 底层永远只有一个线程读(ios的IO线程)
@@ -51,7 +51,7 @@ public:
     bool is_empty();
 };
 
-} } }
+}
 
 #include "tcp_session_write_queue.inl"
 

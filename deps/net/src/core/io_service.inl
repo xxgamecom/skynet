@@ -1,4 +1,4 @@
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 inline asio::io_service& io_service_impl::get_raw_ios()
 {
@@ -23,5 +23,5 @@ inline void io_service_impl::stop()
     }
 }
 
-} } }
+}
 

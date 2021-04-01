@@ -4,7 +4,7 @@
 
 #include "tcp/tcp_session_def.h"
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 class tcp_session_manager;
 
@@ -34,5 +34,5 @@ private:
     void handle_timeout(const asio::error_code& ec);
 };
 
-} } }
+}
 

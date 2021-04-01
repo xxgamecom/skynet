@@ -1,4 +1,4 @@
-namespace skynet { namespace net {
+namespace skynet::net {
 
 inline const std::string& uri_host::value() const
 {
@@ -25,5 +25,5 @@ inline std::string uri_host::to_string(const uri_host& host)
     return host.value();
 }
 
-} }
+}
 

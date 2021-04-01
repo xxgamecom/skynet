@@ -1,4 +1,4 @@
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 inline void tcp_session_impl::set_event_handler(std::shared_ptr<tcp_session_handler> event_handler_ptr)
 {
@@ -99,5 +99,5 @@ inline void tcp_session_impl::async_write_once()
     }
 }
 
-} } }
+}
 

@@ -1,4 +1,4 @@
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 inline std::shared_ptr<io_service>& io_service_pool_impl::select_one()
 {
@@ -12,5 +12,5 @@ inline uint32_t io_service_pool_impl::pool_size() const
     return pool_size_;
 }
 
-} } }
+}
 

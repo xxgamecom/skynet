@@ -1,4 +1,4 @@
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 // 队列是否就绪
 inline bool tcp_session_write_queue::is_inited()
@@ -50,5 +50,5 @@ inline std::shared_ptr<io_buffer> tcp_session_write_queue::front()
         return write_queue_.front();
 }
 
-} } }
+}
 

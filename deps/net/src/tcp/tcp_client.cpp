@@ -2,7 +2,7 @@
 #include "tcp_connector.h"
 #include "tcp_session.h"
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 // 设置客户端服务外部处理器
 void tcp_client_impl::set_event_handler(std::shared_ptr<tcp_client_handler> event_handler_ptr)
@@ -37,7 +37,7 @@ bool tcp_client_impl::open()
 bool tcp_client_impl::connect(const std::string remote_uri,
                          int32_t timeout_seconds/* = 0*/,
                          const std::string local_ip/* = ""*/,
-                         const uint16_t local_port/* = 0*/)
+                         uint16_t local_port/* = 0*/)
 {
     // 连接之前确保已初始化
     assert(connector_ptr_ != nullptr && session_ptr_ != nullptr);
@@ -57,10 +57,10 @@ bool tcp_client_impl::connect(const std::string remote_uri,
 
 // 发起连接(单独提供地址和端口形式)
 bool tcp_client_impl::connect(const std::string remote_addr,
-                         const uint16_t remote_port,
+                         uint16_t remote_port,
                          int32_t timeout_seconds/* = 0*/,
                          const std::string local_ip/* = ""*/,
-                         const uint16_t local_port/* = 0*/)
+                         uint16_t local_port/* = 0*/)
 {
     // 连接之前确保已初始化
     assert(connector_ptr_ != nullptr && session_ptr_ != nullptr);
@@ -190,4 +190,4 @@ void tcp_client_impl::handle_sessoin_close(std::shared_ptr<tcp_session> session_
         event_handler_ptr_->handle_sessoin_close(session_ptr);
 }
 
-} } }
+}

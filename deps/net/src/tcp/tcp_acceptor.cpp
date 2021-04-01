@@ -1,7 +1,7 @@
 #include "tcp_acceptor.h"
 #include "tcp_session.h"
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 tcp_acceptor_impl::tcp_acceptor_impl(std::shared_ptr<io_service> ios_ptr,
                                      std::shared_ptr<tcp_acceptor_handler> event_handler_ptr/* = nullptr*/)
@@ -13,7 +13,7 @@ event_handler_ptr_(event_handler_ptr)
 
 // 打开acceptor
 bool tcp_acceptor_impl::open(const std::string local_ip,
-                             const uint16_t local_port,
+                             uint16_t local_port,
                              bool is_reuse_addr/* = true*/,
                              int32_t backlog/* = DEFAULT_BACKLOG*/)
 {
@@ -192,5 +192,5 @@ void tcp_acceptor_impl::handle_async_accept(std::shared_ptr<tcp_session> session
     }
 }
 
-} } }
+}
 

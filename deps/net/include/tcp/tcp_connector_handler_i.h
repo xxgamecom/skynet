@@ -4,7 +4,7 @@
 #include <string>
 #include <memory>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 class io_buffer;
 class tcp_session;
@@ -29,5 +29,5 @@ public:
     virtual void handle_connect_timeout(std::shared_ptr<tcp_session> session_ptr) = 0;
 };
 
-} }
+}
 

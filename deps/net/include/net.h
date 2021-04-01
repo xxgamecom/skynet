@@ -18,6 +18,7 @@
 #include "tcp/tcp_session_handler_i.h"
 
 #include "tcp/tcp_client_i.h"
+#include "tcp/tcp_client_config_i.h"
 #include "tcp/tcp_client_handler_i.h"
 
 #include "tcp/tcp_server_i.h"
@@ -26,7 +27,7 @@
 
 // udp
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 // create io service
 std::shared_ptr<io_service> create_io_service();
@@ -34,9 +35,7 @@ std::shared_ptr<io_service> create_io_service();
 std::shared_ptr<io_service_pool> create_io_service_pool(uint32_t pool_size);
 
 // create tcp session
-std::shared_ptr<tcp_session> create_tcp_session(int32_t msg_read_buf_size,
-                                                int32_t msg_write_buf_size,
-                                                int32_t msg_write_queue_size);
+std::shared_ptr<tcp_session> create_tcp_session(int32_t msg_read_buf_size, int32_t msg_write_buf_size, int32_t msg_write_queue_size);
 // create tcp connector
 std::shared_ptr<tcp_connector> create_tcp_connector(std::shared_ptr<io_service> ios_ptr);
 
@@ -45,6 +44,6 @@ std::shared_ptr<tcp_client> create_tcp_client();
 // create tcp server
 std::shared_ptr<tcp_server> create_tcp_server();
 
-} }
+}
 
 

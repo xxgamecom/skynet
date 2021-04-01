@@ -3,7 +3,7 @@
 #include "skynet.h"
 #include "log_config.h"
 
-namespace skynet { namespace service {
+namespace skynet::service {
 
 /**
  * c service mod: logger
@@ -33,5 +33,5 @@ public:
     static int logger_cb(service_context* svc_ctx, void* ud, int svc_msg_type, int session_id, uint32_t src_svc_handle, const void* msg, size_t sz);
 };
 
-} }
+}
 

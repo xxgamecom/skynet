@@ -13,7 +13,7 @@
 #include <chrono>
 #include <atomic>
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 // tcp会话, 内部有socket句柄, 用于两端通信
 // 会话内存估算: 只计算收发所需内存(1个读消息缓存, 1个写消息队列), 其他忽略
@@ -132,7 +132,7 @@ protected:
     void handle_async_write(const asio::error_code& ec, size_t bytes_transferred);
 };
 
-} } }
+}
 
 #include "tcp_session.inl"
 

@@ -1,4 +1,4 @@
-namespace skynet { namespace net {
+namespace skynet::net {
 
 inline uint16_t uri_port::value() const
 {
@@ -32,5 +32,5 @@ inline std::string uri_port::to_string(const uri_port& port)
     return ss.str();
 }
 
-} }
+}
 

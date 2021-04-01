@@ -10,12 +10,12 @@
 #include <cstdint>
 
 
-namespace skynet { namespace net {
-
 // forward declare
+namespace skynet::net {
 class tcp_session;
+}
 
-namespace impl {
+namespace skynet::net::impl {
 
 /**
  * tcp connector
@@ -46,10 +46,10 @@ public:
     // 连接(超时包括地址解析和实际连接所需时间)
     bool connect(std::shared_ptr<tcp_session> session_ptr,
                  const std::string remote_addr,
-                 const uint16_t remote_port,
+                 uint16_t remote_port,
                  int32_t timeout_seconds = 0,
                  const std::string local_ip = "",
-                 const uint16_t local_port = 0) override;
+                 uint16_t local_port = 0) override;
 
     // connect timer
 protected:
@@ -70,7 +70,7 @@ protected:
     void handle_timeout(std::shared_ptr<tcp_session> session_ptr, const asio::error_code& ec);
 };
 
-} } }
+}
 
 #include "tcp_connector.inl"
 

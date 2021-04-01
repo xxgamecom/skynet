@@ -3,7 +3,7 @@
 #include "tcp/tcp_acceptor_def.h"
 #include "base/socket_option_def.h"
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 // forward declare
 class tcp_session;
@@ -23,7 +23,7 @@ public:
 
 public:
     // 打开acceptor
-    virtual bool open(const std::string local_ip, const uint16_t local_port, bool is_reuse_addr = true, int32_t backlog = DEFAULT_BACKLOG) = 0;
+    virtual bool open(const std::string local_ip, uint16_t local_port, bool is_reuse_addr = true, int32_t backlog = DEFAULT_BACKLOG) = 0;
     // 关闭acceptor
     virtual void close() = 0;
 
@@ -39,4 +39,4 @@ public:
     virtual bool get_sock_option(sock_options opt, int32_t& value) = 0;
 };
 
-} }
+}

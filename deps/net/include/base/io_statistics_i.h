@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 /**
  * io statistics
@@ -35,4 +35,4 @@ public:
     virtual double largest_write_bytes_throughput() = 0;
 };
 
-} }
+}

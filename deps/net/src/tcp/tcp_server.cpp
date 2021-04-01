@@ -4,7 +4,7 @@
 
 #include "tcp/tcp_server_handler_i.h"
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 // 设置外部服务处理器
 void tcp_server_impl::set_event_handler(std::shared_ptr<tcp_server_handler> event_handler_ptr)
@@ -21,7 +21,7 @@ bool tcp_server_impl::open(const std::string local_uri, bool is_reuse_addr/* = t
 }
 
 // 打开服务
-bool tcp_server_impl::open(const std::string local_ip, const uint16_t local_port, bool is_reuse_addr/* = true*/)
+bool tcp_server_impl::open(const std::string local_ip, uint16_t local_port, bool is_reuse_addr/* = true*/)
 {
     return open({ std::make_pair(local_ip, local_port) }, is_reuse_addr);
 }
@@ -67,11 +67,13 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
 
         // 创建会话闲置检测器
         session_idle_checker_ptr_ = std::make_shared<tcp_session_idle_checker>(session_manager_ptr_, acceptor_ios_ptr_);
-        if (session_idle_checker_ptr_ == nullptr) break;
+        if (session_idle_checker_ptr_ == nullptr)
+            break;
 
         // 创建IO统计
         io_statistics_ptr_ = std::make_shared<tcp_io_statistics_impl>(session_manager_ptr_, acceptor_ios_ptr_);
-        if (io_statistics_ptr_ == nullptr) break;
+        if (io_statistics_ptr_ == nullptr)
+            break;
 
         std::shared_ptr<tcp_acceptor> acceptor_ptr;
         bool is_acceptor_ok = true;
@@ -81,7 +83,8 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
 
             // 确保还没有该地址的acceptor
             auto itr_find = acceptors_.find(key);
-            if (itr_find != acceptors_.end()) continue;
+            if (itr_find != acceptors_.end())
+                continue;
 
             // 创建acceptor
             acceptor_ptr = std::make_shared<tcp_acceptor_impl>(acceptor_ios_ptr_, shared_from_this());
@@ -108,7 +111,8 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
             // 添加到acceptor表
             acceptors_[key] = acceptor_ptr;
         }
-        if (is_acceptor_ok == false) break;
+        if (is_acceptor_ok == false)
+            break;
 
         // 启动会话闲置检测器
         if (session_idle_checker_ptr_->start(session_config_.idle_check_type(),
@@ -119,9 +123,7 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
 
         // 启动IO统计
         if (io_statistics_ptr_->start() == false)
-        {
             break;
-        }
 
         // 投递异步accept
         for (auto& itr : acceptors_)
@@ -139,7 +141,7 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
         is_ok = true;
     } while (0);
 
-    if (is_ok == false)
+    if (!is_ok)
     {
         close();
     }
@@ -259,5 +261,5 @@ void tcp_server_impl::handle_sessoin_close(std::shared_ptr<tcp_session> session_
     session_manager_ptr_->release_session(session_ptr);
 }
 
-} } }
+}
 

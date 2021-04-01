@@ -6,7 +6,7 @@
 #include <cstdarg>
 #include <regex>
 
-namespace skynet { namespace service {
+namespace skynet::service {
 
 #define DEFAULT_BACKLOG 128
 
@@ -403,5 +403,5 @@ int gate_service::gate_cb(service_context* svc_ctx, void* ud, int svc_msg_type, 
     return 0;
 }
 
-} }
+}
 

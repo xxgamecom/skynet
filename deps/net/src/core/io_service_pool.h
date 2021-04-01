@@ -7,11 +7,12 @@
 #include <vector>
 #include <mutex>
 
-namespace skynet { namespace net {
-
+// forward delcare
+namespace skynet::net {
 class io_service;
+}
 
-namespace impl {
+namespace skynet::net::impl {
 
 // io service pool
 class io_service_pool_impl : public io_service_pool
@@ -25,7 +26,7 @@ private:
 
 public:
     explicit io_service_pool_impl(uint32_t pool_size);
-    ~io_service_pool_impl() = default;
+    ~io_service_pool_impl() override = default;
 
 public:
     void run() override;
@@ -38,7 +39,7 @@ public:
     uint32_t pool_size() const override;
 };
 
-} } }
+}
 
 #include "io_service_pool.inl"
 

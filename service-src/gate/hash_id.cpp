@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <string>
 
-namespace skynet { namespace service {
+namespace skynet::service {
 
 void hash_id_init(hash_id* hi, int max)
 {
@@ -111,4 +111,4 @@ int hash_id_full(hash_id* hi)
     return hi->count == hi->cap;
 }
 
-} }
+}

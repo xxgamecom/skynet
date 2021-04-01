@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <thread>
 
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 //--------------------------------------------------------------------------
 // tcp_server_acceptor_config
@@ -157,7 +157,7 @@ public:
     int32_t idle_check_seconds() override;
 };
 
-} } }
+}
 
 #include "tcp_server_config.inl"
 

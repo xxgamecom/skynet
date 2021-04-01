@@ -2,9 +2,9 @@
 
 #include "asio.hpp"
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 static constexpr int32_t DEFAULT_BACKLOG = asio::ip::tcp::acceptor::max_connections;
 
-} }
+}
 

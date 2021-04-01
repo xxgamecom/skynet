@@ -7,7 +7,7 @@
 #include <memory>
 #include <list>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 /**
  * object pool, fixed length (not thread safe)
@@ -36,7 +36,7 @@ public:
     size_t used_count();
 };
 
-} }
+}
 
 #include "object_pool.inl"
 

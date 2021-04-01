@@ -4,7 +4,7 @@
 #include <sstream>
 #include <regex>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 // uri port part
 class uri_port final
@@ -28,7 +28,7 @@ public:
     static std::string to_string(const uri_port& port);
 };
 
-} }
+}
 
 #include "uri_port.inl"
 

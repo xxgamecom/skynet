@@ -1,4 +1,4 @@
-namespace skynet { namespace net { namespace impl {
+namespace skynet::net::impl {
 
 inline void tcp_connector_impl::set_event_handler(std::shared_ptr<tcp_connector_handler> event_handler_ptr)
 {
@@ -39,4 +39,4 @@ inline void tcp_connector_impl::stop_connect_timer()
     }
 }
 
-} } }
+}

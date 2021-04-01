@@ -1,6 +1,6 @@
 #include "io_buffer.h"
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 io_buffer::io_buffer(size_t buf_size/* = BUFFER_SIZE_DEFAULT*/)
 :
@@ -38,4 +38,4 @@ buf_size_(data_len)
     }
 }
 
-} }
+}

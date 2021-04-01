@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 //---------------------------------------------------
 // typedefs
@@ -23,5 +23,5 @@ enum idle_type
     IDLE_TYPE_BOTH = 3,             // read & write idle
 };
 
-} }
+}
 

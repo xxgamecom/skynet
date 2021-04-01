@@ -5,7 +5,7 @@
 #include <string>
 #include <regex>
 
-namespace skynet { namespace service {
+namespace skynet::service {
 
 static bool _handle_ctrl_cmd_kick(gate_service* gate_svc_ptr, std::vector<std::string>& param_info)
 {
@@ -211,5 +211,5 @@ void handle_ctrl_cmd(gate_service* gate_svc_ptr, const char* msg, int sz)
     }
 }
 
-} }
+}
 

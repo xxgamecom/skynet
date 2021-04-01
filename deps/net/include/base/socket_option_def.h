@@ -1,6 +1,6 @@
 #pragma once
 
-namespace skynet { namespace net {
+namespace skynet::net {
 
 /**
  * socket options
@@ -16,4 +16,4 @@ enum sock_options
     SOCK_OPT_BROADCAST = 5,                     // socket broadcast option
 };
 
-} }
+}

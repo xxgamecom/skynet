@@ -13,7 +13,7 @@ extern "C" {
 
 #include <arpa/inet.h>
 
-namespace skynet { namespace luaclib {
+namespace skynet::luaclib {
 
 #define QUEUE_SIZE          1024
 #define HASH_SIZE           4096
@@ -686,7 +686,7 @@ static int l_filter(lua_State* L)
     return 1;
 }
 
-} }
+}
 
 /**
  * skynet luaclib - skynet.netpack.tcp
