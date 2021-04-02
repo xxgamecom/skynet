@@ -496,10 +496,10 @@ int socket_server::send(send_buffer* buf)
             if (n < 0)
                 n = 0; // ignore error, let socket thread try again
 
-            // 发统计
+            // send statistics
             socket_ref.stat_send(n, time_);
 
-            // 写完
+            // send complete
             if (n == so.sz)
             {
                 so.free_func((void*)buf->data_ptr);
@@ -673,7 +673,7 @@ int socket_server::udp_send(const socket_udp_address* addr, send_buffer* buf)
                 int send_n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &sa.addr.s, sa_sz);
                 if (send_n >= 0)
                 {
-                    // sendto succ
+                    // send statistics
                     socket_ref.stat_send(send_n, time_);
                     so.free_func((void*)buf->data_ptr);
                     return 0;
@@ -1200,7 +1200,7 @@ int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message
             }
             else
             {
-                // statistics
+                // send statistics
                 socket_ref.stat_send(n, time_);
 
                 //
@@ -1733,6 +1733,7 @@ int socket_server::send_write_buffer_list_tcp(socket* socket_ptr, write_buffer_l
                 return close_write(socket_ptr, sl, result);
             }
 
+            // send statistics
             socket_ptr->stat_send((int)sz, time_);
             socket_ptr->wb_size -= sz;
             if (sz != tmp->sz)
@@ -1780,7 +1781,7 @@ int socket_server::send_write_buffer_list_udp(socket* socket_ptr, write_buffer_l
             return -1;
         }
 
-        //
+        // send statistics
         socket_ptr->stat_send(tmp->sz, time_);
 
         //

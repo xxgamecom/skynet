@@ -117,7 +117,7 @@ static int packreq_string(lua_State* L, int session, void* msg, uint32_t sz, int
     const char* name = lua_tolstring(L, 1, &namelen);
     if (name == nullptr || namelen < 1 || namelen > 255)
     {
-        skynet_free(msg);
+        delete[] msg;
         if (name == nullptr)
         {
             luaL_error(L, "name is not a string, it's a %s", lua_typename(L, lua_type(L, 1)));
@@ -196,7 +196,7 @@ static int packrequest(lua_State* L, int is_push)
     int session = luaL_checkinteger(L, 2);
     if (session <= 0)
     {
-        skynet_free(msg);
+        delete[] msg;
         return luaL_error(L, "Invalid request session %d", session);
     }
     int addr_type = lua_type(L, 1);
@@ -219,12 +219,12 @@ static int packrequest(lua_State* L, int is_push)
     {
         lua_createtable(L, multipak, 0);
         packreq_multi(L, session, msg, sz);
-        skynet_free(msg);
+        delete[] msg;
         return 3;
     }
     else
     {
-        skynet_free(msg);
+        delete[] msg;
         return 2;
     }
 }
@@ -273,8 +273,8 @@ static inline uint32_t unpack_uint32(const uint8_t* buf)
 
 static void return_buffer(lua_State* L, const char* buffer, int sz)
 {
-    void* ptr = skynet_malloc(sz);
-    memcpy(ptr, buffer, sz);
+    char* ptr = new char[sz];
+    ::memcpy(ptr, buffer, sz);
     lua_pushlightuserdata(L, ptr);
     lua_pushinteger(L, sz);
 }
@@ -603,7 +603,7 @@ static int l_append(lua_State* L)
 
     int sz = luaL_checkinteger(L, 3);
     lua_pushlstring(L, (const char*)buffer, sz);
-    skynet_free((void*)buffer);
+    delete[] buffer;
     lua_seti(L, 1, n + 1);
     return 0;
 }
@@ -617,7 +617,7 @@ static int l_concat(lua_State* L)
 
     int sz = lua_tointeger(L, -1);
     lua_pop(L, 1);
-    char* buff = (char*)skynet_malloc(sz);
+    char* buff = new char[sz];
     int idx = 2;
     int offset = 0;
     while (lua_geti(L, 1, idx) == LUA_TSTRING)
@@ -626,17 +626,17 @@ static int l_concat(lua_State* L)
         const char* str = lua_tolstring(L, -1, &s);
         if (s + offset > sz)
         {
-            skynet_free(buff);
+            delete[] buff;
             return 0;
         }
-        memcpy(buff + offset, str, s);
+        ::memcpy(buff + offset, str, s);
         lua_pop(L, 1);
         offset += s;
         ++idx;
     }
     if (offset != sz)
     {
-        skynet_free(buff);
+        delete[] buff;
         return 0;
     }
     // buff/sz will send to other service, See clusterd.lua

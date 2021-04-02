@@ -164,44 +164,37 @@ int node_socket::sendbuffer_low_priority(service_context* ctx, send_buffer* buff
 
 int node_socket::listen(service_context* ctx, const char* host, int port, int backlog)
 {
-    uint32_t src_svc_handle = ctx->svc_handle_;
-    return socket_server_->listen(src_svc_handle, host, port, backlog);
+    return socket_server_->listen(ctx->svc_handle_, host, port, backlog);
 }
 
 int node_socket::connect(service_context* ctx, const char *host, int port)
 {
-    uint32_t src_svc_handle = ctx->svc_handle_;
-    return socket_server_->connect(src_svc_handle, host, port);
+    return socket_server_->connect(ctx->svc_handle_, host, port);
 }
 
 int node_socket::bind(service_context* ctx, int fd)
 {
-    uint32_t src_svc_handle = ctx->svc_handle_;
-    return socket_server_->bind(src_svc_handle, fd);
+    return socket_server_->bind(ctx->svc_handle_, fd);
 }
 
 void node_socket::close(service_context* ctx, int socket_id)
 {
-    uint32_t src_svc_handle = ctx->svc_handle_;
-    socket_server_->close(src_svc_handle, socket_id);
+    socket_server_->close(ctx->svc_handle_, socket_id);
 }
 
 void node_socket::shutdown(service_context* ctx, int socket_id)
 {
-    uint32_t src_svc_handle = ctx->svc_handle_;
-    socket_server_->shutdown(src_svc_handle, socket_id);
+    socket_server_->shutdown(ctx->svc_handle_, socket_id);
 }
 
 void node_socket::start(service_context* ctx, int socket_id)
 {
-    uint32_t src_svc_handle = ctx->svc_handle_;
-    socket_server_->start(src_svc_handle, socket_id);
+    socket_server_->start(ctx->svc_handle_, socket_id);
 }
 
 void node_socket::pause(service_context* ctx, int socket_id)
 {
-    uint32_t src_svc_handle = ctx->svc_handle_;
-    socket_server_->pause(src_svc_handle, socket_id);
+    socket_server_->pause(ctx->svc_handle_, socket_id);
 }
 
 void node_socket::nodelay(service_context* ctx, int socket_id)
@@ -211,8 +204,7 @@ void node_socket::nodelay(service_context* ctx, int socket_id)
 
 int node_socket::udp(service_context* ctx, const char* addr, int port)
 {
-    uint32_t src_svc_handle = ctx->svc_handle_;
-    return socket_server_->udp(src_svc_handle, addr, port);
+    return socket_server_->udp(ctx->svc_handle_, addr, port);
 }
 
 int node_socket::udp_connect(service_context* ctx, int socket_id, const char* addr, int port)

@@ -19,13 +19,12 @@ public:
 private:
     // socket thread proc
     static void thread_socket(std::shared_ptr<monitor_data> monitor_data_ptr);
-    // monitor thread proc
-    static void thread_monitor(std::shared_ptr<monitor_data> monitor_data_ptr);
     // timer thread proc
     static void thread_timer(std::shared_ptr<monitor_data> monitor_data_ptr);
+    // monitor thread proc
+    static void thread_monitor(std::shared_ptr<monitor_data> monitor_data_ptr);
     // worker thread proc
     static void thread_worker(std::shared_ptr<monitor_data> monitor_data_ptr, int idx, int weight);
 };
-
 
 }

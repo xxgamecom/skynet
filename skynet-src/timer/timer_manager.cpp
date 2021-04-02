@@ -24,8 +24,6 @@
 #include "timer_manager.h"
 #include "timer.h"
 
-#include "../memory/skynet_malloc.h"
-
 #include "../mq/mq_msg.h"
 #include "../mq/mq_private.h"
 
@@ -82,7 +80,7 @@ static timer* create_timer()
 // add a timer
 static void timer_add(timer* t, void* arg, size_t sz, int time)
 {
-     timer_node* node = (timer_node*)skynet_malloc(sizeof(timer_node) + sz);
+     timer_node* node = (timer_node*) new char[sizeof(timer_node) + sz];
      ::memcpy(node + 1, arg, sz);
 
      //
@@ -144,7 +142,7 @@ static inline void dispatch_list(timer_node* current)
 
         timer_node* temp = current;
         current = current->next;
-        skynet_free(temp);
+        delete[] (char*)temp;
     } while (current != nullptr);
 }
 

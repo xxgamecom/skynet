@@ -26,8 +26,10 @@ bool tcp_io_statistics_impl::start()
         return false;
     }
 
-    calc_timer_.async_wait(std::bind(&tcp_io_statistics_impl::handle_timeout,
-                                     shared_from_this(), std::placeholders::_1));
+    auto self(shared_from_this());
+    calc_timer_.async_wait([this, self](const asio::error_code& ec) {
+        handle_timeout(ec);
+    });
 
     reset();
 
@@ -96,8 +98,10 @@ void tcp_io_statistics_impl::handle_timeout(const asio::error_code& ec)
             return;
         }
 
-        calc_timer_.async_wait(std::bind(&tcp_io_statistics_impl::handle_timeout,
-                                         shared_from_this(), std::placeholders::_1));
+        auto self(shared_from_this());
+        calc_timer_.async_wait([this, self](const asio::error_code& ec) {
+            handle_timeout(ec);
+        });
     }
 }
 
