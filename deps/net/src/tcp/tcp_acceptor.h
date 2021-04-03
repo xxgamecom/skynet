@@ -45,7 +45,7 @@ public:
     void accept_once(std::shared_ptr<tcp_session> session_ptr) override;
 
     // 本地端点信息
-    asio::ip::tcp::endpoint local_endpoint() const;
+    asio::ip::tcp::endpoint local_endpoint() const override;
 
     // socket选项
 public:

@@ -34,14 +34,14 @@ void service_monitor::check()
     // no message or 处理消息比较耗时
     if (check_version_ == last_version_)
     {
-        // 说明可能死循环或比较耗时
+        // 可能死循环或比较耗时
         if (dst_svc_handle_ != 0)
         {
             // process blocked service
             service_manager::instance()->process_blocked_service(dst_svc_handle_);
 
             // just output a log message
-            log_warn(nullptr, fmt::format("A message from [ :{:08X} ] to [ :{:08X} ] maybe in an dead loop (last_version = {})", src_svc_handle_, dst_svc_handle_, last_version_.load()));
+            log_warn(nullptr, fmt::format("A message from [:{:08X}] to [:{:08X}] maybe in an dead loop (last_version = {})", src_svc_handle_, dst_svc_handle_, last_version_.load()));
         }
     }
     else

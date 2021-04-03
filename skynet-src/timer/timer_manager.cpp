@@ -212,37 +212,33 @@ void timer_manager::init()
     TI_->current_tick = time_helper::get_time_tick();
 }
 
-// 创建定时操作
-// @param handle
-// @param time <=0时, 说明是需要立即执行, 无需创建定时器节点
-//              >0时, 说明需要定时执行, 创建一个定时器节点, 后续定时触发操作
-// @param session
-int timer_manager::timeout(uint32_t handle, int time, int session)
+
+int timer_manager::timeout(uint32_t svc_handle, int time, int session_id)
 {
-    // time<=0说明是立即发送消息, 无需定时处理
+    // time<=0, execute immediately
     if (time <= 0)
     {
         service_message msg;
         msg.src_svc_handle = 0;
-        msg.session_id = session;
+        msg.session_id = session_id;
         msg.data_ptr = nullptr;
         msg.data_size = (size_t)SERVICE_MSG_TYPE_RESPONSE << MESSAGE_TYPE_SHIFT;
 
-        if (service_manager::instance()->push_service_message(handle, &msg))
+        if (service_manager::instance()->push_service_message(svc_handle, &msg))
         {
             return -1;
         }
     }
-    // 定时发送消息, 增加一个定时器, 后续定时触发
+    // execute regularly, add a timer node
     else
     {
         timer_event event;
-        event.svc_handle = handle;
-        event.session = session;
+        event.svc_handle = svc_handle;
+        event.session = session_id;
         timer_add(TI_, &event, sizeof(event), time);
     }
 
-    return session;
+    return session_id;
 }
 
 // 刷新进程时间, 在定时器线程中定期执行, 执行频率: 2.5ms

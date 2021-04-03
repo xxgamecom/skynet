@@ -30,8 +30,8 @@ public:
     // 投递一次异步accept
     virtual void accept_once(std::shared_ptr<tcp_session> session_ptr) = 0;
 
-//    // 本地端点信息
-//    asio::ip::tcp::endpoint local_endpoint() const;
+    // 本地端点信息
+    virtual asio::ip::tcp::endpoint local_endpoint() const = 0;
 
     // socket options
 public:
