@@ -66,8 +66,8 @@ protected:
     // handle async connect
     void handle_async_connect(std::shared_ptr<tcp_session> session_ptr, const asio::error_code& ec);
 
-    // handle timeout
-    void handle_timeout(std::shared_ptr<tcp_session> session_ptr, const asio::error_code& ec);
+    // handle connect timeout
+    void handle_connect_timeout(std::shared_ptr<tcp_session> session_ptr, const asio::error_code& ec);
 };
 
 }

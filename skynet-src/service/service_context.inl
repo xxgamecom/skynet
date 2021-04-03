@@ -3,14 +3,14 @@ namespace skynet {
 inline int service_context::new_session()
 {
     // session always be a positive number
-    int session = ++session_id_;
-    if (session <= 0)
+    int session_id = ++session_id_;
+    if (session_id <= 0)
     {
         session_id_ = 1;
         return 1;
     }
 
-    return session;
+    return session_id;
 }
 
 inline void service_context::grab()

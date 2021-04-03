@@ -30,7 +30,7 @@ private:
     };
 
 private:
-    volatile uint64_t                   time_ = 0;                                      // 
+    volatile uint64_t                   time_ = 0;                                      // used to statistics
 
     pipe                                pipe_;                                          //
     bool                                need_check_ctrl_cmd_ = true;                    // 是否需要检查控制命令

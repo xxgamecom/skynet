@@ -81,9 +81,13 @@ inline void tcp_session_impl::async_read_once()
 {
     // read some data
     msg_read_buf_ptr_->clear();
+
+    //
+    auto self(shared_from_this());
     socket_ptr_->async_read_some(asio::buffer(msg_read_buf_ptr_->data(), msg_read_buf_ptr_->capacity()),
-                                 std::bind(&tcp_session_impl::handle_async_read, shared_from_this(),
-                                           std::placeholders::_1, std::placeholders::_2));
+                                 [this, self](const asio::error_code& ec, size_t bytes_transferred) {
+                                     handle_async_read(ec, bytes_transferred);
+                                 });
 }
 
 inline void tcp_session_impl::async_write_once()
@@ -92,10 +96,11 @@ inline void tcp_session_impl::async_write_once()
     std::shared_ptr<io_buffer> buf_ptr = msg_write_queue_.front();
     if (buf_ptr != nullptr)
     {
-        asio::async_write(*socket_ptr_,
-                          asio::buffer(buf_ptr->data(), buf_ptr->data_size()),
-                          std::bind(&tcp_session_impl::handle_async_write, shared_from_this(),
-                                    std::placeholders::_1, std::placeholders::_2));
+        auto self(shared_from_this());
+        asio::async_write(*socket_ptr_, asio::buffer(buf_ptr->data(), buf_ptr->data_size()),
+                          [this, self](const asio::error_code& ec, size_t bytes_transferred) {
+                              handle_async_write(ec, bytes_transferred);
+                          });
     }
 }
 

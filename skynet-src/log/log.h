@@ -10,9 +10,6 @@ namespace skynet {
 
 class service_context;
 
-// log to logger service
-//void log(service_context* svc_ctx, const char* msg, ...);
-
 void log_debug(service_context* svc_ctx, const char* msg);
 void log_info(service_context* svc_ctx, const char* msg);
 void log_warn(service_context* svc_ctx, const char* msg);

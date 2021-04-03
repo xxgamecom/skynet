@@ -422,7 +422,7 @@ const char* service_manager::_insert_name_before(const char* svc_name, uint32_t 
 }
 
 
-// 创建服务ctx
+// release service context
 service_context* service_manager::release_service(service_context* svc_ctx)
 {
     // need delete service
@@ -461,7 +461,9 @@ int service_manager::send(service_context* svc_ctx, uint32_t src_svc_handle, uin
     if ((msg_sz & MESSAGE_TYPE_MASK) != msg_sz)
     {
         log_error(svc_ctx, fmt::format("The message to {:08X} is too large", dst_svc_handle));
-        if (svc_msg_type & MESSAGE_TAG_DONT_COPY)
+
+        // need release msg
+        if ((svc_msg_type & MESSAGE_TAG_DONT_COPY) != 0)
         {
             delete[] msg;
         }

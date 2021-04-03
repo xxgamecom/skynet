@@ -203,13 +203,13 @@ mq_private* node::dispatch_message(service_monitor& svc_monitor, mq_private* q, 
 
     // next private queue
     assert(q == svc_ctx->queue_);
-    mq_private* nq = mq_global::instance()->pop();
-    if (nq != nullptr)
+    mq_private* next_q = mq_global::instance()->pop();
+    if (next_q != nullptr)
     {
-        // If global mq is not empty, push q back, and return next queue (nq);
+        // If global mq is not empty, push q back, and return next queue;
         // Else (global mq is empty or block, don't push q back, and return q again (for next dispatch).
         mq_global::instance()->push(q);
-        q = nq;
+        q = next_q;
     }
 
     service_manager::instance()->release_service(svc_ctx);

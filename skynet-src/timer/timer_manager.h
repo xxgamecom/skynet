@@ -13,6 +13,8 @@ struct timer;
  *
  * 1) timer precision: 10ms. it means 1 tick = 10ms.
  * 2)
+ *
+ * TODO: MOVE this module to net, use io_service schedule.
  */
 class timer_manager
 {
@@ -24,18 +26,26 @@ public:
 
     // timer_manager
 private:
-    timer*                      TI_ = nullptr;                  // todo: test move to cpp, and static
+    timer* TI_ = nullptr;
 
 public:
     //
     void init();
 
 public:
-    // 帧函数, 定时器定时刷新(0.0025秒/帧)
+    // 定时器帧函数 (update interval: 2.5ms)
     void update_time();
 
-    // timeout function
-    int timeout(uint32_t handle, int time, int session);
+    /**
+     * create timer function
+     *
+     * @param svc_handle
+     * @param time <=0, execute immediately. note: timer node are not created.
+     *              >0, execute regularly. will create a timer node.
+     * @param session_id
+     * @return
+     */
+    int timeout(uint32_t svc_handle, int time, int session_id);
 
     // the number of ticks since the skynet node started. (ticks, 1 tick = 10ms)
     uint64_t now();

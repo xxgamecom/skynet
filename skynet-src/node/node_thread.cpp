@@ -23,15 +23,15 @@ namespace skynet {
 // service work thread status monitor
 struct monitor_data
 {
-    int                                 work_thread_num = 0;            // number of work thread
-    std::shared_ptr<service_monitor>    svc_monitors;                   // service work thread monitor array
+    int work_thread_num = 0;                            // number of work thread
+    std::shared_ptr<service_monitor> svc_monitors;      // service work thread monitor array
 
-    int                                 work_thread_sleep_count = 0;    // number of sleep worker threads
-    bool                                is_work_thread_quit = false;    // work thread quit flag
+    int work_thread_sleep_count = 0;                    // number of sleep worker threads
+    bool is_work_thread_quit = false;                   // work thread quit flag
 
     //
-    std::mutex                          mutex;                          //
-    std::condition_variable             cond;                           //
+    std::mutex mutex;                                   //
+    std::condition_variable cond;                       //
 };
 
 // sighup handle
@@ -64,7 +64,7 @@ const int WORKER_THREAD_WEIGHT_COUNT = sizeof(WORKER_THREAD_WEIGHT) / sizeof(WOR
 // start threads
 void node_thread::start(int work_thread_num)
 {
-    // 注册SIGHUP信号处理器, 用于处理 log 文件 reopen
+    // register hup signal handler, used for reopen log file, TODO: 废弃
     signal_helper::handle_sighup(&handle_hup);
 
     // actually thread count: worker thread count + 3 (1 monitor thread, 1 timer thread, 1 socket thread)
@@ -128,39 +128,11 @@ void node_thread::thread_socket(std::shared_ptr<monitor_data> monitor_data_ptr)
     }
 }
 
-void node_thread::thread_monitor(std::shared_ptr<monitor_data> monitor_data_ptr)
-{
-    int n = monitor_data_ptr->work_thread_num;
-    for (;;)
-    {
-        // check abort
-        if (service_manager::instance()->svc_count() == 0)
-            break;
-
-        // check dead lock or blocked
-        for (int i = 0; i < n; i++)
-        {
-            monitor_data_ptr->svc_monitors.get()[i].check();
-        }
-
-        // check interval: 5 seconds
-        for (int i = 0; i < 5; i++)
-        {
-            // check abort per 1 second
-            if (service_manager::instance()->svc_count() == 0)
-                break;
-
-            // sleep 1 second
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-    }
-}
-
 void node_thread::thread_timer(std::shared_ptr<monitor_data> monitor_data_ptr)
 {
     for (;;)
     {
-        //
+        // update timer
         timer_manager::instance()->update_time();
         // update socket server time
         node_socket::instance()->update_time();
@@ -202,6 +174,41 @@ void node_thread::thread_timer(std::shared_ptr<monitor_data> monitor_data_ptr)
     std::unique_lock<std::mutex> lock(monitor_data_ptr->mutex);
     monitor_data_ptr->is_work_thread_quit = true;
     monitor_data_ptr->cond.notify_all();
+}
+
+/**
+ * monitor thread
+ * used to check dead lock or blocked (service work thread).
+ * check interval: 5 seconds
+ *
+ * @param monitor_data_ptr
+ */
+void node_thread::thread_monitor(std::shared_ptr<monitor_data> monitor_data_ptr)
+{
+    int work_thread_num = monitor_data_ptr->work_thread_num;
+    for (;;)
+    {
+        // check abort
+        if (service_manager::instance()->svc_count() == 0)
+            break;
+
+        // check dead lock or blocked
+        for (int i = 0; i < work_thread_num; i++)
+        {
+            monitor_data_ptr->svc_monitors.get()[i].check();
+        }
+
+        // check interval: 5 seconds
+        for (int i = 0; i < 5; i++)
+        {
+            // check abort per 1 second
+            if (service_manager::instance()->svc_count() == 0)
+                break;
+
+            // sleep 1 second
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+    }
 }
 
 void node_thread::thread_worker(std::shared_ptr<monitor_data> monitor_data_ptr, int idx, int weight)

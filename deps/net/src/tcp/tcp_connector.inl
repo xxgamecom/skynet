@@ -21,8 +21,10 @@ inline bool tcp_connector_impl::start_connect_timer(std::shared_ptr<tcp_session>
             return false;
         }
 
-        connect_timer_ptr_->async_wait(std::bind(&tcp_connector_impl::handle_timeout,
-                                                 shared_from_this(), session_ptr, std::placeholders::_1));
+        auto self(shared_from_this());
+        connect_timer_ptr_->async_wait([this, self, session_ptr](const asio::error_code& ec) {
+            handle_connect_timeout(session_ptr, ec);
+        });
     }
 
     return true;

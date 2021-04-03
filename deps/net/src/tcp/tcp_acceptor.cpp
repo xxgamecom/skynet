@@ -86,9 +86,11 @@ void tcp_acceptor_impl::accept_once(std::shared_ptr<tcp_session> session_ptr)
     assert(session_ptr != nullptr && session_ptr->is_open() == false);
     assert(acceptor_ptr_ != nullptr && acceptor_ptr_->is_open());
 
-    acceptor_ptr_->async_accept(*(session_ptr->get_socket()),
-                                std::bind(&tcp_acceptor_impl::handle_async_accept,
-                                          shared_from_this(), session_ptr, std::placeholders::_1));
+    auto self(shared_from_this());
+    acceptor_ptr_->async_accept(*(session_ptr->get_socket()), [this, self, session_ptr](const asio::error_code& ec) {
+        handle_async_accept(session_ptr, ec);
+    });
+
 }
 
 // socket选项

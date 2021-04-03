@@ -1,7 +1,7 @@
 #include "socket_addr.h"
 #include "socket.h"
 
-#include "../utils/string_helper.h"
+#include "fmt/format.h"
 
 #include <cstring>
 
@@ -18,7 +18,7 @@ std::string socket_addr::to_string() const
     if (::inet_ntop(addr.s.sa_family, sin_addr, tmp, sizeof(tmp)) == nullptr)
         return "";
 
-    return string_helper::format("%s:%d", tmp, sin_port);
+    return fmt::format("{}:{}", tmp, sin_port);
 }
 
 bool socket_addr::to_string(char* buf_ptr, size_t buf_sz) const
