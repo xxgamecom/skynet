@@ -7,6 +7,46 @@
 
 namespace skynet::service {
 
+static bool _handle_ctrl_cmd_start(gate_service* gate_svc_ptr, std::vector<std::string>& param_info)
+{
+    // check param num
+    if (param_info.size() < 1)
+    {
+        log_error(gate_svc_ptr->svc_ctx_, "[gate] start failed, the number of param must == 1");
+        return false;
+    }
+
+    int socket_id = 0;
+    try
+    {
+        socket_id = std::stoi(param_info[0]);
+    }
+    catch (...)
+    {
+        log_error(gate_svc_ptr->svc_ctx_, "[gate] start failed, invalid socket id");
+        return false;
+    }
+
+    int id = hash_id_lookup(&gate_svc_ptr->hash_, socket_id);
+    if (id >= 0)
+    {
+        node_socket::instance()->start(gate_svc_ptr->svc_ctx_, socket_id);
+    }
+
+    return true;
+}
+
+static bool _handle_ctrl_cmd_close(gate_service* gate_svc_ptr)
+{
+    if (gate_svc_ptr->listen_id_ >= 0)
+    {
+        node_socket::instance()->close(gate_svc_ptr->svc_ctx_, gate_svc_ptr->listen_id_);
+        gate_svc_ptr->listen_id_ = -1;
+    }
+
+    return true;
+}
+
 static bool _handle_ctrl_cmd_kick(gate_service* gate_svc_ptr, std::vector<std::string>& param_info)
 {
     // check param num
@@ -107,45 +147,6 @@ static bool _handle_ctrl_cmd_broker(gate_service* gate_svc_ptr, std::vector<std:
     return true;
 }
 
-static bool _handle_ctrl_cmd_start(gate_service* gate_svc_ptr, std::vector<std::string>& param_info)
-{
-    // check param num
-    if (param_info.size() < 1)
-    {
-        log_error(gate_svc_ptr->svc_ctx_, "[gate] start failed, the number of param must == 1");
-        return false;
-    }
-
-    int socket_id = 0;
-    try
-    {
-        socket_id = std::stoi(param_info[0]);
-    }
-    catch (...)
-    {
-        log_error(gate_svc_ptr->svc_ctx_, "[gate] start failed, invalid socket id");
-        return false;
-    }
-
-    int id = hash_id_lookup(&gate_svc_ptr->hash_, socket_id);
-    if (id >= 0)
-    {
-        node_socket::instance()->start(gate_svc_ptr->svc_ctx_, socket_id);
-    }
-
-    return true;
-}
-
-static bool _handle_ctrl_cmd_close(gate_service* gate_svc_ptr)
-{
-    if (gate_svc_ptr->listen_id_ >= 0)
-    {
-        node_socket::instance()->close(gate_svc_ptr->svc_ctx_, gate_svc_ptr->listen_id_);
-        gate_svc_ptr->listen_id_ = -1;
-    }
-
-    return true;
-}
 
 void handle_ctrl_cmd(gate_service* gate_svc_ptr, const char* msg, int sz)
 {

@@ -25,7 +25,7 @@ inline bool tcp_server_impl::do_accept(std::shared_ptr<tcp_acceptor> acceptor_pt
     session_ptr->set_event_handler(shared_from_this());
 
     // 设置会话
-    if (session_ptr->open(session_ios_pool_ptr_->select_one()) == false)
+    if (!session_ptr->open(session_ios_pool_ptr_->select_one()))
     {
         session_ptr->close();
         session_manager_ptr_->release_session(session_ptr);

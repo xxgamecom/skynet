@@ -20,3 +20,6 @@ list(APPEND SKYNET_NET_SRC ${SKYNET_NET_HEADER})
 # target libnet.a
 add_library(net STATIC src/net.cpp ${SKYNET_NET_SRC})
 target_link_libraries(net )
+
+# examples
+add_subdirectory(${SKYNET_ROOT_PATH}/deps/net/examples)

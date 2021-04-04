@@ -86,40 +86,15 @@ public:
 // legacy APIs
 //
 
-static inline void sendbuffer_init_(send_buffer* buf, int socket_id, const void* buffer, int sz)
-{
-    buf->socket_id = socket_id;
-    buf->data_ptr = buffer;
-    if (sz < 0)
-    {
-        buf->type = BUFFER_TYPE_OBJECT;
-    }
-    else
-    {
-        buf->type = BUFFER_TYPE_MEMORY;
-    }
-    buf->data_size = (size_t)sz;
-}
-
 static inline int skynet_socket_send(service_context* ctx, int socket_id, void* buffer, int sz)
 {
-    send_buffer tmp;
-    sendbuffer_init_(&tmp, socket_id, buffer, sz);
-    return node_socket::instance()->sendbuffer(ctx, &tmp);
-}
+    send_buffer buf;
+    buf.socket_id = socket_id;
+    buf.data_ptr = buffer;
+    buf.type = sz < 0 ? BUFFER_TYPE_OBJECT : BUFFER_TYPE_MEMORY;
+    buf.data_size = (size_t)sz;
 
-static inline int skynet_socket_send_low_priority(service_context* ctx, int socket_id, void* buffer, int sz)
-{
-    send_buffer tmp;
-    sendbuffer_init_(&tmp, socket_id, buffer, sz);
-    return node_socket::instance()->sendbuffer_low_priority(ctx, &tmp);
-}
-
-static inline int skynet_socket_udp_send(service_context* ctx, int socket_id, const char* address, const void* buffer, int sz)
-{
-    send_buffer tmp;
-    sendbuffer_init_(&tmp, socket_id, buffer, sz);
-    return node_socket::instance()->udp_sendbuffer(ctx, address, &tmp);
+    return node_socket::instance()->sendbuffer(ctx, &buf);
 }
 
 }

@@ -4,7 +4,7 @@ set(SKYENT_NODE_HEADER
     node/node_env.h
     node/node_thread.h
     node/node_socket.h
-    node/node_socket.inl
+    node/node_socket_new.h
 )
 
 set(SKYNET_NODE_SRC
@@ -13,4 +13,5 @@ set(SKYNET_NODE_SRC
     node/node_env.cpp
     node/node_thread.cpp
     node/node_socket.cpp
+    node/node_socket_new.cpp
 )

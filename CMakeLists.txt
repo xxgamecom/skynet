@@ -57,7 +57,7 @@ message(STATUS "SKYNET_BUILD_DIR            : " ${PROJECT_BINARY_DIR})
 #------------------------------------------------------
 
 # output path
-set(EXECUTABLE_OUTPUT_PATH "${SKYNET_BIN_PATH}")
+#set(EXECUTABLE_OUTPUT_PATH "${SKYNET_BIN_PATH}")
 
 # include path
 include_directories("${SKYNET_ROOT_PATH}/deps/lua")
@@ -112,5 +112,4 @@ if (BUILD_SKYNET_TESTS)
     add_subdirectory(${SKYNET_ROOT_PATH}/tests)
 endif()
 
-add_subdirectory(${SKYNET_ROOT_PATH}/tests/net)
 

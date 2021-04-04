@@ -72,20 +72,6 @@ public:
 public:
     virtual bool set_sock_option(sock_options opt, int32_t value) = 0;
     virtual bool get_sock_option(sock_options opt, int32_t& value) = 0;
-
-//    // 异步投递
-//protected:
-//    // 投递一次异步读操作
-//    void async_read_once();
-//    // 投递一个异步写操作
-//    void async_write_once();
-//
-//    // 处理函数
-//protected:
-//    // 处理完成的读操作
-//    void handle_async_read(const asio::error_code& ec, size_t bytes_transferred);
-//    // 处理完成的写操作
-//    void handle_async_write(const asio::error_code& ec, size_t bytes_transferred);
 };
 
 }

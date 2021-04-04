@@ -15,7 +15,7 @@ void tcp_server_impl::set_event_handler(std::shared_ptr<tcp_server_handler> even
 bool tcp_server_impl::open(const std::string local_uri, bool is_reuse_addr/* = true*/)
 {
     uri_codec uri = uri_codec::from_string(local_uri);
-    if (uri.is_valid() == false) return false;
+    if (!uri.is_valid()) return false;
 
     return open(uri.host().value(), uri.port().value(), is_reuse_addr);
 }

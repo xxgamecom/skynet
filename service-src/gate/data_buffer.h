@@ -6,30 +6,30 @@ namespace skynet::service {
 
 struct message
 {
-    char*                       buffer = nullptr;
-    int                         size = 0;
-    message*                    next = nullptr;
+    char* buffer = nullptr;
+    int size = 0;
+    message* next = nullptr;
 };
 
 struct data_buffer
 {
-    int                         header = 0;
-    int                         offset = 0;
-    int                         size = 0;
-    message*                    head = nullptr;
-    message*                    tail = nullptr;
+    int header = 0;
+    int offset = 0;
+    int size = 0;
+    message* head = nullptr;
+    message* tail = nullptr;
 };
 
 struct message_pool_list
 {
-    message_pool_list*          next = nullptr;
-    message                     pool[MESSAGE_POOL_SIZE];
+    message_pool_list* next = nullptr;
+    message pool[MESSAGE_POOL_SIZE];
 };
 
 struct message_pool
 {
-    message_pool_list*          pool = nullptr;
-    message*                    freelist = nullptr;
+    message_pool_list* pool = nullptr;
+    message* freelist = nullptr;
 };
 
 void messagepool_free(message_pool* pool);

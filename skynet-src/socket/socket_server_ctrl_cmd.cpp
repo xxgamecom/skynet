@@ -106,12 +106,12 @@ int prepare_ctrl_cmd_request_open(ctrl_cmd_package& cmd, uint64_t svc_handle, in
     return len;
 }
 
-int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int fd)
+int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int os_fd)
 {
     // cmd data
     cmd.u.bind.svc_handle = svc_handle;
     cmd.u.bind.socket_id = socket_id;
-    cmd.u.bind.fd = fd;
+    cmd.u.bind.fd = os_fd;
 
     // actually length
     int len = sizeof(cmd.u.bind);
@@ -123,12 +123,12 @@ int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint64_t svc_handle, in
     return len;
 }
 
-int prepare_ctrl_cmd_request_listen(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int fd)
+int prepare_ctrl_cmd_request_listen(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int listen_fd)
 {
     // cmd data
     cmd.u.listen.svc_handle = svc_handle;
     cmd.u.listen.socket_id = socket_id;
-    cmd.u.listen.fd = fd;
+    cmd.u.listen.fd = listen_fd;
 
     // actually length
     int len = sizeof(cmd.u.listen);
@@ -136,7 +136,6 @@ int prepare_ctrl_cmd_request_listen(ctrl_cmd_package& cmd, uint64_t svc_handle, 
     // cmd header
     cmd.header[6] = (uint8_t)'L';
     cmd.header[7] = (uint8_t)len;
-
 
     return len;
 }

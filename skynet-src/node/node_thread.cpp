@@ -1,5 +1,4 @@
 #include "node_thread.h"
-
 #include "node.h"
 #include "node_socket.h"
 
@@ -17,6 +16,8 @@
 #include <iostream>
 #include <thread>
 #include <csignal>
+#include <mutex>
+#include <condition_variable>
 
 namespace skynet {
 

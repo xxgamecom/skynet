@@ -32,6 +32,9 @@ set(SKYNET_CORE_SRC skynet.cpp
 )
 list(APPEND SKYNET_CORE_SRC ${SKYNET_CORE_HEADER})
 
+# output path
+set(EXECUTABLE_OUTPUT_PATH "${SKYNET_BIN_PATH}")
+
 # target executable (skynet)
 add_executable(skynet ${SKYNET_CORE_SRC})
 if (MACOSX)

@@ -48,20 +48,18 @@ public:
 
 int32_t main(int32_t argc, char* argv[])
 {
-    std::string local_ip = "";
-    uint16_t local_port = 10001;
+    std::cout << "create server" << std::endl;
 
     // create server
-    std::cout << "create server" << std::endl;
     auto server_ptr = skynet::net::create_tcp_server();
 
-    std::shared_ptr<tcp_server_handler> server_handler_ptr = std::make_shared<tcp_server_handler>();
+    // create server handler
+    auto server_handler_ptr = std::make_shared<tcp_server_handler>();
     server_ptr->set_event_handler(server_handler_ptr);
 
     // open server
     std::cout << "open server" << std::endl;
-    //if (server_ptr->open(local_ip, local_port) == false)
-    if (server_ptr->open({std::make_pair(local_ip, local_port), std::make_pair("", 8989)}) == false)
+    if (!server_ptr->open({ std::make_pair("", 10001), std::make_pair("", 8989) }))
     {
         std::cout << "open server failed" << std::endl;
         return 0;

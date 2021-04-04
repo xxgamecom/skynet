@@ -118,7 +118,7 @@ void socket_server::fini()
 
 // @return -1 failed, socket fd
 //         family: AF_INET, AF_INET6
-static int do_bind(const char* host, int port, int protocol_type, int* family)
+static int _do_bind(const char* host, int port, int protocol_type, int* family)
 {
     struct addrinfo ai_hints;
     memset(&ai_hints, 0, sizeof(ai_hints));
@@ -128,7 +128,7 @@ static int do_bind(const char* host, int port, int protocol_type, int* family)
     {
         ai_hints.ai_socktype = SOCK_STREAM;
     }
-        // udp
+    // udp
     else
     {
         assert(protocol_type == IPPROTO_UDP);
@@ -180,11 +180,11 @@ static int do_bind(const char* host, int port, int protocol_type, int* family)
     return fd;
 }
 
-static int do_listen(const char* host, int port, int backlog)
+static int _do_listen(const char* host, int port, int backlog)
 {
     // bind
     int family = 0;
-    int listen_fd = do_bind(host, port, IPPROTO_TCP, &family);
+    int listen_fd = _do_bind(host, port, IPPROTO_TCP, &family);
     if (listen_fd < 0)
     {
         return -1;
@@ -204,7 +204,7 @@ static int do_listen(const char* host, int port, int backlog)
 int socket_server::listen(uint64_t svc_handle, const char* addr, int port, int backlog)
 {
     // 调用unix系统接口bind，listen获取一个fd
-    int listen_fd = do_listen(addr, port, backlog);
+    int listen_fd = _do_listen(addr, port, backlog);
     if (listen_fd < 0)
         return -1;
 
@@ -285,7 +285,7 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
             // pipe有数据可读
             if (pipe_.is_readable())
             {
-                int type = _recv_ctrl_cmd(result);
+                int type = handle_ctrl_cmd(result);
                 if (type == -1)
                     continue;
 
@@ -477,7 +477,7 @@ int socket_server::send(send_buffer* buf)
             {
                 n = ::write(socket_ref.socket_fd, so.buffer, so.sz);
             }
-                // udp
+            // udp
             else
             {
                 socket_addr sa;
@@ -561,7 +561,7 @@ int socket_server::send_low_priority(send_buffer* buf)
     return 0;
 }
 
-int socket_server::bind(uint64_t svc_handle, int fd)
+int socket_server::bind(uint64_t svc_handle, int os_fd)
 {
     // 分配一个socket
     int socket_id = socket_pool_.alloc_socket_id();
@@ -570,7 +570,7 @@ int socket_server::bind(uint64_t svc_handle, int fd)
 
     //
     ctrl_cmd_package cmd;
-    prepare_ctrl_cmd_request_bind(cmd, svc_handle, socket_id, fd);
+    prepare_ctrl_cmd_request_bind(cmd, svc_handle, socket_id, os_fd);
     _send_ctrl_cmd(&cmd);
 
     return socket_id;
@@ -595,7 +595,7 @@ int socket_server::udp(uint64_t svc_handle, const char* addr, int port)
     if (port != 0 || addr != NULL)
     {
         // bind
-        fd = do_bind(addr, port, IPPROTO_UDP, &family);
+        fd = _do_bind(addr, port, IPPROTO_UDP, &family);
         if (fd < 0)
             return -1;
     }
@@ -794,7 +794,7 @@ void socket_server::_send_ctrl_cmd(ctrl_cmd_package* cmd)
 }
 
 // 当工作线程执行socket.listen后，socket线程从接收管道读取数据，执行ctrl_cmd
-int socket_server::_recv_ctrl_cmd(socket_message* result)
+int socket_server::handle_ctrl_cmd(socket_message* result)
 {
     // recv header: ctrl_cmd (1 byte) + data len (1 byte)
     uint8_t header[2] = { 0 };
@@ -1072,7 +1072,7 @@ int socket_server::handle_ctrl_cmd_resume_socket(request_resume_pause* cmd, sock
 
         return SOCKET_EVENT_OPEN;
     }
-        //
+    //
     else if (socket_ref.status == SOCKET_STATUS_CONNECTED)
     {
         // todo: maybe we should send a message SOCKET_TRANSFER to socket_ptr->svc_handle
@@ -1291,10 +1291,7 @@ int socket_server::handle_ctrl_cmd_listen_socket(request_listen* cmd, socket_mes
         result->svc_handle = cmd->svc_handle;
         result->socket_id = socket_id;
         result->ud = 0;
-        result->data_ptr = const_cast<char*>("reach socket number limit");
-
-        //
-        socket_pool_.get_socket(socket_id).status = SOCKET_STATUS_INVALID;
+        result->data_ptr = const_cast<char*>("reach socket number limit");;
 
         return SOCKET_EVENT_ERROR;
     }

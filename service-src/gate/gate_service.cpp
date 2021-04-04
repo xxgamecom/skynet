@@ -357,7 +357,6 @@ void gate_service::fini()
 
 void gate_service::signal(int signal)
 {
-
 }
 
 int gate_service::gate_cb(service_context* svc_ctx, void* ud, int svc_msg_type, int session_id, uint32_t src_svc_handle, const void* msg, size_t msg_sz)

@@ -117,7 +117,7 @@ static const char* lua_script = "\
 
 bool node_config::load(const std::string& config_file)
 {
-    // 读取skynet配置数据 (使用临时的lua虚拟机读取, 读完后关闭)
+    // temporary lua vm, used for read skynet config file.
     lua_State* L = luaL_newstate();
     luaL_openlibs(L);
 
@@ -138,7 +138,7 @@ bool node_config::load(const std::string& config_file)
     // init node env (read from config file)
     _init_env(L);
 
-    // close VM
+    // close temporary lua vm
     lua_close(L);
 
     // read config from node env

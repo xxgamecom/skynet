@@ -4,17 +4,17 @@ namespace skynet::service {
 
 struct hash_id_node
 {
-    int                         id = 0;
-    hash_id_node*               next = nullptr;
+    int id = 0;
+    hash_id_node* next = nullptr;
 };
 
 struct hash_id
 {
-    int                         hashmod = 0;
-    int                         cap = 0;
-    int                         count = 0;
-    hash_id_node*               hash_id_nodes = nullptr;
-    hash_id_node**              hash = nullptr;
+    int hashmod = 0;
+    int cap = 0;
+    int count = 0;
+    hash_id_node* hash_id_nodes = nullptr;
+    hash_id_node** hash = nullptr;
 };
 
 void hash_id_init(hash_id* hi, int max);

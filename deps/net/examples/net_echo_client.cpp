@@ -88,7 +88,7 @@ int32_t main(int32_t argc, char* argv[])
 
     // open client
     std::cout << "open client" << std::endl;
-    if (client_ptr->open() == false)
+    if (!client_ptr->open())
     {
         std::cout << "open client failed" << std::endl;
         return 0;
@@ -97,7 +97,7 @@ int32_t main(int32_t argc, char* argv[])
     // connect
     std::cout << "connect: " << remote_host << ":" << remote_port << std::endl;
     bool ret = client_ptr->connect(remote_host, remote_port);
-    if (ret == false)
+    if (!ret)
     {
         std::cout << "connect error" << std::endl;
         return 0;

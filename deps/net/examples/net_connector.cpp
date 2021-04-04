@@ -108,7 +108,7 @@ int32_t main(int32_t argc, char* argv[])
 
     // connect
     bool ret = connector_ptr->connect(session_ptr, remote_host, remote_port, timeout_seconds);
-    if (ret == false)
+    if (!ret)
     {
         std::cout << "connect error" << std::endl;
     }

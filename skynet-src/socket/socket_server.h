@@ -77,8 +77,8 @@ public:
     // for tcp
     void nodelay(int socket_id);
 
-    // 将 stdin, stdout 这些IO加入到poller中 (not sockeet bind)
-    int bind(uint64_t svc_handle, int fd);
+    // bind os fd (stdin, stdout. not socket bind)
+    int bind(uint64_t svc_handle, int os_fd);
 
     // 刷新时间
     void update_time(uint64_t time);
@@ -122,10 +122,10 @@ public:
      */
     int udp_connect(int socket_id, const char* addr, int port);
 
-    /*
-    * 如果 socket_udp_address 为 NULL, 则使用最后调用 socket_server::udp_connect 时传入的address代替。
-    * 也可以使用 send 来发送udp数据
-    */
+    /**
+     * 如果 socket_udp_address 为 NULL, 则使用最后调用 socket_server::udp_connect 时传入的address代替。
+     * 也可以使用 send 来发送udp数据
+     */
     int udp_send(const socket_udp_address*, send_buffer* buf);
 
     /**
@@ -144,9 +144,9 @@ private:
      * @param cmd 控制命令数据包
      */
     void _send_ctrl_cmd(ctrl_cmd_package* cmd);
+
     // 当工作线程执行socket.listen后，socket线程从接收管道读取数据，执行ctrl_cmd
-    int _recv_ctrl_cmd(socket_message* result);
-    
+    int handle_ctrl_cmd(socket_message* result);
     // return -1 when connecting
     int handle_ctrl_cmd_open_socket(request_open* cmd, socket_message* result);
     int handle_ctrl_cmd_close_socket(request_close* cmd, socket_message* result);

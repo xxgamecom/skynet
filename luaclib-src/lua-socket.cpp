@@ -1140,7 +1140,7 @@ static int l_nodelay(lua_State* L)
 }
 
 /**
- *
+ * create udp server
  */
 static int l_udp(lua_State* L)
 {
