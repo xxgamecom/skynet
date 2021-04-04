@@ -11,23 +11,27 @@ event_handler_ptr_(event_handler_ptr)
 {
 }
 
-// 打开acceptor
+void tcp_acceptor_impl::set_event_handler(std::shared_ptr<tcp_acceptor_handler> event_handler_ptr)
+{
+    event_handler_ptr_ = event_handler_ptr;
+}
+
 bool tcp_acceptor_impl::open(const std::string local_ip,
                              uint16_t local_port,
                              bool is_reuse_addr/* = true*/,
                              int32_t backlog/* = DEFAULT_BACKLOG*/)
 {
-    // 之前的acceptor没有关闭
+    // has created
     assert(acceptor_ptr_ == nullptr);
     if (acceptor_ptr_ != nullptr)
         return false;
 
-    // acceptor端口不能为空
+    // check listen port
     assert(local_port != 0);
     if (local_port == 0)
         return false;
 
-    // ios必须有效
+    // check ios
     assert(ios_ptr_ != nullptr);
     if (ios_ptr_ == nullptr)
         return false;
@@ -37,11 +41,12 @@ bool tcp_acceptor_impl::open(const std::string local_ip,
     {
         // create acceptor
         acceptor_ptr_ = std::make_shared<asio::ip::tcp::acceptor>(ios_ptr_->get_raw_ios());
-        if (acceptor_ptr_ == nullptr) break;
+        if (acceptor_ptr_ == nullptr)
+            break;
 
         asio::error_code ec;
 
-        // open
+        // open v4
         if (acceptor_ptr_->open(asio::ip::tcp::v4(), ec))
             break;
 
@@ -69,7 +74,6 @@ bool tcp_acceptor_impl::open(const std::string local_ip,
     return is_ok;
 }
 
-// 关闭acceptor
 void tcp_acceptor_impl::close()
 {
     if (acceptor_ptr_ != nullptr)
@@ -80,12 +84,12 @@ void tcp_acceptor_impl::close()
     }
 }
 
-// 投递一次异步accept
 void tcp_acceptor_impl::accept_once(std::shared_ptr<tcp_session> session_ptr)
 {
-    assert(session_ptr != nullptr && session_ptr->is_open() == false);
+    assert(session_ptr != nullptr && !session_ptr->is_open());
     assert(acceptor_ptr_ != nullptr && acceptor_ptr_->is_open());
 
+    // post an async accept operation
     auto self(shared_from_this());
     acceptor_ptr_->async_accept(*(session_ptr->get_socket()), [this, self, session_ptr](const asio::error_code& ec) {
         handle_async_accept(session_ptr, ec);
@@ -93,11 +97,20 @@ void tcp_acceptor_impl::accept_once(std::shared_ptr<tcp_session> session_ptr)
 
 }
 
-// socket选项
+asio::ip::tcp::endpoint tcp_acceptor_impl::local_endpoint() const
+{
+    if (acceptor_ptr_ == nullptr || acceptor_ptr_->is_open() == false)
+        return asio::ip::tcp::endpoint();
+
+    asio::error_code ec;
+    return acceptor_ptr_->local_endpoint(ec);
+}
+
 bool tcp_acceptor_impl::set_sock_option(sock_options opt, int32_t value)
 {
-    // socket没有打开
-    if (acceptor_ptr_ == nullptr || acceptor_ptr_->is_open() == false) return false;
+    // socket not open
+    if (acceptor_ptr_ == nullptr || !acceptor_ptr_->is_open())
+        return false;
 
     asio::error_code ec;
     switch (opt)
@@ -126,8 +139,9 @@ bool tcp_acceptor_impl::set_sock_option(sock_options opt, int32_t value)
 
 bool tcp_acceptor_impl::get_sock_option(sock_options opt, int32_t& value)
 {
-    // socket没有打开
-    if (acceptor_ptr_ == nullptr || acceptor_ptr_->is_open() == false) return false;
+    // socket not open
+    if (acceptor_ptr_ == nullptr || !acceptor_ptr_->is_open())
+        return false;
 
     value = 0;
     asio::error_code ec;
@@ -175,22 +189,24 @@ bool tcp_acceptor_impl::get_sock_option(sock_options opt, int32_t& value)
     return (!ec ? true : false);
 }
 
-// 处理接收
+// handle accept
 void tcp_acceptor_impl::handle_async_accept(std::shared_ptr<tcp_session> session_ptr, const asio::error_code& ec)
 {
+    // no event handler
+    if (event_handler_ptr_ == nullptr)
+        return;
+
     if (!ec)
     {
         assert(session_ptr != nullptr && session_ptr->is_open());
 
-        // 接受连接成功回调
-        if (event_handler_ptr_ != nullptr)
-            event_handler_ptr_->handle_accept_success(shared_from_this(), session_ptr);
+        // accept success callback
+        event_handler_ptr_->handle_accept_success(shared_from_this(), session_ptr);
     }
     else
     {
-        // 接受连接失败回调
-        if (event_handler_ptr_ != nullptr)
-            event_handler_ptr_->handle_accept_failed(shared_from_this(), session_ptr, ec.value(), ec.message());
+        // accept failed callback
+        event_handler_ptr_->handle_accept_failed(shared_from_this(), session_ptr, ec.value(), ec.message());
     }
 }
 

@@ -19,17 +19,17 @@ delta_write_bytes_(0)
     assert(msg_write_queue_size_ > 0);
 }
 
-// 打开会话
+// open session
 bool tcp_session_impl::open(std::shared_ptr<io_service> ios_ptr,
                             std::string local_ip/* = ""*/,
                             uint16_t local_port/* = 0*/)
 {
-    // 确保会话是关闭状态
+    // ensure session is closed
     assert(state_ == SESSION_STATE_CLOSE);
     if (state_ != SESSION_STATE_CLOSE)
         return false;
 
-    // 创建读消息缓存, 写消息队列
+    // create read buffer & write queue
     if (msg_read_buf_ptr_ == nullptr)
     {
         msg_read_buf_ptr_ = std::make_shared<io_buffer>(msg_read_buf_size_);
@@ -42,8 +42,7 @@ bool tcp_session_impl::open(std::shared_ptr<io_service> ios_ptr,
             return false;
     }
 
-    // socket不重用, 使用外部传入的ios重建
-    // 因为重用的socket其底层的ios会导致线程负载不均匀
+    // create socket, not reuse, 因为重用的socket其底层的ios会导致线程负载不均匀
     socket_ptr_ = std::make_shared<asio::ip::tcp::socket>(ios_ptr->get_raw_ios());
     if (socket_ptr_ == nullptr)
         return false;
@@ -64,22 +63,22 @@ bool tcp_session_impl::open(std::shared_ptr<io_service> ios_ptr,
             return false;
     }
 
-    // 重置IO统计量
+    // reset io statistics
     read_bytes_ = 0;
     write_bytes_ = 0;
     delta_read_bytes_ = 0;
     delta_write_bytes_ = 0;
 
-    // 更新读写时间
+    // update read/write time
     last_read_time_ = last_write_time_ = std::chrono::steady_clock::steady_clock::now();
 
-    // 会话状态切换到 '打开'
+    // set session state: `open`
     state_ = SESSION_STATE_OPEN;
 
     return true;
 }
 
-// 关闭会话(is_force: 是否立即关闭, 如果立即关闭不等待剩余数据发送完毕)
+// close session (is_force: close immediately, 如果立即关闭不等待剩余数据发送完毕)
 void tcp_session_impl::close(bool is_force/* = true*/)
 {
     // 不立即关闭
@@ -92,20 +91,20 @@ void tcp_session_impl::close(bool is_force/* = true*/)
             state_ = SESSION_STATE_CLOSING;
     }
 
-    // 立即关闭
+    // close immediately
     if (is_force)
     {
-        // 会话状态切到 '关闭中'
+        // set session state: `closing`
         state_ = SESSION_STATE_CLOSING;
 
-        // 关闭socket
+        // close socket
         if (socket_ptr_ != nullptr && socket_ptr_->is_open())
         {
             asio::error_code ec;
             socket_ptr_->shutdown(asio::ip::tcp::socket::shutdown_both, ec);
             socket_ptr_->close(ec);
 
-            // 通知外部会话关闭
+            // notify event
             if (event_handler_ptr_ != nullptr)
                 event_handler_ptr_->handle_sessoin_close(shared_from_this());
         }
@@ -114,7 +113,7 @@ void tcp_session_impl::close(bool is_force/* = true*/)
         remote_port_ = 0;
         session_id_ = INVALID_SESSION_ID;
 
-        // 清理回写消息队列
+        // clean write queue
         msg_write_queue_.clear();
 
         state_ = SESSION_STATE_CLOSE;

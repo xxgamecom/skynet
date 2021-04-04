@@ -35,14 +35,14 @@ bool tcp_connector_impl::connect(std::shared_ptr<tcp_session> session_ptr,
     is_connecting_ = true;
 
     // open session (create session socket, bind...)
-    if (session_ptr->open(ios_ptr_, local_ip, local_port) == false)
+    if (!session_ptr->open(ios_ptr_, local_ip, local_port))
     {
         session_ptr->close();
         return false;
     }
 
     // start connect timer
-    if (start_connect_timer(session_ptr, timeout_seconds) == false)
+    if (!start_connect_timer(session_ptr, timeout_seconds))
     {
         session_ptr->close();
         return false;
@@ -52,6 +52,7 @@ bool tcp_connector_impl::connect(std::shared_ptr<tcp_session> session_ptr,
     // todo: try to connect with other address when the connection is unsuccessful.
     asio::ip::tcp::resolver::query query(remote_addr, std::to_string(static_cast<uint32_t>(remote_port)));
 
+    // do host resolve
     auto self(shared_from_this());
     resolver_.async_resolve(query, [this, self, session_ptr] (const asio::error_code& ec, asio::ip::tcp::resolver::iterator endpoint_itr) {
         handle_async_resolve(session_ptr, ec, endpoint_itr);
@@ -102,17 +103,15 @@ void tcp_connector_impl::handle_async_connect(std::shared_ptr<tcp_session> sessi
 {
     stop_connect_timer();
 
-    // 连接成功
     if (!ec)
     {
-        // 连接成功回调
+        // connect success callback
         if (event_handler_ptr_ != nullptr)
             event_handler_ptr_->handle_connect_success(session_ptr);
     }
-    // 连接失败
     else
     {
-        // 连接失败回调
+        // connect failed callback
         if (event_handler_ptr_ != nullptr)
             event_handler_ptr_->handle_connect_failed(session_ptr, ec.value(), ec.message());
     }
@@ -121,7 +120,6 @@ void tcp_connector_impl::handle_async_connect(std::shared_ptr<tcp_session> sessi
     is_connecting_ = false;
 }
 
-// connect timeout
 void tcp_connector_impl::handle_connect_timeout(std::shared_ptr<tcp_session> session_ptr, const asio::error_code& ec)
 {
     // stop connect timer

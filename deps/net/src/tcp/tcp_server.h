@@ -5,7 +5,7 @@
 
 #include "../uri/uri_codec.h"
 
-#include "../core/io_service_pool.h"
+#include "../base/io_service_pool.h"
 
 #include "tcp_acceptor.h"
 #include "tcp_server_config.h"

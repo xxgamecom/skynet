@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../core/object_pool.h"
-#include "../core/io_buffer.h"
+#include "../base/object_pool.h"
+#include "../base/io_buffer.h"
 
 #include <cstdint>
 #include <deque>

@@ -3,7 +3,7 @@
 #include "tcp/tcp_client_i.h"
 #include "tcp/tcp_client_handler_i.h"
 
-#include "../core/io_service.h"
+#include "../base/io_service.h"
 
 #include "tcp_connector.h"
 #include "tcp_session.h"
@@ -13,11 +13,12 @@
 
 #include <memory>
 
+// forward declare
 namespace skynet::net {
-
 class tcp_client_handler;
+}
 
-namespace impl {
+namespace skynet::net::impl {
 
 // tcp client implement
 class tcp_client_impl : public asio::noncopyable,
@@ -95,7 +96,7 @@ protected:
     void handle_sessoin_close(std::shared_ptr<tcp_session> session_ptr) override;
 };
 
-} }
+}
 
 #include "tcp_client.inl"
 

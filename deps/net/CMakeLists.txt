@@ -1,4 +1,4 @@
-include(src/core/CMakeLists.txt)
+include(src/base/CMakeLists.txt)
 include(src/tcp/CMakeLists.txt)
 include(src/udp/CMakeLists.txt)
 include(src/uri/CMakeLists.txt)

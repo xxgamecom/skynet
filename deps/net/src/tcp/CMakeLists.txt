@@ -1,6 +1,5 @@
 set(SKYNET_NET_TCP_HEADER
     src/tcp/tcp_acceptor.h
-    src/tcp/tcp_acceptor.inl
     src/tcp/tcp_client.h
     src/tcp/tcp_client.inl
     src/tcp/tcp_client_config.h

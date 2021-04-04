@@ -1,29 +1,32 @@
 #pragma once
 
-#include "../core/io_service.h"
-
 #include "base/socket_option_def.h"
+
+#include "../base/io_service.h"
 
 #include "tcp/tcp_acceptor_def.h"
 #include "tcp/tcp_acceptor_i.h"
 #include "tcp/tcp_acceptor_handler_i.h"
 
+
+// forward declare
 namespace skynet::net {
-
 class tcp_session;
+}
 
-namespace impl {
+namespace skynet::net::impl {
 
-// tcp被动连接器(用于接收来自远端的连接)
+/**
+ * tcp passitive connector (used to accept the connection from remote)
+ */
 class tcp_acceptor_impl : public asio::noncopyable,
                           public tcp_acceptor,
                           public std::enable_shared_from_this<tcp_acceptor_impl>
 {
 protected:
-    std::shared_ptr<io_service> ios_ptr_;                       // acceptor使用独立的ios, 不和会话公用
-    std::shared_ptr<asio::ip::tcp::acceptor> acceptor_ptr_;     // acceptor
-
-    std::shared_ptr<tcp_acceptor_handler> event_handler_ptr_;   // 外部被动连接事件处理器
+    std::shared_ptr<io_service> ios_ptr_;                       // io service, only used for acceptor
+    std::shared_ptr<asio::ip::tcp::acceptor> acceptor_ptr_;     // tcp acceptor
+    std::shared_ptr<tcp_acceptor_handler> event_handler_ptr_;   // event handler
 
 public:
     explicit tcp_acceptor_impl(std::shared_ptr<io_service> ios_ptr,
@@ -32,33 +35,29 @@ public:
 
     // tcp_acceptor impl
 public:
-    // 设置接收事件处理器
+    // set event handler (event callback)
     void set_event_handler(std::shared_ptr<tcp_acceptor_handler> event_handler_ptr) override;
 
-    // 打开acceptor
     bool open(const std::string local_ip, uint16_t local_port, bool is_reuse_addr = true, int32_t backlog = DEFAULT_BACKLOG) override;
-    // 关闭acceptor
     void close() override;
 
 public:
-    // 投递一次异步accept
+    // post an async accept operation
     void accept_once(std::shared_ptr<tcp_session> session_ptr) override;
 
-    // 本地端点信息
+    // get local endpoint info
     asio::ip::tcp::endpoint local_endpoint() const override;
 
-    // socket选项
+    // socket options
 public:
     bool set_sock_option(sock_options opt, int32_t value) override;
     bool get_sock_option(sock_options opt, int32_t& value) override;
 
-    // 处理函数
 protected:
-    // 处理接收
+    // handle accept
     void handle_async_accept(std::shared_ptr<tcp_session> session_ptr, const asio::error_code& ec);
 };
 
-} }
+}
 
-#include "tcp_acceptor.inl"
 

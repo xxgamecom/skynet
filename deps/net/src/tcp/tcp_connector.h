@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../core/io_service.h"
+#include "../base/io_service.h"
 
 #include "tcp/tcp_connector_i.h"
 #include "tcp/tcp_connector_handler_i.h"
@@ -28,11 +28,11 @@ class tcp_connector_impl : public asio::noncopyable,
 protected:
     std::shared_ptr<io_service> ios_ptr_;                       // ios (from io_service_pool)
 
-    asio::ip::tcp::resolver resolver_;                          // address resolver
-    std::shared_ptr<asio::steady_timer> connect_timer_ptr_;     // connect timer
-    bool is_connecting_ = false;
+    asio::ip::tcp::resolver resolver_;                          // host resolver
+    std::shared_ptr<asio::steady_timer> connect_timer_ptr_;     // connect timer, for resolve & connect timeout
+    bool is_connecting_ = false;                                // connecting flag
 
-    std::shared_ptr<tcp_connector_handler> event_handler_ptr_;
+    std::shared_ptr<tcp_connector_handler> event_handler_ptr_;  // event handler (callback)
 
 public:
     explicit tcp_connector_impl(std::shared_ptr<io_service> ios_ptr);
@@ -40,10 +40,10 @@ public:
 
     // tcp_connector impl
 public:
-    // 设置连接事件处理器
-    void set_event_handler(std::shared_ptr<tcp_connector_handler> event_handler_ptr) override ;
+    // set event handler
+    void set_event_handler(std::shared_ptr<tcp_connector_handler> event_handler_ptr) override;
 
-    // 连接(超时包括地址解析和实际连接所需时间)
+    // connect remote endpoint(timeout include resolve & connect time)
     bool connect(std::shared_ptr<tcp_session> session_ptr,
                  const std::string remote_addr,
                  uint16_t remote_port,
