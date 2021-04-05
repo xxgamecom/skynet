@@ -18,7 +18,7 @@ bool tcp_connector_impl::connect(std::shared_ptr<tcp_session> session_ptr,
                                  uint16_t local_port/* = 0*/)
 {
     // check session, ensure closed
-    assert(session_ptr != nullptr && session_ptr->is_open() == false);
+    assert(session_ptr != nullptr && !session_ptr->is_open());
     if (session_ptr == nullptr || session_ptr->is_open())
         return false;
 

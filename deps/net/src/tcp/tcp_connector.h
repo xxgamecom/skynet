@@ -21,9 +21,9 @@ namespace skynet::net::impl {
  * tcp connector
  * after successful connection, the external incoming tcp session object will be initialized
  */
-class tcp_connector_impl : public asio::noncopyable,
-                           public tcp_connector,
-                           public std::enable_shared_from_this<tcp_connector_impl>
+class tcp_connector_impl : public tcp_connector,
+                           public std::enable_shared_from_this<tcp_connector_impl>,
+                           public asio::noncopyable
 {
 protected:
     std::shared_ptr<io_service> ios_ptr_;                       // ios (from io_service_pool)

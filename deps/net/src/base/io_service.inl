@@ -7,7 +7,6 @@ inline asio::io_service& io_service_impl::get_raw_ios()
 
 inline void io_service_impl::run()
 {
-//    ios_thread_ptr_ = std::make_shared<std::thread>(std::bind(&asio::io_service_impl::run, &ios_));
     ios_thread_ptr_ = std::make_shared<std::thread>([&](){
         ios_.run();
     });

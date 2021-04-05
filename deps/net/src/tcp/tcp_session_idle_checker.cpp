@@ -22,10 +22,13 @@ bool tcp_session_idle_checker::start(idle_type check_type, int32_t idle_interval
     {
         asio::error_code ec;
         idle_check_timer_.expires_from_now(std::chrono::seconds(CHECK_INTERVAL), ec);
-        if (ec) return false;
+        if (ec)
+            return false;
 
-        idle_check_timer_.async_wait(std::bind(&tcp_session_idle_checker::handle_timeout,
-                                               shared_from_this(), std::placeholders::_1));
+        auto self(shared_from_this());
+        idle_check_timer_.async_wait([this, self](const asio::error_code& ec) {
+            handle_timeout(ec);
+        });
     }
 
     return true;
@@ -64,10 +67,13 @@ void tcp_session_idle_checker::handle_timeout(const asio::error_code& ec)
         {
             asio::error_code ec;
             idle_check_timer_.expires_from_now(std::chrono::seconds(CHECK_INTERVAL), ec);
-            if (ec) return;
+            if (ec)
+                return;
 
-            idle_check_timer_.async_wait(std::bind(&tcp_session_idle_checker::handle_timeout,
-                                                   shared_from_this(), std::placeholders::_1));
+            auto self(shared_from_this());
+            idle_check_timer_.async_wait([this, self](const asio::error_code& ec) {
+                handle_timeout(ec);
+            });
         }
     }
 }

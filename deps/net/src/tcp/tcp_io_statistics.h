@@ -14,9 +14,9 @@ namespace skynet::net::impl {
 class tcp_session_manager;
 
 // IO常用统计量
-class tcp_io_statistics_impl : public asio::noncopyable,
-                               public io_statistics,
-                               public std::enable_shared_from_this<tcp_io_statistics_impl>
+class tcp_io_statistics_impl : public io_statistics,
+                               public std::enable_shared_from_this<tcp_io_statistics_impl>,
+                               public asio::noncopyable
 {
 private:
     enum

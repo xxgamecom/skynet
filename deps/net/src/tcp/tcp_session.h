@@ -22,9 +22,9 @@ namespace skynet::net::impl {
  * 会话内存估算: 只计算收发所需内存(1个读消息缓存, 1个写消息队列), 其他忽略
  * msg_read_buf_size_ + msg_write_buf_size_ * msg_write_queue_size_
  */
-class tcp_session_impl : public asio::noncopyable,
-                         public tcp_session,
-                         public std::enable_shared_from_this<tcp_session_impl>
+class tcp_session_impl : public tcp_session,
+                         public std::enable_shared_from_this<tcp_session_impl>,
+                         public asio::noncopyable
 {
 public:
     enum session_state

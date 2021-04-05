@@ -15,19 +15,22 @@ bool tcp_client_impl::open()
 {
     // 创建ios
     ios_ptr_ = std::make_shared<io_service_impl>();
-    if (ios_ptr_ == nullptr) return false;
+    if (ios_ptr_ == nullptr)
+        return false;
     ios_ptr_->run();
 
     // 创建连接器
     connector_ptr_ = std::make_shared<tcp_connector_impl>(ios_ptr_);
-    if (connector_ptr_ == nullptr) return false;
+    if (connector_ptr_ == nullptr)
+        return false;
     connector_ptr_->set_event_handler(shared_from_this());
 
     // 创建tcp会话
     session_ptr_ = std::make_shared<tcp_session_impl>(session_config_.msg_read_buf_size(),
                                                       session_config_.msg_write_buf_size(),
                                                       session_config_.msg_write_queue_size());
-    if (session_ptr_ == nullptr) return false;
+    if (session_ptr_ == nullptr)
+        return false;
     session_ptr_->set_event_handler(shared_from_this());
 
     return true;
@@ -35,17 +38,19 @@ bool tcp_client_impl::open()
 
 // 发起连接(提供URI字符串形式)
 bool tcp_client_impl::connect(const std::string remote_uri,
-                         int32_t timeout_seconds/* = 0*/,
-                         const std::string local_ip/* = ""*/,
-                         uint16_t local_port/* = 0*/)
+                              int32_t timeout_seconds/* = 0*/,
+                              const std::string local_ip/* = ""*/,
+                              uint16_t local_port/* = 0*/)
 {
     // 连接之前确保已初始化
     assert(connector_ptr_ != nullptr && session_ptr_ != nullptr);
-    if (connector_ptr_ == nullptr || session_ptr_ == nullptr) return false;
+    if (connector_ptr_ == nullptr || session_ptr_ == nullptr)
+        return false;
 
     // 发起连接
     uri_codec uri(uri_codec::from_string(remote_uri));
-    if (uri.is_valid() == false) return false;
+    if (uri.is_valid() == false)
+        return false;
 
     return connector_ptr_->connect(session_ptr_,
                                    uri.host().value(),
@@ -57,14 +62,15 @@ bool tcp_client_impl::connect(const std::string remote_uri,
 
 // 发起连接(单独提供地址和端口形式)
 bool tcp_client_impl::connect(const std::string remote_addr,
-                         uint16_t remote_port,
-                         int32_t timeout_seconds/* = 0*/,
-                         const std::string local_ip/* = ""*/,
-                         uint16_t local_port/* = 0*/)
+                              uint16_t remote_port,
+                              int32_t timeout_seconds/* = 0*/,
+                              const std::string local_ip/* = ""*/,
+                              uint16_t local_port/* = 0*/)
 {
     // 连接之前确保已初始化
     assert(connector_ptr_ != nullptr && session_ptr_ != nullptr);
-    if (connector_ptr_ == nullptr || session_ptr_ == nullptr) return false;
+    if (connector_ptr_ == nullptr || session_ptr_ == nullptr)
+        return false;
 
     // 发起连接
     return connector_ptr_->connect(session_ptr_,

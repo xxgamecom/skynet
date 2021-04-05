@@ -8,8 +8,8 @@ namespace skynet::net::impl {
 
 class tcp_session_manager;
 
-class tcp_session_idle_checker final : public asio::noncopyable,
-                                       public std::enable_shared_from_this<tcp_session_idle_checker>
+class tcp_session_idle_checker : public std::enable_shared_from_this<tcp_session_idle_checker>,
+                                 public asio::noncopyable
 {
 private:
     enum { CHECK_INTERVAL = 1 };

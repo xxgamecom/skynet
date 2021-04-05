@@ -21,11 +21,11 @@ class tcp_client_handler;
 namespace skynet::net::impl {
 
 // tcp client implement
-class tcp_client_impl : public asio::noncopyable,
-                        public tcp_client,
+class tcp_client_impl : public tcp_client,
                         public tcp_connector_handler,
                         public tcp_session_handler,
-                        public std::enable_shared_from_this<tcp_client_impl>
+                        public std::enable_shared_from_this<tcp_client_impl>,
+                        public asio::noncopyable
 {
 protected:
     tcp_client_session_config_impl session_config_;         // 会话配置

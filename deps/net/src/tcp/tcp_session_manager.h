@@ -14,13 +14,14 @@ class tcp_session;
 
 namespace skynet::net::impl {
 
-// tcp会话管理
+/**
+ * tcp session manager
+ */
 class tcp_session_manager : public asio::noncopyable
 {
 public:
     typedef std::map<session_id_t, std::weak_ptr<tcp_session>> session_map;
 
-    // 会话信息
 protected:
     session_id_t id_generator_ = INVALID_SESSION_ID;                    // 会话ID生成器
 

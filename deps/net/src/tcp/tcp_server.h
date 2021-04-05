@@ -21,11 +21,11 @@ class tcp_server_handler;
 namespace skynet::net::impl {
 
 // tcp服务端
-class tcp_server_impl : public asio::noncopyable,
-                        public tcp_server,
+class tcp_server_impl : public tcp_server,
                         public tcp_acceptor_handler,
                         public tcp_session_handler,
-                        public std::enable_shared_from_this<tcp_server_impl>
+                        public std::enable_shared_from_this<tcp_server_impl>,
+                        public asio::noncopyable
 {
 protected:
     typedef std::map<std::string, std::shared_ptr<tcp_acceptor>> acceptor_map;

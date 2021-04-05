@@ -29,12 +29,13 @@ inline void tcp_session_write_queue::pop_front()
     std::lock_guard<std::mutex> guard(write_queue_mutex_);
 
     // 有数据才能front操作, 否则deque会出错
-    if (write_queue_.empty() == false)
+    if (!write_queue_.empty())
     {
         // 弹出后回收缓存
         std::shared_ptr<io_buffer> buf_ptr = write_queue_.front();
         write_queue_.pop_front();
-        if (buf_ptr != nullptr) write_msg_buf_pool_ptr_->free(buf_ptr);
+        if (buf_ptr != nullptr)
+            write_msg_buf_pool_ptr_->free(buf_ptr);
     }
 }
 

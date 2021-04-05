@@ -15,14 +15,14 @@ namespace skynet::net::impl {
 class tcp_session_write_queue
 {
 private:
-    bool                                        is_inited_ = false;                 // 写消息队列是否就绪
+    bool is_inited_ = false;                                                // 写消息队列是否就绪
 
-    std::deque<std::shared_ptr<io_buffer>>      write_queue_;                       // 写消息队列
-    size_t                                      write_queue_size_ = 0;              // 写消息队列元素数量
-    std::mutex                                  write_queue_mutex_;                 // 写消息队列保护
+    std::deque<std::shared_ptr<io_buffer>> write_queue_;                    // 写消息队列
+    size_t write_queue_size_ = 0;                                           // 写消息队列元素数量
+    std::mutex write_queue_mutex_;                                          // 写消息队列保护
 
-    size_t                                      write_msg_buf_size_ = 0;            // 单个写消息缓存大小(存放到写消息队列中)
-    std::shared_ptr<object_pool<io_buffer>>   write_msg_buf_pool_ptr_;            // 写消息缓存池
+    size_t write_msg_buf_size_ = 0;                                         // 单个写消息缓存大小(存放到写消息队列中)
+    std::shared_ptr<object_pool<io_buffer>> write_msg_buf_pool_ptr_;        // 写消息缓存池
 
 public:
     tcp_session_write_queue() = default;

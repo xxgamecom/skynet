@@ -28,7 +28,7 @@ private:
 
 public:
     tcp_server_acceptor_config_impl() = default;
-    ~tcp_server_acceptor_config_impl() = default;
+    ~tcp_server_acceptor_config_impl() override = default;
 
 public:
     // 重置
@@ -98,7 +98,7 @@ private:
 
 public:
     tcp_server_session_config_impl() = default;
-    ~tcp_server_session_config_impl() = default;
+    ~tcp_server_session_config_impl() override = default;
 
 public:
     // 重置

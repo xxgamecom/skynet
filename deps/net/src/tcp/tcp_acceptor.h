@@ -19,9 +19,9 @@ namespace skynet::net::impl {
 /**
  * tcp passitive connector (used to accept the connection from remote)
  */
-class tcp_acceptor_impl : public asio::noncopyable,
-                          public tcp_acceptor,
-                          public std::enable_shared_from_this<tcp_acceptor_impl>
+class tcp_acceptor_impl : public tcp_acceptor,
+                          public std::enable_shared_from_this<tcp_acceptor_impl>,
+                          public asio::noncopyable
 {
 protected:
     std::shared_ptr<io_service> ios_ptr_;                       // io service, only used for acceptor

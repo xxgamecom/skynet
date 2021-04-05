@@ -9,9 +9,9 @@
 namespace skynet::net::impl {
 
 // io service wrapper (one asio::io_service per cpu)
-class io_service_impl : public asio::noncopyable,
-                        public io_service,
-                        public std::enable_shared_from_this<io_service>
+class io_service_impl : public io_service,
+                        public std::enable_shared_from_this<io_service>,
+                        public asio::noncopyable
 {
 private:
     asio::io_service ios_;                              // asio::io_service
