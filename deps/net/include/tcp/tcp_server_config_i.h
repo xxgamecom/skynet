@@ -6,11 +6,9 @@
 
 namespace skynet::net {
 
-//------------------------------------------
-// tcp_server_acceptor_config
-//------------------------------------------
-
-// tcp_server acceptor config
+/**
+ * tcp_server acceptor config
+ */
 class tcp_server_acceptor_config
 {
 public:
@@ -21,73 +19,72 @@ public:
 
     // socket opt
 public:
-    // socket接收缓存大小
+    // set/get socket recv buffer size
     virtual void socket_recv_buf_size(int32_t size) = 0;
     virtual int32_t socket_recv_buf_size() = 0;
 
-    // socket发送缓存大小
+    // set/get socket send buffer size
     virtual void socket_send_buf_size(int32_t size) = 0;
     virtual int32_t socket_send_buf_size() = 0;
 
-    // 是否开启socket的keepalive选项
+    // socket keepalive option
     virtual void socket_keepalive(bool is_enable) = 0;
     virtual bool socket_keepalive() = 0;
 
-    // 是否开启socket的nagle算法
+    // socket nagle algorithm option
     virtual void socket_nodelay(bool is_enable) = 0;
     virtual bool socket_nodelay() = 0;
 
-    // socket的linger选项
+    // socket linger option
     virtual void socket_linger(int32_t timeout) = 0;
     virtual int32_t socket_linger() = 0;
 
     // acceptor
 public:
-    // 同时投递多少个accept异步操作
+    // 同时投递多少个async accept operations
     virtual void sync_accept_num(int32_t num) = 0;
     virtual int32_t sync_accept_num() = 0;
 };
 
-//------------------------------------------
-// tcp_server_session_config
-//------------------------------------------
 
-// tcp_server session config
-// 服务端会话内存估算: 只估算收发所需内存(1个读消息缓存, 1个写消息队列), 其他忽略
-//                     msg_read_buf_size_ + msg_write_buf_size_ * msg_write_queue_size_
-//                     默认 8192 +  4096 * 4 = 24576 = 24K, 因此, 10000并发需要234MB以上内存
+/**
+ * tcp_server session config
+ *
+ * session memory estimate: 只估算收发所需内存(1个读消息缓存, 1个写消息队列), 其他忽略
+ *                     msg_read_buf_size_ + msg_write_buf_size_ * msg_write_queue_size_
+ *                     默认 8192 +  4096 * 4 = 24576 = 24K, 因此, 10000并发需要234MB以上内存
+ */
 class tcp_server_session_config
 {
 public:
     virtual ~tcp_server_session_config() = default;
 
 public:
-    // 重置
     virtual void reset() = 0;
 
     // socket opt
 public:
-    // socket接收缓存大小
+    // get/set socket recv buffer size option
     virtual void socket_recv_buf_size(int32_t size) = 0;
     virtual int32_t socket_recv_buf_size() = 0;
 
-    // socket发送缓存大小
+    // get/set socket send buffer size option
     virtual void socket_send_buf_size(int32_t size) = 0;
     virtual int32_t socket_send_buf_size() = 0;
 
-    // 是否开启socket的keepalive选项
+    // socket keepalive option
     virtual void socket_keepalive(bool is_enable) = 0;
     virtual bool socket_keepalive() = 0;
 
-    // 是否开启socket的nagle算法
+    // socket nagle algorithm option
     virtual void socket_nodelay(bool is_enable) = 0;
     virtual bool socket_nodelay() = 0;
 
-    // socket的linger选项
+    // socket linger option
     virtual void socket_linger(int32_t timeout) = 0;
     virtual int32_t socket_linger() = 0;
 
-    // session配置
+    // session config
 public:
     // session所使用的线程数(ios池大小, 默认使用CPU Core进行计算)
     virtual void session_thread_num(int32_t num) = 0;

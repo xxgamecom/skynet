@@ -209,19 +209,19 @@ int socket_server::listen(uint64_t svc_handle, const char* addr, int port, int b
         return -1;
 
     // 从ss的socket池中获取空闲的socket, 并返回id
-    int socket_id = socket_pool_.alloc_socket_id();
-    if (socket_id < 0)
+    int listen_socket_id = socket_pool_.alloc_socket_id();
+    if (listen_socket_id < 0)
     {
         ::close(listen_fd);
-        return socket_id;
+        return listen_socket_id;
     }
 
     // 保存关联的服务地址，socket池的id，socket套接字fd
     ctrl_cmd_package cmd;
-    prepare_ctrl_cmd_request_listen(cmd, svc_handle, socket_id, listen_fd);
+    prepare_ctrl_cmd_request_listen(cmd, svc_handle, listen_socket_id, listen_fd);
     _send_ctrl_cmd(&cmd);
 
-    return socket_id;
+    return listen_socket_id;
 }
 
 int socket_server::connect(uint64_t svc_handle, const char* addr, int port)

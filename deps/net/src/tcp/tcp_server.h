@@ -20,7 +20,7 @@ class tcp_server_handler;
 
 namespace skynet::net::impl {
 
-// tcp服务端
+// tcp server
 class tcp_server_impl : public tcp_server,
                         public tcp_acceptor_handler,
                         public tcp_session_handler,
@@ -30,31 +30,28 @@ class tcp_server_impl : public tcp_server,
 protected:
     typedef std::map<std::string, std::shared_ptr<tcp_acceptor>> acceptor_map;
 
-    // 服务配置
+    // server config
 protected:
-    tcp_server_acceptor_config_impl acceptor_config_;                       // 服务端的acceptor配置
-    tcp_server_session_config_impl session_config_;                         // 服务端的session配置
+    tcp_server_acceptor_config_impl acceptor_config_;                       // acceptor config
+    tcp_server_session_config_impl session_config_;                         // session config
 
-    // 外部处理器
 protected:
-    std::shared_ptr<tcp_server_handler> event_handler_ptr_;                 // 外部事件处理器
+    std::shared_ptr<tcp_server_handler> event_handler_ptr_;
 
-    // acceptor相关
 protected:
-    std::shared_ptr<io_service> acceptor_ios_ptr_;                          // acceptor的ios(独立)
-    acceptor_map acceptors_;                                                // acceptor表(key为对端ip+":"+port串)
+    std::shared_ptr<io_service> acceptor_ios_ptr_;                          // for accept only
+    acceptor_map acceptors_;                                                // acceptor map (k: `ip:port`, v: tcp_acceptor)
 
-    std::shared_ptr<io_service_pool> session_ios_pool_ptr_;                 // session的ios池
-    std::shared_ptr<tcp_session_manager> session_manager_ptr_;              // 会话管理
-    std::shared_ptr<tcp_session_idle_checker> session_idle_checker_ptr_;    // 会话闲置检测器(共用acceptor的ios)
+    std::shared_ptr<io_service_pool> session_ios_pool_ptr_;
+    std::shared_ptr<tcp_session_manager> session_manager_ptr_;
+    std::shared_ptr<tcp_session_idle_checker> session_idle_checker_ptr_;
 
-    // IO统计
 protected:
-    std::shared_ptr<io_statistics> io_statistics_ptr_;                      // IO统计
+    std::shared_ptr<io_statistics> io_statistics_ptr_;
 
 public:
     tcp_server_impl() = default;
-    virtual ~tcp_server_impl() = default;
+    ~tcp_server_impl() override = default;
 
 public:
     // 设置外部服务处理器
@@ -90,7 +87,7 @@ protected:
 
     // tcp_session_handler impl
 protected:
-    // tc session read complete
+    // tcp session read complete
     void handle_session_read(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
     // tcp session write complete
     void handle_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;

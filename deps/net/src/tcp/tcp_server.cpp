@@ -6,7 +6,6 @@
 
 namespace skynet::net::impl {
 
-// 设置外部服务处理器
 void tcp_server_impl::set_event_handler(std::shared_ptr<tcp_server_handler> event_handler_ptr)
 {
     event_handler_ptr_ = event_handler_ptr;
@@ -15,12 +14,12 @@ void tcp_server_impl::set_event_handler(std::shared_ptr<tcp_server_handler> even
 bool tcp_server_impl::open(const std::string local_uri, bool is_reuse_addr/* = true*/)
 {
     uri_codec uri = uri_codec::from_string(local_uri);
-    if (!uri.is_valid()) return false;
+    if (!uri.is_valid())
+        return false;
 
     return open(uri.host().value(), uri.port().value(), is_reuse_addr);
 }
 
-// 打开服务
 bool tcp_server_impl::open(const std::string local_ip, uint16_t local_port, bool is_reuse_addr/* = true*/)
 {
     return open({ std::make_pair(local_ip, local_port) }, is_reuse_addr);
@@ -29,15 +28,16 @@ bool tcp_server_impl::open(const std::string local_ip, uint16_t local_port, bool
 bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t>> local_endpoints, bool is_reuse_addr/* = true*/)
 {
     assert(local_endpoints.size() > 0);
-    if (local_endpoints.size() == 0) return false;
+    if (local_endpoints.size() == 0)
+        return false;
 
     bool is_ok = false;
     do
     {
-        // 计算ios池大小(session_thread_num为默认, 按CPU Core设置)
+        // calc ios pool size (session_thread_num为默认, 按CPU Core设置)
         if (session_config_.session_thread_num() == 0)
         {
-            // 获取CPU Logic Core数
+            // the number of cpu logic core
             int32_t core_num = std::thread::hardware_concurrency();
 
             // 超过1个时, 需要减掉1, acceptor占用一个ios
@@ -47,30 +47,32 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
             session_config_.session_thread_num(core_num);
         }
 
-        // 创建会话的ios池
+        // create session ios pool
         session_ios_pool_ptr_ = std::make_shared<io_service_pool_impl>(session_config_.session_thread_num());
-        if (session_ios_pool_ptr_ == nullptr) break;
+        if (session_ios_pool_ptr_ == nullptr)
+            break;
 
-        // 创建acceptor ios
+        // create acceptor ios
         acceptor_ios_ptr_ = std::make_shared<io_service_impl>();
-        if (acceptor_ios_ptr_ == nullptr) break;
+        if (acceptor_ios_ptr_ == nullptr)
+            break;
 
-        // 创建会话管理器
+        // create session manager
         session_manager_ptr_ = std::make_shared<tcp_session_manager>();
         if (session_manager_ptr_ == nullptr)
             break;
-        if (session_manager_ptr_->init(session_config_.session_pool_size(),
-                                       session_config_.msg_read_buf_size(),
-                                       session_config_.msg_write_buf_size(),
-                                       session_config_.msg_write_queue_size()) == false)
+        if (!session_manager_ptr_->init(session_config_.session_pool_size(),
+                                        session_config_.msg_read_buf_size(),
+                                        session_config_.msg_write_buf_size(),
+                                        session_config_.msg_write_queue_size()))
             break;
 
-        // 创建会话闲置检测器
+        // create session idle checker
         session_idle_checker_ptr_ = std::make_shared<tcp_session_idle_checker>(session_manager_ptr_, acceptor_ios_ptr_);
         if (session_idle_checker_ptr_ == nullptr)
             break;
 
-        // 创建IO统计
+        // create io statistics
         io_statistics_ptr_ = std::make_shared<tcp_io_statistics_impl>(session_manager_ptr_, acceptor_ios_ptr_);
         if (io_statistics_ptr_ == nullptr)
             break;
@@ -86,7 +88,7 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
             if (itr_find != acceptors_.end())
                 continue;
 
-            // 创建acceptor
+            // create acceptor
             acceptor_ptr = std::make_shared<tcp_acceptor_impl>(acceptor_ios_ptr_, shared_from_this());
             if (acceptor_ptr == nullptr)
             {
@@ -94,38 +96,38 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
                 break;
             }
 
-            // 打开acceptor
+            // open acceptor
             if (acceptor_ptr->open(itr.first, itr.second, is_reuse_addr) == false)
             {
                 is_acceptor_ok = false;
                 break;
             }
 
-            // 设置acceptor的socket选项
+            // set acceptor socket options
             acceptor_ptr->set_sock_option(SOCK_OPT_RECV_BUFFER, acceptor_config_.socket_recv_buf_size());
             acceptor_ptr->set_sock_option(SOCK_OPT_SEND_BUFFER, acceptor_config_.socket_send_buf_size());
             acceptor_ptr->set_sock_option(SOCK_OPT_KEEPALIVE, acceptor_config_.socket_keepalive() ? 1 : 0);
             acceptor_ptr->set_sock_option(SOCK_OPT_NODELAY, acceptor_config_.socket_nodelay() ? 1 : 0);
             acceptor_ptr->set_sock_option(SOCK_OPT_LINGER, acceptor_config_.socket_linger());
 
-            // 添加到acceptor表
+            // add acceptor map
             acceptors_[key] = acceptor_ptr;
         }
         if (is_acceptor_ok == false)
             break;
 
-        // 启动会话闲置检测器
-        if (session_idle_checker_ptr_->start(session_config_.idle_check_type(),
-                                             session_config_.idle_check_seconds()) == false)
+        // start session idle check
+        if (!session_idle_checker_ptr_->start(session_config_.idle_check_type(),
+                                              session_config_.idle_check_seconds()))
         {
             break;
         }
 
-        // 启动IO统计
+        // start io statistics
         if (io_statistics_ptr_->start() == false)
             break;
 
-        // 投递异步accept
+        // post async accept
         for (auto& itr : acceptors_)
         {
             for (int32_t i = 0; i < acceptor_config_.sync_accept_num(); ++i)
@@ -134,7 +136,7 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
             }
         }
 
-        // 启动ios
+        // start ios
         session_ios_pool_ptr_->run();
         acceptor_ios_ptr_->run();
 
@@ -149,34 +151,33 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
     return is_ok;
 }
 
-// 关闭服务
 void tcp_server_impl::close()
 {
-    // 清理acceptor
+    // clear acceptor
     for (auto& itr :acceptors_)
     {
         itr.second->close();
     }
 
-    // 停止IO统计
+    // stop io statistics
     if (io_statistics_ptr_ != nullptr)
     {
         io_statistics_ptr_->stop();
     }
 
-    // 清理会话管理
+    // clear session manager
     if (session_idle_checker_ptr_ != nullptr)
     {
         session_idle_checker_ptr_->stop();
     }
 
-    // 清理会话
+    // clear session
     if (session_manager_ptr_ != nullptr)
     {
         session_manager_ptr_->fini();
     }
 
-    // 清理ios
+    // clear ios
     if (acceptor_ios_ptr_ != nullptr)
     {
         acceptor_ios_ptr_->stop();
@@ -191,29 +192,27 @@ void tcp_server_impl::close()
 // tcp_acceptor_handler impl
 //------------------------------------------------------------------------------
 
-// 接收连接成功
 void tcp_server_impl::handle_accept_success(std::shared_ptr<tcp_acceptor> acceptor_ptr,
                                             std::shared_ptr<tcp_session> session_ptr)
 {
-    // 设置会话的socket选项
+    // set session socket option
     session_ptr->set_sock_option(SOCK_OPT_RECV_BUFFER, session_config_.socket_recv_buf_size());
     session_ptr->set_sock_option(SOCK_OPT_SEND_BUFFER, session_config_.socket_send_buf_size());
     session_ptr->set_sock_option(SOCK_OPT_KEEPALIVE, session_config_.socket_keepalive() ? 1 : 0);
     session_ptr->set_sock_option(SOCK_OPT_NODELAY, session_config_.socket_nodelay() ? 1 : 0);
     session_ptr->set_sock_option(SOCK_OPT_LINGER, session_config_.socket_linger());
 
-    // 回调给外部处理
+    // accept callback
     if (event_handler_ptr_ != nullptr)
         event_handler_ptr_->handle_accept(session_ptr);
 
     // 开始读
     session_ptr->start_read();
 
-    // 继续投递异步accept
+    // post async accept
     do_accept(acceptor_ptr);
 }
 
-// 接收连接失败
 void tcp_server_impl::handle_accept_failed(std::shared_ptr<tcp_acceptor> acceptor_ptr,
                                            std::shared_ptr<tcp_session> session_ptr,
                                            int32_t err_code, std::string err_msg)
@@ -226,38 +225,34 @@ void tcp_server_impl::handle_accept_failed(std::shared_ptr<tcp_acceptor> accepto
 // tcp_session_handler impl
 //------------------------------------------------------------------------------
 
-// tcp会话读完成
 void tcp_server_impl::handle_session_read(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len)
 {
-    // 回调给外部处理
+    // read callback
     if (event_handler_ptr_ != nullptr)
         event_handler_ptr_->handle_session_read(session_ptr, data_ptr, data_len);
 }
 
-// tcp会话写完成
 void tcp_server_impl::handle_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len)
 {
-    // 回调给外部处理
+    // write callback
     if (event_handler_ptr_ != nullptr)
         event_handler_ptr_->handle_session_write(session_ptr, data_ptr, data_len);
 }
 
-// tcp会话闲置
 void tcp_server_impl::handle_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type)
 {
-    // 回调给外部处理
+    // idle callback
     if (event_handler_ptr_ != nullptr)
         event_handler_ptr_->handle_session_idle(session_ptr, type);
 }
 
-// tcp会话关闭
 void tcp_server_impl::handle_sessoin_close(std::shared_ptr<tcp_session> session_ptr)
 {
-    // 回调给外部处理
+    // close callback
     if (event_handler_ptr_ != nullptr)
         event_handler_ptr_->handle_sessoin_close(session_ptr);
 
-    // 回收会话
+    // recycle session
     session_manager_ptr_->release_session(session_ptr);
 }
 

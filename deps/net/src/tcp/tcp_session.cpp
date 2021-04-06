@@ -49,7 +49,7 @@ bool tcp_session_impl::open(std::shared_ptr<io_service> ios_ptr,
 
     // 这里实际只有客户端才会进行绑定, 服务端是不会进行绑定
     // 服务端绑定会出错, 因为accept时不允许socket为打开状态
-    if (local_ip != "" || local_port != 0)
+    if (!local_ip.empty() || local_port != 0)
     {
         asio::error_code ec;
 
@@ -258,7 +258,6 @@ bool tcp_session_impl::get_sock_option(sock_options opt, int32_t& value)
 // 处理完成的读操作
 void tcp_session_impl::handle_async_read(const asio::error_code& ec, size_t bytes_transferred)
 {
-    // 数据读取成功
     if (!ec)
     {
         // 更新读字节计数
@@ -283,17 +282,15 @@ void tcp_session_impl::handle_async_read(const asio::error_code& ec, size_t byte
             if (state_ == SESSION_STATE_OPEN)
                 async_read_once();
         }
-            // 对端关闭
         else
         {
-            // 关闭会话
+            // peer closed, close session
             close();
         }
     }
-        // 数据读取出错
     else
     {
-        // 关闭会话
+        // read error, close session
         close();
     }
 }

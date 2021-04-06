@@ -67,7 +67,7 @@ public:
     tcp_session_impl(int32_t msg_read_buf_size,
                      int32_t msg_write_buf_size,
                      int32_t msg_write_queue_size);
-    ~tcp_session_impl() = default;
+    ~tcp_session_impl() override = default;
 
     // tcp_session impl
 public:

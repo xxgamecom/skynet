@@ -4,9 +4,9 @@ local socket_core = require "skynet.socket.core"
 
 local gateserver = {}
 
-local socket    -- listen socket
+local listen_socket_id    -- listen socket id
 local queue        -- message queue
-local maxclient    -- max client
+local max_client    -- max client
 local client_number = 0
 local CMD = setmetatable({}, { __gc = function()
     netpack.clear(queue)
@@ -15,45 +15,61 @@ local nodelay = false
 
 local connection = {}
 
+---
+---@param fd number
 function gateserver.openclient(fd)
     if connection[fd] then
         socket_core.start(fd)
     end
 end
 
+---
+---@param fd number
 function gateserver.closeclient(fd)
-    local c = connection[fd]
-    if c then
+    if connection[fd] then
         connection[fd] = false
         socket_core.close(fd)
     end
 end
 
+---
+--- start gate server
+---@param handler table gate server message handler
 function gateserver.start(handler)
     assert(handler.message)
     assert(handler.connect)
 
     function CMD.open(source, conf)
-        assert(not socket)
+        --
+        assert(not listen_socket_id)
+
+        --
         local address = conf.address or "0.0.0.0"
         local port = assert(conf.port)
-        maxclient = conf.maxclient or 1024
+        max_client = conf.maxclient or 1024
         nodelay = conf.nodelay
+
+        --
         skynet.log_info(string.format("Listen on %s:%d", address, port))
-        socket = socket_core.listen(address, port)
-        socket_core.start(socket)
+
+        -- socket listen & start
+        listen_socket_id = socket_core.listen(address, port)
+        socket_core.start(listen_socket_id)
+
+        -- callback
         if handler.open then
             return handler.open(source, conf)
         end
     end
 
     function CMD.close()
-        assert(socket)
-        socket_core.close(socket)
+        assert(listen_socket_id)
+        socket_core.close(listen_socket_id)
     end
 
     local MSG = {}
 
+    --
     local function dispatch_msg(fd, msg, sz)
         if connection[fd] then
             handler.message(fd, msg, sz)
@@ -80,8 +96,9 @@ function gateserver.start(handler)
 
     MSG.more = dispatch_queue
 
+    -- handle accept client
     function MSG.open(fd, msg)
-        if client_number >= maxclient then
+        if client_number >= max_client then
             socket_core.close(fd)
             return
         end
@@ -94,26 +111,26 @@ function gateserver.start(handler)
     end
 
     local function close_fd(fd)
-        local c = connection[fd]
-        if c ~= nil then
+        if connection[fd] ~= nil then
             connection[fd] = nil
             client_number = client_number - 1
         end
     end
 
+    -- handle client close
     function MSG.close(fd)
-        if fd ~= socket then
+        if fd ~= listen_socket_id then
             if handler.disconnect then
                 handler.disconnect(fd)
             end
             close_fd(fd)
         else
-            socket = nil
+            listen_socket_id = nil
         end
     end
 
     function MSG.error(fd, msg)
-        if fd == socket then
+        if fd == listen_socket_id then
             socket_core.close(fd)
             skynet.log_error("gateserver close listen socket, accpet error:", msg)
         else
@@ -130,9 +147,10 @@ function gateserver.start(handler)
         end
     end
 
+    -- register socket message process handler
     skynet.register_svc_msg_handler({
         msg_type_name = "socket",
-        msg_type = skynet.SERVICE_MSG_TYPE_SOCKET, -- SERVICE_MSG_TYPE_SOCKET = 6
+        msg_type = skynet.SERVICE_MSG_TYPE_SOCKET,
         unpack = function(msg, sz)
             return netpack.filter(queue, msg, sz)
         end,
@@ -144,6 +162,7 @@ function gateserver.start(handler)
         end
     })
 
+    -- start gateserver service
     skynet.start(function()
         skynet.dispatch("lua", function(_, address, cmd, ...)
             local f = CMD[cmd]

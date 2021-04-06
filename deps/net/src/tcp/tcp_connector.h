@@ -36,7 +36,7 @@ protected:
 
 public:
     explicit tcp_connector_impl(std::shared_ptr<io_service> ios_ptr);
-    ~tcp_connector_impl() = default;
+    ~tcp_connector_impl() override = default;
 
     // tcp_connector impl
 public:

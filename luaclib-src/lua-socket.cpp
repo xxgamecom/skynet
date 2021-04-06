@@ -882,6 +882,9 @@ static int l_shutdown(lua_State* L)
  * 2 port               - integer
  * 3 backlog            - integer, optional
  *
+ * outputs:
+ * 1 listen socket id   - integer
+ *
  * lua examples:
  * socket_core.listen(address, port)
  * socket_core.listen(address, port, backlog)
@@ -897,14 +900,14 @@ static int l_listen(lua_State* L)
     // backlog (optional)
     int backlog = luaL_optinteger(L, 3, DEFAULT_BACKLOG);
 
-    // listen
-    int socket_id = node_socket::instance()->listen(svc_ctx, host, port, backlog);
-    if (socket_id < 0)
+    // listen socket id
+    int listen_socket_id = node_socket::instance()->listen(svc_ctx, host, port, backlog);
+    if (listen_socket_id < 0)
     {
         return luaL_error(L, "Listen error");
     }
 
-    lua_pushinteger(L, socket_id);
+    lua_pushinteger(L, listen_socket_id);
 
     return 1;
 }
