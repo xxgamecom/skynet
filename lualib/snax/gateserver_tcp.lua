@@ -6,7 +6,7 @@ local gateserver = {}
 local smallstring = 65536
 local socket    -- listen socket
 local queue        -- message queue
-local maxclient    -- max client
+local max_client    -- max client
 local client_number = 0
 local CMD = setmetatable({}, { __gc = function()
     netpack.clear(queue)
@@ -39,7 +39,7 @@ function gateserver.start(handler)
         assert(not socket)
         local address = conf.address or "0.0.0.0"
         local port = assert(conf.port)
-        maxclient = conf.maxclient or 1024
+        max_client = conf.max_client or 1024
         nodelay = conf.nodelay
         skynet.log_info(string.format("Listen on %s:%d", address, port))
         socket = socket_core.listen(address, port)
@@ -87,7 +87,7 @@ function gateserver.start(handler)
     MSG.more = dispatch_queue
 
     function MSG.open(fd, msg)
-        if client_number >= maxclient then
+        if client_number >= max_client then
             socket_core.close(fd)
             return
         end
@@ -154,9 +154,9 @@ function gateserver.start(handler)
         skynet.dispatch("lua", function(_, source, cmd, ...)
             local f = CMD[cmd]
             if f then
-                skynet.ret(skynet.pack(f(source, ...)))
+                skynet.ret_pack(f(source, ...))
             else
-                skynet.ret(skynet.pack(handler.command(cmd, source, ...)))
+                skynet.ret_pack(handler.command(cmd, source, ...))
             end
         end)
     end)

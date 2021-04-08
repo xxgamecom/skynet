@@ -19,6 +19,19 @@ public:
     void fini();
 
 public:
+    // start tcp server
+    int listen(uint32_t svc_handle, const char* host, int port, int backlog);
+    // start tcp client
+    int connect(uint32_t svc_handle, const char* host, int port);
+
+    // start
+    void start(uint32_t svc_handle, int socket_id);
+    // pause
+    void pause(uint32_t svc_handle, int socket_id);
+    // close socket
+    void close(uint32_t svc_handle, int socket_id);
+    // shutdown socket
+    void shutdown(uint32_t svc_handle, int socket_id);
 
     // tcp_server_handler impl
 public:

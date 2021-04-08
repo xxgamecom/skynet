@@ -24,6 +24,7 @@ set(SKYNET_LUACLIB_SRC
     lua-clientsocket_tcp.cpp
     lua-clientsocket_ws.cpp
     lua-stm.cpp
+    lua-sharedata.cpp
     lua-sharetable.cpp
     lua-debugchannel.cpp
 )

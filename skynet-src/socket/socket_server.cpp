@@ -1018,14 +1018,14 @@ int socket_server::handle_ctrl_cmd_bind_socket(request_bind* cmd, socket_message
     result->ud = 0;
 
     //
-    socket* new_socket_ptr = new_socket(socket_id, cmd->fd, SOCKET_TYPE_TCP, cmd->svc_handle);
+    socket* new_socket_ptr = new_socket(socket_id, cmd->os_fd, SOCKET_TYPE_TCP, cmd->svc_handle);
     if (new_socket_ptr == nullptr)
     {
         result->data_ptr = const_cast<char*>("reach skynet socket number limit");
         return SOCKET_EVENT_ERROR;
     }
 
-    socket_helper::nonblocking(cmd->fd);
+    socket_helper::nonblocking(cmd->os_fd);
     new_socket_ptr->status = SOCKET_STATUS_BIND;
     result->data_ptr = const_cast<char*>("binding");
 
@@ -1280,7 +1280,7 @@ int socket_server::handle_ctrl_cmd_trigger_write(request_send* cmd, socket_messa
 int socket_server::handle_ctrl_cmd_listen_socket(request_listen* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
-    int listen_fd = cmd->fd;
+    int listen_fd = cmd->socket_fd;
 
     // 
     socket* new_socket_ptr = new_socket(socket_id, listen_fd, SOCKET_TYPE_TCP, cmd->svc_handle, false);
@@ -1306,10 +1306,10 @@ int socket_server::handle_ctrl_cmd_add_udp_socket(request_udp* cmd)
     int socket_id = cmd->socket_id;
     int type = cmd->family == AF_INET6 ? SOCKET_TYPE_UDPv6 : SOCKET_TYPE_UDP;
 
-    socket* new_socket_ptr = new_socket(socket_id, cmd->fd, type, cmd->svc_handle);
+    socket* new_socket_ptr = new_socket(socket_id, cmd->socket_fd, type, cmd->svc_handle);
     if (new_socket_ptr == nullptr)
     {
-        ::close(cmd->fd);
+        ::close(cmd->socket_fd);
         socket_pool_.get_socket(socket_id).status = SOCKET_STATUS_INVALID;
         return SOCKET_EVENT_ERROR;
     }

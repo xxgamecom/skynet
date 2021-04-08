@@ -51,7 +51,7 @@ struct request_close
 struct request_listen
 {
     int                         socket_id = 0;                      //
-    int                         fd = 0;                             //
+    int                         socket_fd = 0;                      //
     uint64_t                    svc_handle = 0;                     // skynet service handle
     char                        host[1] = { 0 };                    // listen address
 };
@@ -60,7 +60,7 @@ struct request_listen
 struct request_bind
 {
     int                         socket_id = 0;                      //
-    int                         fd = 0;                             //
+    int                         os_fd = 0;                          //
     uint64_t                    svc_handle = 0;                     // skynet service handle
 };
 
@@ -79,11 +79,11 @@ struct request_set_opt
     int                         value = 0;                          // socket option value
 };
 
-// cmd - 
+// cmd - create udp socket
 struct request_udp
 {
-    int                         socket_id = 0;                      //
-    int                         fd = 0;                             //
+    int                         socket_id = 0;                      // socket id
+    int                         socket_fd = 0;                      // socket fd
     int                         family = 0;                         //
     uint64_t                    svc_handle = 0;                     // skynet service handle
 };
@@ -166,9 +166,9 @@ int prepare_ctrl_cmd_request_trigger_write(ctrl_cmd_package& cmd, int socket_id)
 int prepare_ctrl_cmd_request_set_opt(ctrl_cmd_package& cmd, int socket_id);
 
 // udp
-int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int socket_type, const socket_addr* sa);
+int prepare_ctrl_cmd_request_udp(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int socket_fd, int family);
 //
-int prepare_ctrl_cmd_request_udp(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int fd, int family);
+int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int socket_type, const socket_addr* sa);
 //
 int prepare_ctrl_cmd_request_send_udp(ctrl_cmd_package& cmd, int socket_id, const send_buffer* buf_ptr, const uint8_t* udp_address, int addr_sz);
 

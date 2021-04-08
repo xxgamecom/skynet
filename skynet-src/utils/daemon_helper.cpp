@@ -114,7 +114,7 @@ bool _redirect_fds()
 bool daemon_helper::init(const char* pid_file)
 {
     int pid = _check_pid(pid_file);
-    if (pid == -1)
+    if (pid != -1)
     {
         std::cerr << "Skynet is already running, pid = " << pid << "." << std::endl;
         return false;

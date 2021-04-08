@@ -3,11 +3,8 @@
 #include "../log/log.h"
 
 #include "../mq/mq_msg.h"
-
 #include "../timer/timer_manager.h"
 #include "../socket/socket_server.h"
-
-#include "../service/service_context.h"
 #include "../service/service_manager.h"
 
 #include <iostream>
@@ -152,67 +149,67 @@ int node_socket::poll_socket_event()
     return 1;
 }
 
-int node_socket::sendbuffer(service_context* ctx, send_buffer* buffer)
+int node_socket::sendbuffer(uint32_t svc_handle, send_buffer* buffer)
 {
     return socket_server_->send(buffer);
 }
 
-int node_socket::sendbuffer_low_priority(service_context* ctx, send_buffer* buffer)
+int node_socket::sendbuffer_low_priority(uint32_t svc_handle, send_buffer* buffer)
 {
     return socket_server_->send_low_priority(buffer);
 }
 
-int node_socket::listen(service_context* ctx, const char* host, int port, int backlog)
+int node_socket::listen(uint32_t svc_handle, const char* host, int port, int backlog)
 {
-    return socket_server_->listen(ctx->svc_handle_, host, port, backlog);
+    return socket_server_->listen(svc_handle, host, port, backlog);
 }
 
-int node_socket::connect(service_context* ctx, const char *host, int port)
+int node_socket::connect(uint32_t svc_handle, const char *host, int port)
 {
-    return socket_server_->connect(ctx->svc_handle_, host, port);
+    return socket_server_->connect(svc_handle, host, port);
 }
 
-int node_socket::bind(service_context* ctx, int fd)
+void node_socket::close(uint32_t svc_handle, int socket_id)
 {
-    return socket_server_->bind(ctx->svc_handle_, fd);
+    socket_server_->close(svc_handle, socket_id);
 }
 
-void node_socket::close(service_context* ctx, int socket_id)
+void node_socket::shutdown(uint32_t svc_handle, int socket_id)
 {
-    socket_server_->close(ctx->svc_handle_, socket_id);
+    socket_server_->shutdown(svc_handle, socket_id);
 }
 
-void node_socket::shutdown(service_context* ctx, int socket_id)
+void node_socket::start(uint32_t svc_handle, int socket_id)
 {
-    socket_server_->shutdown(ctx->svc_handle_, socket_id);
+    socket_server_->start(svc_handle, socket_id);
 }
 
-void node_socket::start(service_context* ctx, int socket_id)
+void node_socket::pause(uint32_t svc_handle, int socket_id)
 {
-    socket_server_->start(ctx->svc_handle_, socket_id);
+    socket_server_->pause(svc_handle, socket_id);
 }
 
-void node_socket::pause(service_context* ctx, int socket_id)
-{
-    socket_server_->pause(ctx->svc_handle_, socket_id);
-}
-
-void node_socket::nodelay(service_context* ctx, int socket_id)
+void node_socket::nodelay(uint32_t svc_handle, int socket_id)
 {
     socket_server_->nodelay(socket_id);
 }
 
-int node_socket::udp(service_context* ctx, const char* addr, int port)
+int node_socket::bind(uint32_t svc_handle, int os_fd)
 {
-    return socket_server_->udp(ctx->svc_handle_, addr, port);
+    return socket_server_->bind(svc_handle, os_fd);
 }
 
-int node_socket::udp_connect(service_context* ctx, int socket_id, const char* addr, int port)
+int node_socket::udp(uint32_t svc_handle, const char* addr, int port)
+{
+    return socket_server_->udp(svc_handle, addr, port);
+}
+
+int node_socket::udp_connect(uint32_t svc_handle, int socket_id, const char* addr, int port)
 {
     return socket_server_->udp_connect(socket_id, addr, port);
 }
 
-int node_socket::udp_sendbuffer(service_context* ctx, const char* address, send_buffer* buffer)
+int node_socket::udp_sendbuffer(uint32_t svc_handle, const char* address, send_buffer* buffer)
 {
     return socket_server_->udp_send((const struct socket_udp_address*)address, buffer);
 }

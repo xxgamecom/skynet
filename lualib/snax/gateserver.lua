@@ -46,7 +46,7 @@ function gateserver.start(handler)
         --
         local address = conf.address or "0.0.0.0"
         local port = assert(conf.port)
-        max_client = conf.maxclient or 1024
+        max_client = conf.max_client or 1024
         nodelay = conf.nodelay
 
         --

@@ -1,4 +1,4 @@
-local si = require "snax.interface"
+local si = require "gate.interface"
 
 local function envid(f)
     local i = 1

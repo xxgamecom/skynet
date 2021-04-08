@@ -33,7 +33,6 @@ struct skynet_socket_message
 };
 
 // forward declare
-class service_context;
 class socket_server;
 
 // skynet node socket
@@ -61,22 +60,22 @@ public:
     int poll_socket_event();
 
     //
-    int listen(service_context* ctx, const char* host, int port, int backlog);
-    int connect(service_context* ctx, const char* host, int port);
-    int bind(service_context* ctx, int fd);
-    void close(service_context* ctx, int socket_id);
-    void shutdown(service_context* ctx, int socket_id);
-    void start(service_context* ctx, int socket_id);
-    void pause(service_context* ctx, int socket_id);
-    void nodelay(service_context* ctx, int socket_id);
+    int listen(uint32_t svc_handle, const char* host, int port, int backlog);
+    int connect(uint32_t svc_handle, const char* host, int port);
+    void close(uint32_t svc_handle, int socket_id);
+    void shutdown(uint32_t svc_handle, int socket_id);
+    void start(uint32_t svc_handle, int socket_id);
+    void pause(uint32_t svc_handle, int socket_id);
+    void nodelay(uint32_t svc_handle, int socket_id);
+    int bind(uint32_t svc_handle, int os_fd);
 
-    int sendbuffer(service_context* ctx, send_buffer* buffer);
-    int sendbuffer_low_priority(service_context* ctx, send_buffer* buffer);
+    int sendbuffer(uint32_t svc_handle, send_buffer* buffer);
+    int sendbuffer_low_priority(uint32_t svc_handle, send_buffer* buffer);
 
     //
-    int udp(service_context* ctx, const char* addr, int port);
-    int udp_connect(service_context* ctx, int socket_id, const char* addr, int port);
-    int udp_sendbuffer(service_context* ctx, const char* address, send_buffer* buffer);
+    int udp(uint32_t svc_handle, const char* addr, int port);
+    int udp_connect(uint32_t svc_handle, int socket_id, const char* addr, int port);
+    int udp_sendbuffer(uint32_t svc_handle, const char* address, send_buffer* buffer);
     const char* udp_address(skynet_socket_message*, int* addrsz);
 
     void get_socket_info(std::list<socket_info>& si_list);
@@ -86,7 +85,7 @@ public:
 // legacy APIs
 //
 
-static inline int skynet_socket_send(service_context* ctx, int socket_id, void* buffer, int sz)
+static inline int skynet_socket_send(uint32_t svc_handle, int socket_id, void* buffer, int sz)
 {
     send_buffer buf;
     buf.socket_id = socket_id;
@@ -94,7 +93,7 @@ static inline int skynet_socket_send(service_context* ctx, int socket_id, void* 
     buf.type = sz < 0 ? BUFFER_TYPE_OBJECT : BUFFER_TYPE_MEMORY;
     buf.data_size = (size_t)sz;
 
-    return node_socket::instance()->sendbuffer(ctx, &buf);
+    return node_socket::instance()->sendbuffer(svc_handle, &buf);
 }
 
 }

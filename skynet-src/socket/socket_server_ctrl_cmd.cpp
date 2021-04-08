@@ -111,7 +111,7 @@ int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint64_t svc_handle, in
     // cmd data
     cmd.u.bind.svc_handle = svc_handle;
     cmd.u.bind.socket_id = socket_id;
-    cmd.u.bind.fd = os_fd;
+    cmd.u.bind.os_fd = os_fd;
 
     // actually length
     int len = sizeof(cmd.u.bind);
@@ -128,7 +128,7 @@ int prepare_ctrl_cmd_request_listen(ctrl_cmd_package& cmd, uint64_t svc_handle, 
     // cmd data
     cmd.u.listen.svc_handle = svc_handle;
     cmd.u.listen.socket_id = socket_id;
-    cmd.u.listen.fd = listen_fd;
+    cmd.u.listen.socket_fd = listen_fd;
 
     // actually length
     int len = sizeof(cmd.u.listen);
@@ -190,6 +190,24 @@ int prepare_ctrl_cmd_request_set_opt(ctrl_cmd_package& cmd, int socket_id)
     return len;
 }
 
+int prepare_ctrl_cmd_request_udp(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int socket_fd, int family)
+{
+    // cmd data
+    cmd.u.udp.svc_handle = svc_handle;
+    cmd.u.udp.socket_id = socket_id;
+    cmd.u.udp.socket_fd = socket_fd;
+    cmd.u.udp.family = family;
+
+    // actually length
+    int len = sizeof(cmd.u.udp);
+
+    // cmd header
+    cmd.header[6] = (uint8_t)'U';
+    cmd.header[7] = (uint8_t)len;
+
+    return len;
+}
+
 int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int socket_type, const socket_addr* sa)
 {
     // cmd data
@@ -201,25 +219,6 @@ int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int s
     
     // cmd header
     cmd.header[6] = (uint8_t)'C';
-    cmd.header[7] = (uint8_t)len;
-
-    return len;
-}
-
-
-int prepare_ctrl_cmd_request_udp(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int fd, int family)
-{
-    // cmd data
-    cmd.u.udp.svc_handle = svc_handle;
-    cmd.u.udp.socket_id = socket_id;
-    cmd.u.udp.fd = fd;
-    cmd.u.udp.family = family;
-
-    // actually length
-    int len = sizeof(cmd.u.udp);
-
-    // cmd header
-    cmd.header[6] = (uint8_t)'U';
     cmd.header[7] = (uint8_t)len;
 
     return len;
