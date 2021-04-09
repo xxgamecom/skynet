@@ -2,14 +2,13 @@
 
 #include "tcp/tcp_client_i.h"
 #include "tcp/tcp_client_handler_i.h"
+#include "uri/uri_codec.h"
 
 #include "../base/io_service.h"
 
 #include "tcp_connector.h"
 #include "tcp_session.h"
 #include "tcp_client_config.h"
-
-#include "../uri/uri_codec.h"
 
 #include <memory>
 
@@ -65,7 +64,7 @@ public:
     void close() override;
 
     // 获取会话配置
-    tcp_client_session_config& get_session_config() override;
+    tcp_client_session_config& session_config() override;
 
     // 发送数据
     bool send(const char* data_ptr, int32_t data_len) override;

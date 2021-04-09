@@ -22,15 +22,18 @@ public:
     virtual void set_event_handler(std::shared_ptr<tcp_acceptor_handler> event_handler_ptr) = 0;
 
 public:
-    // 打开acceptor
-    virtual bool open(const std::string local_ip, uint16_t local_port, bool is_reuse_addr = true, int32_t backlog = DEFAULT_BACKLOG) = 0;
-    // 关闭acceptor
+    // open acceptor (bind & listen)
+    virtual bool open(const std::string local_ip, uint16_t local_port, bool reuse_addr = true, int32_t backlog = DEFAULT_BACKLOG) = 0;
+    // close acceptor
     virtual void close() = 0;
 
-    // 投递一次异步accept
+    // get skynet service handle
+    virtual uint32_t svc_handle() = 0;
+
+    // post an async accept
     virtual void accept_once(std::shared_ptr<tcp_session> session_ptr) = 0;
 
-    // 本地端点信息
+    // local endpoint info
     virtual asio::ip::tcp::endpoint local_endpoint() const = 0;
 
     // socket options

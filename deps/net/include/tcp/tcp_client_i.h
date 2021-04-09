@@ -39,7 +39,7 @@ public:
     virtual void close() = 0;
 
     // 获取会话配置
-    virtual tcp_client_session_config& get_session_config() = 0;
+    virtual tcp_client_session_config& session_config() = 0;
 
     // 发送数据
     virtual bool send(const char* data_ptr, int32_t data_len) = 0;

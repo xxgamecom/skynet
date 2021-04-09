@@ -187,34 +187,34 @@ inline int32_t tcp_server_session_config_impl::session_pool_size()
 }
 
 // 会话读消息缓存大小(单次投递异步读数据, 非底层socket缓存)
-inline void tcp_server_session_config_impl::msg_read_buf_size(int32_t size)
+inline void tcp_server_session_config_impl::read_buf_size(int32_t size)
 {
     msg_read_buf_size_ = size;
 }
 
-inline int32_t tcp_server_session_config_impl::msg_read_buf_size()
+inline int32_t tcp_server_session_config_impl::read_buf_size()
 {
     return msg_read_buf_size_;
 }
 
 // 会话写消息缓存大小(用于单次投递异步写数据, 非底层socket缓存)
-inline void tcp_server_session_config_impl::msg_write_buf_size(int32_t size)
+inline void tcp_server_session_config_impl::write_buf_size(int32_t size)
 {
     msg_write_buf_size_ = size;
 }
 
-inline int32_t tcp_server_session_config_impl::msg_write_buf_size()
+inline int32_t tcp_server_session_config_impl::write_buf_size()
 {
     return msg_write_buf_size_;
 }
 
 // 会话写消息缓存队列大小(可以单次写超过4K数据, 内部会根据队列情况进行切片排队)
-inline void tcp_server_session_config_impl::msg_write_queue_size(int32_t size)
+inline void tcp_server_session_config_impl::write_queue_size(int32_t size)
 {
     msg_write_queue_size_ = size;
 }
 
-inline int32_t tcp_server_session_config_impl::msg_write_queue_size()
+inline int32_t tcp_server_session_config_impl::write_queue_size()
 {
     return msg_write_queue_size_;
 }

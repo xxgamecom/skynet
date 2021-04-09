@@ -26,9 +26,9 @@ bool tcp_client_impl::open()
     connector_ptr_->set_event_handler(shared_from_this());
 
     // 创建tcp会话
-    session_ptr_ = std::make_shared<tcp_session_impl>(session_config_.msg_read_buf_size(),
-                                                      session_config_.msg_write_buf_size(),
-                                                      session_config_.msg_write_queue_size());
+    session_ptr_ = std::make_shared<tcp_session_impl>(session_config_.read_buf_size(),
+                                                      session_config_.write_buf_size(),
+                                                      session_config_.write_queue_size());
     if (session_ptr_ == nullptr)
         return false;
     session_ptr_->set_event_handler(shared_from_this());

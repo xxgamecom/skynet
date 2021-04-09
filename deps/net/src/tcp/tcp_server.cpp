@@ -1,32 +1,64 @@
 #include "tcp_server.h"
 #include "tcp_acceptor.h"
-#include "tcp_io_statistics.h"
+
+#include "../session/io_statistics.h"
+#include "../session/session_manager.h"
 
 #include "tcp/tcp_server_handler_i.h"
 
 namespace skynet::net::impl {
+
+tcp_server_impl::tcp_server_impl(std::shared_ptr<io_service> acceptor_ios_ptr,
+                                 std::shared_ptr<session_manager> session_manager_ptr,
+                                 std::shared_ptr<tcp_server_acceptor_config> acceptor_config_ptr,
+                                 std::shared_ptr<tcp_server_session_config> session_config_ptr)
+:
+acceptor_config_ptr_(acceptor_config_ptr),
+session_config_ptr_(session_config_ptr),
+acceptor_ios_ptr_(acceptor_ios_ptr),
+session_manager_ptr_(session_manager_ptr)
+{
+}
+
+bool tcp_server_impl::init()
+{
+    is_inited = true;
+
+    return true;
+}
+
+void tcp_server_impl::fini()
+{
+    acceptor_ios_ptr_.reset();
+    is_inited = false;
+}
 
 void tcp_server_impl::set_event_handler(std::shared_ptr<tcp_server_handler> event_handler_ptr)
 {
     event_handler_ptr_ = event_handler_ptr;
 }
 
-bool tcp_server_impl::open(const std::string local_uri, bool is_reuse_addr/* = true*/)
+bool tcp_server_impl::open(std::string local_uri)
 {
     uri_codec uri = uri_codec::from_string(local_uri);
     if (!uri.is_valid())
         return false;
 
-    return open(uri.host().value(), uri.port().value(), is_reuse_addr);
+    return open(uri.host().value(), uri.port().value());
 }
 
-bool tcp_server_impl::open(const std::string local_ip, uint16_t local_port, bool is_reuse_addr/* = true*/)
+bool tcp_server_impl::open(std::string local_ip, uint16_t local_port)
 {
-    return open({ std::make_pair(local_ip, local_port) }, is_reuse_addr);
+    return open({ std::make_pair(local_ip, local_port) });
 }
 
-bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t>> local_endpoints, bool is_reuse_addr/* = true*/)
+bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t>> local_endpoints)
 {
+    // check init
+    if (!is_inited)
+        return false;
+
+    // check local endpoints
     assert(local_endpoints.size() > 0);
     if (local_endpoints.size() == 0)
         return false;
@@ -35,46 +67,18 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
     do
     {
         // calc ios pool size (session_thread_num为默认, 按CPU Core设置)
-        if (session_config_.session_thread_num() == 0)
+        if (session_config_ptr_->session_thread_num() == 0)
         {
-            // the number of cpu logic core
+            // the number of cpu logic core, 超过1个时, 需要减掉1, acceptor占用一个ios
             int32_t core_num = std::thread::hardware_concurrency();
+            core_num = core_num <= 1 ? 1 : core_num - 1;
 
-            // 超过1个时, 需要减掉1, acceptor占用一个ios
-            if (core_num <= 1) core_num = 1;
-            else core_num -= 1;
-
-            session_config_.session_thread_num(core_num);
+            session_config_ptr_->session_thread_num(core_num);
         }
 
         // create session ios pool
-        session_ios_pool_ptr_ = std::make_shared<io_service_pool_impl>(session_config_.session_thread_num());
+        session_ios_pool_ptr_ = std::make_shared<io_service_pool_impl>(session_config_ptr_->session_thread_num());
         if (session_ios_pool_ptr_ == nullptr)
-            break;
-
-        // create acceptor ios
-        acceptor_ios_ptr_ = std::make_shared<io_service_impl>();
-        if (acceptor_ios_ptr_ == nullptr)
-            break;
-
-        // create session manager
-        session_manager_ptr_ = std::make_shared<tcp_session_manager>();
-        if (session_manager_ptr_ == nullptr)
-            break;
-        if (!session_manager_ptr_->init(session_config_.session_pool_size(),
-                                        session_config_.msg_read_buf_size(),
-                                        session_config_.msg_write_buf_size(),
-                                        session_config_.msg_write_queue_size()))
-            break;
-
-        // create session idle checker
-        session_idle_checker_ptr_ = std::make_shared<tcp_session_idle_checker>(session_manager_ptr_, acceptor_ios_ptr_);
-        if (session_idle_checker_ptr_ == nullptr)
-            break;
-
-        // create io statistics
-        io_statistics_ptr_ = std::make_shared<tcp_io_statistics_impl>(session_manager_ptr_, acceptor_ios_ptr_);
-        if (io_statistics_ptr_ == nullptr)
             break;
 
         std::shared_ptr<tcp_acceptor> acceptor_ptr;
@@ -89,7 +93,7 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
                 continue;
 
             // create acceptor
-            acceptor_ptr = std::make_shared<tcp_acceptor_impl>(acceptor_ios_ptr_, shared_from_this());
+            acceptor_ptr = std::make_shared<tcp_acceptor_impl>(0, acceptor_ios_ptr_, shared_from_this());
             if (acceptor_ptr == nullptr)
             {
                 is_acceptor_ok = false;
@@ -97,18 +101,18 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
             }
 
             // open acceptor
-            if (acceptor_ptr->open(itr.first, itr.second, is_reuse_addr) == false)
+            if (acceptor_ptr->open(itr.first, itr.second, true) == false)
             {
                 is_acceptor_ok = false;
                 break;
             }
 
             // set acceptor socket options
-            acceptor_ptr->set_sock_option(SOCK_OPT_RECV_BUFFER, acceptor_config_.socket_recv_buf_size());
-            acceptor_ptr->set_sock_option(SOCK_OPT_SEND_BUFFER, acceptor_config_.socket_send_buf_size());
-            acceptor_ptr->set_sock_option(SOCK_OPT_KEEPALIVE, acceptor_config_.socket_keepalive() ? 1 : 0);
-            acceptor_ptr->set_sock_option(SOCK_OPT_NODELAY, acceptor_config_.socket_nodelay() ? 1 : 0);
-            acceptor_ptr->set_sock_option(SOCK_OPT_LINGER, acceptor_config_.socket_linger());
+            acceptor_ptr->set_sock_option(SOCK_OPT_RECV_BUFFER, acceptor_config_ptr_->socket_recv_buf_size());
+            acceptor_ptr->set_sock_option(SOCK_OPT_SEND_BUFFER, acceptor_config_ptr_->socket_send_buf_size());
+            acceptor_ptr->set_sock_option(SOCK_OPT_KEEPALIVE, acceptor_config_ptr_->socket_keepalive() ? 1 : 0);
+            acceptor_ptr->set_sock_option(SOCK_OPT_NODELAY, acceptor_config_ptr_->socket_nodelay() ? 1 : 0);
+            acceptor_ptr->set_sock_option(SOCK_OPT_LINGER, acceptor_config_ptr_->socket_linger());
 
             // add acceptor map
             acceptors_[key] = acceptor_ptr;
@@ -116,21 +120,10 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
         if (is_acceptor_ok == false)
             break;
 
-        // start session idle check
-        if (!session_idle_checker_ptr_->start(session_config_.idle_check_type(),
-                                              session_config_.idle_check_seconds()))
-        {
-            break;
-        }
-
-        // start io statistics
-        if (io_statistics_ptr_->start() == false)
-            break;
-
         // post async accept
         for (auto& itr : acceptors_)
         {
-            for (int32_t i = 0; i < acceptor_config_.sync_accept_num(); ++i)
+            for (int32_t i = 0; i < acceptor_config_ptr_->sync_accept_num(); ++i)
             {
                 do_accept(itr.second);
             }
@@ -159,24 +152,6 @@ void tcp_server_impl::close()
         itr.second->close();
     }
 
-    // stop io statistics
-    if (io_statistics_ptr_ != nullptr)
-    {
-        io_statistics_ptr_->stop();
-    }
-
-    // clear session manager
-    if (session_idle_checker_ptr_ != nullptr)
-    {
-        session_idle_checker_ptr_->stop();
-    }
-
-    // clear session
-    if (session_manager_ptr_ != nullptr)
-    {
-        session_manager_ptr_->fini();
-    }
-
     // clear ios
     if (acceptor_ios_ptr_ != nullptr)
     {
@@ -196,11 +171,11 @@ void tcp_server_impl::handle_accept_success(std::shared_ptr<tcp_acceptor> accept
                                             std::shared_ptr<tcp_session> session_ptr)
 {
     // set session socket option
-    session_ptr->set_sock_option(SOCK_OPT_RECV_BUFFER, session_config_.socket_recv_buf_size());
-    session_ptr->set_sock_option(SOCK_OPT_SEND_BUFFER, session_config_.socket_send_buf_size());
-    session_ptr->set_sock_option(SOCK_OPT_KEEPALIVE, session_config_.socket_keepalive() ? 1 : 0);
-    session_ptr->set_sock_option(SOCK_OPT_NODELAY, session_config_.socket_nodelay() ? 1 : 0);
-    session_ptr->set_sock_option(SOCK_OPT_LINGER, session_config_.socket_linger());
+    session_ptr->set_sock_option(SOCK_OPT_RECV_BUFFER, session_config_ptr_->socket_recv_buf_size());
+    session_ptr->set_sock_option(SOCK_OPT_SEND_BUFFER, session_config_ptr_->socket_send_buf_size());
+    session_ptr->set_sock_option(SOCK_OPT_KEEPALIVE, session_config_ptr_->socket_keepalive() ? 1 : 0);
+    session_ptr->set_sock_option(SOCK_OPT_NODELAY, session_config_ptr_->socket_nodelay() ? 1 : 0);
+    session_ptr->set_sock_option(SOCK_OPT_LINGER, session_config_ptr_->socket_linger());
 
     // accept callback
     if (event_handler_ptr_ != nullptr)
@@ -254,6 +229,40 @@ void tcp_server_impl::handle_sessoin_close(std::shared_ptr<tcp_session> session_
 
     // recycle session
     session_manager_ptr_->release_session(session_ptr);
+}
+
+// accept client
+bool tcp_server_impl::do_accept(std::shared_ptr<tcp_acceptor> acceptor_ptr)
+{
+    std::shared_ptr<tcp_session> session_ptr = std::dynamic_pointer_cast<tcp_session>(session_manager_ptr_->create_session(session_type::TCP));
+    if (session_ptr == nullptr)
+        return false;
+
+    // 设置会话处理句柄
+    session_ptr->set_event_handler(shared_from_this());
+
+    // 设置会话
+    if (!session_ptr->open(session_ios_pool_ptr_->select_one()))
+    {
+        session_ptr->close();
+        session_manager_ptr_->release_session(session_ptr);
+        return false;
+    }
+
+    // 接收连接
+    acceptor_ptr->accept_once(session_ptr);
+
+    return true;
+}
+
+std::string tcp_server_impl::make_key(const asio::ip::tcp::endpoint& ep)
+{
+    return make_key(ep.address().to_string(), ep.port());
+}
+
+std::string tcp_server_impl::make_key(const std::string& ip, uint16_t port)
+{
+    return ip + ":" + std::to_string(port);
 }
 
 }

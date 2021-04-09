@@ -9,7 +9,7 @@
 
 namespace skynet {
 
-// socket pool
+// socket session pool
 class socket_pool final
 {
 public:

@@ -35,19 +35,19 @@ local function close_fd(fd)
 end
 
 --
-function CMD.forward(source, fd, client, address)
-    local c = connection[fd]
+function CMD.forward(source, socket_id, client, address)
+    local c = connection[socket_id]
     if c == nil then
         return false
     end
     unforward(c)
     if watchdog == source then
-        return gateserver.openclient(fd)
+        return gateserver.openclient(socket_id)
     end
     c.client = client or 0
     c.agent = address or source
     forwarding[c.agent] = c
-    return gateserver.openclient(fd)
+    return gateserver.openclient(socket_id)
 end
 
 function CMD.accept(source, fd)

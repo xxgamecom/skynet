@@ -227,7 +227,7 @@ void multi_sink_example()
     spdlog::logger logger("multi_sink", {console_sink, file_sink});
     logger.set_level(spdlog::level::debug);
     logger.warn("this should appear in both console and file");
-    logger.info("this message should not appear in the console, only in the file");
+    skynet.log_info("this message should not appear in the console, only in the file");
 }
 ```
 

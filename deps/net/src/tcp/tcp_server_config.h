@@ -138,16 +138,16 @@ public:
     int32_t session_pool_size() override;
 
     // 会话读消息缓存大小(单次投递异步读数据, 非底层socket缓存)
-    void msg_read_buf_size(int32_t size) override;
-    int32_t msg_read_buf_size() override;
+    void read_buf_size(int32_t size) override;
+    int32_t read_buf_size() override;
     
     // 会话写消息缓存大小(用于单次投递异步写数据, 非底层socket缓存)
-    void msg_write_buf_size(int32_t size) override;
-    int32_t msg_write_buf_size() override;
+    void write_buf_size(int32_t size) override;
+    int32_t write_buf_size() override;
 
     // 会话写消息缓存队列大小(可以单次写超过4K数据, 内部会根据队列情况进行切片排队)
-    void msg_write_queue_size(int32_t size) override;
-    int32_t msg_write_queue_size() override;
+    void write_queue_size(int32_t size) override;
+    int32_t write_queue_size() override;
 
     // 判定会话闲置的类型
     void idle_check_type(idle_type type) override;

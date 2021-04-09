@@ -50,8 +50,15 @@ int32_t main(int32_t argc, char* argv[])
 {
     std::cout << "create server" << std::endl;
 
+    // acceptor ios
+    auto acceptor_ios_ptr = skynet::net::create_io_service();
+    auto session_manager_ptr = skynet::net::create_session_manager();
+    auto io_statistics_ptr = skynet::net::create_io_statistics(session_manager_ptr, acceptor_ios_ptr);
+    auto acceptor_config_ptr = skynet::net::create_tcp_server_acceptor_config();
+    auto session_config_ptr = skynet::net::create_tcp_server_session_config();
+
     // create server
-    auto server_ptr = skynet::net::create_tcp_server();
+    auto server_ptr = skynet::net::create_tcp_server(acceptor_ios_ptr, session_manager_ptr, acceptor_config_ptr, session_config_ptr);
 
     // create server handler
     auto server_handler_ptr = std::make_shared<tcp_server_handler>();

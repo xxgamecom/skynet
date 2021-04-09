@@ -78,11 +78,11 @@ public:
         server_ptr_->set_event_handler(server_handler_ptr);
 
         // 设置服务端会话选项
-        //server_ptr_->get_session_config().msg_read_buf_size(32*1024);
-        //server_ptr_->get_session_config().msg_write_buf_size(32*1024);
-        server_ptr_->get_session_config().session_thread_num(thread_count - 1);
-        server_ptr_->get_session_config().socket_recv_buf_size(32 * 1024);
-        server_ptr_->get_session_config().socket_send_buf_size(32 * 1024);
+        //server_ptr_->session_config().msg_read_buf_size(32*1024);
+        //server_ptr_->session_config().msg_write_buf_size(32*1024);
+        server_ptr_->session_config().session_thread_num(thread_count - 1);
+        server_ptr_->session_config().socket_recv_buf_size(32 * 1024);
+        server_ptr_->session_config().socket_send_buf_size(32 * 1024);
 
         if (server_ptr_->open(local_ip, local_port) == false)
         {
@@ -92,16 +92,16 @@ public:
 
     void stop()
     {
-        std::cout << fmt::format("read_bytes: %lld, read_bytes_throughput: %lf, largest_read_bytes_throughput: %lf.",
-                                 server_ptr_->get_io_statistics()->read_bytes(),
-                                 server_ptr_->get_io_statistics()->read_bytes_throughput(),
-                                 server_ptr_->get_io_statistics()->largest_read_bytes_throughput())
-                  << std::endl
-                  << fmt::format("write_bytes: %lld, write_bytes_throughput: %lf, largest_write_bytes_throughput: %lf.",
-                                 server_ptr_->get_io_statistics()->write_bytes(),
-                                 server_ptr_->get_io_statistics()->write_bytes_throughput(),
-                                 server_ptr_->get_io_statistics()->largest_write_bytes_throughput())
-                  << std::endl;
+//        std::cout << fmt::format("read_bytes: %lld, read_bytes_throughput: %lf, largest_read_bytes_throughput: %lf.",
+//                                 server_ptr_->get_io_statistics()->read_bytes(),
+//                                 server_ptr_->get_io_statistics()->read_bytes_throughput(),
+//                                 server_ptr_->get_io_statistics()->largest_read_bytes_throughput())
+//                  << std::endl
+//                  << fmt::format("write_bytes: %lld, write_bytes_throughput: %lf, largest_write_bytes_throughput: %lf.",
+//                                 server_ptr_->get_io_statistics()->write_bytes(),
+//                                 server_ptr_->get_io_statistics()->write_bytes_throughput(),
+//                                 server_ptr_->get_io_statistics()->largest_write_bytes_throughput())
+//                  << std::endl;
 
         server_ptr_->close();
     }

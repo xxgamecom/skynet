@@ -3,9 +3,11 @@
 
 namespace skynet::net::impl {
 
-tcp_acceptor_impl::tcp_acceptor_impl(std::shared_ptr<io_service> ios_ptr,
+tcp_acceptor_impl::tcp_acceptor_impl(uint32_t svc_handle,
+                                     std::shared_ptr<io_service> ios_ptr,
                                      std::shared_ptr<tcp_acceptor_handler> event_handler_ptr/* = nullptr*/)
 :
+svc_handle_(svc_handle),
 ios_ptr_(ios_ptr),
 event_handler_ptr_(event_handler_ptr)
 {
@@ -18,7 +20,7 @@ void tcp_acceptor_impl::set_event_handler(std::shared_ptr<tcp_acceptor_handler> 
 
 bool tcp_acceptor_impl::open(const std::string local_ip,
                              uint16_t local_port,
-                             bool is_reuse_addr/* = true*/,
+                             bool reuse_addr/* = true*/,
                              int32_t backlog/* = DEFAULT_BACKLOG*/)
 {
     // has created
@@ -51,7 +53,7 @@ bool tcp_acceptor_impl::open(const std::string local_ip,
             break;
 
         // reuse address
-        if (acceptor_ptr_->set_option(asio::ip::tcp::acceptor::reuse_address(is_reuse_addr), ec))
+        if (acceptor_ptr_->set_option(asio::ip::tcp::acceptor::reuse_address(reuse_addr), ec))
             break;
 
         // bind
@@ -82,6 +84,11 @@ void tcp_acceptor_impl::close()
         acceptor_ptr_->close(ec);
         acceptor_ptr_.reset();
     }
+}
+
+uint32_t tcp_acceptor_impl::svc_handle()
+{
+    return svc_handle_;
 }
 
 void tcp_acceptor_impl::accept_once(std::shared_ptr<tcp_session> session_ptr)
@@ -209,6 +216,7 @@ void tcp_acceptor_impl::handle_async_accept(std::shared_ptr<tcp_session> session
         event_handler_ptr_->handle_accept_failed(shared_from_this(), session_ptr, ec.value(), ec.message());
     }
 }
+
 
 }
 

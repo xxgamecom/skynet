@@ -9,14 +9,17 @@
 #include <atomic>
 #include <mutex>
 
+// forward declare
+namespace skynet::net {
+class session_manager;
+}
+
 namespace skynet::net::impl {
 
-class tcp_session_manager;
-
 // IO常用统计量
-class tcp_io_statistics_impl : public io_statistics,
-                               public std::enable_shared_from_this<tcp_io_statistics_impl>,
-                               public asio::noncopyable
+class io_statistics_impl : public io_statistics,
+                           public std::enable_shared_from_this<io_statistics_impl>,
+                           public asio::noncopyable
 {
 private:
     enum
@@ -26,7 +29,7 @@ private:
     };
 
 private:
-    std::shared_ptr<tcp_session_manager> session_manager_ptr_;      // 会话管理引用
+    std::shared_ptr<session_manager> session_manager_ptr_;      // 会话管理引用
     std::shared_ptr<io_service> ios_ptr_;                           // ios和acceptor的公用
     asio::steady_timer calc_timer_;                                 // 计算吞吐量定时器
 
@@ -51,9 +54,9 @@ private:
     double largest_write_bytes_throughput_ = 0;                     // 最大写吞吐量
 
 public:
-    tcp_io_statistics_impl(std::shared_ptr<tcp_session_manager> session_manager_ptr,
-                           std::shared_ptr<io_service> ios_ptr);
-    ~tcp_io_statistics_impl() override = default;
+    io_statistics_impl(std::shared_ptr<session_manager> session_manager_ptr,
+                       std::shared_ptr<io_service> ios_ptr);
+    ~io_statistics_impl() override = default;
 
 public:
     bool start() override;
@@ -70,7 +73,7 @@ public:
     int64_t write_bytes() override;
 
     // 读写字节数吞吐量(每秒字节数)
-    double read_bytes_throughput()override;
+    double read_bytes_throughput() override;
     double write_bytes_throughput() override;
 
     // 最大读写字节数吞吐量(每秒读字节数)
@@ -83,5 +86,5 @@ private:
 
 }
 
-#include "tcp_io_statistics.inl"
+#include "io_statistics.inl"
 

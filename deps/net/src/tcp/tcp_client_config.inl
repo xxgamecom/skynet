@@ -50,32 +50,32 @@ inline int32_t tcp_client_session_config_impl::socket_linger()
     return socket_opt_linger_;
 }
 
-inline void tcp_client_session_config_impl::msg_read_buf_size(int32_t size)
+inline void tcp_client_session_config_impl::read_buf_size(int32_t size)
 {
     msg_read_buf_size_ = size;
 }
 
-inline int32_t tcp_client_session_config_impl::msg_read_buf_size()
+inline int32_t tcp_client_session_config_impl::read_buf_size()
 {
     return msg_read_buf_size_;
 }
 
-inline void tcp_client_session_config_impl::msg_write_buf_size(int32_t size)
+inline void tcp_client_session_config_impl::write_buf_size(int32_t size)
 {
     msg_write_buf_size_ = size;
 }
 
-inline int32_t tcp_client_session_config_impl::msg_write_buf_size()
+inline int32_t tcp_client_session_config_impl::write_buf_size()
 {
     return msg_write_buf_size_;
 }
 
-inline void tcp_client_session_config_impl::msg_write_queue_size(int32_t size)
+inline void tcp_client_session_config_impl::write_queue_size(int32_t size)
 {
     msg_write_queue_size_ = size;
 }
 
-inline int32_t tcp_client_session_config_impl::msg_write_queue_size()
+inline int32_t tcp_client_session_config_impl::write_queue_size()
 {
     return msg_write_queue_size_;
 }

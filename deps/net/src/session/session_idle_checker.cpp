@@ -1,10 +1,13 @@
-#include "tcp_session_idle_checker.h"
-#include "tcp_session_manager.h"
+#include "session_idle_checker.h"
+#include "session_manager.h"
 
 namespace skynet::net::impl {
 
-tcp_session_idle_checker::tcp_session_idle_checker(std::shared_ptr<tcp_session_manager> session_manager_ptr,
-                                                   std::shared_ptr<io_service> ios_ptr)
+// default check interval, seconds
+constexpr uint32_t DEFAULT_CHECK_INTERVAL = 1;
+
+session_idle_checker::session_idle_checker(std::shared_ptr<session_manager> session_manager_ptr,
+                                           std::shared_ptr<io_service> ios_ptr)
 :
 session_manager_ptr_(session_manager_ptr),
 ios_ptr_(ios_ptr),
@@ -13,7 +16,7 @@ idle_check_timer_(ios_ptr_->get_raw_ios())
     assert(session_manager_ptr_ != nullptr);
 }
 
-bool tcp_session_idle_checker::start(idle_type check_type, int32_t idle_interval_seconds)
+bool session_idle_checker::start(idle_type check_type, int32_t idle_interval_seconds)
 {
     idle_check_type_ = check_type;
     idle_check_seconds_ = idle_interval_seconds;
@@ -21,7 +24,7 @@ bool tcp_session_idle_checker::start(idle_type check_type, int32_t idle_interval
     if (idle_check_seconds_ > 0)
     {
         asio::error_code ec;
-        idle_check_timer_.expires_from_now(std::chrono::seconds(CHECK_INTERVAL), ec);
+        idle_check_timer_.expires_from_now(std::chrono::seconds(DEFAULT_CHECK_INTERVAL), ec);
         if (ec)
             return false;
 
@@ -34,7 +37,7 @@ bool tcp_session_idle_checker::start(idle_type check_type, int32_t idle_interval
     return true;
 }
 
-void tcp_session_idle_checker::stop()
+void session_idle_checker::stop()
 {
     if (idle_check_seconds_ > 0)
     {
@@ -44,17 +47,17 @@ void tcp_session_idle_checker::stop()
     }
 }
 
-void tcp_session_idle_checker::handle_timeout(const asio::error_code& ec)
+void session_idle_checker::handle_timeout(const asio::error_code& ec)
 {
     if (!ec)
     {
         // 检查超时
-        std::vector<std::weak_ptr<tcp_session>> sessions;
+        std::vector<std::weak_ptr<basic_session>> sessions;
         if (session_manager_ptr_->get_sessions(sessions) > 0)
         {
             for (auto& itr : sessions)
             {
-                std::shared_ptr<tcp_session> ptr(itr.lock());
+                std::shared_ptr<basic_session> ptr(itr.lock());
                 if (ptr != nullptr)
                 {
                     ptr->check_idle(idle_check_type_, idle_check_seconds_);
@@ -62,11 +65,11 @@ void tcp_session_idle_checker::handle_timeout(const asio::error_code& ec)
             }
         }
 
-        // 启动下一次检测
+        // next check
         if (idle_check_seconds_ > 0)
         {
             asio::error_code ec;
-            idle_check_timer_.expires_from_now(std::chrono::seconds(CHECK_INTERVAL), ec);
+            idle_check_timer_.expires_from_now(std::chrono::seconds(DEFAULT_CHECK_INTERVAL), ec);
             if (ec)
                 return;
 

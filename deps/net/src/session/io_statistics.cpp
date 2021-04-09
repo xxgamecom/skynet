@@ -1,10 +1,10 @@
-#include "tcp_io_statistics.h"
-#include "tcp_session_manager.h"
+#include "io_statistics.h"
+#include "session_manager.h"
 
 namespace skynet::net::impl {
 
-tcp_io_statistics_impl::tcp_io_statistics_impl(std::shared_ptr<tcp_session_manager> session_manager_ptr,
-                                               std::shared_ptr<io_service> ios_ptr)
+io_statistics_impl::io_statistics_impl(std::shared_ptr<session_manager> session_manager_ptr,
+                                       std::shared_ptr<io_service> ios_ptr)
 :
 session_manager_ptr_(session_manager_ptr),
 ios_ptr_(ios_ptr),
@@ -17,7 +17,7 @@ last_write_bytes_(0)
     assert(session_manager_ptr_ != nullptr);
 }
 
-bool tcp_io_statistics_impl::start()
+bool io_statistics_impl::start()
 {
     asio::error_code ec;
     calc_timer_.expires_from_now(std::chrono::seconds(UPDATE_READ_WRITE_INTERVAL_SECONDS), ec);
@@ -36,13 +36,13 @@ bool tcp_io_statistics_impl::start()
     return true;
 }
 
-void tcp_io_statistics_impl::stop()
+void io_statistics_impl::stop()
 {
     calc_timer_.cancel();
 }
 
 // 重置
-void tcp_io_statistics_impl::reset()
+void io_statistics_impl::reset()
 {
     read_bytes_.store(0, std::memory_order_relaxed);
     write_bytes_.store(0, std::memory_order_relaxed);
@@ -61,14 +61,14 @@ void tcp_io_statistics_impl::reset()
     timeout_count_ = 0;
 }
 
-void tcp_io_statistics_impl::handle_timeout(const asio::error_code& ec)
+void io_statistics_impl::handle_timeout(const asio::error_code& ec)
 {
     if (!ec)
     {
         int64_t read_bytes = 0;
         int64_t write_bytes = 0;
-        // 更新总读写
-        std::vector<std::weak_ptr<tcp_session>> sessions;
+        // update total r/w
+        std::vector<std::weak_ptr<basic_session>> sessions;
         if (session_manager_ptr_->get_sessions(sessions) > 0)
         {
             for (auto& itr : sessions)
@@ -76,7 +76,7 @@ void tcp_io_statistics_impl::handle_timeout(const asio::error_code& ec)
                 read_bytes = read_bytes_.load(std::memory_order_relaxed);
                 write_bytes = write_bytes_.load(std::memory_order_relaxed);
 
-                std::shared_ptr<tcp_session> ptr(itr.lock());
+                std::shared_ptr<basic_session> ptr(itr.lock());
                 if (ptr != nullptr)
                 {
                     read_bytes_.compare_exchange_weak(read_bytes, read_bytes + ptr->delta_read_bytes(), std::memory_order_relaxed);
@@ -87,10 +87,10 @@ void tcp_io_statistics_impl::handle_timeout(const asio::error_code& ec)
 
         ++timeout_count_;
 
-        // 更新吞吐量
+        //
         update_throughput();
 
-        // 启动下一次计算
+        // next calc
         asio::error_code ec;
         calc_timer_.expires_from_now(std::chrono::seconds(UPDATE_READ_WRITE_INTERVAL_SECONDS), ec);
         if (ec)

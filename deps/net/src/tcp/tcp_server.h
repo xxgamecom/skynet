@@ -2,15 +2,15 @@
 
 #include "tcp/tcp_server_i.h"
 #include "base/io_statistics_i.h"
-
-#include "../uri/uri_codec.h"
-
-#include "../base/io_service_pool.h"
+#include "uri/uri_codec.h"
 
 #include "tcp_acceptor.h"
+#include "tcp_session.h"
 #include "tcp_server_config.h"
-#include "tcp_session_manager.h"
-#include "tcp_session_idle_checker.h"
+
+#include "../base/io_service_pool.h"
+#include "../session/session_manager.h"
+#include "../session/session_idle_checker.h"
 
 
 // forward delcare
@@ -27,53 +27,42 @@ class tcp_server_impl : public tcp_server,
                         public std::enable_shared_from_this<tcp_server_impl>,
                         public asio::noncopyable
 {
-protected:
     typedef std::map<std::string, std::shared_ptr<tcp_acceptor>> acceptor_map;
+protected:
+    bool is_inited = false;                                                 // is initialized
+    std::shared_ptr<tcp_server_handler> event_handler_ptr_;                 // event handler
 
     // server config
-protected:
-    tcp_server_acceptor_config_impl acceptor_config_;                       // acceptor config
-    tcp_server_session_config_impl session_config_;                         // session config
+    std::shared_ptr<tcp_server_acceptor_config> acceptor_config_ptr_;       // acceptor config
+    std::shared_ptr<tcp_server_session_config> session_config_ptr_;         // session config
 
-protected:
-    std::shared_ptr<tcp_server_handler> event_handler_ptr_;
-
-protected:
+    // acceptor
     std::shared_ptr<io_service> acceptor_ios_ptr_;                          // for accept only
     acceptor_map acceptors_;                                                // acceptor map (k: `ip:port`, v: tcp_acceptor)
 
+    // session
     std::shared_ptr<io_service_pool> session_ios_pool_ptr_;
-    std::shared_ptr<tcp_session_manager> session_manager_ptr_;
-    std::shared_ptr<tcp_session_idle_checker> session_idle_checker_ptr_;
-
-protected:
-    std::shared_ptr<io_statistics> io_statistics_ptr_;
+    std::shared_ptr<session_manager> session_manager_ptr_;
 
 public:
-    tcp_server_impl() = default;
+    tcp_server_impl(std::shared_ptr<io_service> acceptor_ios_ptr,
+                    std::shared_ptr<session_manager> session_manager_ptr,
+                    std::shared_ptr<tcp_server_acceptor_config> acceptor_config_ptr,
+                    std::shared_ptr<tcp_server_session_config> session_config_ptr);
     ~tcp_server_impl() override = default;
 
 public:
-    // 设置外部服务处理器
+    bool init() override;
+    void fini() override;
+
     void set_event_handler(std::shared_ptr<tcp_server_handler> event_handler_ptr) override;
 
 public:
     // start/close
-    bool open(const std::string local_uri, bool is_reuse_addr = true) override;
-    bool open(const std::string local_ip, uint16_t local_port, bool is_reuse_addr = true) override;
-    bool open(std::initializer_list<std::pair<std::string, uint16_t>> local_endpoints, bool is_reuse_addr = true) override;
+    bool open(std::string local_uri) override;
+    bool open(std::string local_ip, uint16_t local_port) override;
+    bool open(std::initializer_list<std::pair<std::string, uint16_t>> local_endpoints) override;
     void close() override;
-
-    // get config
-    tcp_server_acceptor_config& get_acceptor_config() override;
-    tcp_server_session_config& get_session_config() override;
-
-    // get io statistics
-    std::shared_ptr<io_statistics> get_io_statistics() override;
-
-protected:
-    // do accept
-    bool do_accept(std::shared_ptr<tcp_acceptor> acceptor_ptr);
 
     // tcp_acceptor_handler impl
 protected:
@@ -96,6 +85,10 @@ protected:
     // tcp session closed
     void handle_sessoin_close(std::shared_ptr<tcp_session> session_ptr) override;
 
+protected:
+    // accept client
+    bool do_accept(std::shared_ptr<tcp_acceptor> acceptor_ptr);
+
 private:
     std::string make_key(const asio::ip::tcp::endpoint& ep);
     std::string make_key(const std::string& ip, uint16_t port);
@@ -103,5 +96,4 @@ private:
 
 }
 
-#include "tcp_server.inl"
 

@@ -54,16 +54,16 @@ public:
     int32_t socket_linger() override;
 
     // 会话读消息缓存大小
-    void msg_read_buf_size(int32_t size) override;
-    int32_t msg_read_buf_size() override;
+    void read_buf_size(int32_t size) override;
+    int32_t read_buf_size() override;
 
     // 会话写消息缓存大小
-    void msg_write_buf_size(int32_t size) override;
-    int32_t msg_write_buf_size() override;
+    void write_buf_size(int32_t size) override;
+    int32_t write_buf_size() override;
 
     // 会话写消息队列大小
-    void msg_write_queue_size(int32_t size) override;
-    int32_t msg_write_queue_size() override;
+    void write_queue_size(int32_t size) override;
+    int32_t write_queue_size() override;
 };
 
 }

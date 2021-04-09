@@ -33,16 +33,16 @@ public:
     virtual int32_t socket_linger() = 0;
 
     // 会话读消息缓存大小
-    virtual void msg_read_buf_size(int32_t size) = 0;
-    virtual int32_t msg_read_buf_size() = 0;
+    virtual void read_buf_size(int32_t size) = 0;
+    virtual int32_t read_buf_size() = 0;
 
     // 会话写消息缓存大小
-    virtual void msg_write_buf_size(int32_t size) = 0;
-    virtual int32_t msg_write_buf_size() = 0;
+    virtual void write_buf_size(int32_t size) = 0;
+    virtual int32_t write_buf_size() = 0;
 
     // 会话写消息队列大小
-    virtual void msg_write_queue_size(int32_t size) = 0;
-    virtual int32_t msg_write_queue_size() = 0;
+    virtual void write_queue_size(int32_t size) = 0;
+    virtual int32_t write_queue_size() = 0;
 };
 
 }

@@ -17,18 +17,18 @@ local connection = {}
 
 ---
 ---@param fd number
-function gateserver.openclient(fd)
-    if connection[fd] then
-        socket_core.start(fd)
+function gateserver.openclient(socket_id)
+    if connection[socket_id] then
+        socket_core.start(socket_id)
     end
 end
 
 ---
 ---@param fd number
-function gateserver.closeclient(fd)
-    if connection[fd] then
-        connection[fd] = false
-        socket_core.close(fd)
+function gateserver.closeclient(socket_id)
+    if connection[socket_id] then
+        connection[socket_id] = false
+        socket_core.close(socket_id)
     end
 end
 

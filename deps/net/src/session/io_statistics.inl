@@ -1,7 +1,7 @@
 namespace skynet::net::impl {
 
 // 更新吞吐量计数器
-inline void tcp_io_statistics_impl::update_throughput()
+inline void io_statistics_impl::update_throughput()
 {
     int64_t interval = 0;
     {
@@ -53,20 +53,20 @@ inline void tcp_io_statistics_impl::update_throughput()
 }
 
 // 读字节数
-inline int64_t tcp_io_statistics_impl::read_bytes()
+inline int64_t io_statistics_impl::read_bytes()
 {
     return read_bytes_.load(std::memory_order_relaxed);
 }
 
 // 写字节数
-inline int64_t tcp_io_statistics_impl::write_bytes()
+inline int64_t io_statistics_impl::write_bytes()
 {
     return write_bytes_.load(std::memory_order_relaxed);
 }
 
 
 // 读字节数吞吐量(每秒字节数)
-inline double tcp_io_statistics_impl::read_bytes_throughput()
+inline double io_statistics_impl::read_bytes_throughput()
 {
     std::lock_guard<std::mutex> lock(throughput_update_mutex_);
 
@@ -74,7 +74,7 @@ inline double tcp_io_statistics_impl::read_bytes_throughput()
 }
 
 // 写字节数吞吐量(每秒字节数)
-inline double tcp_io_statistics_impl::write_bytes_throughput()
+inline double io_statistics_impl::write_bytes_throughput()
 {
     std::lock_guard<std::mutex> lock(throughput_update_mutex_);
 
@@ -82,7 +82,7 @@ inline double tcp_io_statistics_impl::write_bytes_throughput()
 }
 
 // 最大读字节数吞吐量(每秒读字节数)
-inline double tcp_io_statistics_impl::largest_read_bytes_throughput()
+inline double io_statistics_impl::largest_read_bytes_throughput()
 {
     std::lock_guard<std::mutex> lock(throughput_update_mutex_);
 
@@ -90,7 +90,7 @@ inline double tcp_io_statistics_impl::largest_read_bytes_throughput()
 }
 
 // 最大写字节数吞吐量(每秒写字节数)
-inline double tcp_io_statistics_impl::largest_write_bytes_throughput()
+inline double io_statistics_impl::largest_write_bytes_throughput()
 {
     std::lock_guard<std::mutex> lock(throughput_update_mutex_);
 
