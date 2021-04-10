@@ -38,6 +38,9 @@ public:
     // 关闭客户端服务
     virtual void close() = 0;
 
+    // get client socket id
+    virtual uint32_t socket_id() = 0;
+
     // 获取会话配置
     virtual tcp_client_session_config& session_config() = 0;
 

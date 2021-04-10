@@ -12,8 +12,8 @@ public:
 
 public:
     // session id
-    virtual void session_id(session_id_t id) = 0;
-    virtual session_id_t session_id() = 0;
+    virtual void session_id(uint32_t id) = 0;
+    virtual uint32_t session_id() = 0;
 
     /**
      * idle check

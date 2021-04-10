@@ -80,7 +80,7 @@ int32_t main(int32_t argc, char* argv[])
     // create client
     std::cout << "create client" << std::endl;
     auto service_handler_ptr = std::make_shared<tcp_client_handler>();
-    auto client_ptr = skynet::net::create_tcp_client();
+    auto client_ptr = skynet::net::create_tcp_client(0);
     client_ptr->set_event_handler(service_handler_ptr);
 
     // open client

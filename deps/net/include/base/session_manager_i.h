@@ -27,8 +27,8 @@ public:
     // get the number of session (include tcp & udp session)
     virtual size_t get_session_count() = 0;
 
-    // create session id
-    virtual session_id_t create_session_id() = 0;
+    // create a new socket id
+    virtual uint32_t new_socket_id() = 0;
 };
 
 }

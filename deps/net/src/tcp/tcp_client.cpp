@@ -4,6 +4,12 @@
 
 namespace skynet::net::impl {
 
+tcp_client_impl::tcp_client_impl(uint32_t socket_id)
+:
+socket_id_(socket_id)
+{
+}
+
 // 设置客户端服务外部处理器
 void tcp_client_impl::set_event_handler(std::shared_ptr<tcp_client_handler> event_handler_ptr)
 {
@@ -99,6 +105,12 @@ void tcp_client_impl::close()
     {
         ios_ptr_->stop();
     }
+}
+
+// get client socket id
+uint32_t tcp_client_impl::socket_id()
+{
+    return socket_id_;
 }
 
 //------------------------------------------------------------------------------

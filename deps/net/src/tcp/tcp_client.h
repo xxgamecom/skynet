@@ -27,6 +27,8 @@ class tcp_client_impl : public tcp_client,
                         public asio::noncopyable
 {
 protected:
+    uint32_t socket_id_ = INVALID_SESSION_ID;               // client socket id
+
     tcp_client_session_config_impl session_config_;         // 会话配置
 
 protected:
@@ -38,7 +40,7 @@ protected:
     std::shared_ptr<tcp_client_handler> event_handler_ptr_; // 外部事件处理器
 
 public:
-    tcp_client_impl() = default;
+    tcp_client_impl(uint32_t socket_id);
     ~tcp_client_impl() override = default;
 
 public:
@@ -62,6 +64,9 @@ public:
 
     // 关闭客户端服务
     void close() override;
+
+    // get client socket id
+    uint32_t socket_id() override;
 
     // 获取会话配置
     tcp_client_session_config& session_config() override;

@@ -5,8 +5,7 @@
 namespace skynet::net {
 
 // session id
-typedef uint32_t session_id_t;
-#define INVALID_SESSION_ID (session_id_t)(-1)
+#define INVALID_SESSION_ID (uint32_t)(-1)
 
 // session type
 enum session_type

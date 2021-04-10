@@ -7,8 +7,10 @@ set(SKYNET_NET_TCP_HEADER
     src/tcp/tcp_connector.h
     src/tcp/tcp_connector.inl
     src/tcp/tcp_server.h
-    src/tcp/tcp_server_config.h
-    src/tcp/tcp_server_config.inl
+    src/tcp/tcp_server_acceptor_config.h
+    src/tcp/tcp_server_acceptor_config.inl
+    src/tcp/tcp_server_session_config.h
+    src/tcp/tcp_server_session_config.inl
     src/tcp/tcp_session.h
     src/tcp/tcp_session.inl
     src/tcp/tcp_session_write_queue.h

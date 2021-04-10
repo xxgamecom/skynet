@@ -6,10 +6,11 @@
 
 #include "tcp_acceptor.h"
 #include "tcp_session.h"
-#include "tcp_server_config.h"
+#include "tcp_server_acceptor_config.h"
+#include "tcp_server_session_config.h"
 
 #include "../base/io_service_pool.h"
-#include "../session/session_manager.h"
+#include "../session/socket_manager.h"
 #include "../session/session_idle_checker.h"
 
 

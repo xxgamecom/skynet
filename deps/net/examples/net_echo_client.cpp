@@ -83,7 +83,7 @@ int32_t main(int32_t argc, char* argv[])
     client_handler_ptr->echo_msg_ = argv[3];
     client_handler_ptr->repeat_count_ = std::stoi(argv[4]);
 
-    auto client_ptr = skynet::net::create_tcp_client();
+    auto client_ptr = skynet::net::create_tcp_client(0);
     client_ptr->set_event_handler(client_handler_ptr);
 
     // open client

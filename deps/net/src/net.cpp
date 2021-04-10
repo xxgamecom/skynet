@@ -1,12 +1,13 @@
 #include "net.h"
 
 #include "session/io_statistics.h"
-#include "session/session_manager.h"
+#include "session/socket_manager.h"
 
 #include "tcp/tcp_client.h"
 #include "tcp/tcp_client_config.h"
 #include "tcp/tcp_server.h"
-#include "tcp/tcp_server_config.h"
+#include "tcp/tcp_server_acceptor_config.h"
+#include "tcp/tcp_server_session_config.h"
 
 #include "udp/udp_client.h"
 #include "udp/udp_server.h"
@@ -27,9 +28,9 @@ std::shared_ptr<io_service_pool> create_io_service_pool(uint32_t pool_size)
 }
 
 // create tcp acceptor
-std::shared_ptr<tcp_acceptor> create_tcp_acceptor(std::shared_ptr<io_service> ios_ptr)
+std::shared_ptr<tcp_acceptor> create_tcp_acceptor(std::string acceptor_id, uint32_t socket_id, uint32_t svc_handle, std::shared_ptr<io_service> ios_ptr)
 {
-    return std::make_shared<impl::tcp_acceptor_impl>(0, ios_ptr);
+    return std::make_shared<impl::tcp_acceptor_impl>(acceptor_id, socket_id, svc_handle, ios_ptr);
 }
 
 // create tcp connector
@@ -54,13 +55,13 @@ std::shared_ptr<io_statistics> create_io_statistics(std::shared_ptr<session_mana
 // create session manager
 std::shared_ptr<session_manager> create_session_manager()
 {
-    return std::make_shared<impl::session_manager_impl>();
+    return std::make_shared<impl::socket_manager_impl>();
 }
 
 // create tcp client
-std::shared_ptr<tcp_client> create_tcp_client()
+std::shared_ptr<tcp_client> create_tcp_client(uint32_t socket_id)
 {
-    return std::make_shared<impl::tcp_client_impl>();
+    return std::make_shared<impl::tcp_client_impl>(socket_id);
 }
 
 // create tcp server

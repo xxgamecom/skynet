@@ -8,6 +8,7 @@
 
 #include <map>
 #include <mutex>
+#include <atomic>
 
 // forward declare
 namespace skynet::net {
@@ -18,25 +19,32 @@ class udp_session;
 namespace skynet::net::impl {
 
 /**
- * session manager, used for manager tcp/udp session
+ * socket manager, used for manager tcp/udp session
+ *
+ * socket_id is a logic id, include:
+ * - tcp acceptor id
+ * - client session id
  */
-class session_manager_impl : public session_manager,
-                             public asio::noncopyable
+class socket_manager_impl : public session_manager,
+                            public asio::noncopyable
 {
 public:
-    typedef std::map<session_id_t, std::weak_ptr<basic_session>> session_map;
+    typedef std::map<uint32_t, std::weak_ptr<basic_session>> session_map;
 
+    // socket id
 protected:
-    session_id_t id_generator_ = INVALID_SESSION_ID;                        // session id generator
+    std::atomic<uint32_t> id_generator_ = INVALID_SESSION_ID;               // socket id generator
 
+    // session
+protected:
     std::shared_ptr<object_pool<tcp_session_impl>> tcp_session_pool_ptr_;   // tcp session pool
     std::shared_ptr<object_pool<udp_session_impl>> udp_session_pool_ptr_;   // udp session pool
     session_map session_used_map_;                                          // session alloced map
     std::mutex sessions_mutex_;                                             // session pool protoected
 
 public:
-    session_manager_impl() = default;
-    ~session_manager_impl() override = default;
+    socket_manager_impl() = default;
+    ~socket_manager_impl() override = default;
 
     // session_manager impl
 public:
@@ -52,11 +60,11 @@ public:
     // get the number of session (include tcp & udp session)
     size_t get_session_count() override;
 
-    // create session id
-    session_id_t create_session_id() override;
+    // create a new socket id
+    uint32_t new_socket_id() override;
 };
 
 }
 
-#include "session_manager.inl"
+#include "socket_manager.inl"
 

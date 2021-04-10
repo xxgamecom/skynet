@@ -35,7 +35,7 @@ public:
     };
 
 protected:
-    session_id_t session_id_ = INVALID_SESSION_ID;              // session id
+    uint32_t session_id_ = INVALID_SESSION_ID;                  // session id
     session_state state_ = SESSION_STATE_CLOSE;                 // session state
 
     std::shared_ptr<asio::ip::tcp::socket> socket_ptr_;         // socket
@@ -83,8 +83,8 @@ public:
     void close(bool is_force = true) override;
 
     // set/get session id
-    void session_id(session_id_t id) override;
-    session_id_t session_id() override;
+    void session_id(uint32_t id) override;
+    uint32_t session_id() override;
 
 public:
     // post a start read async operation (通常在连接成功后调用, 用于发起异步读操作)

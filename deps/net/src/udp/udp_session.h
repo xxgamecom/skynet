@@ -15,8 +15,8 @@ public:
     // basic_session impl
 public:
     // session id
-    void session_id(session_id_t id) override;
-    session_id_t session_id() override;
+    void session_id(uint32_t id) override;
+    uint32_t session_id() override;
 
     /**
      * idle check

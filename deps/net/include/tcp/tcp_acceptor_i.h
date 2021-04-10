@@ -27,6 +27,9 @@ public:
     // close acceptor
     virtual void close() = 0;
 
+    // get acceptor id
+    virtual std::string& acceptor_id() = 0;
+
     // get skynet service handle
     virtual uint32_t svc_handle() = 0;
 

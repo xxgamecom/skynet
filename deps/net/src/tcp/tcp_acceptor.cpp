@@ -3,10 +3,12 @@
 
 namespace skynet::net::impl {
 
-tcp_acceptor_impl::tcp_acceptor_impl(uint32_t svc_handle,
+tcp_acceptor_impl::tcp_acceptor_impl(std::string& acceptor_id, uint32_t socket_id, uint32_t svc_handle,
                                      std::shared_ptr<io_service> ios_ptr,
                                      std::shared_ptr<tcp_acceptor_handler> event_handler_ptr/* = nullptr*/)
 :
+acceptor_id_(acceptor_id),
+socket_id_(socket_id),
 svc_handle_(svc_handle),
 ios_ptr_(ios_ptr),
 event_handler_ptr_(event_handler_ptr)
@@ -84,6 +86,12 @@ void tcp_acceptor_impl::close()
         acceptor_ptr_->close(ec);
         acceptor_ptr_.reset();
     }
+}
+
+// get acceptor id
+std::string& tcp_acceptor_impl::acceptor_id()
+{
+    return acceptor_id_;
 }
 
 uint32_t tcp_acceptor_impl::svc_handle()

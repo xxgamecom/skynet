@@ -3,12 +3,12 @@
 namespace skynet::net::impl {
 
 // session id
-void udp_session_impl::session_id(session_id_t id)
+void udp_session_impl::session_id(uint32_t id)
 {
 
 }
 
-session_id_t udp_session_impl::session_id()
+uint32_t udp_session_impl::session_id()
 {
     return INVALID_SESSION_ID;
 }

@@ -2,7 +2,7 @@
 #include "tcp_acceptor.h"
 
 #include "../session/io_statistics.h"
-#include "../session/session_manager.h"
+#include "../session/socket_manager.h"
 
 #include "tcp/tcp_server_handler_i.h"
 
@@ -85,15 +85,15 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
         bool is_acceptor_ok = true;
         for (auto& itr : local_endpoints)
         {
-            std::string key = make_key(itr.first, itr.second);
+            std::string acceptor_id = make_key(itr.first, itr.second);
 
             // 确保还没有该地址的acceptor
-            auto itr_find = acceptors_.find(key);
+            auto itr_find = acceptors_.find(acceptor_id);
             if (itr_find != acceptors_.end())
                 continue;
 
             // create acceptor
-            acceptor_ptr = std::make_shared<tcp_acceptor_impl>(0, acceptor_ios_ptr_, shared_from_this());
+            acceptor_ptr = std::make_shared<tcp_acceptor_impl>(acceptor_id, 0, 0, acceptor_ios_ptr_, shared_from_this());
             if (acceptor_ptr == nullptr)
             {
                 is_acceptor_ok = false;
@@ -115,7 +115,7 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
             acceptor_ptr->set_sock_option(SOCK_OPT_LINGER, acceptor_config_ptr_->socket_linger());
 
             // add acceptor map
-            acceptors_[key] = acceptor_ptr;
+            acceptors_[acceptor_id] = acceptor_ptr;
         }
         if (is_acceptor_ok == false)
             break;
