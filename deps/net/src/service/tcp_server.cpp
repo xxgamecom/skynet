@@ -84,12 +84,13 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
                 continue;
 
             // create acceptor
-            acceptor_ptr = std::make_shared<tcp_acceptor_impl>(acceptor_id, 0, 0, acceptor_ios_ptr_, shared_from_this());
+            acceptor_ptr = std::make_shared<tcp_acceptor_impl>(acceptor_ios_ptr_);
             if (acceptor_ptr == nullptr)
             {
                 is_acceptor_ok = false;
                 break;
             }
+            acceptor_ptr->set_event_handler(shared_from_this());
 
             // open acceptor
             if (acceptor_ptr->open(itr.first, itr.second, true) == false)

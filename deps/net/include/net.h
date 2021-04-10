@@ -51,7 +51,7 @@ std::shared_ptr<io_service> create_io_service();
 std::shared_ptr<io_service_pool> create_io_service_pool(uint32_t pool_size);
 
 // create tcp acceptor
-std::shared_ptr<tcp_acceptor> create_tcp_acceptor(std::string acceptor_id, uint32_t socket_id, uint32_t svc_handle, std::shared_ptr<io_service> ios_ptr);
+std::shared_ptr<tcp_acceptor> create_tcp_acceptor(std::shared_ptr<io_service> ios_ptr);
 // create tcp connector
 std::shared_ptr<tcp_connector> create_tcp_connector(std::shared_ptr<io_service> ios_ptr);
 // create tcp session

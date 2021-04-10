@@ -26,7 +26,7 @@ class tcp_connector_impl : public tcp_connector,
                            public asio::noncopyable
 {
 protected:
-    std::shared_ptr<io_service> ios_ptr_;                       // ios (from io_service_pool)
+    std::shared_ptr<io_service> ios_ptr_;                       // ios (from io_service_pool), must provider
 
     asio::ip::tcp::resolver resolver_;                          // host resolver
     std::shared_ptr<asio::steady_timer> connect_timer_ptr_;     // connect timer, for resolve & connect timeout

@@ -25,16 +25,12 @@ class tcp_acceptor_impl : public tcp_acceptor,
                           public asio::noncopyable
 {
 protected:
-    std::string acceptor_id_ = "";                              // tcp acceptor id, `ip:port`
-    uint32_t socket_id_ = INVALID_SESSION_ID;                   // tcp acceptor socket id
-    uint32_t svc_handle_ = 0;                                   // skynet service handle
-    std::shared_ptr<io_service> ios_ptr_;                       // io service, only used for acceptor
+    std::shared_ptr<io_service> ios_ptr_;                       // io service, only used for acceptor, must provider
     std::shared_ptr<asio::ip::tcp::acceptor> acceptor_ptr_;     // tcp acceptor
     std::shared_ptr<tcp_acceptor_handler> event_handler_ptr_;   // event handler
 
 public:
-    explicit tcp_acceptor_impl(std::string& acceptor_id, uint32_t socket_id, uint32_t svc_handle, std::shared_ptr<io_service> ios_ptr,
-                               std::shared_ptr<tcp_acceptor_handler> event_handler_ptr = nullptr);
+    explicit tcp_acceptor_impl(std::shared_ptr<io_service> ios_ptr);
     ~tcp_acceptor_impl() override = default;
 
     // tcp_acceptor impl
@@ -42,14 +38,8 @@ public:
     // set event handler (event callback)
     void set_event_handler(std::shared_ptr<tcp_acceptor_handler> event_handler_ptr) override;
 
-    bool open(const std::string local_ip, uint16_t local_port, bool reuse_addr = true, int32_t backlog = DEFAULT_BACKLOG) override;
+    bool open(std::string local_ip, uint16_t local_port, bool reuse_addr = true, int32_t backlog = DEFAULT_BACKLOG) override;
     void close() override;
-
-    // get acceptor id
-    std::string& acceptor_id() override;
-
-    // get skynet service handle
-    uint32_t svc_handle() override;
 
 public:
     // post an async accept operation

@@ -23,15 +23,9 @@ public:
 
 public:
     // open acceptor (bind & listen)
-    virtual bool open(const std::string local_ip, uint16_t local_port, bool reuse_addr = true, int32_t backlog = DEFAULT_BACKLOG) = 0;
+    virtual bool open(std::string local_ip, uint16_t local_port, bool reuse_addr = true, int32_t backlog = DEFAULT_BACKLOG) = 0;
     // close acceptor
     virtual void close() = 0;
-
-    // get acceptor id
-    virtual std::string& acceptor_id() = 0;
-
-    // get skynet service handle
-    virtual uint32_t svc_handle() = 0;
 
     // post an async accept
     virtual void accept_once(std::shared_ptr<tcp_session> session_ptr) = 0;
