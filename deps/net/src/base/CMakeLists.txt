@@ -1,4 +1,4 @@
-set(SKYNET_NET_CORE_HEADER
+set(SKYNET_NET_BASE_HEADER
     src/base/io_buffer.h
     src/base/io_buffer.inl
     src/base/io_service.h
@@ -9,7 +9,7 @@ set(SKYNET_NET_CORE_HEADER
     src/base/object_pool.inl
 )
 
-set(SKYNET_NET_CORE_SRC
+set(SKYNET_NET_BASE_SRC
     src/base/io_buffer.cpp
     src/base/io_service.cpp
     src/base/io_service_pool.cpp

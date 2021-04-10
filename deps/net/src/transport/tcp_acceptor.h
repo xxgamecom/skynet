@@ -5,9 +5,9 @@
 
 #include "../base/io_service.h"
 
-#include "tcp/tcp_acceptor_def.h"
-#include "tcp/tcp_acceptor_i.h"
-#include "tcp/tcp_acceptor_handler_i.h"
+#include "transport/tcp_acceptor_def.h"
+#include "transport/tcp_acceptor_i.h"
+#include "transport/tcp_acceptor_handler_i.h"
 
 
 // forward declare

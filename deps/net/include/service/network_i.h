@@ -6,19 +6,30 @@
 
 namespace skynet::net {
 
+// forward declare
+class network_tcp_server_handler;
+class network_tcp_client_handler;
+class network_udp_server_handler;
+class network_udp_client_handler;
+
 /**
- * socket server interface
+ * network interface
  */
-class socket_server
+class network
 {
 public:
-    virtual ~socket_server() = default;
+    virtual ~network() = default;
 
 public:
     // init/fini
     virtual bool init() = 0;
     virtual void fini() = 0;
 
+    // set network event handler
+    virtual void set_event_handler(std::shared_ptr<network_tcp_server_handler> event_handler_ptr) = 0;
+    virtual void set_event_handler(std::shared_ptr<network_tcp_client_handler> event_handler_ptr) = 0;
+    virtual void set_event_handler(std::shared_ptr<network_udp_server_handler> event_handler_ptr) = 0;
+    virtual void set_event_handler(std::shared_ptr<network_udp_client_handler> event_handler_ptr) = 0;
 
     // tcp
 public:

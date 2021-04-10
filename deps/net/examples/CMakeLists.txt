@@ -18,6 +18,8 @@ target_link_libraries(net_http_client  ${MY_LINK_LIBRARIES})
 # test network socket_server
 add_executable(net_socket_server net_socket_server.cpp)
 target_link_libraries(net_socket_server ${MY_LINK_LIBRARIES})
+add_executable(net_socket_client net_socket_client.cpp)
+target_link_libraries(net_socket_client ${MY_LINK_LIBRARIES})
 
 # test network echo
 add_executable(net_echo_client net_echo_client.cpp)

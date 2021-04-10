@@ -2,6 +2,8 @@
 
 #include "session_i.h"
 
+#include <memory>
+
 namespace skynet::net {
 
 class basic_session;

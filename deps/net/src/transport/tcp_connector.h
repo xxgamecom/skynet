@@ -2,8 +2,8 @@
 
 #include "../base/io_service.h"
 
-#include "tcp/tcp_connector_i.h"
-#include "tcp/tcp_connector_handler_i.h"
+#include "transport/tcp_connector_i.h"
+#include "transport/tcp_connector_handler_i.h"
 
 #include <string>
 #include <memory>
@@ -45,10 +45,10 @@ public:
 
     // connect remote endpoint(timeout include resolve & connect time)
     bool connect(std::shared_ptr<tcp_session> session_ptr,
-                 const std::string remote_addr,
+                 std::string remote_addr,
                  uint16_t remote_port,
                  int32_t timeout_seconds = 0,
-                 const std::string local_ip = "",
+                 std::string local_ip = "",
                  uint16_t local_port = 0) override;
 
     // connect timer

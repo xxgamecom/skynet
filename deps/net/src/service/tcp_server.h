@@ -1,11 +1,13 @@
 #pragma once
 
-#include "tcp/tcp_server_i.h"
+#include "service/tcp_server_i.h"
 #include "base/io_statistics_i.h"
-#include "uri/uri_codec.h"
 
-#include "tcp_acceptor.h"
-#include "tcp_session.h"
+#include "../uri/uri_codec.h"
+
+#include "../transport/tcp_acceptor.h"
+#include "../transport/tcp_session.h"
+
 #include "tcp_server_acceptor_config.h"
 #include "tcp_server_session_config.h"
 
@@ -31,6 +33,9 @@ class tcp_server_impl : public tcp_server,
     typedef std::map<std::string, std::shared_ptr<tcp_acceptor>> acceptor_map;
 protected:
     bool is_inited = false;                                                 // is initialized
+    uint32_t socket_id_ = INVALID_SESSION_ID;                               // server logic id
+    uint32_t svc_handle_ = 0;                                               // skynet service id
+
     std::shared_ptr<tcp_server_handler> event_handler_ptr_;                 // event handler
 
     // server config
@@ -46,7 +51,9 @@ protected:
     std::shared_ptr<session_manager> session_manager_ptr_;
 
 public:
-    tcp_server_impl(std::shared_ptr<io_service> acceptor_ios_ptr,
+    tcp_server_impl(uint32_t svc_handle, uint32_t socket_id,
+                    std::shared_ptr<io_service> acceptor_ios_ptr,
+                    std::shared_ptr<io_service_pool> session_ios_pool_ptr,
                     std::shared_ptr<session_manager> session_manager_ptr,
                     std::shared_ptr<tcp_server_acceptor_config> acceptor_config_ptr,
                     std::shared_ptr<tcp_server_session_config> session_config_ptr);
@@ -78,20 +85,19 @@ protected:
     // tcp_session_handler impl
 protected:
     // tcp session read complete
-    void handle_session_read(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
+    void handle_tcp_session_read(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
     // tcp session write complete
-    void handle_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
+    void handle_tcp_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
     // tcp session idle
-    void handle_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type) override;
+    void handle_tcp_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type) override;
     // tcp session closed
-    void handle_sessoin_close(std::shared_ptr<tcp_session> session_ptr) override;
+    void handle_tcp_sessoin_close(std::shared_ptr<tcp_session> session_ptr) override;
 
 protected:
     // accept client
     bool do_accept(std::shared_ptr<tcp_acceptor> acceptor_ptr);
 
 private:
-    std::string make_key(const asio::ip::tcp::endpoint& ep);
     std::string make_key(const std::string& ip, uint16_t port);
 };
 

@@ -1,21 +1,27 @@
 #include "tcp_server.h"
-#include "tcp_acceptor.h"
+
+#include "../transport/tcp_acceptor.h"
 
 #include "../session/io_statistics.h"
 #include "../session/socket_manager.h"
 
-#include "tcp/tcp_server_handler_i.h"
+#include "service/tcp_server_handler_i.h"
 
 namespace skynet::net::impl {
 
-tcp_server_impl::tcp_server_impl(std::shared_ptr<io_service> acceptor_ios_ptr,
+tcp_server_impl::tcp_server_impl(uint32_t svc_handle, uint32_t socket_id,
+                                 std::shared_ptr<io_service> acceptor_ios_ptr,
+                                 std::shared_ptr<io_service_pool> session_ios_pool_ptr,
                                  std::shared_ptr<session_manager> session_manager_ptr,
                                  std::shared_ptr<tcp_server_acceptor_config> acceptor_config_ptr,
                                  std::shared_ptr<tcp_server_session_config> session_config_ptr)
 :
+svc_handle_(svc_handle),
+socket_id_(socket_id),
 acceptor_config_ptr_(acceptor_config_ptr),
 session_config_ptr_(session_config_ptr),
 acceptor_ios_ptr_(acceptor_ios_ptr),
+session_ios_pool_ptr_(session_ios_pool_ptr),
 session_manager_ptr_(session_manager_ptr)
 {
 }
@@ -66,21 +72,6 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
     bool is_ok = false;
     do
     {
-        // calc ios pool size (session_thread_num为默认, 按CPU Core设置)
-        if (session_config_ptr_->session_thread_num() == 0)
-        {
-            // the number of cpu logic core, 超过1个时, 需要减掉1, acceptor占用一个ios
-            int32_t core_num = std::thread::hardware_concurrency();
-            core_num = core_num <= 1 ? 1 : core_num - 1;
-
-            session_config_ptr_->session_thread_num(core_num);
-        }
-
-        // create session ios pool
-        session_ios_pool_ptr_ = std::make_shared<io_service_pool_impl>(session_config_ptr_->session_thread_num());
-        if (session_ios_pool_ptr_ == nullptr)
-            break;
-
         std::shared_ptr<tcp_acceptor> acceptor_ptr;
         bool is_acceptor_ok = true;
         for (auto& itr : local_endpoints)
@@ -129,10 +120,6 @@ bool tcp_server_impl::open(std::initializer_list<std::pair<std::string, uint16_t
             }
         }
 
-        // start ios
-        session_ios_pool_ptr_->run();
-        acceptor_ios_ptr_->run();
-
         is_ok = true;
     } while (0);
 
@@ -150,16 +137,6 @@ void tcp_server_impl::close()
     for (auto& itr :acceptors_)
     {
         itr.second->close();
-    }
-
-    // clear ios
-    if (acceptor_ios_ptr_ != nullptr)
-    {
-        acceptor_ios_ptr_->stop();
-    }
-    if (session_ios_pool_ptr_ != nullptr)
-    {
-        session_ios_pool_ptr_->stop();
     }
 }
 
@@ -200,28 +177,28 @@ void tcp_server_impl::handle_accept_failed(std::shared_ptr<tcp_acceptor> accepto
 // tcp_session_handler impl
 //------------------------------------------------------------------------------
 
-void tcp_server_impl::handle_session_read(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len)
+void tcp_server_impl::handle_tcp_session_read(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len)
 {
     // read callback
     if (event_handler_ptr_ != nullptr)
         event_handler_ptr_->handle_session_read(session_ptr, data_ptr, data_len);
 }
 
-void tcp_server_impl::handle_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len)
+void tcp_server_impl::handle_tcp_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len)
 {
     // write callback
     if (event_handler_ptr_ != nullptr)
         event_handler_ptr_->handle_session_write(session_ptr, data_ptr, data_len);
 }
 
-void tcp_server_impl::handle_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type)
+void tcp_server_impl::handle_tcp_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type)
 {
     // idle callback
     if (event_handler_ptr_ != nullptr)
         event_handler_ptr_->handle_session_idle(session_ptr, type);
 }
 
-void tcp_server_impl::handle_sessoin_close(std::shared_ptr<tcp_session> session_ptr)
+void tcp_server_impl::handle_tcp_sessoin_close(std::shared_ptr<tcp_session> session_ptr)
 {
     // close callback
     if (event_handler_ptr_ != nullptr)
@@ -253,11 +230,6 @@ bool tcp_server_impl::do_accept(std::shared_ptr<tcp_acceptor> acceptor_ptr)
     acceptor_ptr->accept_once(session_ptr);
 
     return true;
-}
-
-std::string tcp_server_impl::make_key(const asio::ip::tcp::endpoint& ep)
-{
-    return make_key(ep.address().to_string(), ep.port());
 }
 
 std::string tcp_server_impl::make_key(const std::string& ip, uint16_t port)

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tcp/tcp_session_i.h"
-#include "tcp/tcp_session_handler_i.h"
+#include "transport/tcp_session_i.h"
+#include "transport/tcp_session_handler_i.h"
 
 #include "../base/io_service.h"
 
@@ -64,9 +64,7 @@ protected:
     std::atomic<int64_t> delta_write_bytes_;                    // delta write bytes
 
 public:
-    tcp_session_impl(int32_t msg_read_buf_size,
-                     int32_t msg_write_buf_size,
-                     int32_t msg_write_queue_size);
+    tcp_session_impl(int32_t read_buf_size, int32_t write_buf_size, int32_t write_queue_size);
     ~tcp_session_impl() override = default;
 
     // tcp_session impl

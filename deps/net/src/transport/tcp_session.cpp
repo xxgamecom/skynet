@@ -2,13 +2,13 @@
 
 namespace skynet::net::impl {
 
-tcp_session_impl::tcp_session_impl(int32_t msg_read_buf_size,
-                                   int32_t msg_write_buf_size,
-                                   int32_t msg_write_queue_size)
+tcp_session_impl::tcp_session_impl(int32_t read_buf_size,
+                                   int32_t write_buf_size,
+                                   int32_t write_queue_size)
 :
-msg_read_buf_size_(msg_read_buf_size),
-msg_write_buf_size_(msg_write_buf_size),
-msg_write_queue_size_(msg_write_queue_size),
+msg_read_buf_size_(read_buf_size),
+msg_write_buf_size_(write_buf_size),
+msg_write_queue_size_(write_queue_size),
 read_bytes_(0),
 write_bytes_(0),
 delta_read_bytes_(0),
@@ -106,7 +106,7 @@ void tcp_session_impl::close(bool is_force/* = true*/)
 
             // notify event
             if (event_handler_ptr_ != nullptr)
-                event_handler_ptr_->handle_sessoin_close(shared_from_this());
+                event_handler_ptr_->handle_tcp_sessoin_close(shared_from_this());
         }
 
         remote_addr_ = "";
@@ -169,7 +169,7 @@ void tcp_session_impl::check_idle(idle_type check_type, int32_t check_seconds)
     if (is_idle)
     {
         if (event_handler_ptr_ != nullptr)
-            event_handler_ptr_->handle_session_idle(shared_from_this(), check_type);
+            event_handler_ptr_->handle_tcp_session_idle(shared_from_this(), check_type);
     }
 }
 
@@ -274,9 +274,9 @@ void tcp_session_impl::handle_async_read(const asio::error_code& ec, size_t byte
 
             // 数据外部处理
             if (event_handler_ptr_ != nullptr)
-                event_handler_ptr_->handle_session_read(shared_from_this(),
-                                                        msg_read_buf_ptr_->data(),
-                                                        msg_read_buf_ptr_->data_size());
+                event_handler_ptr_->handle_tcp_session_read(shared_from_this(),
+                                                            msg_read_buf_ptr_->data(),
+                                                            msg_read_buf_ptr_->data_size());
 
             // '打开' 状态都继续投递异步读
             if (state_ == SESSION_STATE_OPEN)
@@ -311,9 +311,9 @@ void tcp_session_impl::handle_async_write(const asio::error_code& ec, size_t byt
 
         // 写数据回调, 这里需要确认外部是否需要数据?
         if (event_handler_ptr_ != nullptr)
-            event_handler_ptr_->handle_session_write(shared_from_this(),
-                                                     buf_ptr == nullptr ? nullptr : buf_ptr->data(),
-                                                     bytes_transferred);
+            event_handler_ptr_->handle_tcp_session_write(shared_from_this(),
+                                                         buf_ptr == nullptr ? nullptr : buf_ptr->data(),
+                                                         bytes_transferred);
 
         // 弹出已写数据
         msg_write_queue_.pop_front();

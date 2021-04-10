@@ -3,11 +3,11 @@
 #include "fmt/format.h"
 #include <iostream>
 
-class tcp_server_handler : public skynet::net::tcp_server_handler
+class network_handler : public skynet::net::network_tcp_server_handler
 {
 public:
-    tcp_server_handler() = default;
-    ~tcp_server_handler() override = default;
+    network_handler() = default;
+    ~network_handler() override = default;
 
 public:
     // 接收连接成功
@@ -48,33 +48,47 @@ public:
 
 int32_t main(int32_t argc, char* argv[])
 {
-    std::cout << "create server" << std::endl;
+//    std::cout << "create server" << std::endl;
+//
+//    // acceptor ios
+//    auto acceptor_ios_ptr = skynet::net::create_io_service();
+//    auto session_manager_ptr = skynet::net::create_session_manager();
+//    auto io_statistics_ptr = skynet::net::create_io_statistics(session_manager_ptr, acceptor_ios_ptr);
+//    auto acceptor_config_ptr = skynet::net::create_tcp_server_acceptor_config();
+//    auto session_config_ptr = skynet::net::create_tcp_server_session_config();
+//
+//    // create server
+//    auto server_ptr = skynet::net::create_tcp_server(acceptor_ios_ptr, session_manager_ptr, acceptor_config_ptr, session_config_ptr);
+//
+//    // create server handler
+//    auto server_handler_ptr = std::make_shared<tcp_server_handler>();
+//    server_ptr->set_event_handler(server_handler_ptr);
+//
+//    // open server
+//    std::cout << "open server" << std::endl;
+//    if (!server_ptr->open({ std::make_pair("", 10001), std::make_pair("", 8989) }))
+//    {
+//        std::cout << "open server failed" << std::endl;
+//        return 0;
+//    }
+//
+//    ::getchar();
+//
+//    server_ptr->close();
 
-    // acceptor ios
-    auto acceptor_ios_ptr = skynet::net::create_io_service();
-    auto session_manager_ptr = skynet::net::create_session_manager();
-    auto io_statistics_ptr = skynet::net::create_io_statistics(session_manager_ptr, acceptor_ios_ptr);
-    auto acceptor_config_ptr = skynet::net::create_tcp_server_acceptor_config();
-    auto session_config_ptr = skynet::net::create_tcp_server_session_config();
+    std::cout << "create network" << std::endl;
 
-    // create server
-    auto server_ptr = skynet::net::create_tcp_server(acceptor_ios_ptr, session_manager_ptr, acceptor_config_ptr, session_config_ptr);
+    auto network_ptr = skynet::net::create_network();
+    auto network_handler_ptr = std::make_shared<network_handler>();
+    network_ptr->set_event_handler(network_handler_ptr);
+    network_ptr->init();
 
-    // create server handler
-    auto server_handler_ptr = std::make_shared<tcp_server_handler>();
-    server_ptr->set_event_handler(server_handler_ptr);
+    uint32_t svc_handle = 1;
+    auto socket_id = network_ptr->open_tcp_server("0.0.0.0:10001", svc_handle);
 
-    // open server
-    std::cout << "open server" << std::endl;
-    if (!server_ptr->open({ std::make_pair("", 10001), std::make_pair("", 8989) }))
-    {
-        std::cout << "open server failed" << std::endl;
-        return 0;
-    }
+    ::getchar();
 
-    getchar();
-
-    server_ptr->close();
+    network_ptr->close_tcp_server(socket_id, svc_handle);
 
     return 0;
 }

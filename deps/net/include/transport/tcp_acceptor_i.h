@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tcp/tcp_acceptor_def.h"
+#include "tcp_acceptor_def.h"
 #include "base/socket_option_def.h"
 
 namespace skynet::net {

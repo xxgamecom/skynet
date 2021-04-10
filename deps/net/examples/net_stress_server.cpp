@@ -72,18 +72,21 @@ public:
 public:
     void start(std::string local_ip, uint16_t local_port, int32_t thread_count, int32_t block_size)
     {
-        // acceptor ios
-        auto acceptor_ios_ptr = skynet::net::create_io_service();
-        auto session_manager_ptr = skynet::net::create_session_manager();
-        auto io_statistics_ptr = skynet::net::create_io_statistics(session_manager_ptr, acceptor_ios_ptr);
-        auto acceptor_config_ptr = skynet::net::create_tcp_server_acceptor_config();
-        auto session_config_ptr = skynet::net::create_tcp_server_session_config();
-
-        //
-        server_ptr_ = skynet::net::create_tcp_server(acceptor_ios_ptr, session_manager_ptr, acceptor_config_ptr, session_config_ptr);
-
-        std::shared_ptr<tcp_server_handler> server_handler_ptr = std::make_shared<tcp_server_handler>(block_size);
-        server_ptr_->set_event_handler(server_handler_ptr);
+//        // acceptor ios
+//        auto acceptor_ios_ptr = skynet::net::create_io_service();
+//        auto acceptor_ios_pool_ptr = skynet::net::create_io_service_pool();
+//        auto session_manager_ptr = skynet::net::create_session_manager();
+//        auto io_statistics_ptr = skynet::net::create_io_statistics(session_manager_ptr, acceptor_ios_ptr);
+//        auto acceptor_config_ptr = skynet::net::create_tcp_server_acceptor_config();
+//        auto session_config_ptr = skynet::net::create_tcp_server_session_config();
+//
+//        //
+//        uint32_t svc_handle = 1;
+//        uint32_t socket_id = 0;
+//        server_ptr_ = skynet::net::create_tcp_server(svc_handle, socket_id, acceptor_ios_ptr, acceptor_ios_pool_ptr, session_manager_ptr, acceptor_config_ptr, session_config_ptr);
+//
+//        std::shared_ptr<tcp_server_handler> server_handler_ptr = std::make_shared<tcp_server_handler>(block_size);
+//        server_ptr_->set_event_handler(server_handler_ptr);
 
         // 设置服务端会话选项
         //server_ptr_->session_config().read_buf_size(32*1024);
@@ -92,10 +95,10 @@ public:
 //        server_ptr_->session_config()->socket_recv_buf_size(32 * 1024);
 //        server_ptr_->session_config()->socket_send_buf_size(32 * 1024);
 
-        if (!server_ptr_->open(local_ip, local_port))
-        {
-            return;
-        }
+//        if (!server_ptr_->open(local_ip, local_port))
+//        {
+//            return;
+//        }
     }
 
     void stop()

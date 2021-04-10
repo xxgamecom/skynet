@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../base/object_pool.h"
-
 #include "base/session_manager_i.h"
-#include "../tcp/tcp_session.h"
-#include "../udp/udp_session.h"
+
+#include "../base/object_pool.h"
+#include "../transport/tcp_session.h"
+#include "../transport/udp_session.h"
 
 #include <map>
 #include <mutex>

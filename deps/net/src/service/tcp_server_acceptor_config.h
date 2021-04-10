@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tcp/tcp_server_config_i.h"
+#include "service/tcp_server_config_i.h"
 
 namespace skynet::net::impl {
 

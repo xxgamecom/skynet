@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/socket_option_def.h"
-#include "tcp/tcp_client_config_i.h"
+#include "service/tcp_client_config_i.h"
 
 #include <cstdint>
 
@@ -18,7 +18,7 @@ private:
     bool socket_opt_nodelay_ = true;                    // socket选项nodelay
     int32_t socket_opt_linger_ = 0;                     // socket选项linger
 
-    // session
+    // client session config
 private:
     int32_t msg_read_buf_size_ = 8192;                  // 会话读消息缓存大小
                                                         // 用于单次投递异步读数据, 非底层socket缓存, 默认8K
