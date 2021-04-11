@@ -621,7 +621,7 @@ static void _get_socket_info(lua_State* L, socket_info& si)
         lua_setfield(L, -2, "accept");
 
         // last accept time, t['rtime'] = si.recv_time
-        lua_pushinteger(L, si.recv_time);
+        lua_pushinteger(L, si.recv_time_ticks);
         lua_setfield(L, -2, "rtime");
 
         // endpoint info, t['sock'] = si.endpoint
@@ -666,10 +666,10 @@ static void _get_socket_info(lua_State* L, socket_info& si)
     lua_pushinteger(L, si.wb_size);
     lua_setfield(L, -2, "wbuffer");
 
-    lua_pushinteger(L, si.recv_time);
+    lua_pushinteger(L, si.recv_time_ticks);
     lua_setfield(L, -2, "rtime");
 
-    lua_pushinteger(L, si.send_time);
+    lua_pushinteger(L, si.send_time_ticks);
     lua_setfield(L, -2, "wtime");
 
     lua_pushboolean(L, si.reading);
@@ -1074,7 +1074,7 @@ static int l_send_low(lua_State* L)
  *    return socket.bind(0)
  * end
  */
-static int l_bind(lua_State* L)
+static int l_bind_os_fd(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -1082,7 +1082,7 @@ static int l_bind(lua_State* L)
     int fd = luaL_checkinteger(L, 1);
 
     // bind
-    int socket_id = node_socket::instance()->bind(svc_ctx->svc_handle_, fd);
+    int socket_id = node_socket::instance()->bind_os_fd(svc_ctx->svc_handle_, fd);
 
     // return socket id
     lua_pushinteger(L, socket_id);
@@ -1287,7 +1287,7 @@ static const luaL_Reg socket_funcs_2[] = {
     { "shutdown",    skynet::luaclib::l_shutdown },
     { "send",        skynet::luaclib::l_send },
     { "lsend",       skynet::luaclib::l_send_low },
-    { "bind",        skynet::luaclib::l_bind },
+    { "bind",        skynet::luaclib::l_bind_os_fd },
     { "start",       skynet::luaclib::l_start },
     { "pause",       skynet::luaclib::l_pause },
     { "nodelay",     skynet::luaclib::l_nodelay },

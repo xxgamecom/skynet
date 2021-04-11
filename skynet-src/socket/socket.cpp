@@ -107,8 +107,8 @@ bool socket::get_socket_info(socket_info& si) const
     // send/recv statistics info
     si.recv = this->stat.recv;
     si.send = this->stat.send;
-    si.recv_time = this->stat.recv_time;
-    si.send_time = this->stat.send_time;
+    si.recv_time_ticks = this->stat.recv_time_ticks;
+    si.send_time_ticks = this->stat.send_time_ticks;
     si.reading = this->reading;
     si.writing = this->writing;
 

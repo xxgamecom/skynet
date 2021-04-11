@@ -829,9 +829,9 @@ static int l_trash(lua_State* L)
  * lua examples:
  * skynet.now = c.now
  */
-static int l_now(lua_State* L)
+static int l_now_ticks(lua_State* L)
 {
-    lua_pushinteger(L, skynet::timer_manager::instance()->now());
+    lua_pushinteger(L, skynet::timer_manager::instance()->now_ticks());
     return 1;
 }
 
@@ -888,7 +888,7 @@ LUAMOD_API int luaopen_skynet_core(lua_State* L)
         { "unpack",      l_unpack },
         { "pack_string", l_pack_string },
         { "trash",       l_trash },
-        { "now",         l_now },
+        { "now",         l_now_ticks },
         { "hpc",         l_hpc },
 
         { nullptr,       nullptr },

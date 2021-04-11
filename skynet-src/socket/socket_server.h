@@ -19,7 +19,7 @@ namespace skynet {
 struct socket_udp_address;
 
 //
-class socket_server
+class socket_server final
 {
 private:
     // constants
@@ -30,7 +30,7 @@ private:
     };
 
 private:
-    volatile uint64_t time_ = 0;                        // used to statistics
+    volatile uint64_t time_ticks_ = 0;                  // used to statistics
 
     pipe pipe_;                                         //
     bool need_check_ctrl_cmd_ = true;                   // 是否需要检查控制命令
@@ -52,7 +52,7 @@ public:
     ~socket_server();
 
 public:
-    bool init(uint64_t time = 0);
+    bool init(uint64_t ticks = 0);
     void fini();
 
     /**
@@ -96,12 +96,12 @@ public:
      * @param socket_id listen socket id
      */
     void pause(uint64_t svc_handle, int socket_id);
-
-    // 关闭socket服务
+    // close socket
     void close(uint64_t svc_handle, int socket_id);
-    // 停止socket服务
+    // shutdown socket
     void shutdown(uint64_t svc_handle, int socket_id);
-    // for tcp
+
+    // socket options - only for tcp
     void nodelay(int socket_id);
 
     /**
@@ -111,10 +111,14 @@ public:
      * @param os_fd os fd
      * @return socket id
      */
-    int bind(uint64_t svc_handle, int os_fd);
+    int bind_os_fd(uint64_t svc_handle, int os_fd);
 
-    // 刷新时间
-    void update_time(uint64_t time);
+    /**
+     * refresh time (call by time thread)
+     *
+     * @param time_ticks now ticks
+     */
+    void update_time(uint64_t time_ticks);
 
     /**
      * 获取网络事件 (底层使用epoll或kqueue)

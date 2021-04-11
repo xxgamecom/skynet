@@ -26,7 +26,7 @@ node_socket* node_socket::instance()
 bool node_socket::init()
 {
     socket_server_ = std::make_shared<socket_server>();
-    if (!socket_server_->init(timer_manager::instance()->now()))
+    if (!socket_server_->init(timer_manager::instance()->now_ticks()))
     {
         std::cerr << "socket-server : init failed." << std::endl;
         socket_server_.reset();
@@ -48,7 +48,7 @@ void node_socket::exit()
 
 void node_socket::update_time()
 {
-    socket_server_->update_time(timer_manager::instance()->now());
+    socket_server_->update_time(timer_manager::instance()->now_ticks());
 }
 
 // mainloop thread
@@ -194,9 +194,9 @@ void node_socket::nodelay(uint32_t svc_handle, int socket_id)
     socket_server_->nodelay(socket_id);
 }
 
-int node_socket::bind(uint32_t svc_handle, int os_fd)
+int node_socket::bind_os_fd(uint32_t svc_handle, int os_fd)
 {
-    return socket_server_->bind(svc_handle, os_fd);
+    return socket_server_->bind_os_fd(svc_handle, os_fd);
 }
 
 int node_socket::udp_socket(uint32_t svc_handle, const char* addr, int port)

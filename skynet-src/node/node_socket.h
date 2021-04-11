@@ -66,7 +66,7 @@ public:
     void start(uint32_t svc_handle, int socket_id);
     void pause(uint32_t svc_handle, int socket_id);
     void nodelay(uint32_t svc_handle, int socket_id);
-    int bind(uint32_t svc_handle, int os_fd);
+    int bind_os_fd(uint32_t svc_handle, int os_fd);
 
     int sendbuffer(uint32_t svc_handle, send_buffer* buffer);
     int sendbuffer_low_priority(uint32_t svc_handle, send_buffer* buffer);

@@ -72,8 +72,8 @@ public:
     // r/w statistics
     struct socket_stat
     {
-        uint64_t recv_time = 0;                                 // last recv time
-        uint64_t send_time = 0;                                 // last send time
+        uint64_t recv_time_ticks = 0;                           // last recv time
+        uint64_t send_time_ticks = 0;                           // last send time
         uint64_t recv = 0;                                      // total recv bytes
         uint64_t send = 0;                                      // total send bytes
     };
@@ -142,9 +142,9 @@ public:
     // stat
 public:
     // recv statistics
-    void stat_recv(int n, uint64_t time);
+    void stat_recv(int n, uint64_t time_ticks);
     // send statistics
-    void stat_send(int n, uint64_t time);
+    void stat_send(int n, uint64_t time_ticks);
 
 public:
     // query socket info

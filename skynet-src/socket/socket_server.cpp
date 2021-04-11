@@ -60,10 +60,10 @@ socket_server::~socket_server()
     fini();
 }
 
-bool socket_server::init(uint64_t time/* = 0*/)
+bool socket_server::init(uint64_t ticks/* = 0*/)
 {
     //
-    time_ = time;
+    time_ticks_ = ticks;
 
     // initialize event poller (epoll or kqueue)
     if (!event_poller_.init())
@@ -484,7 +484,7 @@ int socket_server::send(send_buffer* buf)
                 n = 0; // ignore error, let socket thread try again
 
             // send statistics
-            socket_ref.stat_send(n, time_);
+            socket_ref.stat_send(n, time_ticks_);
 
             // send complete
             if (n == so.sz)
@@ -548,7 +548,7 @@ int socket_server::send_low_priority(send_buffer* buf)
     return 0;
 }
 
-int socket_server::bind(uint64_t svc_handle, int os_fd)
+int socket_server::bind_os_fd(uint64_t svc_handle, int os_fd)
 {
     // 分配一个socket
     int socket_id = socket_pool_.alloc_socket();
@@ -563,9 +563,9 @@ int socket_server::bind(uint64_t svc_handle, int os_fd)
     return socket_id;
 }
 
-void socket_server::update_time(uint64_t time)
+void socket_server::update_time(uint64_t time_ticks)
 {
-    time_ = time;
+    time_ticks_ = time_ticks;
 }
 
 void socket_server::nodelay(int socket_id)
@@ -667,7 +667,7 @@ int socket_server::udp_send(const socket_udp_address* addr, send_buffer* buf)
                 if (send_n >= 0)
                 {
                     // send statistics
-                    socket_ref.stat_send(send_n, time_);
+                    socket_ref.stat_send(send_n, time_ticks_);
                     so.free_func((void*)buf->data_ptr);
                     return 0;
                 }
@@ -1194,7 +1194,7 @@ int socket_server::handle_ctrl_cmd_send_socket(cmd_request_send* cmd, socket_mes
             else
             {
                 // send statistics
-                socket_ref.stat_send(n, time_);
+                socket_ref.stat_send(n, time_ticks_);
 
                 //
                 so.free_func((void*)cmd->data_ptr);
@@ -1729,7 +1729,7 @@ int socket_server::send_write_buffer_list_tcp(socket* socket_ptr, write_buffer_l
             }
 
             // send statistics
-            socket_ptr->stat_send((int)sz, time_);
+            socket_ptr->stat_send((int)sz, time_ticks_);
             socket_ptr->wb_size -= sz;
             if (sz != tmp->sz)
             {
@@ -1777,7 +1777,7 @@ int socket_server::send_write_buffer_list_udp(socket* socket_ptr, write_buffer_l
         }
 
         // send statistics
-        socket_ptr->stat_send(tmp->sz, time_);
+        socket_ptr->stat_send(tmp->sz, time_ticks_);
 
         //
         socket_ptr->wb_size -= tmp->sz;
@@ -1947,7 +1947,7 @@ int socket_server::handle_accept(socket* socket_ptr, socket_message* result)
     }
 
     // recv statistics
-    socket_ptr->stat_recv(1, time_);
+    socket_ptr->stat_recv(1, time_ticks_);
 
     // accepted
     new_socket_ptr->status = SOCKET_STATUS_PREPARE_ACCEPT;
@@ -2148,7 +2148,7 @@ int socket_server::forward_message_tcp(socket* socket_ptr, socket_lock& sl, sock
         return -1;
     }
 
-    socket_ptr->stat_recv(n, time_);
+    socket_ptr->stat_recv(n, time_ticks_);
 
     result->svc_handle = socket_ptr->svc_handle;
     result->socket_id = socket_ptr->socket_id;
@@ -2176,7 +2176,7 @@ int socket_server::forward_message_udp(socket* socket_ptr, socket_lock& sl, sock
     }
 
     // recv statistics
-    socket_ptr->stat_recv(recv_n, time_);
+    socket_ptr->stat_recv(recv_n, time_ticks_);
 
     // 将udp地址信息附加到数据尾部
     uint8_t* data_ptr = nullptr;
