@@ -76,11 +76,11 @@ public:
      * create tcp client, connect remote server (async)
      *
      * @param svc_handle skynet service handle
-     * @param remote_host remote ip or domain name
+     * @param remote_ip remote ip or domain name
      * @param remote_port remote port
      * @return socket id
      */
-    int connect(uint64_t svc_handle, const char* remote_host, int remote_port);
+    int connect(uint64_t svc_handle, std::string remote_ip, uint16_t remote_port);
 
     /**
      * start tcp server (must listen before)
@@ -291,5 +291,4 @@ private:
 
 }
 
-#include "socket_server.inl"
 

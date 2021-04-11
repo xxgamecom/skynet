@@ -152,7 +152,7 @@ int prepare_ctrl_cmd_request_close(ctrl_cmd_package& cmd, uint64_t svc_handle, i
 int prepare_ctrl_cmd_request_shutdown(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id);
 
 // prepare connect remote server data: cmd_request_open
-int prepare_ctrl_cmd_request_connect(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, const char* addr, int port);
+int prepare_ctrl_cmd_request_connect(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, const char* remote_ip, uint16_t remote_port);
 // prepare os fd bind data: request_bind
 int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int os_fd);
 // prepare create tcp server data: cmd_request_listen

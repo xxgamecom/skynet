@@ -10,11 +10,11 @@ set(SKYNET_SOCKET_HEADER
     socket/poller/poller.h
     socket/pipe/pipe.h
     socket/pipe/pipe.inl
+    socket/utils/socket_helper.h
+    socket/utils/socket_helper.inl
     socket/buffer.h
     socket/socket.h
     socket/socket.inl
-    socket/socket_helper.h
-    socket/socket_helper.inl
     socket/socket_addr.h
     socket/socket_info.h
     socket/socket_lock.h
@@ -22,7 +22,6 @@ set(SKYNET_SOCKET_HEADER
     socket/socket_pool.inl
     socket/socket_server_def.h
     socket/socket_server.h
-    socket/socket_server.inl
     socket/socket_server_ctrl_cmd.h
 )
 
@@ -31,8 +30,8 @@ set(SKYNET_SOCKET_SRC
     socket/poller/poller_epoll.cpp
     socket/poller/poller_kqueue.cpp
     socket/pipe/pipe.cpp
+    socket/utils/socket_helper.cpp
     socket/socket.cpp
-    socket/socket_helper.cpp
     socket/socket_addr.cpp
     socket/socket_lock.cpp
     socket/socket_pool.cpp

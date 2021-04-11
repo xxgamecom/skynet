@@ -14,7 +14,7 @@
 
 #include "poller/poller.h"
 #include "uri/uri_codec.h"
-#include "socket_helper.h"
+#include "utils/socket_helper.h"
 
 #include "../log/log.h"
 
@@ -205,7 +205,7 @@ int socket_server::listen(uint64_t svc_handle, std::string local_ip, uint16_t lo
     return listen_socket_id;
 }
 
-int socket_server::connect(uint64_t svc_handle, const char* remote_host, int remote_port)
+int socket_server::connect(uint64_t svc_handle, std::string remote_ip, uint16_t remote_port)
 {
     // alloc new socket id
     int socket_id = socket_pool_.alloc_socket();
@@ -214,7 +214,7 @@ int socket_server::connect(uint64_t svc_handle, const char* remote_host, int rem
 
     //
     ctrl_cmd_package cmd;
-    int len = prepare_ctrl_cmd_request_connect(cmd, svc_handle, socket_id, remote_host, remote_port);
+    int len = prepare_ctrl_cmd_request_connect(cmd, svc_handle, socket_id, remote_ip.c_str(), remote_port);
     if (len < 0)
         return INVALID_SOCKET_ID;
 
@@ -428,6 +428,11 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
     }
 }
 
+void socket_server::get_socket_info(std::list<socket_info>& si_list)
+{
+    socket_pool_.get_socket_info(si_list);
+}
+
 int socket_server::send(send_buffer* buf)
 {
     int socket_id = buf->socket_id;
@@ -556,6 +561,11 @@ int socket_server::bind(uint64_t svc_handle, int os_fd)
     _send_ctrl_cmd(&cmd);
 
     return socket_id;
+}
+
+void socket_server::update_time(uint64_t time)
+{
+    time_ = time;
 }
 
 void socket_server::nodelay(int socket_id)

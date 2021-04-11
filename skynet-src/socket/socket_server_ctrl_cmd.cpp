@@ -76,24 +76,24 @@ int prepare_ctrl_cmd_request_shutdown(ctrl_cmd_package& cmd, uint64_t svc_handle
     return len;
 }
 
-int prepare_ctrl_cmd_request_connect(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, const char* addr, int port)
+int prepare_ctrl_cmd_request_connect(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, const char* remote_ip, uint16_t remote_port)
 {
-    int len = ::strlen(addr);
+    int len = ::strlen(remote_ip);
 
     // request_open结构体尾部的host字段为地址数据, 整体长度不能超过256
     if (sizeof(cmd.u.connect) + len >= 256)
     {
-        log_error(nullptr, fmt::format("socket-server : Invalid addr {}.", addr));
+        log_error(nullptr, fmt::format("socket-server : Invalid addr {}.", remote_ip));
         return -1;
     }
 
     // cmd data
     cmd.u.connect.svc_handle = svc_handle;
     cmd.u.connect.socket_id = socket_id;
-    cmd.u.connect.port = port;
+    cmd.u.connect.port = remote_port;
     
     // append udp address
-    ::memcpy(cmd.u.connect.host, addr, len);
+    ::memcpy(cmd.u.connect.host, remote_ip, len);
     cmd.u.connect.host[len] = '\0';
 
     // actually length
