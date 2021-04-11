@@ -11,8 +11,8 @@ namespace skynet {
 class socket_lock final
 {
 private:
-    std::mutex& mutex_ref_;         // 指向socket内的mutex
-    int count_ = 0;                 // 锁定次数
+    std::mutex& mutex_ref_;         // socket mutex reference
+    int count_ = 0;                 // lock count
 
 public:
     socket_lock(std::mutex& mutex_ref);

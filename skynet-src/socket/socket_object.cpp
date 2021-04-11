@@ -1,4 +1,4 @@
-#include "socket.h"
+#include "socket_object.h"
 #include "socket_server.h"
 #include "socket_info.h"
 
@@ -9,7 +9,7 @@
 namespace skynet {
 
 //
-void socket::inc_sending_ref(int socket_id)
+void socket_object::inc_sending_ref(int socket_id)
 {
     // only tcp
     if (protocol_type != SOCKET_TYPE_TCP)
@@ -43,7 +43,7 @@ void socket::inc_sending_ref(int socket_id)
 }
 
 //
-void socket::dec_sending_ref(int socket_id)
+void socket_object::dec_sending_ref(int socket_id)
 {
     // notice: udp may inc sending while status == SOCKET_STATUS_ALLOCED
     if (this->socket_id == socket_id && protocol_type == SOCKET_TYPE_TCP)
@@ -53,7 +53,7 @@ void socket::dec_sending_ref(int socket_id)
     }
 }
 
-bool socket::get_socket_info(socket_info& si) const
+bool socket_object::get_socket_info(socket_info& si) const
 {
     socket_addr sa;
     socklen_t sa_sz = sizeof(sa);

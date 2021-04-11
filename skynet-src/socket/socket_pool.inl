@@ -1,11 +1,11 @@
 namespace skynet {
 
-inline socket& socket_pool::get_socket(int socket_id)
+inline socket_object& socket_pool::get_socket(int socket_id)
 {
     return socket_array_[calc_slot_index(socket_id)];
 }
 
-inline std::array<socket, socket_pool::MAX_SOCKET>& socket_pool::get_all_sockets()
+inline std::array<socket_object, socket_pool::MAX_SOCKET>& socket_pool::get_all_sockets()
 {
     return socket_array_;
 }

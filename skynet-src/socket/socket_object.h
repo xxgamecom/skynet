@@ -65,8 +65,8 @@ struct write_buffer_list
 // forward declare
 struct socket_info;
 
-// socket信息
-class socket final
+// socket object
+class socket_object final
 {
 public:
     // r/w statistics
@@ -154,4 +154,4 @@ public:
 
 }
 
-#include "socket.inl"
+#include "socket_object.inl"
