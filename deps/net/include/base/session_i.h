@@ -11,16 +11,16 @@ public:
     virtual ~basic_session() = default;
 
 public:
-    // session id
-    virtual void session_id(uint32_t id) = 0;
-    virtual uint32_t session_id() = 0;
+    // socket id
+    virtual void socket_id(uint32_t id) = 0;
+    virtual uint32_t socket_id() = 0;
 
     /**
      * idle check
-     * @param check_type @see enum idle_type
+     * @param check_type @see enum session_idle_type
      * @param check_seconds the time determined as idle (seconds)
      */
-    virtual void check_idle(idle_type check_type, int32_t check_seconds) = 0;
+    virtual void check_idle(session_idle_type check_type, int32_t check_seconds) = 0;
 
     // r/w statistics
     virtual int64_t read_bytes() = 0;

@@ -34,7 +34,7 @@ public:
     }
 
     // tcp会话闲置
-    void handle_session_idle(std::shared_ptr<skynet::net::tcp_session> session_ptr, skynet::net::idle_type type) override
+    void handle_session_idle(std::shared_ptr<skynet::net::tcp_session> session_ptr, skynet::net::session_idle_type type) override
     {
         std::cout << "session idle" << std::endl;
     }
@@ -52,13 +52,13 @@ int32_t main(int32_t argc, char* argv[])
 //
 //    // acceptor ios
 //    auto acceptor_ios_ptr = skynet::net::create_io_service();
-//    auto session_manager_ptr = skynet::net::create_session_manager();
-//    auto io_statistics_ptr = skynet::net::create_io_statistics(session_manager_ptr, acceptor_ios_ptr);
+//    auto net_manager_ptr = skynet::net::create_session_manager();
+//    auto io_statistics_ptr = skynet::net::create_io_statistics(net_manager_ptr, acceptor_ios_ptr);
 //    auto acceptor_config_ptr = skynet::net::create_tcp_server_acceptor_config();
 //    auto session_config_ptr = skynet::net::create_tcp_server_session_config();
 //
 //    // create server
-//    auto server_ptr = skynet::net::create_tcp_server(acceptor_ios_ptr, session_manager_ptr, acceptor_config_ptr, session_config_ptr);
+//    auto server_ptr = skynet::net::create_tcp_server(acceptor_ios_ptr, net_manager_ptr, acceptor_config_ptr, session_config_ptr);
 //
 //    // create server handler
 //    auto server_handler_ptr = std::make_shared<tcp_server_handler>();

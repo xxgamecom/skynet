@@ -1,33 +1,30 @@
-#include "socket_manager.h"
+#include "net_manager.h"
 
 namespace skynet::net::impl {
 
 // 初始化
-bool socket_manager_impl::init(int32_t session_pool_size,
-                               int32_t read_buf_size,
-                               int32_t write_buf_size,
-                               int32_t write_queue_size)
+bool net_manager_impl::init(int32_t session_pool_size, int32_t read_buf_size, int32_t write_buf_size, int32_t write_queue_size)
 {
     // create session pool
-    tcp_session_pool_ptr_ = std::make_shared<object_pool<tcp_session_impl >>(session_pool_size, read_buf_size, write_buf_size, write_queue_size);
+    tcp_session_pool_ptr_ = std::make_shared<object_pool<tcp_session_impl>>(session_pool_size, read_buf_size, write_buf_size, write_queue_size);
     if (tcp_session_pool_ptr_ == nullptr)
         return false;
 
-    udp_session_pool_ptr_ = std::make_shared<object_pool<udp_session_impl >>(session_pool_size);
+    udp_session_pool_ptr_ = std::make_shared<object_pool<udp_session_impl>>(session_pool_size);
     if (udp_session_pool_ptr_ == nullptr)
         return false;
 
     return true;
 }
 
-void socket_manager_impl::fini()
+void net_manager_impl::fini()
 {
     std::lock_guard<std::mutex> guard(sessions_mutex_);
 
     session_used_map_.clear();
 }
 
-std::shared_ptr<basic_session> socket_manager_impl::create_session(session_type type)
+std::shared_ptr<basic_session> net_manager_impl::create_session(session_type type)
 {
     std::lock_guard<std::mutex> guard(sessions_mutex_);
 
@@ -47,7 +44,7 @@ std::shared_ptr<basic_session> socket_manager_impl::create_session(session_type 
 
     // alloc session id
     uint32_t id = new_socket_id();
-    session_ptr->session_id(id);
+    session_ptr->socket_id(id);
 
     // save session info
     session_used_map_.insert(std::make_pair(id, session_ptr));
@@ -55,13 +52,13 @@ std::shared_ptr<basic_session> socket_manager_impl::create_session(session_type 
     return session_ptr;
 }
 
-void socket_manager_impl::release_session(std::shared_ptr<basic_session> session_ptr)
+void net_manager_impl::release_session(std::shared_ptr<basic_session> session_ptr)
 {
     std::lock_guard<std::mutex> guard(sessions_mutex_);
 
     if (session_ptr != nullptr)
     {
-        session_used_map_.erase(session_ptr->session_id());
+        session_used_map_.erase(session_ptr->socket_id());
 
         //
         std::shared_ptr<tcp_session_impl> tmp1 = std::dynamic_pointer_cast<tcp_session_impl>(session_ptr);
@@ -74,7 +71,7 @@ void socket_manager_impl::release_session(std::shared_ptr<basic_session> session
 }
 
 // 获取所有会话
-size_t socket_manager_impl::get_sessions(std::vector<std::weak_ptr<basic_session>>& sessions)
+size_t net_manager_impl::get_sessions(std::vector<std::weak_ptr<basic_session>>& sessions)
 {
     std::lock_guard<std::mutex> guard(sessions_mutex_);
 

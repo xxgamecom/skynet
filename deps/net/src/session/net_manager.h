@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/session_manager_i.h"
+#include "base/net_manager_i.h"
 
 #include "../base/object_pool.h"
 #include "../transport/tcp_session.h"
@@ -22,18 +22,20 @@ namespace skynet::net::impl {
  * socket manager, used for manager tcp/udp session
  *
  * socket_id is a logic id, include:
- * - tcp acceptor id
- * - client session id
+ * - tcp server id
+ * - tcp client session id
+ * - udp server id
+ * - udp client session id
  */
-class socket_manager_impl : public session_manager,
-                            public asio::noncopyable
+class net_manager_impl : public net_manager,
+                         public asio::noncopyable
 {
 public:
     typedef std::map<uint32_t, std::weak_ptr<basic_session>> session_map;
 
     // socket id
 protected:
-    std::atomic<uint32_t> id_generator_ = INVALID_SESSION_ID;               // socket id generator
+    std::atomic<uint32_t> id_generator_ = INVALID_SOCKET_ID;                // socket id generator
 
     // session
 protected:
@@ -43,10 +45,10 @@ protected:
     std::mutex sessions_mutex_;                                             // session pool protoected
 
 public:
-    socket_manager_impl() = default;
-    ~socket_manager_impl() override = default;
+    net_manager_impl() = default;
+    ~net_manager_impl() override = default;
 
-    // session_manager impl
+    // net_manager impl
 public:
     bool init(int32_t session_pool_size, int32_t read_buf_size, int32_t write_buf_size, int32_t write_queue_size) override;
     void fini() override;
@@ -66,5 +68,5 @@ public:
 
 }
 
-#include "socket_manager.inl"
+#include "net_manager.inl"
 

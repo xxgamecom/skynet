@@ -887,7 +887,6 @@ static int l_shutdown(lua_State* L)
  *
  * lua examples:
  * socket_core.listen(address, port)
- * socket_core.listen(address, port, backlog)
  */
 static int l_listen(lua_State* L)
 {

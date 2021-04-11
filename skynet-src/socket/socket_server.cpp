@@ -13,6 +13,7 @@
 #include "socket_server.h"
 #include "poller.h"
 #include "socket_helper.h"
+#include "uri/uri_codec.h"
 
 #include "../log/log.h"
 
@@ -118,7 +119,7 @@ void socket_server::fini()
 
 // @return -1 failed, socket fd
 //         family: AF_INET, AF_INET6
-static int _do_bind(const char* host, int port, int protocol_type, int* family)
+static int _do_bind(std::string host, uint16_t port, int protocol_type, int* family)
 {
     struct addrinfo ai_hints;
     memset(&ai_hints, 0, sizeof(ai_hints));
@@ -137,17 +138,17 @@ static int _do_bind(const char* host, int port, int protocol_type, int* family)
     ai_hints.ai_protocol = protocol_type;
 
     // host: INADDR_ANY
-    if (host == nullptr || host[0] == 0)
+    if (host.empty())
         host = "0.0.0.0";
     // port
     char portstr[16] = { 0 };
     ::sprintf(portstr, "%d", port);
 
     struct addrinfo* ai_list = nullptr;
-    int status = ::getaddrinfo(host, portstr, &ai_hints, &ai_list);
+    int status = ::getaddrinfo(host.c_str(), portstr, &ai_hints, &ai_list);
     if (status != 0)
     {
-        return -1;
+        return INVALID_SOCKET_ID;
     }
 
     *family = ai_list->ai_family;
@@ -155,7 +156,7 @@ static int _do_bind(const char* host, int port, int protocol_type, int* family)
     if (fd < 0)
     {
         ::freeaddrinfo(ai_list);
-        return -1;
+        return INVALID_SOCKET_ID;
     }
 
     // reuse address
@@ -163,7 +164,7 @@ static int _do_bind(const char* host, int port, int protocol_type, int* family)
     {
         ::close(fd);
         ::freeaddrinfo(ai_list);
-        return -1;
+        return INVALID_SOCKET_ID;
     }
 
     // socket binding
@@ -172,7 +173,7 @@ static int _do_bind(const char* host, int port, int protocol_type, int* family)
     {
         ::close(fd);
         ::freeaddrinfo(ai_list);
-        return -1;
+        return INVALID_SOCKET_ID;
     }
 
     //
@@ -180,36 +181,35 @@ static int _do_bind(const char* host, int port, int protocol_type, int* family)
     return fd;
 }
 
-static int _do_listen(const char* host, int port, int backlog)
+static int _do_listen(std::string host, uint16_t port, int32_t backlog)
 {
     // bind
     int family = 0;
     int listen_fd = _do_bind(host, port, IPPROTO_TCP, &family);
     if (listen_fd < 0)
     {
-        return -1;
+        return INVALID_SOCKET_ID;
     }
 
     // listen
     if (::listen(listen_fd, backlog) == -1)
     {
         ::close(listen_fd);
-        return -1;
+        return INVALID_SOCKET_ID;
     }
 
     return listen_fd;
 }
 
-//
-int socket_server::listen(uint64_t svc_handle, const char* addr, int port, int backlog)
+int socket_server::listen(uint64_t svc_handle, std::string local_ip, uint16_t local_port, int32_t backlog)
 {
     // 调用unix系统接口bind，listen获取一个fd
-    int listen_fd = _do_listen(addr, port, backlog);
+    int listen_fd = _do_listen(local_ip, local_port, backlog);
     if (listen_fd < 0)
-        return -1;
+        return INVALID_SOCKET_ID;
 
     // 从ss的socket池中获取空闲的socket, 并返回id
-    int listen_socket_id = socket_pool_.alloc_socket_id();
+    int listen_socket_id = socket_pool_.new_socket_id();
     if (listen_socket_id < 0)
     {
         ::close(listen_fd);
@@ -224,17 +224,18 @@ int socket_server::listen(uint64_t svc_handle, const char* addr, int port, int b
     return listen_socket_id;
 }
 
-int socket_server::connect(uint64_t svc_handle, const char* addr, int port)
+int socket_server::connect(uint64_t svc_handle, const char* remote_host, int remote_port)
 {
-    // 分配一个socket
-    int socket_id = socket_pool_.alloc_socket_id();
+    // alloc new socket id
+    int socket_id = socket_pool_.new_socket_id();
     if (socket_id < 0)
-        return -1;
+        return INVALID_SOCKET_ID;
 
+    //
     ctrl_cmd_package cmd;
-    int len = prepare_ctrl_cmd_request_open(cmd, svc_handle, socket_id, addr, port);
+    int len = prepare_ctrl_cmd_request_connect(cmd, svc_handle, socket_id, remote_host, remote_port);
     if (len < 0)
-        return -1;
+        return INVALID_SOCKET_ID;
 
     _send_ctrl_cmd(&cmd);
 
@@ -564,9 +565,9 @@ int socket_server::send_low_priority(send_buffer* buf)
 int socket_server::bind(uint64_t svc_handle, int os_fd)
 {
     // 分配一个socket
-    int socket_id = socket_pool_.alloc_socket_id();
+    int socket_id = socket_pool_.new_socket_id();
     if (socket_id < 0)
-        return -1;
+        return INVALID_SOCKET_ID;
 
     //
     ctrl_cmd_package cmd;
@@ -597,24 +598,24 @@ int socket_server::udp(uint64_t svc_handle, const char* addr, int port)
         // bind
         fd = _do_bind(addr, port, IPPROTO_UDP, &family);
         if (fd < 0)
-            return -1;
+            return INVALID_SOCKET_ID;
     }
     else
     {
         family = AF_INET;
         fd = ::socket(family, SOCK_DGRAM, 0);
         if (fd < 0)
-            return -1;
+            return INVALID_SOCKET_ID;
     }
 
     //
     socket_helper::nonblocking(fd);
 
-    int socket_id = socket_pool_.alloc_socket_id();
+    int socket_id = socket_pool_.new_socket_id();
     if (socket_id < 0)
     {
         ::close(fd);
-        return -1;
+        return INVALID_SOCKET_ID;
     }
 
     ctrl_cmd_package cmd;
@@ -695,14 +696,14 @@ int socket_server::udp_connect(int socket_id, const char* addr, int port)
 {
     auto& socket_ref = socket_pool_.get_socket(socket_id);
     if (socket_ref.is_invalid(socket_id))
-        return -1;
+        return INVALID_SOCKET_ID;
 
     // increase udp_connecting, use scope lock
     {
         std::lock_guard<std::mutex> lock(socket_ref.dw_mutex);
 
         if (socket_ref.is_invalid(socket_id))
-            return -1;
+            return INVALID_SOCKET_ID;
 
         ++socket_ref.udp_connecting;
     }
@@ -1929,7 +1930,7 @@ int socket_server::handle_accept(socket* socket_ptr, socket_message* result)
     }
 
     // alloc a new socket id
-    int socket_id = socket_pool_.alloc_socket_id();
+    int socket_id = socket_pool_.new_socket_id();
     if (socket_id < 0)
     {
         ::close(client_fd);

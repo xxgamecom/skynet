@@ -1,12 +1,12 @@
 #include "io_statistics.h"
-#include "socket_manager.h"
+#include "net_manager.h"
 
 namespace skynet::net::impl {
 
-io_statistics_impl::io_statistics_impl(std::shared_ptr<session_manager> session_manager_ptr,
+io_statistics_impl::io_statistics_impl(std::shared_ptr<net_manager> net_manager_ptr,
                                        std::shared_ptr<io_service> ios_ptr)
 :
-session_manager_ptr_(session_manager_ptr),
+net_manager_ptr_(net_manager_ptr),
 ios_ptr_(ios_ptr),
 calc_timer_(ios_ptr_->get_raw_ios()),
 read_bytes_(0),
@@ -14,7 +14,7 @@ write_bytes_(0),
 last_read_bytes_(0),
 last_write_bytes_(0)
 {
-    assert(session_manager_ptr_ != nullptr);
+    assert(net_manager_ptr_ != nullptr);
 }
 
 bool io_statistics_impl::start()
@@ -69,7 +69,7 @@ void io_statistics_impl::handle_timeout(const asio::error_code& ec)
         int64_t write_bytes = 0;
         // update total r/w
         std::vector<std::weak_ptr<basic_session>> sessions;
-        if (session_manager_ptr_->get_sessions(sessions) > 0)
+        if (net_manager_ptr_->get_sessions(sessions) > 0)
         {
             for (auto& itr : sessions)
             {

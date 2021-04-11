@@ -58,17 +58,41 @@ public:
     void fini();
 
 public:
-    // bind & listen, return socket id
-    int listen(uint64_t svc_handle, const char* addr, int port, int backlog);
-    // connect remote server (noblocked), return socket id
-    int connect(uint64_t svc_handle, const char* addr, int port);
+    /**
+     * create tcp server, bind & listen
+     *
+     * @param svc_handle skynet service handle
+     * @param local_ip local ip or domain name
+     * @param local_port local port
+     * @param backlog
+     * @return socket id
+     */
+    int listen(uint64_t svc_handle, std::string local_ip, uint16_t local_port, int32_t backlog);
 
-    // start socket server (must listen before)
+    /**
+     * create tcp client, connect remote server (async)
+     *
+     * @param svc_handle skynet service handle
+     * @param remote_host remote ip or domain name
+     * @param remote_port remote port
+     * @return socket id
+     */
+    int connect(uint64_t svc_handle, const char* remote_host, int remote_port);
+
+    /**
+     * start tcp server (must listen before)
+     *
+     * @param svc_handle skynet service handle
+     * @param socket_id listen socket id
+     */
     void start(uint64_t svc_handle, int socket_id);
-    //
+    /**
+     * pause tcp server
+     *
+     * @param svc_handle skynet service handle
+     * @param socket_id listen socket id
+     */
     void pause(uint64_t svc_handle, int socket_id);
-    // 退出socket服务
-    void exit();
 
     // 关闭socket服务
     void close(uint64_t svc_handle, int socket_id);
@@ -79,6 +103,9 @@ public:
 
     // bind os fd (stdin, stdout. not socket bind)
     int bind(uint64_t svc_handle, int os_fd);
+
+    // exit socket server
+    void exit();
 
     // 刷新时间
     void update_time(uint64_t time);

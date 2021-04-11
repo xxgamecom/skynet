@@ -20,7 +20,7 @@
 
 //
 #include "../base/io_service_pool.h"
-#include "../session/socket_manager.h"
+#include "../session/net_manager.h"
 #include "../session/session_idle_checker.h"
 
 // forward delcare
@@ -49,7 +49,7 @@ private:
     std::shared_ptr<network_udp_server_handler> udp_server_handler_ptr_;        // network udp server event handler (callback)
     std::shared_ptr<network_udp_client_handler> udp_client_handler_ptr_;        // network udp client event handler (callback)
 
-    // tcp server
+    // tcp
 private:
     // tcp server config
     std::shared_ptr<tcp_server_acceptor_config> tcp_acceptor_config_ptr_;       // tcp acceptor config
@@ -58,17 +58,22 @@ private:
     // tcp acceptor io service
     std::shared_ptr<io_service> tcp_acceptor_ios_ptr_;                          // tcp server acceptor io service (only for acceptor)
 
-    std::map<uint32_t, std::shared_ptr<tcp_server>> tcp_servers_;               //
-
+    // tcp server
+    std::map<uint32_t, std::shared_ptr<tcp_server>> tcp_servers_;               // tcp server map (k: `socket_id`, v: tcp_server)
     // tcp client
+    std::map<uint32_t, std::shared_ptr<tcp_client>> tcp_clients_;               // tcp client map (k: `socket_id`, v: tcp_client)
+
+    // udp
 private:
-    std::map<uint32_t, std::shared_ptr<tcp_client>> tcp_clients_;               // tcp client map (k: `socket_id`, v: tcp_connector)
+//    std::map<uint32_t, std::shared_ptr<udp_server>> udp_servers_;               // udp server map (k: `socket_id`, v: udp_server)
+//    // udp client
+//    std::map<uint32_t, std::shared_ptr<udp_client>> udp_clients_;               // udp client map (k: `socket_id`, v: udp_client)
 
     // session
 private:
     std::shared_ptr<io_service_pool> session_ios_pool_ptr_;                     // session io service pool
     std::shared_ptr<io_statistics> io_statistics_ptr_;                          // server io statistics
-    std::shared_ptr<session_manager> session_manager_ptr_;                      // server session manager
+    std::shared_ptr<net_manager> net_manager_ptr_;                              // network mananger
     std::shared_ptr<session_idle_checker> session_idle_checker_ptr_;            //
 
 public:
@@ -98,6 +103,7 @@ public:
 
     // create udp server
     int open_udp_server(std::string local_uri, uint32_t svc_handle) override;
+    int open_udp_server(std::string local_ip, uint16_t local_port, uint32_t svc_handle) override;
     void close_udp_server(uint32_t socket_id, uint32_t svc_handle) override;
 
     // create udp client
@@ -127,11 +133,11 @@ public:
 
     // tcp_server_handler impl
 protected:
-    void handle_accept(std::shared_ptr<tcp_session> session_ptr) override;
-    void handle_session_read(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
-    void handle_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
-    void handle_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type) override;
-    void handle_sessoin_close(std::shared_ptr<tcp_session> session_ptr) override;
+    void handle_tcp_server_accept(std::shared_ptr<tcp_session> session_ptr) override;
+    void handle_tcp_server_session_read(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
+    void handle_tcp_server_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
+    void handle_tcp_server_session_idle(std::shared_ptr<tcp_session> session_ptr, session_idle_type type) override;
+    void handle_tcp_server_sessoin_close(std::shared_ptr<tcp_session> session_ptr) override;
 
     // tcp_client_handler impl
 protected:
@@ -142,6 +148,12 @@ protected:
     void handle_tcp_client_read(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
     void handle_tcp_client_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
     void handle_tcp_client_close(std::shared_ptr<tcp_session> session_ptr) override;
+
+    // udp_server_handler impl
+protected:
+
+    // udp_client_handler impl
+protected:
 };
 
 }

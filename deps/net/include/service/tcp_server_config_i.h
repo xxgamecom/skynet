@@ -107,8 +107,8 @@ public:
     virtual int32_t write_queue_size() = 0;
 
     // 判定会话闲置的类型
-    virtual void idle_check_type(idle_type type) = 0;
-    virtual idle_type idle_check_type() = 0;
+    virtual void idle_check_type(session_idle_type type) = 0;
+    virtual session_idle_type idle_check_type() = 0;
 
     // 判断会话闲置的时间(单位: 秒, 默认60秒判定会话为超时)
     virtual void idle_check_seconds(int32_t seconds) = 0;

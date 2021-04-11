@@ -9,12 +9,12 @@ namespace skynet::net {
 class basic_session;
 
 /**
- * session manager interface
+ * network manager interface
  */
-class session_manager
+class net_manager
 {
 public:
-    virtual ~session_manager() = default;
+    virtual ~net_manager() = default;
 
 public:
     virtual bool init(int32_t session_pool_size, int32_t read_buf_size, int32_t write_buf_size, int32_t write_queue_size) = 0;

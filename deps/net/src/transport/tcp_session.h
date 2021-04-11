@@ -35,7 +35,7 @@ public:
     };
 
 protected:
-    uint32_t session_id_ = INVALID_SESSION_ID;                  // session id
+    uint32_t socket_id_ = INVALID_SOCKET_ID;                    // socket id
     session_state state_ = SESSION_STATE_CLOSE;                 // session state
 
     std::shared_ptr<asio::ip::tcp::socket> socket_ptr_;         // socket
@@ -81,8 +81,8 @@ public:
     void close(bool is_force = true) override;
 
     // set/get session id
-    void session_id(uint32_t id) override;
-    uint32_t session_id() override;
+    void socket_id(uint32_t id) override;
+    uint32_t socket_id() override;
 
 public:
     // post a start read async operation (通常在连接成功后调用, 用于发起异步读操作)
@@ -97,7 +97,7 @@ public:
      * @param check_type 要检测的闲置类型
      * @param check_seconds 判断闲置的时间(秒)
      */
-    void check_idle(idle_type check_type, int32_t check_seconds) override;
+    void check_idle(session_idle_type check_type, int32_t check_seconds) override;
 
 public:
     // 会话是否打开

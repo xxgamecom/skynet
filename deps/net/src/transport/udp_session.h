@@ -15,15 +15,15 @@ public:
     // basic_session impl
 public:
     // session id
-    void session_id(uint32_t id) override;
-    uint32_t session_id() override;
+    void socket_id(uint32_t id) override;
+    uint32_t socket_id() override;
 
     /**
      * idle check
-     * @param check_type @see enum idle_type
+     * @param check_type @see enum session_idle_type
      * @param check_seconds the time determined as idle (seconds)
      */
-    void check_idle(idle_type check_type, int32_t check_seconds) override;
+    void check_idle(session_idle_type check_type, int32_t check_seconds) override;
 
     // r/w statistics
     int64_t read_bytes() override;

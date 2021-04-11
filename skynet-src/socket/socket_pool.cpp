@@ -2,7 +2,7 @@
 
 namespace skynet {
 
-int socket_pool::alloc_socket_id()
+int socket_pool::new_socket_id()
 {
     for (int i = 0; i < MAX_SOCKET; i++)
     {

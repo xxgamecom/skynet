@@ -133,7 +133,7 @@ protected:
     }
 
     // tcp会话闲置
-    virtual void handle_tcp_session_idle(std::shared_ptr<skynet::net::tcp_session> session_ptr, skynet::net::idle_type type) override
+    virtual void handle_tcp_session_idle(std::shared_ptr<skynet::net::tcp_session> session_ptr, skynet::net::session_idle_type type) override
     {
     }
 

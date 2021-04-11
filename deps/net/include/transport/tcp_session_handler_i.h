@@ -22,7 +22,7 @@ public:
     // tcp会话写完成
     virtual void handle_tcp_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) = 0;
     // tcp会话闲置
-    virtual void handle_tcp_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type) = 0;
+    virtual void handle_tcp_session_idle(std::shared_ptr<tcp_session> session_ptr, session_idle_type type) = 0;
     // tcp会话关闭
     virtual void handle_tcp_sessoin_close(std::shared_ptr<tcp_session> session_ptr) = 0;
 };

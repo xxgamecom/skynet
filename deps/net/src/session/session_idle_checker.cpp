@@ -1,22 +1,22 @@
 #include "session_idle_checker.h"
-#include "socket_manager.h"
+#include "net_manager.h"
 
 namespace skynet::net::impl {
 
 // default check interval, seconds
 constexpr uint32_t DEFAULT_CHECK_INTERVAL = 1;
 
-session_idle_checker::session_idle_checker(std::shared_ptr<session_manager> session_manager_ptr,
+session_idle_checker::session_idle_checker(std::shared_ptr<net_manager> net_manager_ptr,
                                            std::shared_ptr<io_service> ios_ptr)
 :
-session_manager_ptr_(session_manager_ptr),
+net_manager_ptr_(net_manager_ptr),
 ios_ptr_(ios_ptr),
 idle_check_timer_(ios_ptr_->get_raw_ios())
 {
-    assert(session_manager_ptr_ != nullptr);
+    assert(net_manager_ptr_ != nullptr);
 }
 
-bool session_idle_checker::start(idle_type check_type, int32_t idle_interval_seconds)
+bool session_idle_checker::start(session_idle_type check_type, int32_t idle_interval_seconds)
 {
     idle_check_type_ = check_type;
     idle_check_seconds_ = idle_interval_seconds;
@@ -53,7 +53,7 @@ void session_idle_checker::handle_timeout(const asio::error_code& ec)
     {
         // 检查超时
         std::vector<std::weak_ptr<basic_session>> sessions;
-        if (session_manager_ptr_->get_sessions(sessions) > 0)
+        if (net_manager_ptr_->get_sessions(sessions) > 0)
         {
             for (auto& itr : sessions)
             {

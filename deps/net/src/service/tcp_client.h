@@ -29,7 +29,7 @@ class tcp_client_impl : public tcp_client,
                         public asio::noncopyable
 {
 protected:
-    uint32_t socket_id_ = INVALID_SESSION_ID;               // client socket id
+    uint32_t socket_id_ = INVALID_SOCKET_ID;                // client socket id
 
     tcp_client_session_config_impl session_config_;         // tcp session config
 
@@ -87,7 +87,7 @@ protected:
     // tcp会话写完成
     void handle_tcp_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
     // tcp会话闲置
-    void handle_tcp_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type) override;
+    void handle_tcp_session_idle(std::shared_ptr<tcp_session> session_ptr, session_idle_type type) override;
     // tcp会话关闭
     void handle_tcp_sessoin_close(std::shared_ptr<tcp_session> session_ptr) override;
 };

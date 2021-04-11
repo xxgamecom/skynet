@@ -59,7 +59,6 @@ public:
     // poll socket event
     int poll_socket_event();
 
-    //
     int listen(uint32_t svc_handle, const char* host, int port, int backlog);
     int connect(uint32_t svc_handle, const char* host, int port);
     void close(uint32_t svc_handle, int socket_id);

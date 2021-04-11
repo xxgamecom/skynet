@@ -76,7 +76,7 @@ int prepare_ctrl_cmd_request_shutdown(ctrl_cmd_package& cmd, uint64_t svc_handle
     return len;
 }
 
-int prepare_ctrl_cmd_request_open(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, const char* addr, int port)
+int prepare_ctrl_cmd_request_connect(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, const char* addr, int port)
 {
     int len = ::strlen(addr);
 

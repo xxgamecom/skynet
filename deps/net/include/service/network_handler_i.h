@@ -29,7 +29,7 @@ public:
     // tcp session write complete callback
     virtual void handle_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) = 0;
     // tcp session idle callback
-    virtual void handle_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type) = 0;
+    virtual void handle_session_idle(std::shared_ptr<tcp_session> session_ptr, session_idle_type type) = 0;
     // tcp session close callback
     virtual void handle_sessoin_close(std::shared_ptr<tcp_session> session_ptr) = 0;
 };
@@ -56,6 +56,29 @@ public:
     virtual void handle_tcp_client_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) = 0;
     // tcp client session close callback
     virtual void handle_tcp_client_close(std::shared_ptr<tcp_session> session_ptr) = 0;
+};
+
+/**
+ * network udp server event handler (callback)
+ */
+class network_udp_server_handler
+{
+public:
+    virtual ~network_udp_server_handler() = default;
+
+public:
+
+};
+
+/**
+ * network udp client event handler (callback)
+ */
+class network_udp_client_handler
+{
+public:
+    virtual ~network_udp_client_handler() = default;
+
+public:
 };
 
 }

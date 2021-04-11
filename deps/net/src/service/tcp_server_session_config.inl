@@ -145,12 +145,12 @@ inline int32_t tcp_server_session_config_impl::write_queue_size()
 }
 
 // 判定会话闲置的类型
-inline void tcp_server_session_config_impl::idle_check_type(idle_type type)
+inline void tcp_server_session_config_impl::idle_check_type(session_idle_type type)
 {
     idle_check_type_ = type;
 }
 
-inline idle_type tcp_server_session_config_impl::idle_check_type()
+inline session_idle_type tcp_server_session_config_impl::idle_check_type()
 {
     return idle_check_type_;
 }

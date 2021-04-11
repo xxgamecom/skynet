@@ -33,7 +33,7 @@
 #include "service/udp_server_handle_i.h"
 
 //
-#include "base/session_manager_i.h"
+#include "base/net_manager_i.h"
 
 // network
 #include "service/network_i.h"
@@ -58,11 +58,11 @@ std::shared_ptr<tcp_connector> create_tcp_connector(std::shared_ptr<io_service> 
 std::shared_ptr<tcp_session> create_tcp_session(int32_t msg_read_buf_size, int32_t msg_write_buf_size, int32_t msg_write_queue_size);
 
 // create io statistics
-std::shared_ptr<io_statistics> create_io_statistics(std::shared_ptr<session_manager> session_manager_ptr,
+std::shared_ptr<io_statistics> create_io_statistics(std::shared_ptr<net_manager> net_manager_ptr,
                                                     std::shared_ptr<io_service> ios_ptr);
 
 // create session manager
-std::shared_ptr<session_manager> create_session_manager();
+std::shared_ptr<net_manager> create_session_manager();
 
 //-----------------------------------------------
 // client & server
@@ -74,7 +74,7 @@ std::shared_ptr<tcp_client> create_tcp_client(uint32_t socket_id, std::shared_pt
 std::shared_ptr<tcp_server> create_tcp_server(uint32_t svc_handle, uint32_t socket_id,
                                               std::shared_ptr<io_service> acceptor_ios_ptr,
                                               std::shared_ptr<io_service_pool> session_ios_pool_ptr,
-                                              std::shared_ptr<session_manager> session_manager_ptr,
+                                              std::shared_ptr<net_manager> net_manager_ptr,
                                               std::shared_ptr<tcp_server_acceptor_config> acceptor_config_ptr,
                                               std::shared_ptr<tcp_server_session_config> session_config_ptr);
 // create tcp server acceptor config

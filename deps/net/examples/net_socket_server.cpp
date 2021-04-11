@@ -17,7 +17,7 @@ public:
     {
         std::cout << "handle_session_write" << std::endl;
     }
-    void handle_session_idle(std::shared_ptr<skynet::net::tcp_session> session_ptr, skynet::net::idle_type type) override
+    void handle_session_idle(std::shared_ptr<skynet::net::tcp_session> session_ptr, skynet::net::session_idle_type type) override
     {
         std::cout << "handle_session_idle" << std::endl;
     }

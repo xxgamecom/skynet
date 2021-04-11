@@ -82,6 +82,7 @@ public:
 public:
     // create udp server
     virtual int open_udp_server(std::string local_uri, uint32_t svc_handle) = 0;
+    virtual int open_udp_server(std::string local_ip, uint16_t local_port, uint32_t svc_handle) = 0;
     virtual void close_udp_server(uint32_t socket_id, uint32_t svc_handle) = 0;
 
     // create udp client

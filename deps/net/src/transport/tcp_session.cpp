@@ -111,7 +111,7 @@ void tcp_session_impl::close(bool is_force/* = true*/)
 
         remote_addr_ = "";
         remote_port_ = 0;
-        session_id_ = INVALID_SESSION_ID;
+        socket_id_ = INVALID_SOCKET_ID;
 
         // clean write queue
         msg_write_queue_.clear();
@@ -139,7 +139,7 @@ size_t tcp_session_impl::write(const char* data_ptr, size_t data_len)
 }
 
 // 用于外部对会话进行闲置测试(type为要检测的闲置类型, check_seconds为判断闲置的时间(秒))
-void tcp_session_impl::check_idle(idle_type check_type, int32_t check_seconds)
+void tcp_session_impl::check_idle(session_idle_type check_type, int32_t check_seconds)
 {
     // 只有在'打开'状态才进行闲置检测
     if (state_ != SESSION_STATE_OPEN) return;

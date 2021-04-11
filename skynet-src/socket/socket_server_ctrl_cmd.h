@@ -151,8 +151,8 @@ int prepare_ctrl_cmd_request_close(ctrl_cmd_package& cmd, uint64_t svc_handle, i
 // 准备 request_close 请求数据
 int prepare_ctrl_cmd_request_shutdown(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id);
 
-// 准备 request_open 请求数据, 返回实际所占数据长度
-int prepare_ctrl_cmd_request_open(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, const char* addr, int port);
+// prepare connect remote server data, 返回实际所占数据长度
+int prepare_ctrl_cmd_request_connect(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, const char* addr, int port);
 // 准备 request_bind 请求数据
 int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int os_fd);
 // 

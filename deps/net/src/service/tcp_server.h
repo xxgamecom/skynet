@@ -12,7 +12,7 @@
 #include "tcp_server_session_config.h"
 
 #include "../base/io_service_pool.h"
-#include "../session/socket_manager.h"
+#include "../session/net_manager.h"
 #include "../session/session_idle_checker.h"
 
 
@@ -33,7 +33,7 @@ class tcp_server_impl : public tcp_server,
     typedef std::map<std::string, std::shared_ptr<tcp_acceptor>> acceptor_map;
 protected:
     bool is_inited = false;                                                 // is initialized
-    uint32_t socket_id_ = INVALID_SESSION_ID;                               // server logic id
+    uint32_t socket_id_ = INVALID_SOCKET_ID;                                // server logic id
     uint32_t svc_handle_ = 0;                                               // skynet service id
 
     std::shared_ptr<tcp_server_handler> event_handler_ptr_;                 // event handler
@@ -48,13 +48,13 @@ protected:
 
     // session
     std::shared_ptr<io_service_pool> session_ios_pool_ptr_;
-    std::shared_ptr<session_manager> session_manager_ptr_;
+    std::shared_ptr<net_manager> net_manager_ptr_;
 
 public:
     tcp_server_impl(uint32_t svc_handle, uint32_t socket_id,
                     std::shared_ptr<io_service> acceptor_ios_ptr,
                     std::shared_ptr<io_service_pool> session_ios_pool_ptr,
-                    std::shared_ptr<session_manager> session_manager_ptr,
+                    std::shared_ptr<net_manager> net_manager_ptr,
                     std::shared_ptr<tcp_server_acceptor_config> acceptor_config_ptr,
                     std::shared_ptr<tcp_server_session_config> session_config_ptr);
     ~tcp_server_impl() override = default;
@@ -89,7 +89,7 @@ protected:
     // tcp session write complete
     void handle_tcp_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len) override;
     // tcp session idle
-    void handle_tcp_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type) override;
+    void handle_tcp_session_idle(std::shared_ptr<tcp_session> session_ptr, session_idle_type type) override;
     // tcp session closed
     void handle_tcp_sessoin_close(std::shared_ptr<tcp_session> session_ptr) override;
 

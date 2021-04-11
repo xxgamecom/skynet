@@ -26,7 +26,7 @@ private:
 
 public:
     // 从socket池中分配一个socket, 返回一个socket id
-    int alloc_socket_id();
+    int new_socket_id();
 
     //
     socket& get_socket(int socket_id);

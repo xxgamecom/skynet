@@ -191,7 +191,7 @@ void tcp_client_impl::handle_tcp_session_write(std::shared_ptr<tcp_session> sess
 }
 
 // tcp会话闲置
-void tcp_client_impl::handle_tcp_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type)
+void tcp_client_impl::handle_tcp_session_idle(std::shared_ptr<tcp_session> session_ptr, session_idle_type type)
 {
     // do nothing
 }

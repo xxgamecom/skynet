@@ -53,22 +53,22 @@ bool network_impl::init()
             break;
 
         // create session mananger
-        session_manager_ptr_ = std::make_shared<socket_manager_impl>();
-        if (session_manager_ptr_ == nullptr)
+        net_manager_ptr_ = std::make_shared<net_manager_impl>();
+        if (net_manager_ptr_ == nullptr)
             break;
-        if (!session_manager_ptr_->init(tcp_session_config_ptr_->session_pool_size(),
+        if (!net_manager_ptr_->init(tcp_session_config_ptr_->session_pool_size(),
                                         tcp_session_config_ptr_->read_buf_size(),
                                         tcp_session_config_ptr_->write_buf_size(),
                                         tcp_session_config_ptr_->write_queue_size()))
             break;
 
         // create io statistics
-        io_statistics_ptr_ = std::make_shared<io_statistics_impl>(session_manager_ptr_, tcp_acceptor_ios_ptr_);
+        io_statistics_ptr_ = std::make_shared<io_statistics_impl>(net_manager_ptr_, tcp_acceptor_ios_ptr_);
         if (io_statistics_ptr_ == nullptr)
             break;
 
         // create session idle checker
-        session_idle_checker_ptr_ = std::make_shared<session_idle_checker>(session_manager_ptr_, tcp_acceptor_ios_ptr_);
+        session_idle_checker_ptr_ = std::make_shared<session_idle_checker>(net_manager_ptr_, tcp_acceptor_ios_ptr_);
         if (session_idle_checker_ptr_ == nullptr)
             break;
 
@@ -133,9 +133,9 @@ void network_impl::fini()
     }
 
     // clear session
-    if (session_manager_ptr_ != nullptr)
+    if (net_manager_ptr_ != nullptr)
     {
-        session_manager_ptr_->fini();
+        net_manager_ptr_->fini();
     }
 
     // clear ios
@@ -179,7 +179,7 @@ int network_impl::open_tcp_server(std::string local_uri, uint32_t svc_handle)
 {
     uri_codec uri = uri_codec::from_string(local_uri);
     if (!uri.is_valid())
-        return INVALID_SESSION_ID;
+        return INVALID_SOCKET_ID;
 
     return open_tcp_server(uri.host().value(), uri.port().value(), svc_handle);
 }
@@ -189,16 +189,16 @@ int network_impl::open_tcp_server(std::string local_ip, uint16_t local_port, uin
     // check init
     assert(is_inited);
     if (!is_inited)
-        return INVALID_SESSION_ID;
+        return INVALID_SOCKET_ID;
 
     // alloc server socket id
-    uint32_t socket_id = session_manager_ptr_->new_socket_id();
+    uint32_t socket_id = net_manager_ptr_->new_socket_id();
 
     // create tcp server
     auto tcp_server_ptr = std::make_shared<tcp_server_impl>(svc_handle, socket_id, tcp_acceptor_ios_ptr_, session_ios_pool_ptr_,
-                                                            session_manager_ptr_, tcp_acceptor_config_ptr_, tcp_session_config_ptr_);
+                                                            net_manager_ptr_, tcp_acceptor_config_ptr_, tcp_session_config_ptr_);
     if (tcp_server_ptr == nullptr)
-        return INVALID_SESSION_ID;
+        return INVALID_SOCKET_ID;
 
     tcp_server_ptr->set_event_handler(shared_from_this());
     tcp_server_ptr->init();
@@ -208,7 +208,7 @@ int network_impl::open_tcp_server(std::string local_ip, uint16_t local_port, uin
 //        tcp_server_ptr->session_config()->socket_send_buf_size(32 * 1024);
 
     if (!tcp_server_ptr->open(local_ip, local_port))
-        return INVALID_SESSION_ID;
+        return INVALID_SOCKET_ID;
 
     // save tcp server info
     tcp_servers_[socket_id] = tcp_server_ptr;
@@ -234,7 +234,7 @@ int network_impl::open_tcp_client(std::string remote_uri, uint32_t svc_handle)
 {
     uri_codec uri = uri_codec::from_string(remote_uri);
     if (!uri.is_valid())
-        return INVALID_SESSION_ID;
+        return INVALID_SOCKET_ID;
 
     return open_tcp_client(uri.host().value(), uri.port().value(), svc_handle);
 }
@@ -244,10 +244,10 @@ int network_impl::open_tcp_client(std::string remote_host, uint16_t remote_port,
     // check init
     assert(is_inited);
     if (!is_inited)
-        return INVALID_SESSION_ID;
+        return INVALID_SOCKET_ID;
 
     // alloc client socket id
-    uint32_t socket_id = session_manager_ptr_->new_socket_id();
+    uint32_t socket_id = net_manager_ptr_->new_socket_id();
 
     // create tcp client
     auto tcp_client_ptr = std::make_shared<tcp_client_impl>(socket_id, session_ios_pool_ptr_->select_one());
@@ -255,11 +255,11 @@ int network_impl::open_tcp_client(std::string remote_host, uint16_t remote_port,
 
     // init tcp client
     if (!tcp_client_ptr->init())
-        return INVALID_SESSION_ID;
+        return INVALID_SOCKET_ID;
 
     // connect
     if (!tcp_client_ptr->connect(remote_host, remote_port))
-        return INVALID_SESSION_ID;
+        return INVALID_SOCKET_ID;
 
     // save client info
     tcp_clients_[socket_id] = tcp_client_ptr;
@@ -284,7 +284,16 @@ void network_impl::close_tcp_client(uint32_t socket_id, uint32_t svc_handle)
 // create udp server
 int network_impl::open_udp_server(std::string local_uri, uint32_t svc_handle)
 {
-    return INVALID_SESSION_ID;
+    uri_codec uri = uri_codec::from_string(local_uri);
+    if (!uri.is_valid())
+        return INVALID_SOCKET_ID;
+
+    return open_udp_server(uri.host().value(), uri.port().value(), svc_handle);
+}
+
+int network_impl::open_udp_server(std::string local_ip, uint16_t local_port, uint32_t svc_handle)
+{
+    return INVALID_SOCKET_ID;
 }
 
 void network_impl::close_udp_server(uint32_t socket_id, uint32_t svc_handle)
@@ -297,14 +306,14 @@ int network_impl::open_udp_client(std::string remote_uri, uint32_t svc_handle)
 {
     uri_codec uri = uri_codec::from_string(remote_uri);
     if (!uri.is_valid())
-        return INVALID_SESSION_ID;
+        return INVALID_SOCKET_ID;
 
     return open_udp_client(uri.host().value(), uri.port().value());
 }
 
 int network_impl::open_udp_client(std::string remote_host, uint16_t remote_port, uint32_t svc_handle)
 {
-    return INVALID_SESSION_ID;
+    return INVALID_SOCKET_ID;
 }
 
 void network_impl::close_udp_client(uint32_t socket_id, uint32_t svc_handle)
@@ -343,27 +352,31 @@ void network_impl::session_config(std::shared_ptr<tcp_server_session_config> ses
     tcp_session_config_ptr_ = session_config_ptr;
 }
 
-void network_impl::handle_accept(std::shared_ptr<tcp_session> session_ptr)
+void network_impl::handle_tcp_server_accept(std::shared_ptr<tcp_session> session_ptr)
 {
     if (tcp_server_handler_ptr_ != nullptr)
         tcp_server_handler_ptr_->handle_accept(session_ptr);
 }
-void network_impl::handle_session_read(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len)
+
+void network_impl::handle_tcp_server_session_read(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len)
 {
     if (tcp_server_handler_ptr_ != nullptr)
         tcp_server_handler_ptr_->handle_session_read(session_ptr, data_ptr, data_len);
 }
-void network_impl::handle_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len)
+
+void network_impl::handle_tcp_server_session_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len)
 {
     if (tcp_server_handler_ptr_ != nullptr)
         tcp_server_handler_ptr_->handle_session_write(session_ptr, data_ptr, data_len);
 }
-void network_impl::handle_session_idle(std::shared_ptr<tcp_session> session_ptr, idle_type type)
+
+void network_impl::handle_tcp_server_session_idle(std::shared_ptr<tcp_session> session_ptr, session_idle_type type)
 {
     if (tcp_server_handler_ptr_ != nullptr)
         tcp_server_handler_ptr_->handle_session_idle(session_ptr, type);
 }
-void network_impl::handle_sessoin_close(std::shared_ptr<tcp_session> session_ptr)
+
+void network_impl::handle_tcp_server_sessoin_close(std::shared_ptr<tcp_session> session_ptr)
 {
     if (tcp_server_handler_ptr_ != nullptr)
         tcp_server_handler_ptr_->handle_sessoin_close(session_ptr);
@@ -392,11 +405,13 @@ void network_impl::handle_tcp_client_read(std::shared_ptr<tcp_session> session_p
     if (tcp_client_handler_ptr_ != nullptr)
         tcp_client_handler_ptr_->handle_tcp_client_read(session_ptr, data_ptr, data_len);
 }
+
 void network_impl::handle_tcp_client_write(std::shared_ptr<tcp_session> session_ptr, char* data_ptr, size_t data_len)
 {
     if (tcp_client_handler_ptr_ != nullptr)
         tcp_client_handler_ptr_->handle_tcp_client_write(session_ptr, data_ptr, data_len);
 }
+
 void network_impl::handle_tcp_client_close(std::shared_ptr<tcp_session> session_ptr)
 {
     if (tcp_client_handler_ptr_ != nullptr)

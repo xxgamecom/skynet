@@ -11,7 +11,7 @@ class tcp_server_handler;
 class tcp_server_acceptor_config;
 class tcp_server_session_config;
 class io_statistics;
-class session_manager;
+class net_manager;
 
 // tcp服务端
 class tcp_server

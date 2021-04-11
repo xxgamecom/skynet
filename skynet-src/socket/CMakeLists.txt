@@ -1,4 +1,12 @@
 set(SKYNET_SOCKET_HEADER
+    socket/uri/uri_codec.h
+    socket/uri/uri_codec.inl
+    socket/uri/uri_host.h
+    socket/uri/uri_host.inl
+    socket/uri/uri_port.h
+    socket/uri/uri_port.inl
+    socket/uri/uri_scheme.h
+    socket/uri/uri_scheme.inl
     socket/buffer.h
     socket/pipe.h
     socket/pipe.inl

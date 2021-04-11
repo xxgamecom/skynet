@@ -1,7 +1,7 @@
 #include "net.h"
 
 #include "session/io_statistics.h"
-#include "session/socket_manager.h"
+#include "session/net_manager.h"
 
 #include "service/tcp_client.h"
 #include "service/tcp_client_config.h"
@@ -46,16 +46,16 @@ std::shared_ptr<tcp_session> create_tcp_session(int32_t msg_read_buf_size, int32
 }
 
 // create io statistics
-std::shared_ptr<io_statistics> create_io_statistics(std::shared_ptr<session_manager> session_manager_ptr,
+std::shared_ptr<io_statistics> create_io_statistics(std::shared_ptr<net_manager> net_manager_ptr,
                                                     std::shared_ptr<io_service> ios_ptr)
 {
-    return std::make_shared<impl::io_statistics_impl>(session_manager_ptr, ios_ptr);
+    return std::make_shared<impl::io_statistics_impl>(net_manager_ptr, ios_ptr);
 }
 
 // create session manager
-std::shared_ptr<session_manager> create_session_manager()
+std::shared_ptr<net_manager> create_session_manager()
 {
-    return std::make_shared<impl::socket_manager_impl>();
+    return std::make_shared<impl::net_manager_impl>();
 }
 
 // create tcp client
@@ -68,11 +68,11 @@ std::shared_ptr<tcp_client> create_tcp_client(uint32_t socket_id, std::shared_pt
 std::shared_ptr<tcp_server> create_tcp_server(uint32_t svc_handle, uint32_t socket_id,
                                               std::shared_ptr<io_service> acceptor_ios_ptr,
                                               std::shared_ptr<io_service_pool> session_ios_pool_ptr,
-                                              std::shared_ptr<session_manager> session_manager_ptr,
+                                              std::shared_ptr<net_manager> net_manager_ptr,
                                               std::shared_ptr<tcp_server_acceptor_config> acceptor_config_ptr,
                                               std::shared_ptr<tcp_server_session_config> session_config_ptr)
 {
-    return std::make_shared<impl::tcp_server_impl>(svc_handle, socket_id, acceptor_ios_ptr, session_ios_pool_ptr, session_manager_ptr, acceptor_config_ptr, session_config_ptr);
+    return std::make_shared<impl::tcp_server_impl>(svc_handle, socket_id, acceptor_ios_ptr, session_ios_pool_ptr, net_manager_ptr, acceptor_config_ptr, session_config_ptr);
 }
 
 // create tcp server acceptor config

@@ -11,7 +11,7 @@
 
 // forward declare
 namespace skynet::net {
-class session_manager;
+class net_manager;
 }
 
 namespace skynet::net::impl {
@@ -29,7 +29,7 @@ private:
     };
 
 private:
-    std::shared_ptr<session_manager> session_manager_ptr_;      // 会话管理引用
+    std::shared_ptr<net_manager> net_manager_ptr_;                  // network manager
     std::shared_ptr<io_service> ios_ptr_;                           // ios和acceptor的公用
     asio::steady_timer calc_timer_;                                 // 计算吞吐量定时器
 
@@ -54,7 +54,7 @@ private:
     double largest_write_bytes_throughput_ = 0;                     // 最大写吞吐量
 
 public:
-    io_statistics_impl(std::shared_ptr<session_manager> session_manager_ptr,
+    io_statistics_impl(std::shared_ptr<net_manager> net_manager_ptr,
                        std::shared_ptr<io_service> ios_ptr);
     ~io_statistics_impl() override = default;
 

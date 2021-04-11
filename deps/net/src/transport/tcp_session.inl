@@ -5,14 +5,14 @@ inline void tcp_session_impl::set_event_handler(std::shared_ptr<tcp_session_hand
     event_handler_ptr_ = event_handler_ptr;
 }
 
-inline void tcp_session_impl::session_id(uint32_t id)
+inline void tcp_session_impl::socket_id(uint32_t id)
 {
-    session_id_ = id;
+    socket_id_ = id;
 }
 
-inline uint32_t tcp_session_impl::session_id()
+inline uint32_t tcp_session_impl::socket_id()
 {
-    return session_id_;
+    return socket_id_;
 }
 
 inline void tcp_session_impl::start_read()

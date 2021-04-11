@@ -3,17 +3,17 @@
 namespace skynet::net::impl {
 
 // session id
-void udp_session_impl::session_id(uint32_t id)
+void udp_session_impl::socket_id(uint32_t id)
 {
 
 }
 
-uint32_t udp_session_impl::session_id()
+uint32_t udp_session_impl::socket_id()
 {
-    return INVALID_SESSION_ID;
+    return INVALID_SOCKET_ID;
 }
 
-void udp_session_impl::check_idle(idle_type check_type, int32_t check_seconds)
+void udp_session_impl::check_idle(session_idle_type check_type, int32_t check_seconds)
 {
 
 }

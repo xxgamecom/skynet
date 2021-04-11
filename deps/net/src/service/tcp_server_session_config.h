@@ -24,18 +24,18 @@ private:
 
     // session
 private:
-    int32_t session_thread_num_ = 0;                    // ios池大小, 默认使用CPU Core进行计算
-    int32_t session_pool_size_ = 64 * 1024;             // session pool size, default: 64K
+    int32_t session_thread_num_ = 0;                        // ios池大小, 默认使用CPU Core进行计算
+    int32_t session_pool_size_ = 64 * 1024;                 // session pool size, default: 64K
 
-    int32_t msg_read_buf_size_ = 8192;                  // session recv buffer size, default: 8K
+    int32_t msg_read_buf_size_ = 8192;                      // session recv buffer size, default: 8K
     // 用于单次投递异步读数据, 非底层socket缓存
 
-    int32_t msg_write_buf_size_ = 4096;                 // 会话写消息缓存大小(用于单次投递异步写数据, 非底层socket缓存, 默认4K)
-    int32_t msg_write_queue_size_ = 4;                  // session send queue size, default: 4
+    int32_t msg_write_buf_size_ = 4096;                     // 会话写消息缓存大小(用于单次投递异步写数据, 非底层socket缓存, 默认4K)
+    int32_t msg_write_queue_size_ = 4;                      // session send queue size, default: 4
     // 可以单次写超过4K数据, 内部会根据队列情况进行切片排队
 
-    idle_type idle_check_type_ = IDLE_TYPE_BOTH;        // 判定会话闲置的类型
-    int32_t idle_check_seconds_ = 60;                   // 判断会话闲置的时间(单位: 秒, 默认60秒判定会话为超时)
+    session_idle_type idle_check_type_ = IDLE_TYPE_BOTH;    // 判定会话闲置的类型
+    int32_t idle_check_seconds_ = 60;                       // 判断会话闲置的时间(单位: 秒, 默认60秒判定会话为超时)
 
 public:
     tcp_server_session_config_impl() = default;
@@ -90,8 +90,8 @@ public:
     int32_t write_queue_size() override;
 
     // 判定会话闲置的类型
-    void idle_check_type(idle_type type) override;
-    idle_type idle_check_type() override;
+    void idle_check_type(session_idle_type type) override;
+    session_idle_type idle_check_type() override;
 
     // 判断会话闲置的时间(单位: 秒, 默认60秒判定会话为超时)
     void idle_check_seconds(int32_t seconds) override;
