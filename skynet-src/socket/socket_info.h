@@ -24,8 +24,8 @@ struct socket_info
     uint64_t                    svc_handle = 0;                     // skynet service handle
     
     // recv/send statistics
-    uint64_t                    recv = 0;                           // total recv bytes (TCP, UDP, BIND) | total accept count (LISTEN)
-    uint64_t                    send = 0;                           // total send bytes
+    uint64_t                    recv_bytes = 0;                     // total recv bytes (TCP, UDP, BIND) | total accept count (LISTEN)
+    uint64_t                    send_bytes = 0;                     // total send bytes
     uint64_t                    recv_time_ticks = 0;                // last recv time
     uint64_t                    send_time_ticks = 0;                // last send time
     int64_t                     wb_size = 0;                        // wait send data size

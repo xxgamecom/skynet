@@ -74,8 +74,8 @@ public:
     {
         uint64_t recv_time_ticks = 0;                           // last recv time
         uint64_t send_time_ticks = 0;                           // last send time
-        uint64_t recv = 0;                                      // total recv bytes
-        uint64_t send = 0;                                      // total send bytes
+        uint64_t recv_bytes = 0;                                // total recv bytes
+        uint64_t send_bytes = 0;                                // total send bytes
     };
 
 public:

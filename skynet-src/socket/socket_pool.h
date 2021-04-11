@@ -68,10 +68,10 @@ public:
     void get_socket_info(std::list<socket_info>& si_list);
 
 public:
-    // 计算socket slot数组下标
+    // socket array index
     static uint32_t calc_slot_index(int socket_id);
-    // 高16位
-    static uint16_t socket_id_tag16(int socket_id);
+    // socket id high 16 bits
+    static uint16_t socket_id_high(int socket_id);
 
 };
 

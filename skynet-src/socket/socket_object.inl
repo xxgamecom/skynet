@@ -45,13 +45,13 @@ inline bool socket_object::is_close_write()
 
 inline void socket_object::stat_recv(int n, uint64_t time_ticks)
 {
-    stat.recv += n;
+    stat.recv_bytes += n;
     stat.recv_time_ticks = time_ticks;
 }
 
 inline void socket_object::stat_send(int n, uint64_t time_ticks)
 {
-    stat.send += n;
+    stat.send_bytes += n;
     stat.send_time_ticks = time_ticks;
 }
 

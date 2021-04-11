@@ -1508,7 +1508,7 @@ socket_object* socket_server::new_socket(int socket_id, int socket_fd, int proto
     socket_ref.reading = true;
     socket_ref.writing = false;
     socket_ref.closing = false;
-    socket_ref.sending = socket_pool::socket_id_tag16(socket_id) << 16 | 0; // high 16 bits: socket id, low 16 bits: actually sending count
+    socket_ref.sending = socket_pool::socket_id_high(socket_id) << 16 | 0; // high 16 bits: socket id, low 16 bits: actually sending count
     socket_ref.protocol_type = protocol_type;
     socket_ref.p.size = MIN_READ_BUFFER;
     socket_ref.svc_handle = svc_handle;

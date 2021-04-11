@@ -22,7 +22,7 @@ void socket_object::inc_sending_ref(int socket_id)
         uint16_t expect_socket_id = expect_sending >> 16;
 
         // inc sending only matching the same socket id
-        if (expect_socket_id == socket_pool::socket_id_tag16(socket_id))
+        if (expect_socket_id == socket_pool::socket_id_high(socket_id))
         {
             // s->sending maybe overflow, wait socket thread dec. see issue #794
             if ((expect_sending & 0xFFFF) == 0xFFFF)
@@ -105,8 +105,8 @@ bool socket_object::get_socket_info(socket_info& si) const
     si.svc_handle = this->svc_handle;
 
     // send/recv statistics info
-    si.recv = this->stat.recv;
-    si.send = this->stat.send;
+    si.recv_bytes = this->stat.recv_bytes;
+    si.send_bytes = this->stat.send_bytes;
     si.recv_time_ticks = this->stat.recv_time_ticks;
     si.send_time_ticks = this->stat.send_time_ticks;
     si.reading = this->reading;
