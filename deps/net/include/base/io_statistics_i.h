@@ -17,20 +17,20 @@ public:
     virtual void stop() = 0;
     virtual void reset() = 0;
 
-    // 吞吐量
+    // throughput
 public:
-    // 更新吞吐量计数器
+    // update throughput count
     virtual void update_throughput() = 0;
 
-    // 读写字节数
+    // r/w bytes
     virtual int64_t read_bytes() = 0;
     virtual int64_t write_bytes() = 0;
 
-    // 读写字节数吞吐量(每秒字节数)
+    // r/w bytes throughput (bytes/seconds)
     virtual double read_bytes_throughput() = 0;
     virtual double write_bytes_throughput() = 0;
 
-    // 最大读写字节数吞吐量(每秒读字节数)
+    // max r/w bytes throughput (bytes/seconds)
     virtual double largest_read_bytes_throughput() = 0;
     virtual double largest_write_bytes_throughput() = 0;
 };

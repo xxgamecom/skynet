@@ -76,28 +76,28 @@ int prepare_ctrl_cmd_request_shutdown(ctrl_cmd_package& cmd, uint64_t svc_handle
     return len;
 }
 
-int prepare_ctrl_cmd_request_open(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, const char* addr, int port)
+int prepare_ctrl_cmd_request_connect(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, const char* remote_ip, uint16_t remote_port)
 {
-    int len = ::strlen(addr);
+    int len = ::strlen(remote_ip);
 
     // request_open结构体尾部的host字段为地址数据, 整体长度不能超过256
-    if (sizeof(cmd.u.open) + len >= 256)
+    if (sizeof(cmd.u.connect) + len >= 256)
     {
-        log_error(nullptr, fmt::format("socket-server : Invalid addr {}.", addr));
+        log_error(nullptr, fmt::format("socket-server : Invalid addr {}.", remote_ip));
         return -1;
     }
 
     // cmd data
-    cmd.u.open.svc_handle = svc_handle;
-    cmd.u.open.socket_id = socket_id;
-    cmd.u.open.port = port;
+    cmd.u.connect.svc_handle = svc_handle;
+    cmd.u.connect.socket_id = socket_id;
+    cmd.u.connect.port = remote_port;
     
     // append udp address
-    ::memcpy(cmd.u.open.host, addr, len);
-    cmd.u.open.host[len] = '\0';
+    ::memcpy(cmd.u.connect.host, remote_ip, len);
+    cmd.u.connect.host[len] = '\0';
 
     // actually length
-    len += sizeof(cmd.u.open);    
+    len += sizeof(cmd.u.connect);
 
     // cmd header
     cmd.header[6] = (uint8_t)'O';
@@ -106,12 +106,12 @@ int prepare_ctrl_cmd_request_open(ctrl_cmd_package& cmd, uint64_t svc_handle, in
     return len;
 }
 
-int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int fd)
+int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int os_fd)
 {
     // cmd data
     cmd.u.bind.svc_handle = svc_handle;
     cmd.u.bind.socket_id = socket_id;
-    cmd.u.bind.fd = fd;
+    cmd.u.bind.os_fd = os_fd;
 
     // actually length
     int len = sizeof(cmd.u.bind);
@@ -123,12 +123,12 @@ int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint64_t svc_handle, in
     return len;
 }
 
-int prepare_ctrl_cmd_request_listen(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int fd)
+int prepare_ctrl_cmd_request_listen(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int listen_fd)
 {
     // cmd data
     cmd.u.listen.svc_handle = svc_handle;
     cmd.u.listen.socket_id = socket_id;
-    cmd.u.listen.fd = fd;
+    cmd.u.listen.socket_fd = listen_fd;
 
     // actually length
     int len = sizeof(cmd.u.listen);
@@ -136,7 +136,6 @@ int prepare_ctrl_cmd_request_listen(ctrl_cmd_package& cmd, uint64_t svc_handle, 
     // cmd header
     cmd.header[6] = (uint8_t)'L';
     cmd.header[7] = (uint8_t)len;
-
 
     return len;
 }
@@ -191,6 +190,24 @@ int prepare_ctrl_cmd_request_set_opt(ctrl_cmd_package& cmd, int socket_id)
     return len;
 }
 
+int prepare_ctrl_cmd_request_udp_socket(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int socket_fd, int family)
+{
+    // cmd data
+    cmd.u.udp_socket.svc_handle = svc_handle;
+    cmd.u.udp_socket.socket_id = socket_id;
+    cmd.u.udp_socket.socket_fd = socket_fd;
+    cmd.u.udp_socket.family = family;
+
+    // actually length
+    int len = sizeof(cmd.u.udp_socket);
+
+    // cmd header
+    cmd.header[6] = (uint8_t)'U';
+    cmd.header[7] = (uint8_t)len;
+
+    return len;
+}
+
 int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int socket_type, const socket_addr* sa)
 {
     // cmd data
@@ -202,25 +219,6 @@ int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int s
     
     // cmd header
     cmd.header[6] = (uint8_t)'C';
-    cmd.header[7] = (uint8_t)len;
-
-    return len;
-}
-
-
-int prepare_ctrl_cmd_request_udp(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int fd, int family)
-{
-    // cmd data
-    cmd.u.udp.svc_handle = svc_handle;
-    cmd.u.udp.socket_id = socket_id;
-    cmd.u.udp.fd = fd;
-    cmd.u.udp.family = family;
-
-    // actually length
-    int len = sizeof(cmd.u.udp);
-
-    // cmd header
-    cmd.header[6] = (uint8_t)'U';
     cmd.header[7] = (uint8_t)len;
 
     return len;

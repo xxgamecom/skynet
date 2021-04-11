@@ -13,7 +13,7 @@ TEST_CASE("bactrace1", "[bactrace]")
     logger.set_pattern("%v");
     logger.enable_backtrace(backtrace_size);
 
-    logger.info("info message");
+    skynet.log_info("info message");
     for (int i = 0; i < 100; i++)
         logger.debug("debug message {}", i);
 

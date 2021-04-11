@@ -269,8 +269,7 @@ void timer_manager::update_time()
     }
 }
 
-// 返回当前进程启动后经过的时间 (0.01 秒)
-uint64_t timer_manager::now()
+uint64_t timer_manager::now_ticks()
 {
     return TI_->current;
 }

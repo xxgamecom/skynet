@@ -621,7 +621,7 @@ static void _get_socket_info(lua_State* L, socket_info& si)
         lua_setfield(L, -2, "accept");
 
         // last accept time, t['rtime'] = si.recv_time
-        lua_pushinteger(L, si.recv_time);
+        lua_pushinteger(L, si.recv_time_ticks);
         lua_setfield(L, -2, "rtime");
 
         // endpoint info, t['sock'] = si.endpoint
@@ -666,10 +666,10 @@ static void _get_socket_info(lua_State* L, socket_info& si)
     lua_pushinteger(L, si.wb_size);
     lua_setfield(L, -2, "wbuffer");
 
-    lua_pushinteger(L, si.recv_time);
+    lua_pushinteger(L, si.recv_time_ticks);
     lua_setfield(L, -2, "rtime");
 
-    lua_pushinteger(L, si.send_time);
+    lua_pushinteger(L, si.send_time_ticks);
     lua_setfield(L, -2, "wtime");
 
     lua_pushboolean(L, si.reading);
@@ -829,7 +829,7 @@ static int l_connect(lua_State* L)
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     // connect to destination service
-    int socket_id = node_socket::instance()->connect(svc_ctx, host, port);
+    int socket_id = node_socket::instance()->connect(svc_ctx->svc_handle_, host, port);
 
     // return socket_id
     lua_pushinteger(L, socket_id);
@@ -850,7 +850,7 @@ static int l_close(lua_State* L)
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     int socket_id = luaL_checkinteger(L, 1);
-    node_socket::instance()->close(svc_ctx, socket_id);
+    node_socket::instance()->close(svc_ctx->svc_handle_, socket_id);
 
     return 0;
 }
@@ -869,7 +869,7 @@ static int l_shutdown(lua_State* L)
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     int socket_id = luaL_checkinteger(L, 1);
-    node_socket::instance()->shutdown(svc_ctx, socket_id);
+    node_socket::instance()->shutdown(svc_ctx->svc_handle_, socket_id);
 
     return 0;
 }
@@ -882,9 +882,11 @@ static int l_shutdown(lua_State* L)
  * 2 port               - integer
  * 3 backlog            - integer, optional
  *
+ * outputs:
+ * 1 listen socket id   - integer
+ *
  * lua examples:
  * socket_core.listen(address, port)
- * socket_core.listen(address, port, backlog)
  */
 static int l_listen(lua_State* L)
 {
@@ -897,14 +899,14 @@ static int l_listen(lua_State* L)
     // backlog (optional)
     int backlog = luaL_optinteger(L, 3, DEFAULT_BACKLOG);
 
-    // listen
-    int socket_id = node_socket::instance()->listen(svc_ctx, host, port, backlog);
-    if (socket_id < 0)
+    // listen socket id
+    int listen_socket_id = node_socket::instance()->listen(svc_ctx->svc_handle_, host, port, backlog);
+    if (listen_socket_id < 0)
     {
         return luaL_error(L, "Listen error");
     }
 
-    lua_pushinteger(L, socket_id);
+    lua_pushinteger(L, listen_socket_id);
 
     return 1;
 }
@@ -1024,7 +1026,7 @@ static int l_send(lua_State* L)
     sb.socket_id = socket_id;
 
     // send
-    int err = node_socket::instance()->sendbuffer(svc_ctx, &sb);
+    int err = node_socket::instance()->sendbuffer(svc_ctx->svc_handle_, &sb);
 
     // return result
     lua_pushboolean(L, !err);
@@ -1048,7 +1050,7 @@ static int l_send_low(lua_State* L)
     sb.socket_id = socket_id;
 
     // send
-    int err = node_socket::instance()->sendbuffer_low_priority(svc_ctx, &sb);
+    int err = node_socket::instance()->sendbuffer_low_priority(svc_ctx->svc_handle_, &sb);
 
     // return result
     lua_pushboolean(L, !err);
@@ -1072,7 +1074,7 @@ static int l_send_low(lua_State* L)
  *    return socket.bind(0)
  * end
  */
-static int l_bind(lua_State* L)
+static int l_bind_os_fd(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -1080,7 +1082,7 @@ static int l_bind(lua_State* L)
     int fd = luaL_checkinteger(L, 1);
 
     // bind
-    int socket_id = node_socket::instance()->bind(svc_ctx, fd);
+    int socket_id = node_socket::instance()->bind_os_fd(svc_ctx->svc_handle_, fd);
 
     // return socket id
     lua_pushinteger(L, socket_id);
@@ -1104,7 +1106,7 @@ static int l_start(lua_State* L)
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     int socket_id = luaL_checkinteger(L, 1);
-    node_socket::instance()->start(svc_ctx, socket_id);
+    node_socket::instance()->start(svc_ctx->svc_handle_, socket_id);
 
     return 0;
 }
@@ -1119,7 +1121,7 @@ static int l_pause(lua_State* L)
     // socket id
     int socket_id = luaL_checkinteger(L, 1);
     // pause
-    node_socket::instance()->pause(ctx, socket_id);
+    node_socket::instance()->pause(ctx->svc_handle_, socket_id);
 
     return 0;
 }
@@ -1134,34 +1136,35 @@ static int l_nodelay(lua_State* L)
     // socket id
     int socket_id = luaL_checkinteger(L, 1);
     // nodelay
-    node_socket::instance()->nodelay(svc_ctx, socket_id);
+    node_socket::instance()->nodelay(svc_ctx->svc_handle_, socket_id);
 
     return 0;
 }
 
 /**
- *
+ * create an udp socket (used for udp server & client)
  */
-static int l_udp(lua_State* L)
+static int l_udp_socket(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     size_t sz = 0;
     const char* addr = lua_tolstring(L, 1, &sz);
     char tmp[sz];
-    int port = 0;
-    const char* host = nullptr;
+    int local_port = 0;
+    const char* local_ip = nullptr;
     if (addr)
     {
-        host = _address_port(L, tmp, addr, 2, port);
+        local_ip = _address_port(L, tmp, addr, 2, local_port);
     }
 
-    int id = node_socket::instance()->udp(svc_ctx, host, port);
-    if (id < 0)
+    // create am udp socket
+    int socket_id = node_socket::instance()->udp_socket(svc_ctx->svc_handle_, local_ip, local_port);
+    if (socket_id < 0)
     {
-        return luaL_error(L, "udp init failed");
+        return luaL_error(L, "udp socket init failed");
     }
-    lua_pushinteger(L, id);
+    lua_pushinteger(L, socket_id);
 
     return 1;
 }
@@ -1170,6 +1173,7 @@ static int l_udp_connect(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
+    //
     int id = luaL_checkinteger(L, 1);
 
     size_t sz = 0;
@@ -1183,7 +1187,7 @@ static int l_udp_connect(lua_State* L)
         host = _address_port(L, tmp, addr, 3, port);
     }
 
-    if (node_socket::instance()->udp_connect(svc_ctx, id, host, port))
+    if (node_socket::instance()->udp_connect(svc_ctx->svc_handle_, id, host, port))
     {
         return luaL_error(L, "udp connect failed");
     }
@@ -1206,7 +1210,7 @@ static int l_udp_send(lua_State* L)
     _get_message(L, 3, sb);
 
     // send
-    int err = node_socket::instance()->udp_sendbuffer(svc_ctx, address, &sb);
+    int err = node_socket::instance()->udp_sendbuffer(svc_ctx->svc_handle_, address, &sb);
 
     // return result
     lua_pushboolean(L, !err);
@@ -1277,17 +1281,17 @@ static const luaL_Reg socket_funcs_1[] = {
 
 // need service_context upvalue
 static const luaL_Reg socket_funcs_2[] = {
+    { "listen",      skynet::luaclib::l_listen },
     { "connect",     skynet::luaclib::l_connect },
     { "close",       skynet::luaclib::l_close },
     { "shutdown",    skynet::luaclib::l_shutdown },
-    { "listen",      skynet::luaclib::l_listen },
     { "send",        skynet::luaclib::l_send },
     { "lsend",       skynet::luaclib::l_send_low },
-    { "bind",        skynet::luaclib::l_bind },
+    { "bind",        skynet::luaclib::l_bind_os_fd },
     { "start",       skynet::luaclib::l_start },
     { "pause",       skynet::luaclib::l_pause },
     { "nodelay",     skynet::luaclib::l_nodelay },
-    { "udp",         skynet::luaclib::l_udp },
+    { "udp_socket",  skynet::luaclib::l_udp_socket },
     { "udp_connect", skynet::luaclib::l_udp_connect },
     { "udp_send",    skynet::luaclib::l_udp_send },
     { "udp_address", skynet::luaclib::l_udp_address },

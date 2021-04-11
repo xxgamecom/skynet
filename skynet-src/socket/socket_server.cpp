@@ -11,8 +11,10 @@
  */
 
 #include "socket_server.h"
-#include "poller.h"
-#include "socket_helper.h"
+
+#include "poller/poller.h"
+#include "uri/uri_codec.h"
+#include "utils/socket_helper.h"
 
 #include "../log/log.h"
 
@@ -58,29 +60,27 @@ socket_server::~socket_server()
     fini();
 }
 
-// 初始化
-bool socket_server::init(uint64_t time/* = 0*/)
+bool socket_server::init(uint64_t ticks/* = 0*/)
 {
     //
-    time_ = time;
+    time_ticks_ = ticks;
 
-    // 创建poll fd (epoll or kqueue)
+    // initialize event poller (epoll or kqueue)
     if (!event_poller_.init())
     {
         log_error(nullptr, "socket-server: create event poll fd failed.");
         return false;
     }
 
-    //    
+    // init server ctrl cmd pipe
     if (!pipe_.init())
     {
         log_error(nullptr, "socket-server: create pipe failed.");
         return false;
     }
 
-    // add read ctrl fd to event poll
-    int pipe_read_fd = pipe_.read_fd();
-    if (!event_poller_.add(pipe_read_fd, nullptr))
+    // add read ctrl fd to event poller
+    if (!event_poller_.add(pipe_.read_fd(), nullptr))
     {
         log_error(nullptr, "socket-server: can't add server socket fd to event poll.");
 
@@ -109,132 +109,114 @@ void socket_server::fini()
         }
     }
 
-    // 清理pipe
+    //
     pipe_.fini();
-
     //
     event_poller_.fini();
 }
 
-// @return -1 failed, socket fd
-//         family: AF_INET, AF_INET6
-static int do_bind(const char* host, int port, int protocol_type, int* family)
+/**
+ * bind socket (create socket fd & bind)
+ *
+ * @param local_ip local ip
+ * @param local_port local port
+ * @param protocol_type IPPROTO_TCP, IPPROTO_UDP
+ * @param family AF_INET, AF_INET6
+ * @return socket fd, -1 failed
+ */
+static int _do_bind(std::string& local_ip, uint16_t local_port, int protocol_type, int* family)
 {
+    //
+    if (local_ip.empty())
+        local_ip = "0.0.0.0";
+
     struct addrinfo ai_hints;
     memset(&ai_hints, 0, sizeof(ai_hints));
     ai_hints.ai_family = AF_UNSPEC;
-    // tcp
-    if (protocol_type == IPPROTO_TCP)
-    {
-        ai_hints.ai_socktype = SOCK_STREAM;
-    }
-        // udp
-    else
-    {
-        assert(protocol_type == IPPROTO_UDP);
-        ai_hints.ai_socktype = SOCK_DGRAM;
-    }
     ai_hints.ai_protocol = protocol_type;
-
-    // host: INADDR_ANY
-    if (host == nullptr || host[0] == 0)
-        host = "0.0.0.0";
-    // port
-    char portstr[16] = { 0 };
-    ::sprintf(portstr, "%d", port);
+    ai_hints.ai_socktype = protocol_type == IPPROTO_TCP ? SOCK_STREAM : SOCK_DGRAM;
 
     struct addrinfo* ai_list = nullptr;
-    int status = ::getaddrinfo(host, portstr, &ai_hints, &ai_list);
+    int status = ::getaddrinfo(local_ip.c_str(), std::to_string(local_port).c_str(), &ai_hints, &ai_list);
     if (status != 0)
     {
-        return -1;
+        return INVALID_FD;
     }
 
+    // create socket fd
     *family = ai_list->ai_family;
-    int fd = ::socket(*family, ai_list->ai_socktype, 0);
-    if (fd < 0)
+    int socket_fd = ::socket(*family, ai_list->ai_socktype, 0);
+    if (socket_fd < 0)
     {
         ::freeaddrinfo(ai_list);
-        return -1;
+        return INVALID_FD;
     }
 
     // reuse address
-    if (!socket_helper::reuse_address(fd))
+    if (!socket_helper::reuse_address(socket_fd))
     {
-        ::close(fd);
+        ::close(socket_fd);
         ::freeaddrinfo(ai_list);
-        return -1;
+        return INVALID_FD;
     }
 
     // socket binding
-    status = ::bind(fd, (struct sockaddr*)ai_list->ai_addr, ai_list->ai_addrlen);
+    status = ::bind(socket_fd, (struct sockaddr*)ai_list->ai_addr, ai_list->ai_addrlen);
     if (status != 0)
     {
-        ::close(fd);
+        ::close(socket_fd);
         ::freeaddrinfo(ai_list);
-        return -1;
+        return INVALID_FD;
     }
 
     //
     ::freeaddrinfo(ai_list);
-    return fd;
+    return socket_fd;
 }
 
-static int do_listen(const char* host, int port, int backlog)
+int socket_server::listen(uint64_t svc_handle, std::string local_ip, uint16_t local_port, int32_t backlog)
 {
-    // bind
+    // do bind (create socket fd & reuse addr & bind)
     int family = 0;
-    int listen_fd = do_bind(host, port, IPPROTO_TCP, &family);
-    if (listen_fd < 0)
-    {
-        return -1;
-    }
+    int listen_fd = _do_bind(local_ip, local_port, IPPROTO_TCP, &family);
+    if (listen_fd == INVALID_FD)
+        return INVALID_SOCKET_ID;
 
     // listen
     if (::listen(listen_fd, backlog) == -1)
     {
         ::close(listen_fd);
-        return -1;
+        return INVALID_SOCKET_ID;
     }
 
-    return listen_fd;
-}
-
-//
-int socket_server::listen(uint64_t svc_handle, const char* addr, int port, int backlog)
-{
-    // 调用unix系统接口bind，listen获取一个fd
-    int listen_fd = do_listen(addr, port, backlog);
-    if (listen_fd < 0)
-        return -1;
-
     // 从ss的socket池中获取空闲的socket, 并返回id
-    int socket_id = socket_pool_.alloc_socket_id();
-    if (socket_id < 0)
+    int listen_socket_id = socket_pool_.alloc_socket();
+    if (listen_socket_id < 0)
     {
         ::close(listen_fd);
-        return socket_id;
+        return listen_socket_id;
     }
 
     // 保存关联的服务地址，socket池的id，socket套接字fd
     ctrl_cmd_package cmd;
-    prepare_ctrl_cmd_request_listen(cmd, svc_handle, socket_id, listen_fd);
+    prepare_ctrl_cmd_request_listen(cmd, svc_handle, listen_socket_id, listen_fd);
     _send_ctrl_cmd(&cmd);
 
-    return socket_id;
+    return listen_socket_id;
 }
 
-int socket_server::connect(uint64_t svc_handle, const char* addr, int port)
+int socket_server::connect(uint64_t svc_handle, std::string remote_ip, uint16_t remote_port)
 {
-    // 分配一个socket
-    int socket_id = socket_pool_.alloc_socket_id();
+    // alloc new socket id
+    int socket_id = socket_pool_.alloc_socket();
     if (socket_id < 0)
-        return -1;
+        return INVALID_SOCKET_ID;
 
+    //
     ctrl_cmd_package cmd;
-    int len = prepare_ctrl_cmd_request_open(cmd, svc_handle, socket_id, addr, port);
+    int len = prepare_ctrl_cmd_request_connect(cmd, svc_handle, socket_id, remote_ip.c_str(), remote_port);
     if (len < 0)
-        return -1;
+        return INVALID_SOCKET_ID;
 
     _send_ctrl_cmd(&cmd);
 
@@ -285,7 +267,7 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
             // pipe有数据可读
             if (pipe_.is_readable())
             {
-                int type = _recv_ctrl_cmd(result);
+                int type = handle_ctrl_cmd(result);
                 if (type == -1)
                     continue;
 
@@ -446,6 +428,11 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
     }
 }
 
+void socket_server::get_socket_info(std::list<socket_info>& si_list)
+{
+    socket_pool_.get_socket_info(si_list);
+}
+
 int socket_server::send(send_buffer* buf)
 {
     int socket_id = buf->socket_id;
@@ -477,7 +464,7 @@ int socket_server::send(send_buffer* buf)
             {
                 n = ::write(socket_ref.socket_fd, so.buffer, so.sz);
             }
-                // udp
+            // udp
             else
             {
                 socket_addr sa;
@@ -497,7 +484,7 @@ int socket_server::send(send_buffer* buf)
                 n = 0; // ignore error, let socket thread try again
 
             // send statistics
-            socket_ref.stat_send(n, time_);
+            socket_ref.stat_send(n, time_ticks_);
 
             // send complete
             if (n == so.sz)
@@ -561,19 +548,24 @@ int socket_server::send_low_priority(send_buffer* buf)
     return 0;
 }
 
-int socket_server::bind(uint64_t svc_handle, int fd)
+int socket_server::bind_os_fd(uint64_t svc_handle, int os_fd)
 {
     // 分配一个socket
-    int socket_id = socket_pool_.alloc_socket_id();
+    int socket_id = socket_pool_.alloc_socket();
     if (socket_id < 0)
-        return -1;
+        return INVALID_SOCKET_ID;
 
     //
     ctrl_cmd_package cmd;
-    prepare_ctrl_cmd_request_bind(cmd, svc_handle, socket_id, fd);
+    prepare_ctrl_cmd_request_bind(cmd, svc_handle, socket_id, os_fd);
     _send_ctrl_cmd(&cmd);
 
     return socket_id;
+}
+
+void socket_server::update_time(uint64_t time_ticks)
+{
+    time_ticks_ = time_ticks;
 }
 
 void socket_server::nodelay(int socket_id)
@@ -588,37 +580,38 @@ void socket_server::nodelay(int socket_id)
 // UDP
 //----------------------------------------------
 
-int socket_server::udp(uint64_t svc_handle, const char* addr, int port)
+int socket_server::udp_socket(uint64_t svc_handle, std::string local_ip, uint16_t local_port)
 {
-    int fd = INVALID_FD;
-    int family;
-    if (port != 0 || addr != NULL)
+    int family = 0;
+    int socket_fd = INVALID_FD;
+
+    // bind
+    if (local_port != 0 || !local_ip.empty())
     {
-        // bind
-        fd = do_bind(addr, port, IPPROTO_UDP, &family);
-        if (fd < 0)
-            return -1;
+        socket_fd = _do_bind(local_ip, local_port, IPPROTO_UDP, &family);
+        if (socket_fd == INVALID_FD)
+            return INVALID_SOCKET_ID;
     }
     else
     {
         family = AF_INET;
-        fd = ::socket(family, SOCK_DGRAM, 0);
-        if (fd < 0)
-            return -1;
+        socket_fd = ::socket(family, SOCK_DGRAM, 0);
+        if (socket_fd < 0)
+            return INVALID_SOCKET_ID;
     }
 
-    //
-    socket_helper::nonblocking(fd);
+    // socket options - nonblock
+    socket_helper::nonblocking(socket_fd);
 
-    int socket_id = socket_pool_.alloc_socket_id();
+    int socket_id = socket_pool_.alloc_socket();
     if (socket_id < 0)
     {
-        ::close(fd);
-        return -1;
+        ::close(socket_fd);
+        return INVALID_SOCKET_ID;
     }
 
     ctrl_cmd_package cmd;
-    prepare_ctrl_cmd_request_udp(cmd, svc_handle, socket_id, fd, family);
+    prepare_ctrl_cmd_request_udp_socket(cmd, svc_handle, socket_id, socket_fd, family);
     _send_ctrl_cmd(&cmd);
 
     return socket_id;
@@ -674,7 +667,7 @@ int socket_server::udp_send(const socket_udp_address* addr, send_buffer* buf)
                 if (send_n >= 0)
                 {
                     // send statistics
-                    socket_ref.stat_send(send_n, time_);
+                    socket_ref.stat_send(send_n, time_ticks_);
                     so.free_func((void*)buf->data_ptr);
                     return 0;
                 }
@@ -691,7 +684,7 @@ int socket_server::udp_send(const socket_udp_address* addr, send_buffer* buf)
     return 0;
 }
 
-int socket_server::udp_connect(int socket_id, const char* addr, int port)
+int socket_server::udp_connect(int socket_id, const char* remote_ip, int remote_port)
 {
     auto& socket_ref = socket_pool_.get_socket(socket_id);
     if (socket_ref.is_invalid(socket_id))
@@ -714,11 +707,11 @@ int socket_server::udp_connect(int socket_id, const char* addr, int port)
     ai_hints.ai_protocol = IPPROTO_UDP;
 
     char port_str[16];
-    sprintf(port_str, "%d", port);
+    sprintf(port_str, "%d", remote_port);
 
     addrinfo* ai_list = nullptr;
 
-    int status = ::getaddrinfo(addr, port_str, &ai_hints, &ai_list);
+    int status = ::getaddrinfo(remote_ip, port_str, &ai_hints, &ai_list);
     if (status != 0)
         return -1;
 
@@ -794,7 +787,7 @@ void socket_server::_send_ctrl_cmd(ctrl_cmd_package* cmd)
 }
 
 // 当工作线程执行socket.listen后，socket线程从接收管道读取数据，执行ctrl_cmd
-int socket_server::_recv_ctrl_cmd(socket_message* result)
+int socket_server::handle_ctrl_cmd(socket_message* result)
 {
     // recv header: ctrl_cmd (1 byte) + data len (1 byte)
     uint8_t header[2] = { 0 };
@@ -820,26 +813,26 @@ int socket_server::_recv_ctrl_cmd(socket_message* result)
     switch (ctrl_cmd)
     {
     case 'R':
-        return handle_ctrl_cmd_resume_socket((request_resume_pause*)buf, result);
+        return handle_ctrl_cmd_resume_socket((cmd_request_resume_pause*)buf, result);
     case 'S':
-        return handle_ctrl_cmd_pause_socket((request_resume_pause*)buf, result);
+        return handle_ctrl_cmd_pause_socket((cmd_request_resume_pause*)buf, result);
     case 'B':
-        return handle_ctrl_cmd_bind_socket((request_bind*)buf, result);
+        return handle_ctrl_cmd_bind_socket((cmd_request_bind*)buf, result);
     case 'L':
-        return handle_ctrl_cmd_listen_socket((request_listen*)buf, result);
+        return handle_ctrl_cmd_listen_socket((cmd_request_listen*)buf, result);
     case 'K':
-        return handle_ctrl_cmd_close_socket((request_close*)buf, result);
+        return handle_ctrl_cmd_close_socket((cmd_request_close*)buf, result);
     case 'O':
-        return handle_ctrl_cmd_open_socket((request_open*)buf, result);
+        return handle_ctrl_cmd_connect_socket((cmd_request_connect*)buf, result);
     case 'X':
         return handle_ctrl_cmd_exit_socket(result);
     case 'W':
-        return handle_ctrl_cmd_trigger_write((request_send*)buf, result);
+        return handle_ctrl_cmd_trigger_write((cmd_request_send*)buf, result);
     case 'D':
     case 'P':
     {
         int priority = (ctrl_cmd == 'D') ? PRIORITY_TYPE_HIGH : PRIORITY_TYPE_LOW;
-        auto cmd = (request_send*)buf;
+        auto cmd = (cmd_request_send*)buf;
         int ret = handle_ctrl_cmd_send_socket(cmd, result, priority, nullptr);
 
         auto& socket_ref = socket_pool_.get_socket(cmd->socket_id);
@@ -849,15 +842,15 @@ int socket_server::_recv_ctrl_cmd(socket_message* result)
     }
     case 'A':
     {
-        auto cmd = (request_send_udp*)buf;
+        auto cmd = (cmd_request_send_udp*)buf;
         return handle_ctrl_cmd_send_socket(&cmd->send, result, PRIORITY_TYPE_HIGH, cmd->address);
     }
     case 'C':
-        return handle_ctrl_cmd_set_udp_address((request_set_udp*)buf, result);
+        return handle_ctrl_cmd_set_udp_address((cmd_request_set_udp*)buf, result);
     case 'T':
-        return handle_ctrl_cmd_setopt_socket((request_set_opt*)buf);
+        return handle_ctrl_cmd_setopt_socket((cmd_request_set_opt*)buf);
     case 'U':
-        return handle_ctrl_cmd_add_udp_socket((request_udp*)buf);
+        return handle_ctrl_cmd_udp_socket((cmd_request_udp_socket*)buf);
     }
 
     //
@@ -866,7 +859,7 @@ int socket_server::_recv_ctrl_cmd(socket_message* result)
 }
 
 // return -1 when connecting
-int socket_server::handle_ctrl_cmd_open_socket(request_open* cmd, socket_message* result)
+int socket_server::handle_ctrl_cmd_connect_socket(cmd_request_connect* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
 
@@ -960,7 +953,7 @@ int socket_server::handle_ctrl_cmd_open_socket(request_open* cmd, socket_message
     if (!is_ok)
     {
         ::freeaddrinfo(ai_list);
-        socket_pool_.get_socket(socket_id).status = SOCKET_STATUS_INVALID;
+        socket_pool_.free_socket(socket_id);
         return SOCKET_EVENT_ERROR;
     }
 
@@ -974,7 +967,7 @@ int socket_server::handle_ctrl_cmd_open_socket(request_open* cmd, socket_message
 // 1. close socket by self, See close_socket()
 // 2. recv 0 or eof event (close socket by remote), See forward_message_tcp()
 // It's able to write data after SOCKET_EVENT_CLOSE (In condition 2), but if remote is closed, SOCKET_EVENT_ERROR may raised.
-int socket_server::handle_ctrl_cmd_close_socket(request_close* cmd, socket_message* result)
+int socket_server::handle_ctrl_cmd_close_socket(cmd_request_close* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
     auto& socket_ref = socket_pool_.get_socket(socket_id);
@@ -1010,7 +1003,7 @@ int socket_server::handle_ctrl_cmd_close_socket(request_close* cmd, socket_messa
     return -1;
 }
 
-int socket_server::handle_ctrl_cmd_bind_socket(request_bind* cmd, socket_message* result)
+int socket_server::handle_ctrl_cmd_bind_socket(cmd_request_bind* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
     result->socket_id = socket_id;
@@ -1018,21 +1011,21 @@ int socket_server::handle_ctrl_cmd_bind_socket(request_bind* cmd, socket_message
     result->ud = 0;
 
     //
-    socket* new_socket_ptr = new_socket(socket_id, cmd->fd, SOCKET_TYPE_TCP, cmd->svc_handle);
+    socket* new_socket_ptr = new_socket(socket_id, cmd->os_fd, SOCKET_TYPE_TCP, cmd->svc_handle);
     if (new_socket_ptr == nullptr)
     {
         result->data_ptr = const_cast<char*>("reach skynet socket number limit");
         return SOCKET_EVENT_ERROR;
     }
 
-    socket_helper::nonblocking(cmd->fd);
+    socket_helper::nonblocking(cmd->os_fd);
     new_socket_ptr->status = SOCKET_STATUS_BIND;
     result->data_ptr = const_cast<char*>("binding");
 
     return SOCKET_EVENT_OPEN;
 }
 
-int socket_server::handle_ctrl_cmd_resume_socket(request_resume_pause* cmd, socket_message* result)
+int socket_server::handle_ctrl_cmd_resume_socket(cmd_request_resume_pause* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
 
@@ -1072,7 +1065,7 @@ int socket_server::handle_ctrl_cmd_resume_socket(request_resume_pause* cmd, sock
 
         return SOCKET_EVENT_OPEN;
     }
-        //
+    //
     else if (socket_ref.status == SOCKET_STATUS_CONNECTED)
     {
         // todo: maybe we should send a message SOCKET_TRANSFER to socket_ptr->svc_handle
@@ -1085,7 +1078,7 @@ int socket_server::handle_ctrl_cmd_resume_socket(request_resume_pause* cmd, sock
     return -1;
 }
 
-int socket_server::handle_ctrl_cmd_pause_socket(request_resume_pause* cmd, socket_message* result)
+int socket_server::handle_ctrl_cmd_pause_socket(cmd_request_resume_pause* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
 
@@ -1107,7 +1100,7 @@ int socket_server::handle_ctrl_cmd_pause_socket(request_resume_pause* cmd, socke
     return -1;
 }
 
-int socket_server::handle_ctrl_cmd_setopt_socket(request_set_opt* cmd)
+int socket_server::handle_ctrl_cmd_setopt_socket(cmd_request_set_opt* cmd)
 {
     int socket_id = cmd->socket_id;
 
@@ -1138,7 +1131,7 @@ int socket_server::handle_ctrl_cmd_exit_socket(socket_message* result)
  * 2) if part of data is written, write the rest to the high priority list. (even the priority is PRIORITY_TYPE_LOW)
  * 3) otherwish, 将数据添加到高优先级队列(PRIORITY_TYPE_HIGH) 或 低优先级队列(PRIORITY_TYPE_LOW).
  */
-int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message* result, int priority, const uint8_t* udp_address)
+int socket_server::handle_ctrl_cmd_send_socket(cmd_request_send* cmd, socket_message* result, int priority, const uint8_t* udp_address)
 {
     int socket_id = cmd->socket_id;
     auto& socket_ref = socket_pool_.get_socket(socket_id);
@@ -1201,7 +1194,7 @@ int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message
             else
             {
                 // send statistics
-                socket_ref.stat_send(n, time_);
+                socket_ref.stat_send(n, time_ticks_);
 
                 //
                 so.free_func((void*)cmd->data_ptr);
@@ -1255,7 +1248,7 @@ int socket_server::handle_ctrl_cmd_send_socket(request_send* cmd, socket_message
     return -1;
 }
 
-int socket_server::handle_ctrl_cmd_trigger_write(request_send* cmd, socket_message* result)
+int socket_server::handle_ctrl_cmd_trigger_write(cmd_request_send* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
     auto& socket_ref = socket_pool_.get_socket(socket_id);
@@ -1277,10 +1270,10 @@ int socket_server::handle_ctrl_cmd_trigger_write(request_send* cmd, socket_messa
     return -1;
 }
 
-int socket_server::handle_ctrl_cmd_listen_socket(request_listen* cmd, socket_message* result)
+int socket_server::handle_ctrl_cmd_listen_socket(cmd_request_listen* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
-    int listen_fd = cmd->fd;
+    int listen_fd = cmd->socket_fd;
 
     // 
     socket* new_socket_ptr = new_socket(socket_id, listen_fd, SOCKET_TYPE_TCP, cmd->svc_handle, false);
@@ -1291,10 +1284,7 @@ int socket_server::handle_ctrl_cmd_listen_socket(request_listen* cmd, socket_mes
         result->svc_handle = cmd->svc_handle;
         result->socket_id = socket_id;
         result->ud = 0;
-        result->data_ptr = const_cast<char*>("reach socket number limit");
-
-        //
-        socket_pool_.get_socket(socket_id).status = SOCKET_STATUS_INVALID;
+        result->data_ptr = const_cast<char*>("reach socket number limit");;
 
         return SOCKET_EVENT_ERROR;
     }
@@ -1304,16 +1294,16 @@ int socket_server::handle_ctrl_cmd_listen_socket(request_listen* cmd, socket_mes
     return -1;
 }
 
-int socket_server::handle_ctrl_cmd_add_udp_socket(request_udp* cmd)
+int socket_server::handle_ctrl_cmd_udp_socket(cmd_request_udp_socket* cmd)
 {
     int socket_id = cmd->socket_id;
     int type = cmd->family == AF_INET6 ? SOCKET_TYPE_UDPv6 : SOCKET_TYPE_UDP;
 
-    socket* new_socket_ptr = new_socket(socket_id, cmd->fd, type, cmd->svc_handle);
+    socket* new_socket_ptr = new_socket(socket_id, cmd->socket_fd, type, cmd->svc_handle);
     if (new_socket_ptr == nullptr)
     {
-        ::close(cmd->fd);
-        socket_pool_.get_socket(socket_id).status = SOCKET_STATUS_INVALID;
+        ::close(cmd->socket_fd);
+        socket_pool_.free_socket(socket_id);
         return SOCKET_EVENT_ERROR;
     }
 
@@ -1323,7 +1313,7 @@ int socket_server::handle_ctrl_cmd_add_udp_socket(request_udp* cmd)
     return -1;
 }
 
-int socket_server::handle_ctrl_cmd_set_udp_address(request_set_udp* cmd, socket_message* result)
+int socket_server::handle_ctrl_cmd_set_udp_address(cmd_request_set_udp* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
     auto& socket_ref = socket_pool_.get_socket(socket_id);
@@ -1395,12 +1385,17 @@ void socket_server::force_close(socket* socket_ptr, socket_lock& sl, socket_mess
     event_poller_.del(socket_ptr->socket_fd);
 
     sl.lock();
+    // close socket fd
     if (socket_ptr->status != SOCKET_STATUS_BIND)
     {
         if (::close(socket_ptr->socket_fd) < 0)
             perror("close socket:");
     }
-    socket_ptr->status = SOCKET_STATUS_INVALID;
+
+    // free socket object, put back to pool
+    socket_pool_.free_socket(socket_ptr->socket_id);
+
+    //
     if (socket_ptr->dw_buffer != nullptr)
     {
         send_buffer tmp;
@@ -1503,7 +1498,7 @@ socket* socket_server::new_socket(int socket_id, int socket_fd, int protocol_typ
     // add to event poller
     if (!event_poller_.add(socket_fd, &socket_ref))
     {
-        socket_ref.status = SOCKET_STATUS_INVALID;
+        socket_pool_.free_socket(socket_id);
         return nullptr;
     }
 
@@ -1535,7 +1530,7 @@ socket* socket_server::new_socket(int socket_id, int socket_fd, int protocol_typ
 
     if (enable_read(&socket_ref, reading))
     {
-        socket_ref.status = SOCKET_STATUS_INVALID;
+        socket_pool_.free_socket(socket_id);
         return nullptr;
     }
 
@@ -1596,7 +1591,7 @@ const void* socket_server::clone_send_buffer(send_buffer* buf_ptr, size_t* sz)
     }
 }
 
-void socket_server::append_sendbuffer(socket* socket_ptr, request_send* cmd, bool is_high/* = true*/, const uint8_t* udp_address/* = nullptr*/)
+void socket_server::append_sendbuffer(socket* socket_ptr, cmd_request_send* cmd, bool is_high/* = true*/, const uint8_t* udp_address/* = nullptr*/)
 {
     auto wb_list = is_high ? &socket_ptr->wb_list_high : &socket_ptr->wb_list_low;
     auto write_buf_ptr = prepare_write_buffer(wb_list, cmd, udp_address == nullptr ? SIZEOF_TCP_BUFFER : SIZEOF_UDP_BUFFER);
@@ -1610,7 +1605,7 @@ void socket_server::append_sendbuffer(socket* socket_ptr, request_send* cmd, boo
 }
 
 //
-write_buffer* socket_server::prepare_write_buffer(write_buffer_list* wb_list, request_send* cmd, int size)
+write_buffer* socket_server::prepare_write_buffer(write_buffer_list* wb_list, cmd_request_send* cmd, int size)
 {
     //
     auto write_buf_ptr = (write_buffer*)new char[size] { 0 };
@@ -1734,7 +1729,7 @@ int socket_server::send_write_buffer_list_tcp(socket* socket_ptr, write_buffer_l
             }
 
             // send statistics
-            socket_ptr->stat_send((int)sz, time_);
+            socket_ptr->stat_send((int)sz, time_ticks_);
             socket_ptr->wb_size -= sz;
             if (sz != tmp->sz)
             {
@@ -1782,7 +1777,7 @@ int socket_server::send_write_buffer_list_udp(socket* socket_ptr, write_buffer_l
         }
 
         // send statistics
-        socket_ptr->stat_send(tmp->sz, time_);
+        socket_ptr->stat_send(tmp->sz, time_ticks_);
 
         //
         socket_ptr->wb_size -= tmp->sz;
@@ -1932,7 +1927,7 @@ int socket_server::handle_accept(socket* socket_ptr, socket_message* result)
     }
 
     // alloc a new socket id
-    int socket_id = socket_pool_.alloc_socket_id();
+    int socket_id = socket_pool_.alloc_socket();
     if (socket_id < 0)
     {
         ::close(client_fd);
@@ -1952,7 +1947,7 @@ int socket_server::handle_accept(socket* socket_ptr, socket_message* result)
     }
 
     // recv statistics
-    socket_ptr->stat_recv(1, time_);
+    socket_ptr->stat_recv(1, time_ticks_);
 
     // accepted
     new_socket_ptr->status = SOCKET_STATUS_PREPARE_ACCEPT;
@@ -2153,7 +2148,7 @@ int socket_server::forward_message_tcp(socket* socket_ptr, socket_lock& sl, sock
         return -1;
     }
 
-    socket_ptr->stat_recv(n, time_);
+    socket_ptr->stat_recv(n, time_ticks_);
 
     result->svc_handle = socket_ptr->svc_handle;
     result->socket_id = socket_ptr->socket_id;
@@ -2181,7 +2176,7 @@ int socket_server::forward_message_udp(socket* socket_ptr, socket_lock& sl, sock
     }
 
     // recv statistics
-    socket_ptr->stat_recv(recv_n, time_);
+    socket_ptr->stat_recv(recv_n, time_ticks_);
 
     // 将udp地址信息附加到数据尾部
     uint8_t* data_ptr = nullptr;

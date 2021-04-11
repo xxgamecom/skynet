@@ -16,8 +16,8 @@ public:
     static node_env* instance();
 
 private:
-    std::mutex                  mutex_;
-    lua_State*                  L_ = nullptr;               // lua VM used for skynet node env
+    std::mutex mutex_;
+    lua_State* L_ = nullptr;               // lua VM used for skynet node env
 
 public:
     // set/get node environment variable

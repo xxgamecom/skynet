@@ -6,7 +6,7 @@ skynet.start(function()
 
     skynet.call(gate, "lua", "open", {
         port = 8888,
-        maxclient = 64,
+        max_client = 64,
         servername = "sample",
     })
 end)

@@ -1,8 +1,0 @@
-set(SKYNET_NET_UDP_HEADER
-
-)
-
-set(SKYNET_NET_UDP_SRC
-
-)
-

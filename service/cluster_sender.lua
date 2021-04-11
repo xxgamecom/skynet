@@ -62,7 +62,7 @@ end
 function CMD.changenode(host, port)
     channel:changehost(host, tonumber(port))
     channel:connect(true)
-    skynet.ret(skynet.pack(nil))
+    skynet.ret_pack(nil)
 end
 
 skynet.start(function()

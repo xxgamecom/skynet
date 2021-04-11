@@ -242,7 +242,7 @@ void service_manager::unregister_service_all()
             }
         }
 
-        //
+        // unregister all ok
         if (n == 0)
             return;
     }

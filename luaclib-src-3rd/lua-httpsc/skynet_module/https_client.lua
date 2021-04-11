@@ -408,7 +408,7 @@ local function lua_docmd(cmdhandler, session, cmd, ...)
 end
 
 skynet.start(function()
-    logger.info("https_client starting...")
+    skynet.log_info("https_client starting...")
 
     print("nameserver:", dns.server())  -- set nameserver
 
@@ -421,5 +421,5 @@ skynet.start(function()
     end)
 
     skynet.register ".https_client"
-    logger.info("https_client started!")
+    skynet.log_info("https_client started!")
 end)

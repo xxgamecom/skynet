@@ -48,7 +48,7 @@ public:
     int timeout(uint32_t svc_handle, int time, int session_id);
 
     // the number of ticks since the skynet node started. (ticks, 1 tick = 10ms)
-    uint64_t now();
+    uint64_t now_ticks();
     // the number of seconds since the skynet node started. (seconds)
     uint32_t start_seconds();
 };

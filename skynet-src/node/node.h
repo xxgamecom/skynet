@@ -39,10 +39,10 @@ public:
 
     // node info
 private:
-    node_config                 config_;                    // skynet node config
+    node_config config_;                    // skynet node config
 
-    uint32_t                    monitor_exit_ = 0;          // monitor exit service handle
-    bool                        profile_ = false;           // enable statistics profiler, default: disable
+    uint32_t monitor_exit_ = 0;             // monitor exit service handle
+    bool profile_ = false;                  // enable statistics profiler, default: disable
 
 public:
     //

@@ -368,7 +368,7 @@ local function resolve(content)
 end
 
 local function connect_server()
-    local fd = socket.udp(function(str, from)
+    local fd = socket.udp_socket(function(str, from)
         resolve(str)
     end)
 

@@ -166,7 +166,7 @@ local CMD = {}
 
 function CMD.reload(source, config)
     load_config(config)
-    skynet.ret(skynet.pack(nil))
+    skynet.ret_pack(nil)
 end
 
 function CMD.listen(source, addr, port)
@@ -176,11 +176,11 @@ function CMD.listen(source, addr, port)
         addr, port = string.match(node_address, "([^:]+):(.*)$")
     end
     skynet.call(gate, "lua", "open", { address = addr, port = port })
-    skynet.ret(skynet.pack(nil))
+    skynet.ret_pack(nil)
 end
 
 function CMD.sender(source, node)
-    skynet.ret(skynet.pack(node_channel[node]))
+    skynet.ret_pack(node_channel[node])
 end
 
 function CMD.senders(source)
@@ -208,7 +208,7 @@ function CMD.proxy(source, node, name)
             proxy[fullname] = p
         end
     end
-    skynet.ret(skynet.pack(p))
+    skynet.ret_pack(p)
 end
 
 local cluster_agent = {}    -- key: fd, value: service
@@ -237,7 +237,7 @@ function CMD.register(source, name, addr)
 end
 
 function CMD.queryname(source, name)
-    skynet.ret(skynet.pack(register_name[name]))
+    skynet.ret_pack(register_name[name])
 end
 
 function CMD.socket(source, subcmd, fd, msg)

@@ -70,7 +70,7 @@ FILE* service_log::open_log_file(service_context* svc_ctx, uint32_t svc_handle)
     skynet::log_info(svc_ctx, fmt::format("Open log file {}", (char*)tmp));
 
     uint32_t start_time = timer_manager::instance()->start_seconds();
-    uint64_t now = timer_manager::instance()->now();
+    uint64_t now = timer_manager::instance()->now_ticks();
     time_t ti = start_time + now / 100;
     ::fprintf(f, "open time: %u %s", (uint32_t)now, ::ctime(&ti));
     ::fflush(f);
@@ -82,7 +82,7 @@ void service_log::close_log_file(service_context* svc_ctx, FILE* f, uint32_t svc
 {
     skynet::log_info(svc_ctx, fmt::format("Close log file :{:08X}", svc_handle));
     
-    ::fprintf(f, "close time: %u\n", (uint32_t)timer_manager::instance()->now());
+    ::fprintf(f, "close time: %u\n", (uint32_t)timer_manager::instance()->now_ticks());
     ::fclose(f);
 }
 
@@ -94,7 +94,7 @@ void service_log::log(FILE* f, uint32_t src_svc_handle, int svc_msg_type, int se
     }
     else
     {
-        uint32_t ti = (uint32_t)timer_manager::instance()->now();
+        uint32_t ti = (uint32_t)timer_manager::instance()->now_ticks();
         ::fprintf(f, ":%08x %d %d %u ", src_svc_handle, svc_msg_type, session_id, ti);
         _log_blob(f, buffer, sz);
         ::fprintf(f, "\n");

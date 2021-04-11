@@ -21,13 +21,3 @@ set_target_properties(test_hash_id
     ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_TESTS}"
     LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_TESTS}"
 )
-
-#
-#add_executable(test_socket_server test_socket_server.cpp)
-#target_link_libraries(test_socket_server)
-#set_target_properties(test_socket_server
-#    PROPERTIES
-#    PREFIX ""
-#    ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_TESTS}"
-#    LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_TESTS}"
-#)

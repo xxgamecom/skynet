@@ -12,7 +12,7 @@ local max_packsize = 10 * 1024
 local max_headersize = 1024
 local socket    -- listen socket
 local queue        -- message queue
-local maxclient    -- max client
+local max_client    -- max client
 local client_number = 0
 local CMD = setmetatable({}, { __gc = function()
     netpack.clear(queue)
@@ -98,9 +98,9 @@ local function checkwebsocket_valid(header, check_origin, check_origin_ok)
 
 end
 
-local function writefunc(fd)
+local function writefunc(socket_id)
     return function(content)
-        local ok = socket_core.send(fd, content)
+        local ok = socket_core.send(socket_id, content)
         if not ok then
             error(socket_error) -- TODO, socket_error
         end
@@ -109,20 +109,20 @@ end
 ------------------websocket 握手时使用的相关接口  end----------------------
 
 
-function gateserver.openclient(fd)
-    if connection[fd] ~= nil and connection[fd].isconnect then
-        socket_core.start(fd)
+function gateserver.openclient(socket_id)
+    if connection[socket_id] ~= nil and connection[socket_id].isconnect then
+        socket_core.start(socket_id)
         return true
     end
     return false
 end
 
-function gateserver.closeclient(fd)
-    local c = connection[fd]
+function gateserver.closeclient(socket_id)
+    local c = connection[socket_id]
     if c then
         client_number = client_number - 1
-        connection[fd] = nil
-        socket_core.close(fd)
+        connection[socket_id] = nil
+        socket_core.close(socket_id)
     end
 end
 
@@ -148,7 +148,7 @@ function gateserver.start(handler)
         assert(not socket)
         local address = conf.address or "0.0.0.0"
         local port = assert(conf.port)
-        maxclient = conf.maxclient or 1024
+        max_client = conf.max_client or 1024
         nodelay = conf.nodelay
         skynet.log_info(string.format("Listen on %s:%d", address, port))
         socket = socket_core.listen(address, port)
@@ -212,7 +212,7 @@ function gateserver.start(handler)
     MSG.more = dispatch_queue
 
     function MSG.open(fd, msg)
-        if client_number >= maxclient then
+        if client_number >= max_client then
             socket_core.close(fd)
             return
         end

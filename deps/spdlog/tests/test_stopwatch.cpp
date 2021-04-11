@@ -27,7 +27,7 @@ TEST_CASE("stopwatch2", "[stopwatch]")
     spdlog::logger logger("test-stopwatch", test_sink);
     logger.set_pattern("%v");
     std::this_thread::sleep_for(wait_duration);
-    logger.info("{}", sw);
+    skynet.log_info("{}", sw);
     auto val = std::stod(test_sink->lines()[0]);
 
     REQUIRE(val >= wait_duration.count());
