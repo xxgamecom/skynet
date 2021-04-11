@@ -5,7 +5,7 @@ inline socket_object& socket_object_pool::get_socket(int socket_id)
     return socket_array_[calc_slot_index(socket_id)];
 }
 
-inline std::array<socket_object, socket_object_pool::MAX_SOCKET>& socket_object_pool::get_all_sockets()
+inline std::array<socket_object, socket_object_pool::MAX_SOCKET>& socket_object_pool::get_sockets()
 {
     return socket_array_;
 }

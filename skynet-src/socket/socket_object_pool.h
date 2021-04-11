@@ -58,7 +58,7 @@ public:
      *
      * @return socket object array
      */
-    std::array<socket_object, MAX_SOCKET>& get_all_sockets();
+    std::array<socket_object, MAX_SOCKET>& get_sockets();
 
     /**
      * get all socket object info

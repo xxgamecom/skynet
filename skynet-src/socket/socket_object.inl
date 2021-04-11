@@ -43,16 +43,16 @@ inline bool socket_object::is_close_write()
     return this->status == SOCKET_STATUS_HALF_CLOSE_WRITE;
 }
 
-inline void socket_object::stat_recv(int n, uint64_t time_ticks)
+inline void socket_object::stat_recv(int bytes, uint64_t time_ticks)
 {
-    stat.recv_bytes += n;
-    stat.recv_time_ticks = time_ticks;
+    io_statistics.recv_bytes += bytes;
+    io_statistics.recv_time_ticks = time_ticks;
 }
 
-inline void socket_object::stat_send(int n, uint64_t time_ticks)
+inline void socket_object::stat_send(int bytes, uint64_t time_ticks)
 {
-    stat.send_bytes += n;
-    stat.send_time_ticks = time_ticks;
+    io_statistics.send_bytes += bytes;
+    io_statistics.send_time_ticks = time_ticks;
 }
 
 }

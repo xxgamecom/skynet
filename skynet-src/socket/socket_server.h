@@ -43,7 +43,7 @@ private:
 
     //
     socket_object_interface soi_;                       //
-    socket_object_pool socket_pool_;                    // socket object pool
+    socket_object_pool socket_object_pool_;             // socket object pool
     uint8_t udp_recv_buf_[MAX_UDP_PACKAGE] = { 0 };     //
     char addr_tmp_buf_[ADDR_TMP_BUFFER_SIZE] = { 0 };   // 地址信息临时数据
 

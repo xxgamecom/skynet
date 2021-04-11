@@ -70,7 +70,7 @@ class socket_object final
 {
 public:
     // r/w statistics
-    struct socket_stat
+    struct socket_statistics
     {
         uint64_t recv_time_ticks = 0;                           // last recv time
         uint64_t send_time_ticks = 0;                           // last send time
@@ -86,7 +86,7 @@ public:
     write_buffer_list wb_list_low;                              // low priority write buffer
     int64_t wb_size = 0;                                        // wait send data size
 
-    socket_stat stat;                                           // socket statistics info
+    socket_statistics io_statistics;                            // socket statistics info
 
     std::atomic<uint32_t> sending { 0 };                     // divide into 2 parts:
                                                                 // - high 16 bits: socket id
@@ -139,12 +139,12 @@ public:
     //
     void dec_sending_ref(int socket_id);
 
-    // stat
+    // io statistics
 public:
     // recv statistics
-    void stat_recv(int n, uint64_t time_ticks);
+    void stat_recv(int bytes, uint64_t time_ticks);
     // send statistics
-    void stat_send(int n, uint64_t time_ticks);
+    void stat_send(int bytes, uint64_t time_ticks);
 
 public:
     // query socket info

@@ -105,10 +105,10 @@ bool socket_object::get_socket_info(socket_info& si) const
     si.svc_handle = this->svc_handle;
 
     // send/recv statistics info
-    si.recv_bytes = this->stat.recv_bytes;
-    si.send_bytes = this->stat.send_bytes;
-    si.recv_time_ticks = this->stat.recv_time_ticks;
-    si.send_time_ticks = this->stat.send_time_ticks;
+    si.recv_bytes = this->io_statistics.recv_bytes;
+    si.send_bytes = this->io_statistics.send_bytes;
+    si.recv_time_ticks = this->io_statistics.recv_time_ticks;
+    si.send_time_ticks = this->io_statistics.send_time_ticks;
     si.reading = this->reading;
     si.writing = this->writing;
 
