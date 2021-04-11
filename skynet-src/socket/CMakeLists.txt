@@ -7,10 +7,10 @@ set(SKYNET_SOCKET_HEADER
     socket/uri/uri_port.inl
     socket/uri/uri_scheme.h
     socket/uri/uri_scheme.inl
+    socket/poller/poller.h
+    socket/pipe/pipe.h
+    socket/pipe/pipe.inl
     socket/buffer.h
-    socket/pipe.h
-    socket/pipe.inl
-    socket/poller.h
     socket/socket.h
     socket/socket.inl
     socket/socket_helper.h
@@ -27,10 +27,10 @@ set(SKYNET_SOCKET_HEADER
 )
 
 set(SKYNET_SOCKET_SRC
-    socket/pipe.cpp
-    socket/poller.cpp
-    socket/poller_epoll.cpp
-    socket/poller_kqueue.cpp
+    socket/poller/poller.cpp
+    socket/poller/poller_epoll.cpp
+    socket/poller/poller_kqueue.cpp
+    socket/pipe/pipe.cpp
     socket/socket.cpp
     socket/socket_helper.cpp
     socket/socket_addr.cpp

@@ -388,13 +388,24 @@ local function create_udp_object(socket_id, cb)
     }
 end
 
-function socket.udp(callback, host, port)
-    local socket_id = socket_core.udp(host, port)
+---
+--- create an udp socket
+---@param callback function
+---@param local_ip string
+---@param local_port number
+function socket.udp_socket(callback, local_ip, local_port)
+    local socket_id = socket_core.udp_socket(local_ip, local_port)
     create_udp_object(socket_id, callback)
     return socket_id
 end
 
-function socket.udp_connect(socket_id, addr, port, callback)
+---
+--- create an udp client
+---@param socket_id
+---@param remote_ip
+---@param remote_port
+---@param callback
+function socket.udp_connect(socket_id, remote_ip, remote_port, callback)
     local sock_obj = socket_pool[socket_id]
     if sock_obj then
         assert(sock_obj.protocol == "UDP")
@@ -404,7 +415,7 @@ function socket.udp_connect(socket_id, addr, port, callback)
     else
         create_udp_object(socket_id, callback)
     end
-    socket_core.udp_connect(socket_id, addr, port)
+    socket_core.udp_connect(socket_id, remote_ip, remote_port)
 end
 
 socket.sendto = assert(socket_core.udp_send)

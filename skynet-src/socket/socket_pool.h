@@ -9,30 +9,62 @@
 
 namespace skynet {
 
-// socket session pool
+/**
+ * socket object pool
+ *
+ * specs:
+ * - max socket:
+ * - socket id:
+ */
 class socket_pool final
 {
 public:
     // constants
     enum
     {
-        MAX_SOCKET_P                    = 16,                               // max number of socket (power of 2)
-        MAX_SOCKET                      = 1 << MAX_SOCKET_P,                // MAX_SOCKET = 2^MAX_SOCKET_P = (0xFFFF)
+        MAX_SOCKET_P = 16,                              // max number of socket (power of 2)
+        MAX_SOCKET = 1 << MAX_SOCKET_P,                 // MAX_SOCKET = 2^MAX_SOCKET_P = (0xFFFF)
     };
 
 private:
-    std::array<socket, MAX_SOCKET>      socket_array_;                      // socket列表
-    std::atomic<int>                    alloc_socket_id_ { 0 };             // 用于分配socket id
+    std::array<socket, MAX_SOCKET> socket_array_;       // socket array
+    std::atomic<int> alloc_socket_id_ { 0 };
 
 public:
-    // 从socket池中分配一个socket, 返回一个socket id
-    int new_socket_id();
+    /**
+     * alloc socket and return a new socket id
+     *
+     * @return socket id
+     */
+    int alloc_socket();
+    /**
+     * used end, put back to pool
+     *
+     * @param socket_id
+     * @return
+     */
+    void free_socket(int socket_id);
 
-    //
+    /**
+     * get socket object ref by socket id
+     *
+     * @param socket_id
+     * @return socket object reference
+     */
     socket& get_socket(int socket_id);
-    //
+
+    /**
+     * get all socket object
+     *
+     * @return socket object array
+     */
     std::array<socket, MAX_SOCKET>& get_all_sockets();
-    // 查询所有socket信息 (socket_info是一个链表)
+
+    /**
+     * get all socket object info
+     *
+     * @param si_list link list
+     */
     void get_socket_info(std::list<socket_info>& si_list);
 
 public:

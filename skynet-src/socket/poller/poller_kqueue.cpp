@@ -1,5 +1,5 @@
 #include "poller.h"
-#include "socket.h"
+#include "../socket.h"
 
 // mac, freebsd
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined (__NetBSD__)

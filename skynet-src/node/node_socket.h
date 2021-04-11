@@ -72,8 +72,8 @@ public:
     int sendbuffer_low_priority(uint32_t svc_handle, send_buffer* buffer);
 
     //
-    int udp(uint32_t svc_handle, const char* addr, int port);
-    int udp_connect(uint32_t svc_handle, int socket_id, const char* addr, int port);
+    int udp_socket(uint32_t svc_handle, const char* addr, int port);
+    int udp_connect(uint32_t svc_handle, int socket_id, const char* remote_ip, int remote_port);
     int udp_sendbuffer(uint32_t svc_handle, const char* address, send_buffer* buffer);
     const char* udp_address(skynet_socket_message*, int* addrsz);
 

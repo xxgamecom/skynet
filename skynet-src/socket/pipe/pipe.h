@@ -1,16 +1,16 @@
 #pragma once
 
-#include "socket_server_def.h"
+#include "../socket_server_def.h"
 
 namespace skynet {
 
 class pipe final
 {
 private:
-    fd_set                              read_fds_;                          // fd set for readable check
+    fd_set read_fds_;                           // fd set for readable check
 
-    int                                 read_fd_ = INVALID_FD;              // 读数据pipe句柄
-    int                                 write_fd_ = INVALID_FD;             // 写数据pipe句柄
+    int read_fd_ = INVALID_FD;                  // pipe handle for read data
+    int write_fd_ = INVALID_FD;                 // pipe handle for write data
 
 public:
     ~pipe() = default;

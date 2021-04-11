@@ -102,8 +102,8 @@ public:
     void close_tcp_client(uint32_t socket_id, uint32_t svc_handle) override;
 
     // create udp server
-    int open_udp_server(std::string local_uri, uint32_t svc_handle) override;
-    int open_udp_server(std::string local_ip, uint16_t local_port, uint32_t svc_handle) override;
+    int udp_socket(std::string local_uri, uint32_t svc_handle) override;
+    int udp_socket(std::string local_ip, uint16_t local_port, uint32_t svc_handle) override;
     void close_udp_server(uint32_t socket_id, uint32_t svc_handle) override;
 
     // create udp client

@@ -38,9 +38,9 @@ set(EXECUTABLE_OUTPUT_PATH "${SKYNET_BIN_PATH}")
 # target executable (skynet)
 add_executable(skynet ${SKYNET_CORE_SRC})
 if (MACOSX)
-    target_link_libraries(skynet ${SKYNET_EXPORT} pthread m dl liblua net)
+    target_link_libraries(skynet ${SKYNET_EXPORT} pthread m dl liblua)
 elseif(LINUX OR FREEBSD)
-    target_link_libraries(skynet ${SKYNET_EXPORT} pthread m dl rt liblua net)
+    target_link_libraries(skynet ${SKYNET_EXPORT} pthread m dl rt liblua)
 endif()
 
 

@@ -199,14 +199,14 @@ int node_socket::bind(uint32_t svc_handle, int os_fd)
     return socket_server_->bind(svc_handle, os_fd);
 }
 
-int node_socket::udp(uint32_t svc_handle, const char* addr, int port)
+int node_socket::udp_socket(uint32_t svc_handle, const char* addr, int port)
 {
-    return socket_server_->udp(svc_handle, addr, port);
+    return socket_server_->udp_socket(svc_handle, addr, port);
 }
 
-int node_socket::udp_connect(uint32_t svc_handle, int socket_id, const char* addr, int port)
+int node_socket::udp_connect(uint32_t svc_handle, int socket_id, const char* remote_ip, int remote_port)
 {
-    return socket_server_->udp_connect(socket_id, addr, port);
+    return socket_server_->udp_connect(socket_id, remote_ip, remote_port);
 }
 
 int node_socket::udp_sendbuffer(uint32_t svc_handle, const char* address, send_buffer* buffer)

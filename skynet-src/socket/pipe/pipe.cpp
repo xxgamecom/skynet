@@ -40,7 +40,6 @@ void pipe::fini()
     }
 }
 
-// 是否有数据可读
 bool pipe::is_readable()
 {
     FD_SET(read_fd_, &read_fds_);
@@ -48,7 +47,6 @@ bool pipe::is_readable()
     return ::select(read_fd_ + 1, &read_fds_, NULL, NULL, &tv) == 1;
 }
 
-// 读取数
 int pipe::read(char* buf_ptr, int sz)
 {
     for (;;)

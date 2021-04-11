@@ -282,16 +282,16 @@ void network_impl::close_tcp_client(uint32_t socket_id, uint32_t svc_handle)
 }
 
 // create udp server
-int network_impl::open_udp_server(std::string local_uri, uint32_t svc_handle)
+int network_impl::udp_socket(std::string local_uri, uint32_t svc_handle)
 {
     uri_codec uri = uri_codec::from_string(local_uri);
     if (!uri.is_valid())
         return INVALID_SOCKET_ID;
 
-    return open_udp_server(uri.host().value(), uri.port().value(), svc_handle);
+    return udp_socket(uri.host().value(), uri.port().value(), svc_handle);
 }
 
-int network_impl::open_udp_server(std::string local_ip, uint16_t local_port, uint32_t svc_handle)
+int network_impl::udp_socket(std::string local_ip, uint16_t local_port, uint32_t svc_handle)
 {
     return INVALID_SOCKET_ID;
 }

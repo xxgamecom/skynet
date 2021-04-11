@@ -34,15 +34,6 @@ enum socket_status
     SOCKET_STATUS_BIND = 9,                                     // bind stdin, stdout fd
 };
 
-// socket recv/send statistics
-struct socket_stat
-{
-    uint64_t recv_time = 0;                                     // last recv time
-    uint64_t send_time = 0;                                     // last send time
-    uint64_t recv = 0;                                          // total recv bytes
-    uint64_t send = 0;                                          // total send bytes
-};
-
 // 协议类型
 enum socket_type
 {
@@ -71,12 +62,22 @@ struct write_buffer_list
     write_buffer* tail = nullptr;                               // 写缓冲区的尾指针
 };
 
-// forward declear
+// forward declare
 struct socket_info;
 
 // socket信息
 class socket final
 {
+public:
+    // r/w statistics
+    struct socket_stat
+    {
+        uint64_t recv_time = 0;                                 // last recv time
+        uint64_t send_time = 0;                                 // last send time
+        uint64_t recv = 0;                                      // total recv bytes
+        uint64_t send = 0;                                      // total send bytes
+    };
+
 public:
     uint64_t svc_handle = 0;                                    // skynet service handle
                                                                 // the received socket data will be transmitted to the service.

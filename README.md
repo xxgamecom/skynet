@@ -17,7 +17,6 @@ skynet++
 * [x] 配置文件支持table, 原skynet只支持单kv格式
 * [x] 为上层提供更方便的服务消息处理机制 skynet.msg_handler
 * [x] 提供更完善的logger, 支持 log_debug, log_info, log_warn, log_error, 支持设置log_level, console | console_color | rotating | hourly | daily 等方式的log sink
-* [x] 基于asio的net库替换, 网络层独立放入deps中
 * [ ] 支持protobuf3
 * [ ] 提供简单完善的服务RPC接口
 * [ ] 为完善上层服务框架, 提供一些基础设施, 为服务治理提供支持: 注册服务、发现服务、配置服务等
@@ -36,7 +35,7 @@ skynet                              // skynet源码目录
 │   └── snlua.so                    // `snlua服务` 编译后的生成文件, 该服务是一个用于启动lua服务的c服务
 |
 ├── deps                            // skynet 依赖目录
-│   ├── asio                        // asio库
+│   ├── ...
 │   └── lua                         // lua库
 |
 ├── examples                        // 示例
@@ -120,7 +119,6 @@ $ make
 
 ## Dependences
 * lua 5.3.5
-* asio 1.18.1
 * spdlog 1.8.5
 * fmtlib 7.1.3
 * cmake 3.12+

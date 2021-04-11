@@ -2,7 +2,7 @@
 
 namespace skynet {
 
-int socket_pool::new_socket_id()
+int socket_pool::alloc_socket()
 {
     for (int i = 0; i < MAX_SOCKET; i++)
     {
@@ -43,6 +43,12 @@ int socket_pool::new_socket_id()
     }
 
     return -1;
+}
+
+void socket_pool::free_socket(int socket_id)
+{
+    int idx = calc_slot_index(socket_id);
+    socket_array_[idx].status = SOCKET_STATUS_INVALID;
 }
 
 void socket_pool::get_socket_info(std::list<socket_info>& si_list)

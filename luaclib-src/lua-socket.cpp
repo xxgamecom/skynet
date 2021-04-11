@@ -1142,28 +1142,29 @@ static int l_nodelay(lua_State* L)
 }
 
 /**
- * create udp server
+ * create an udp socket (used for udp server & client)
  */
-static int l_udp(lua_State* L)
+static int l_udp_socket(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
     size_t sz = 0;
     const char* addr = lua_tolstring(L, 1, &sz);
     char tmp[sz];
-    int port = 0;
-    const char* host = nullptr;
+    int local_port = 0;
+    const char* local_ip = nullptr;
     if (addr)
     {
-        host = _address_port(L, tmp, addr, 2, port);
+        local_ip = _address_port(L, tmp, addr, 2, local_port);
     }
 
-    int id = node_socket::instance()->udp(svc_ctx->svc_handle_, host, port);
-    if (id < 0)
+    // create am udp socket
+    int socket_id = node_socket::instance()->udp_socket(svc_ctx->svc_handle_, local_ip, local_port);
+    if (socket_id < 0)
     {
-        return luaL_error(L, "udp init failed");
+        return luaL_error(L, "udp socket init failed");
     }
-    lua_pushinteger(L, id);
+    lua_pushinteger(L, socket_id);
 
     return 1;
 }
@@ -1172,6 +1173,7 @@ static int l_udp_connect(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
+    //
     int id = luaL_checkinteger(L, 1);
 
     size_t sz = 0;
@@ -1279,17 +1281,17 @@ static const luaL_Reg socket_funcs_1[] = {
 
 // need service_context upvalue
 static const luaL_Reg socket_funcs_2[] = {
+    { "listen",      skynet::luaclib::l_listen },
     { "connect",     skynet::luaclib::l_connect },
     { "close",       skynet::luaclib::l_close },
     { "shutdown",    skynet::luaclib::l_shutdown },
-    { "listen",      skynet::luaclib::l_listen },
     { "send",        skynet::luaclib::l_send },
     { "lsend",       skynet::luaclib::l_send_low },
     { "bind",        skynet::luaclib::l_bind },
     { "start",       skynet::luaclib::l_start },
     { "pause",       skynet::luaclib::l_pause },
     { "nodelay",     skynet::luaclib::l_nodelay },
-    { "udp",         skynet::luaclib::l_udp },
+    { "udp_socket",  skynet::luaclib::l_udp_socket },
     { "udp_connect", skynet::luaclib::l_udp_connect },
     { "udp_send",    skynet::luaclib::l_udp_send },
     { "udp_address", skynet::luaclib::l_udp_address },
