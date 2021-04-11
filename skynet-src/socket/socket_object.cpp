@@ -22,7 +22,7 @@ void socket_object::inc_sending_ref(int socket_id)
         uint16_t expect_socket_id = expect_sending >> 16;
 
         // inc sending only matching the same socket id
-        if (expect_socket_id == socket_pool::socket_id_high(socket_id))
+        if (expect_socket_id == socket_object_pool::socket_id_high(socket_id))
         {
             // s->sending maybe overflow, wait socket thread dec. see issue #794
             if ((expect_sending & 0xFFFF) == 0xFFFF)

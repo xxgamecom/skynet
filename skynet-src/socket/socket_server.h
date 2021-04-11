@@ -8,7 +8,7 @@
 #include "socket_lock.h"
 #include "socket_addr.h"
 #include "socket_info.h"
-#include "socket_pool.h"
+#include "socket_object_pool.h"
 #include "buffer.h"
 #include "socket_server_ctrl_cmd.h"
 #include "pipe/pipe.h"
@@ -43,7 +43,7 @@ private:
 
     //
     socket_object_interface soi_;                       //
-    socket_pool socket_pool_;                           // socket pool
+    socket_object_pool socket_pool_;                    // socket object pool
     uint8_t udp_recv_buf_[MAX_UDP_PACKAGE] = { 0 };     //
     char addr_tmp_buf_[ADDR_TMP_BUFFER_SIZE] = { 0 };   // 地址信息临时数据
 
@@ -70,7 +70,7 @@ public:
      * @param backlog
      * @return socket id
      */
-    int listen(uint64_t svc_handle, std::string local_ip, uint16_t local_port, int32_t backlog);
+    int listen(uint32_t svc_handle, std::string local_ip, uint16_t local_port, int32_t backlog);
 
     /**
      * create tcp client, connect remote server (async)
@@ -80,7 +80,7 @@ public:
      * @param remote_port remote port
      * @return socket id
      */
-    int connect(uint64_t svc_handle, std::string remote_ip, uint16_t remote_port);
+    int connect(uint32_t svc_handle, std::string remote_ip, uint16_t remote_port);
 
     /**
      * start tcp server (must listen before)
@@ -88,18 +88,18 @@ public:
      * @param svc_handle skynet service handle
      * @param socket_id listen socket id
      */
-    void start(uint64_t svc_handle, int socket_id);
+    void start(uint32_t svc_handle, int socket_id);
     /**
      * pause tcp server
      *
      * @param svc_handle skynet service handle
      * @param socket_id listen socket id
      */
-    void pause(uint64_t svc_handle, int socket_id);
+    void pause(uint32_t svc_handle, int socket_id);
     // close socket
-    void close(uint64_t svc_handle, int socket_id);
+    void close(uint32_t svc_handle, int socket_id);
     // shutdown socket
-    void shutdown(uint64_t svc_handle, int socket_id);
+    void shutdown(uint32_t svc_handle, int socket_id);
 
     // socket options - only for tcp
     void nodelay(int socket_id);
@@ -111,7 +111,7 @@ public:
      * @param os_fd os fd
      * @return socket id
      */
-    int bind_os_fd(uint64_t svc_handle, int os_fd);
+    int bind_os_fd(uint32_t svc_handle, int os_fd);
 
     /**
      * refresh time (call by time thread)
@@ -154,7 +154,7 @@ public:
      * @param local_port bind local port
      * @return socket id
      */
-    int udp_socket(uint64_t svc_handle, std::string local_ip, uint16_t local_port);
+    int udp_socket(uint32_t svc_handle, std::string local_ip, uint16_t local_port);
 
     /**
      * connect remote udp server
@@ -267,7 +267,7 @@ private:
     // @param protocol_type
     // @param svc_handle skynet服务句柄
     // @param add 是否加入到event_poller中, 默认true
-    socket_object* new_socket(int socket_id, int socket_fd, int protocol_type, uint64_t svc_handle, bool add = true);
+    socket_object* new_socket(int socket_id, int socket_fd, int protocol_type, uint32_t svc_handle, bool add = true);
 
     //
     void drop_udp(socket_object* socket_ptr, write_buffer_list* wb_list, write_buffer* wb);

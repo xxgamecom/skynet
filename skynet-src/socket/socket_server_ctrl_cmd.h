@@ -12,7 +12,7 @@ struct cmd_request_listen
 {
     int socket_id = 0;                          //
     int socket_fd = 0;                          //
-    uint64_t svc_handle = 0;                    // skynet service handle
+    uint32_t svc_handle = 0;                    // skynet service handle
     char host[1] = { 0 };                       // listen address
 };
 
@@ -21,7 +21,7 @@ struct cmd_request_connect
 {
     int socket_id = 0;                          //
     int port = 0;                               //
-    uint64_t svc_handle = 0;                    // skynet service handle
+    uint32_t svc_handle = 0;                    // skynet service handle
     char host[1] = { 0 };                       // address
 };
 
@@ -52,7 +52,7 @@ struct cmd_request_close
 {
     int socket_id = 0;                          //
     int shutdown = 0;                           // 0 close, 1 shutdown
-    uint64_t svc_handle = 0;                    // skynet service handle
+    uint32_t svc_handle = 0;                    // skynet service handle
 };
 
 
@@ -61,14 +61,14 @@ struct cmd_request_bind
 {
     int socket_id = 0;                          //
     int os_fd = 0;                              //
-    uint64_t svc_handle = 0;                    // skynet service handle
+    uint32_t svc_handle = 0;                    // skynet service handle
 };
 
 // cmd - 
 struct cmd_request_resume_pause
 {
     int socket_id = 0;                          //
-    uint64_t svc_handle = 0;                    // skynet service handle
+    uint32_t svc_handle = 0;                    // skynet service handle
 };
 
 // cmd - set socket option
@@ -85,7 +85,7 @@ struct cmd_request_udp_socket
     int socket_id = 0;                          // socket id
     int socket_fd = 0;                          // socket fd
     int family = 0;                             //
-    uint64_t svc_handle = 0;                    // skynet service handle
+    uint32_t svc_handle = 0;                    // skynet service handle
 };
 
 /**
@@ -143,20 +143,20 @@ struct ctrl_cmd_package
 class socket_addr;
 
 // prepare start data: cmd_request_resume_pause
-int prepare_ctrl_cmd_request_resume(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id);
+int prepare_ctrl_cmd_request_resume(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id);
 // prepare pause data: cmd_request_resume_pause
-int prepare_ctrl_cmd_request_pause(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id);
+int prepare_ctrl_cmd_request_pause(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id);
 // prepare close data: cmd_request_close
-int prepare_ctrl_cmd_request_close(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id);
+int prepare_ctrl_cmd_request_close(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id);
 // prepare shutdown data: cmd_request_close
-int prepare_ctrl_cmd_request_shutdown(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id);
+int prepare_ctrl_cmd_request_shutdown(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id);
 
 // prepare connect remote server data: cmd_request_open
-int prepare_ctrl_cmd_request_connect(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, const char* remote_ip, uint16_t remote_port);
+int prepare_ctrl_cmd_request_connect(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id, const char* remote_ip, uint16_t remote_port);
 // prepare os fd bind data: request_bind
-int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int os_fd);
+int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id, int os_fd);
 // prepare create tcp server data: cmd_request_listen
-int prepare_ctrl_cmd_request_listen(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int listen_fd);
+int prepare_ctrl_cmd_request_listen(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id, int listen_fd);
 //
 int prepare_ctrl_cmd_request_send(ctrl_cmd_package& cmd, int socket_id, const send_buffer* buf_ptr, bool is_high);
 // let socket thread enable write event
@@ -166,7 +166,7 @@ int prepare_ctrl_cmd_request_trigger_write(ctrl_cmd_package& cmd, int socket_id)
 int prepare_ctrl_cmd_request_set_opt(ctrl_cmd_package& cmd, int socket_id);
 
 // prepare create an udp socket data: cmd_request_udp_socket
-int prepare_ctrl_cmd_request_udp_socket(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int socket_fd, int family);
+int prepare_ctrl_cmd_request_udp_socket(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id, int socket_fd, int family);
 //
 int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int socket_type, const socket_addr* sa);
 //

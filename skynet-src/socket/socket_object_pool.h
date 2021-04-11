@@ -16,7 +16,7 @@ namespace skynet {
  * - max socket:
  * - socket id:
  */
-class socket_pool final
+class socket_object_pool final
 {
 public:
     // constants
@@ -77,4 +77,4 @@ public:
 
 }
 
-#include "socket_pool.inl"
+#include "socket_object_pool.inl"

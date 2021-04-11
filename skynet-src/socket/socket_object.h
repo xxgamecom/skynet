@@ -79,7 +79,7 @@ public:
     };
 
 public:
-    uint64_t svc_handle = 0;                                    // skynet service handle
+    uint32_t svc_handle = 0;                                    // skynet service handle
                                                                 // the received socket data will be transmitted to the service.
 
     write_buffer_list wb_list_high;                             // high priority write buffer

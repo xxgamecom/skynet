@@ -1,8 +1,8 @@
-#include "socket_pool.h"
+#include "socket_object_pool.h"
 
 namespace skynet {
 
-int socket_pool::alloc_socket()
+int socket_object_pool::alloc_socket()
 {
     for (int i = 0; i < MAX_SOCKET; i++)
     {
@@ -45,13 +45,13 @@ int socket_pool::alloc_socket()
     return -1;
 }
 
-void socket_pool::free_socket(int socket_id)
+void socket_object_pool::free_socket(int socket_id)
 {
     int idx = calc_slot_index(socket_id);
     socket_array_[idx].status = SOCKET_STATUS_INVALID;
 }
 
-void socket_pool::get_socket_info(std::list<socket_info>& si_list)
+void socket_object_pool::get_socket_info(std::list<socket_info>& si_list)
 {
     // reset
     si_list.clear();

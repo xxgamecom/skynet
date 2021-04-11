@@ -99,7 +99,7 @@ void socket_server::fini()
 {
     //
     socket_message dummy;
-    std::array<socket_object, socket_pool::MAX_SOCKET>& all_sockets = socket_pool_.get_all_sockets();
+    std::array<socket_object, socket_object_pool::MAX_SOCKET>& all_sockets = socket_pool_.get_all_sockets();
     for (auto& socket_ref : all_sockets)
     {
         if (socket_ref.status != SOCKET_STATUS_ALLOCED)
@@ -174,7 +174,7 @@ static int _do_bind(std::string& local_ip, uint16_t local_port, int protocol_typ
     return socket_fd;
 }
 
-int socket_server::listen(uint64_t svc_handle, std::string local_ip, uint16_t local_port, int32_t backlog)
+int socket_server::listen(uint32_t svc_handle, std::string local_ip, uint16_t local_port, int32_t backlog)
 {
     // do bind (create socket fd & reuse addr & bind)
     int family = 0;
@@ -205,7 +205,7 @@ int socket_server::listen(uint64_t svc_handle, std::string local_ip, uint16_t lo
     return listen_socket_id;
 }
 
-int socket_server::connect(uint64_t svc_handle, std::string remote_ip, uint16_t remote_port)
+int socket_server::connect(uint32_t svc_handle, std::string remote_ip, uint16_t remote_port)
 {
     // alloc new socket id
     int socket_id = socket_pool_.alloc_socket();
@@ -223,14 +223,14 @@ int socket_server::connect(uint64_t svc_handle, std::string remote_ip, uint16_t 
     return socket_id;
 }
 
-void socket_server::start(uint64_t svc_handle, int socket_id)
+void socket_server::start(uint32_t svc_handle, int socket_id)
 {
     ctrl_cmd_package cmd;
     prepare_ctrl_cmd_request_resume(cmd, svc_handle, socket_id);
     _send_ctrl_cmd(&cmd);
 }
 
-void socket_server::pause(uint64_t svc_handle, int socket_id)
+void socket_server::pause(uint32_t svc_handle, int socket_id)
 {
     ctrl_cmd_package cmd;
     prepare_ctrl_cmd_request_pause(cmd, svc_handle, socket_id);
@@ -243,14 +243,14 @@ void socket_server::exit()
     _send_ctrl_cmd(&cmd);
 }
 
-void socket_server::close(uint64_t svc_handle, int socket_id)
+void socket_server::close(uint32_t svc_handle, int socket_id)
 {
     ctrl_cmd_package cmd;
     prepare_ctrl_cmd_request_close(cmd, svc_handle, socket_id);
     _send_ctrl_cmd(&cmd);
 }
 
-void socket_server::shutdown(uint64_t svc_handle, int socket_id)
+void socket_server::shutdown(uint32_t svc_handle, int socket_id)
 {
     ctrl_cmd_package cmd;
     prepare_ctrl_cmd_request_shutdown(cmd, svc_handle, socket_id);
@@ -548,7 +548,7 @@ int socket_server::send_low_priority(send_buffer* buf)
     return 0;
 }
 
-int socket_server::bind_os_fd(uint64_t svc_handle, int os_fd)
+int socket_server::bind_os_fd(uint32_t svc_handle, int os_fd)
 {
     // 分配一个socket
     int socket_id = socket_pool_.alloc_socket();
@@ -580,7 +580,7 @@ void socket_server::nodelay(int socket_id)
 // UDP
 //----------------------------------------------
 
-int socket_server::udp_socket(uint64_t svc_handle, std::string local_ip, uint16_t local_port)
+int socket_server::udp_socket(uint32_t svc_handle, std::string local_ip, uint16_t local_port)
 {
     int family = 0;
     int socket_fd = INVALID_FD;
@@ -1490,7 +1490,7 @@ void socket_server::drop_udp(socket_object* socket_ptr, write_buffer_list* wb_li
     free_write_buffer(wb);
 }
 
-socket_object* socket_server::new_socket(int socket_id, int socket_fd, int protocol_type, uint64_t svc_handle, bool reading/* = true*/)
+socket_object* socket_server::new_socket(int socket_id, int socket_fd, int protocol_type, uint32_t svc_handle, bool reading/* = true*/)
 {
     auto& socket_ref = socket_pool_.get_socket(socket_id);
     assert(socket_ref.status == SOCKET_STATUS_ALLOCED);
@@ -1508,7 +1508,7 @@ socket_object* socket_server::new_socket(int socket_id, int socket_fd, int proto
     socket_ref.reading = true;
     socket_ref.writing = false;
     socket_ref.closing = false;
-    socket_ref.sending = socket_pool::socket_id_high(socket_id) << 16 | 0; // high 16 bits: socket id, low 16 bits: actually sending count
+    socket_ref.sending = socket_object_pool::socket_id_high(socket_id) << 16 | 0; // high 16 bits: socket id, low 16 bits: actually sending count
     socket_ref.protocol_type = protocol_type;
     socket_ref.p.size = MIN_READ_BUFFER;
     socket_ref.svc_handle = svc_handle;
