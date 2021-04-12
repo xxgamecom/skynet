@@ -365,12 +365,12 @@ function socket.read_line(socket_id, sep)
     end
 end
 
-function socket.write(...)
+function socket.send(...)
     return socket_core.send(...)
 end
 
-function socket.lwrite(...)
-    return socket_core.lsend(...)
+function socket.send_low(...)
+    return socket_core.send_low(...)
 end
 
 function socket.header(...)

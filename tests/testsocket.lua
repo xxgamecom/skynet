@@ -9,7 +9,7 @@ local function echo(id)
     while true do
         local str = socket.read(id)
         if str then
-            socket.write(id, str)
+            socket.send(id, str)
         else
             socket.close(id)
             return
@@ -29,7 +29,7 @@ if mode == "agent" then
 else
     local function accept(id)
         socket.start(id)
-        socket.write(id, "Hello Skynet\n")
+        socket.send(id, "Hello Skynet\n")
         skynet.newservice(SERVICE_NAME, "agent", id)
         -- notice: Some data on this connection(id) may lost before new service start.
         -- So, be careful when you want to use start / abandon / start .

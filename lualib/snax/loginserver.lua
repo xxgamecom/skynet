@@ -44,7 +44,7 @@ local function assert_socket(service, v, fd)
 end
 
 local function write(service, fd, text)
-    assert_socket(service, socket.write(fd, text), fd)
+    assert_socket(service, socket.send(fd, text), fd)
 end
 
 local function launch_slave(auth_handler)

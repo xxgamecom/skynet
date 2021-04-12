@@ -75,7 +75,7 @@ local function dispatch_request(_, _, addr, session, msg, sz, padding, is_push)
         if not msg then
             tracetag = nil
             local response = cluster_core.packresponse(session, false, "Invalid large req")
-            socket.write(fd, response)
+            socket.send(fd, response)
             return
         end
     end
@@ -116,14 +116,14 @@ local function dispatch_request(_, _, addr, session, msg, sz, padding, is_push)
         response = cluster_core.packresponse(session, true, msg, sz)
         if type(response) == "table" then
             for _, v in ipairs(response) do
-                socket.lwrite(fd, v)
+                socket.send_low(fd, v)
             end
         else
-            socket.write(fd, response)
+            socket.send(fd, response)
         end
     else
         response = cluster_core.packresponse(session, false, msg)
-        socket.write(fd, response)
+        socket.send(fd, response)
     end
 end
 

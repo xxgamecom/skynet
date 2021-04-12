@@ -1,8 +1,8 @@
 local socket = require "skynet.socket"
 local skynet = require "skynet"
 
-local readbytes = socket.read
-local writebytes = socket.write
+local read_bytes = socket.read
+local send_bytes = socket.send
 
 local sockethelper = {}
 local socket_error = setmetatable({}, { __tostring = function()
@@ -25,7 +25,7 @@ local function preread(fd, str)
                     return ret
                 else
                     sz = sz - #str
-                    local ret = readbytes(fd, sz)
+                    local ret = read_bytes(fd, sz)
                     if ret then
                         return str .. ret
                     else
@@ -34,7 +34,7 @@ local function preread(fd, str)
                 end
             end
         else
-            local ret = readbytes(fd, sz)
+            local ret = read_bytes(fd, sz)
             if ret then
                 return ret
             else
@@ -49,7 +49,7 @@ function sockethelper.readfunc(fd, pre)
         return preread(fd, pre)
     end
     return function(sz)
-        local ret = readbytes(fd, sz)
+        local ret = read_bytes(fd, sz)
         if ret then
             return ret
         else
@@ -62,7 +62,7 @@ sockethelper.read_all = socket.read_all
 
 function sockethelper.writefunc(fd)
     return function(content)
-        local ok = writebytes(fd, content)
+        local ok = send_bytes(fd, content)
         if not ok then
             error(socket_error)
         end

@@ -5,22 +5,22 @@ if _VERSION ~= "Lua 5.3" then
     error "Use lua 5.3"
 end
 
-local socket = require "client.socket_ws"
+local client_socket = require "client.socket_ws"
 local proto = require "proto"
 local sproto = require "sproto"
 
 local host = sproto.new(proto.s2c):host "package"
 local request = host:attach(sproto.new(proto.c2s))
 
-local fd = assert(socket.connect("127.0.0.1", 5888))
+local fd = assert(client_socket.connect("127.0.0.1", 5888))
 
 local function send_package(fd, pack)
     -- local package = string.pack(">s2", pack)
-    socket.send(fd, pack)
+    client_socket.send(fd, pack)
 end
 
 local function recv_package()
-    local r, istimeout = socket.recv(fd, 100)
+    local r, istimeout = client_socket.recv(fd, 100)
     if not r then
         return nil
     end
@@ -84,7 +84,7 @@ send_request("handshake")
 send_request("set", { what = "hello", value = "world, websoket" })
 while true do
     dispatch_package()
-    local cmd = socket.readstdin()
+    local cmd = client_socket.readstdin()
     if cmd then
         if cmd == "quit" then
             send_request("quit")
@@ -92,6 +92,6 @@ while true do
             send_request("get", { what = cmd })
         end
     else
-        socket.usleep(100)
+        client_socket.usleep(100)
     end
 end

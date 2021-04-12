@@ -1017,7 +1017,7 @@ static void _get_message(lua_State* L, int msg_index, send_data& sd)
  * 2 message            - userdata | lightuserdata | table
  *
  * lua examples:
- * socket.write = assert(socket_core.send)
+ * socket.send = assert(socket_core.send)
  * socket_core.send(fd, content)
  */
 static int l_send(lua_State* L)
@@ -1294,7 +1294,7 @@ static const luaL_Reg socket_funcs_2[] = {
     { "close",       skynet::luaclib::l_close },
     { "shutdown",    skynet::luaclib::l_shutdown },
     { "send",        skynet::luaclib::l_send },
-    { "lsend",       skynet::luaclib::l_send_low },
+    { "send_low",    skynet::luaclib::l_send_low },
     { "bind_os_fd",  skynet::luaclib::l_bind_os_fd },
     { "start",       skynet::luaclib::l_start },
     { "pause",       skynet::luaclib::l_pause },
