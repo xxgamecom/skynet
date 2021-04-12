@@ -1,5 +1,5 @@
 #include "poller.h"
-#include "../socket.h"
+#include "../socket_object.h"
 
 // linux epoll
 #ifdef __linux__
@@ -54,7 +54,7 @@ int poller::wait(event* event_ptr, int max_events/* = MAX_WAIT_EVENT*/)
     int n = ::epoll_wait(poll_fd_ , ev, max_events, -1);
     for (int i = 0; i < n; i++)
     {
-        event_ptr[i].socket_ptr = (socket*)ev[i].data.ptr;
+        event_ptr[i].socket_ptr = (socket_object*)ev[i].data.ptr;
         uint32_t flag = ev[i].events;
         event_ptr[i].is_writeable = (flag & EPOLLOUT) != 0;
         event_ptr[i].is_readable = (flag & EPOLLIN) != 0;

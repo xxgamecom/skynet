@@ -1,5 +1,5 @@
 #include "poller.h"
-#include "../socket.h"
+#include "../socket_object.h"
 
 // mac, freebsd
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined (__NetBSD__)
@@ -86,7 +86,7 @@ int poller::wait(event* event_ptr, int max_events/* = MAX_WAIT_EVENT*/)
     int n = ::kevent(poll_fd_, nullptr, 0, ev, max_events, nullptr);
     for (int i = 0; i < n; i++)
     {
-        event_ptr[i].socket_ptr = (socket*)ev[i].udata;
+        event_ptr[i].socket_ptr = (socket_object*)ev[i].udata;
         uint32_t filter = ev[i].filter;
         bool is_eof = (ev[i].flags & EV_EOF) != 0;
         event_ptr[i].is_writeable = (filter == EVFILT_WRITE) && (!is_eof);

@@ -617,7 +617,7 @@ static void _get_socket_info(lua_State* L, socket_info& si)
         lua_setfield(L, -2, "type");
 
         // accept count, t['accept'] = si.recv
-        lua_pushinteger(L, si.recv);
+        lua_pushinteger(L, si.recv_bytes);
         lua_setfield(L, -2, "accept");
 
         // last accept time, t['rtime'] = si.recv_time
@@ -657,10 +657,10 @@ static void _get_socket_info(lua_State* L, socket_info& si)
     }
     lua_setfield(L, -2, "type");
 
-    lua_pushinteger(L, si.recv);
+    lua_pushinteger(L, si.recv_bytes);
     lua_setfield(L, -2, "read");
 
-    lua_pushinteger(L, si.send);
+    lua_pushinteger(L, si.send_bytes);
     lua_setfield(L, -2, "write");
 
     lua_pushinteger(L, si.wb_size);

@@ -7,7 +7,7 @@
 namespace skynet {
 
 // forward declare
-class socket;
+class socket_object;
 
 // event poller
 class poller final
@@ -16,22 +16,22 @@ public:
     // constants
     enum
     {
-        MAX_WAIT_EVENT              = 64,                                   // max number of events
+        MAX_WAIT_EVENT = 64,                                // max number of events
     };
 
     // poll event
     struct event
     {
-        socket*                     socket_ptr = nullptr;                   // the socket object associated with the event
+        socket_object* socket_ptr = nullptr;                // the socket object associated with the event
 
-        bool                        is_readable = false;
-        bool                        is_writeable = false;
-        bool                        is_error = false;
-        bool                        is_eof = false;
+        bool is_readable = false;
+        bool is_writeable = false;
+        bool is_error = false;
+        bool is_eof = false;
     };
 
 private:
-    int                             poll_fd_ = INVALID_FD;
+    int poll_fd_ = INVALID_FD;
 
 public:
     poller() = default;

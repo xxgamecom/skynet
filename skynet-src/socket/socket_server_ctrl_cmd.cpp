@@ -10,7 +10,7 @@
 namespace skynet {
 
 
-int prepare_ctrl_cmd_request_resume(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id)
+int prepare_ctrl_cmd_request_resume(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id)
 {
     // cmd data
     cmd.u.resume_pause.socket_id = socket_id;
@@ -26,7 +26,7 @@ int prepare_ctrl_cmd_request_resume(ctrl_cmd_package& cmd, uint64_t svc_handle, 
     return len;
 }
 
-int prepare_ctrl_cmd_request_pause(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id)
+int prepare_ctrl_cmd_request_pause(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id)
 {
     // cmd data
     cmd.u.resume_pause.socket_id = socket_id;
@@ -42,7 +42,7 @@ int prepare_ctrl_cmd_request_pause(ctrl_cmd_package& cmd, uint64_t svc_handle, i
     return len;
 }
 
-int prepare_ctrl_cmd_request_close(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id)
+int prepare_ctrl_cmd_request_close(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id)
 {
     // cmd data
     cmd.u.close.socket_id = socket_id;
@@ -59,7 +59,7 @@ int prepare_ctrl_cmd_request_close(ctrl_cmd_package& cmd, uint64_t svc_handle, i
     return len;
 }
 
-int prepare_ctrl_cmd_request_shutdown(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id)
+int prepare_ctrl_cmd_request_shutdown(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id)
 {
     // cmd data
     cmd.u.close.socket_id = socket_id;
@@ -76,7 +76,7 @@ int prepare_ctrl_cmd_request_shutdown(ctrl_cmd_package& cmd, uint64_t svc_handle
     return len;
 }
 
-int prepare_ctrl_cmd_request_connect(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, const char* remote_ip, uint16_t remote_port)
+int prepare_ctrl_cmd_request_connect(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id, const char* remote_ip, uint16_t remote_port)
 {
     int len = ::strlen(remote_ip);
 
@@ -106,15 +106,15 @@ int prepare_ctrl_cmd_request_connect(ctrl_cmd_package& cmd, uint64_t svc_handle,
     return len;
 }
 
-int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int os_fd)
+int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id, int os_fd)
 {
     // cmd data
-    cmd.u.bind.svc_handle = svc_handle;
-    cmd.u.bind.socket_id = socket_id;
-    cmd.u.bind.os_fd = os_fd;
+    cmd.u.bind_os_fd.svc_handle = svc_handle;
+    cmd.u.bind_os_fd.socket_id = socket_id;
+    cmd.u.bind_os_fd.os_fd = os_fd;
 
     // actually length
-    int len = sizeof(cmd.u.bind);
+    int len = sizeof(cmd.u.bind_os_fd);
 
     // cmd header
     cmd.header[6] = (uint8_t)'B';
@@ -123,7 +123,7 @@ int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint64_t svc_handle, in
     return len;
 }
 
-int prepare_ctrl_cmd_request_listen(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int listen_fd)
+int prepare_ctrl_cmd_request_listen(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id, int listen_fd)
 {
     // cmd data
     cmd.u.listen.svc_handle = svc_handle;
@@ -190,7 +190,7 @@ int prepare_ctrl_cmd_request_set_opt(ctrl_cmd_package& cmd, int socket_id)
     return len;
 }
 
-int prepare_ctrl_cmd_request_udp_socket(ctrl_cmd_package& cmd, uint64_t svc_handle, int socket_id, int socket_fd, int family)
+int prepare_ctrl_cmd_request_udp_socket(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id, int socket_fd, int family)
 {
     // cmd data
     cmd.u.udp_socket.svc_handle = svc_handle;

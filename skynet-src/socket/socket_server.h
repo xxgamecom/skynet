@@ -4,11 +4,11 @@
 #include <memory>
 #include <list>
 
-#include "socket.h"
+#include "socket_object.h"
 #include "socket_lock.h"
 #include "socket_addr.h"
 #include "socket_info.h"
-#include "socket_pool.h"
+#include "socket_object_pool.h"
 #include "buffer.h"
 #include "socket_server_ctrl_cmd.h"
 #include "pipe/pipe.h"
@@ -43,7 +43,7 @@ private:
 
     //
     socket_object_interface soi_;                       //
-    socket_pool socket_pool_;                           // socket pool
+    socket_object_pool socket_object_pool_;             // socket object pool
     uint8_t udp_recv_buf_[MAX_UDP_PACKAGE] = { 0 };     //
     char addr_tmp_buf_[ADDR_TMP_BUFFER_SIZE] = { 0 };   // 地址信息临时数据
 
@@ -70,7 +70,7 @@ public:
      * @param backlog
      * @return socket id
      */
-    int listen(uint64_t svc_handle, std::string local_ip, uint16_t local_port, int32_t backlog);
+    int listen(uint32_t svc_handle, std::string local_ip, uint16_t local_port, int32_t backlog);
 
     /**
      * create tcp client, connect remote server (async)
@@ -80,7 +80,7 @@ public:
      * @param remote_port remote port
      * @return socket id
      */
-    int connect(uint64_t svc_handle, std::string remote_ip, uint16_t remote_port);
+    int connect(uint32_t svc_handle, std::string remote_ip, uint16_t remote_port);
 
     /**
      * start tcp server (must listen before)
@@ -88,18 +88,18 @@ public:
      * @param svc_handle skynet service handle
      * @param socket_id listen socket id
      */
-    void start(uint64_t svc_handle, int socket_id);
+    void start(uint32_t svc_handle, int socket_id);
     /**
      * pause tcp server
      *
      * @param svc_handle skynet service handle
      * @param socket_id listen socket id
      */
-    void pause(uint64_t svc_handle, int socket_id);
+    void pause(uint32_t svc_handle, int socket_id);
     // close socket
-    void close(uint64_t svc_handle, int socket_id);
+    void close(uint32_t svc_handle, int socket_id);
     // shutdown socket
-    void shutdown(uint64_t svc_handle, int socket_id);
+    void shutdown(uint32_t svc_handle, int socket_id);
 
     // socket options - only for tcp
     void nodelay(int socket_id);
@@ -111,7 +111,7 @@ public:
      * @param os_fd os fd
      * @return socket id
      */
-    int bind_os_fd(uint64_t svc_handle, int os_fd);
+    int bind_os_fd(uint32_t svc_handle, int os_fd);
 
     /**
      * refresh time (call by time thread)
@@ -121,11 +121,10 @@ public:
     void update_time(uint64_t time_ticks);
 
     /**
-     * 获取网络事件 (底层使用epoll或kqueue)
-     * 内部使用循环, 持续监听网络事件
+     * get network event
      * 
-     * @param result 结果数据存放的地址指针
-     * @param is_more 是否有更多事件需要处理
+     * @param result socket message, 结果数据存放的地址指针
+     * @param is_more has more event wait to process
      * @return 返回消息类型，对应于宏定义中的SOCKET_DATA的类型
      */
     int poll_socket_event(socket_message* result, bool& is_more);
@@ -155,7 +154,7 @@ public:
      * @param local_port bind local port
      * @return socket id
      */
-    int udp_socket(uint64_t svc_handle, std::string local_ip, uint16_t local_port);
+    int udp_socket(uint32_t svc_handle, std::string local_ip, uint16_t local_port);
 
     /**
      * connect remote udp server
@@ -184,9 +183,9 @@ public:
     // ctrl cmd
 private:
     /**
-     * 把要发送的数据写入发送管道，交给socket线程去发送
+     * send ctrl command to pipe (ctrl cmd will process by socket thread)
      * 
-     * @param cmd 控制命令数据包
+     * @param cmd ctrl command package
      */
     void _send_ctrl_cmd(ctrl_cmd_package* cmd);
 
@@ -198,7 +197,7 @@ private:
     int handle_ctrl_cmd_resume_socket(cmd_request_resume_pause* cmd, socket_message* result);
     int handle_ctrl_cmd_pause_socket(cmd_request_resume_pause* cmd, socket_message* result);
     int handle_ctrl_cmd_close_socket(cmd_request_close* cmd, socket_message* result);
-    int handle_ctrl_cmd_bind_socket(cmd_request_bind* cmd, socket_message* result);
+    int handle_ctrl_cmd_bind_os_fd(cmd_request_bind_os_fd* cmd, socket_message* result);
     int handle_ctrl_cmd_setopt_socket(cmd_request_set_opt* cmd);
     int handle_ctrl_cmd_exit_socket(socket_message* result);
     int handle_ctrl_cmd_send_socket(cmd_request_send* cmd, socket_message* result, int priority, const uint8_t* udp_address);
@@ -209,7 +208,7 @@ private:
     // send
 private:
     //
-    int send_write_buffer(socket* socket_ptr, socket_lock& sl, socket_message* result);
+    int send_write_buffer(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
 
     /**
      * socket线程最终通过该函数发送数据
@@ -221,17 +220,17 @@ private:
      * 3. 若 '低优先级'写缓存列表内的数据是不完整的 (write_buffer_list head不完整, 之前发送了部分数据), 将 '低优先级'写缓存列表的head移到空'高优先级'写缓存队列内(调用raise_uncomplete);
      * 4. 如果两个写缓存队列都为空, 重新加入到epoll事件里? turn off the event. (调用 check_close)
      */
-    int do_send_write_buffer(socket* socket_ptr, socket_lock& sl, socket_message* result);
+    int do_send_write_buffer(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
 
     // 写缓存列表内的数据是否完整 (write_buffer_list head不完整, 之前发送了部分数据)
     int list_uncomplete(write_buffer_list* wb_list);
     // 将 ‘低优先级’ 写缓存列表的head移到 '高优先级' 写缓存列表内
-    void raise_uncomplete(socket* socket_ptr);
+    void raise_uncomplete(socket_object* socket_ptr);
     
     //
-    int send_write_buffer_list(socket* socket_ptr, write_buffer_list* wb_list, socket_lock& sl, socket_message* result);
-    int send_write_buffer_list_tcp(socket* socket_ptr, write_buffer_list* wb_list, socket_lock& sl, socket_message* result);
-    int send_write_buffer_list_udp(socket* socket_ptr, write_buffer_list* wb_list, socket_message* result);    
+    int send_write_buffer_list(socket_object* socket_ptr, write_buffer_list* wb_list, socket_lock& sl, socket_message* result);
+    int send_write_buffer_list_tcp(socket_object* socket_ptr, write_buffer_list* wb_list, socket_lock& sl, socket_message* result);
+    int send_write_buffer_list_udp(socket_object* socket_ptr, write_buffer_list* wb_list, socket_message* result);
 
     // 是否发送缓存
     void free_send_buffer(send_buffer* buf_ptr);
@@ -244,7 +243,7 @@ private:
      * @param is_high 加入到 '高优先级'发送缓存
      * @param udp_address 发送udp数据时, 附加udp地址到数据尾部
      */
-    void append_sendbuffer(socket* socket_ptr, cmd_request_send* cmd, bool is_high = true, const uint8_t* udp_address = nullptr);
+    void append_sendbuffer(socket_object* socket_ptr, cmd_request_send* cmd, bool is_high = true, const uint8_t* udp_address = nullptr);
 
     // 准备发送缓存
     write_buffer* prepare_write_buffer(write_buffer_list* wb_list, cmd_request_send* cmd, int size);
@@ -253,14 +252,14 @@ private:
     void free_write_buffer_list(write_buffer_list* wb_list);    
 
 private:
-    void close_read(socket* socket_ptr, socket_message* result);
-    int close_write(socket* socket_ptr, socket_lock& sl, socket_message* result);
+    void close_read(socket_object* socket_ptr, socket_message* result);
+    int close_write(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
 
-    int enable_write(socket* socket_ptr, bool enable);
-    int enable_read(socket* socket_ptr, bool enable);
+    int enable_write(socket_object* socket_ptr, bool enable);
+    int enable_read(socket_object* socket_ptr, bool enable);
 
     //
-    void force_close(socket* socket_ptr, socket_lock& sl, socket_message* result);
+    void force_close(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
 
     // 
     // @param socket_id
@@ -268,23 +267,23 @@ private:
     // @param protocol_type
     // @param svc_handle skynet服务句柄
     // @param add 是否加入到event_poller中, 默认true
-    socket* new_socket(int socket_id, int socket_fd, int protocol_type, uint64_t svc_handle, bool add = true);
+    socket_object* new_socket(int socket_id, int socket_fd, int protocol_type, uint32_t svc_handle, bool add = true);
 
     //
-    void drop_udp(socket* socket_ptr, write_buffer_list* wb_list, write_buffer* wb);
+    void drop_udp(socket_object* socket_ptr, write_buffer_list* wb_list, write_buffer* wb);
 
     // return 0 when failed, or -1 when file limit
-    int handle_accept(socket* socket_ptr, socket_message* result);
+    int handle_accept(socket_object* socket_ptr, socket_message* result);
     //
-    int handle_connect(socket* socket_ptr, socket_lock& sl, socket_message* result);
+    int handle_connect(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
 
     // 单个socket每次从内核尝试读取的数据字节数为sz
     // 比如，客户端发了一个1kb的数据，socket线程会从内核里依次读取64b，128b，256b，512b，64b数据，总共需读取5次，即会向gateserver服务发5条消息，一个TCP包被切割成5个数据块。
     // 第5次尝试读取1024b数据，所以可能会读到其他TCP包的数据(只要客户端有发送其他数据)。接下来，客户端再发一个1kb的数据，socket线程只需从内核读取一次即可。
     // return -1 (ignore) when error
-    int forward_message_tcp(socket* socket_ptr, socket_lock& sl, socket_message* result);
+    int forward_message_tcp(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
     //
-    int forward_message_udp(socket* socket_ptr, socket_lock& sl, socket_message* result);
+    int forward_message_udp(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
 
     // 初始化send_object
     bool send_object_init(send_object* so, const void* object, size_t sz);

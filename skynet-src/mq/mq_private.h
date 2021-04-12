@@ -44,7 +44,7 @@ public:
     int cap_ = DEFAULT_QUEUE_CAPACITY;                      // message ring buffer capacity
     int head_ = 0;                                          // message ring buffer header
     int tail_ = 0;                                          // message ring buffer tailer
-    service_message* queue_ = nullptr;                       // message ring buffer
+    service_message* queue_ = nullptr;                      // message ring buffer
 
     mq_private* next_ = nullptr;                            // link list: next message queue ptr
 

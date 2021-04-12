@@ -17,12 +17,12 @@ class service_context;
 struct service_mod_info
 {
 public:
-    std::string                     name_ = "";                     // c service mod file name (include file extension .so)
-    dll_loader                      dll_loader_;                    // c service mod dll loader
+    std::string name_ = "";                             // c service mod file name (include file extension .so)
+    dll_loader dll_loader_;                             // c service mod dll loader
 
     // mod api
-    create_cservice_proc            create_func_ = nullptr;         // c service mod api - create function
-    release_cservice_proc           release_func_ = nullptr;        // c service mod api - release function
+    create_cservice_proc create_func_ = nullptr;        // c service mod api - create function
+    release_cservice_proc release_func_ = nullptr;      // c service mod api - release function
 };
 
 /**
@@ -38,12 +38,12 @@ public:
     static mod_manager* instance();
 
 private:
-    std::string                                 search_path_ = "";          // c service mod .so file search path.
-                                                                            // specified by the cservice_path of config file. divide by ';', wildcard: '?'
-                                                                            // for example: cservice_path = root.."skynet/cservice/?.so;" .. root.."user/cservice/?.so"
+    std::string search_path_ = "";                      // c service mod .so file search path.
+                                                        // specified by the cservice_path of config file. divide by ';', wildcard: '?'
+                                                        // for example: cservice_path = root.."skynet/cservice/?.so;" .. root.."user/cservice/?.so"
 
-    std::mutex                                  mutex_;                     // protect mod loaded array & count
-    std::unordered_map<std::string, service_mod_info*>  service_mod_map_;   // c service mod load info map
+    std::mutex mutex_;                                  // protect mod loaded array & count
+    std::unordered_map<std::string, service_mod_info*> service_mod_map_;   // c service mod load info map
 
 public:
     bool init(std::string search_path);
