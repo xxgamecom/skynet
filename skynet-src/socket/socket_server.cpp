@@ -189,7 +189,7 @@ int socket_server::listen(uint32_t svc_handle, std::string local_ip, uint16_t lo
         return INVALID_SOCKET_ID;
     }
 
-    // 从ss的socket池中获取空闲的socket, 并返回id
+    //
     int listen_socket_id = socket_object_pool_.alloc_socket();
     if (listen_socket_id < 0)
     {
@@ -197,7 +197,7 @@ int socket_server::listen(uint32_t svc_handle, std::string local_ip, uint16_t lo
         return listen_socket_id;
     }
 
-    // 保存关联的服务地址，socket池的id，socket套接字fd
+    //
     ctrl_cmd_package cmd;
     prepare_ctrl_cmd_request_listen(cmd, svc_handle, listen_socket_id, listen_fd);
     _send_ctrl_cmd(&cmd);
@@ -280,7 +280,7 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
                 return type;
             }
 
-            // pipe无数据
+            // no pipe data
             need_check_ctrl_cmd_ = false;
         }
 
@@ -882,9 +882,9 @@ int socket_server::handle_ctrl_cmd_connect_socket(cmd_request_connect* cmd, sock
     bool is_ok = false;
     do
     {
-        char port[16] = { 0 };
-        sprintf(port, "%d", cmd->port);
-        int status = ::getaddrinfo(cmd->host, port, &ai_hints, &ai_list);
+        char port_string[16] = { 0 };
+        sprintf(port_string, "%d", cmd->port);
+        int status = ::getaddrinfo(cmd->host, port_string, &ai_hints, &ai_list);
         if (status != 0)
         {
             result->data_ptr = const_cast<char*>(::gai_strerror(status));

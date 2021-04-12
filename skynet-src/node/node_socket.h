@@ -59,8 +59,8 @@ public:
     // poll socket event
     int poll_socket_event();
 
-    int listen(uint32_t svc_handle, const char* host, int port, int backlog);
-    int connect(uint32_t svc_handle, const char* host, int port);
+    int listen(uint32_t svc_handle, const char* local_ip, int local_port, int backlog);
+    int connect(uint32_t svc_handle, const char* remote_addr, int remote_port);
     void close(uint32_t svc_handle, int socket_id);
     void shutdown(uint32_t svc_handle, int socket_id);
     void start(uint32_t svc_handle, int socket_id);
@@ -72,7 +72,7 @@ public:
     int send_low_priority(uint32_t svc_handle, send_data* sd_ptr);
 
     //
-    int udp_socket(uint32_t svc_handle, const char* addr, int port);
+    int udp_socket(uint32_t svc_handle, const char* local_ip, int local_port);
     int udp_connect(uint32_t svc_handle, int socket_id, const char* remote_ip, int remote_port);
     int udp_sendbuffer(uint32_t svc_handle, const char* address, send_data* sd_ptr);
     const char* udp_address(skynet_socket_message*, int* addrsz);

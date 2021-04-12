@@ -76,12 +76,12 @@ function sockethelper.connect(host, port, timeout)
         local co = coroutine.running()
         -- asynchronous connect
         skynet.fork(function()
-            fd = socket.open(host, port)
+            fd = socket.open_tcp_client(host, port)
             if drop_fd then
                 -- sockethelper.connect already return, and raise socket_error
                 socket.close(fd)
             else
-                -- socket.open before sleep, wakeup.
+                -- socket.open_tcp_client before sleep, wakeup.
                 skynet.wakeup(co)
             end
         end)
@@ -92,7 +92,7 @@ function sockethelper.connect(host, port, timeout)
         end
     else
         -- block connect
-        fd = socket.open(host, port)
+        fd = socket.open_tcp_client(host, port)
     end
     if fd then
         return fd

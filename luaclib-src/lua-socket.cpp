@@ -792,7 +792,7 @@ static const char* _address_port(lua_State* L, char* tmp, const char* addr, int 
 }
 
 /**
- * connect to destination service
+ * connect remote server
  *
  * arguments:
  * 1 remote host address    - string, can ipv6, ipv4. can include port.
@@ -809,7 +809,7 @@ static const char* _address_port(lua_State* L, char* tmp, const char* addr, int 
  */
 static int l_connect(lua_State* L)
 {
-    // addr
+    // remote address
     size_t addr_sz = 0;
     const char* addr = luaL_checklstring(L, 1, &addr_sz);
     if (addr == nullptr)
@@ -818,9 +818,9 @@ static int l_connect(lua_State* L)
     }
 
     char tmp[addr_sz];
-    int port = 0;
-    const char* host = _address_port(L, tmp, addr, 2, port);
-    if (port == 0)
+    int remote_port = 0;
+    const char* remote_addr = _address_port(L, tmp, addr, 2, remote_port);
+    if (remote_port == 0)
     {
         return luaL_error(L, "Invalid port");
     }
@@ -828,8 +828,8 @@ static int l_connect(lua_State* L)
     // service context upvalue
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
-    // connect to destination service
-    int socket_id = node_socket::instance()->connect(svc_ctx->svc_handle_, host, port);
+    // connect to remote server
+    int socket_id = node_socket::instance()->connect(svc_ctx->svc_handle_, remote_addr, remote_port);
 
     // return socket_id
     lua_pushinteger(L, socket_id);
@@ -878,7 +878,7 @@ static int l_shutdown(lua_State* L)
  * listen
  *
  * arguments:
- * 1 address            - string
+ * 1 ip                 - string
  * 2 port               - integer
  * 3 backlog            - integer, optional
  *
@@ -892,15 +892,15 @@ static int l_listen(lua_State* L)
 {
     auto svc_ctx = (service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
-    // ip
-    const char* host = luaL_checkstring(L, 1);
-    // port
-    int port = luaL_checkinteger(L, 2);
+    // local ip
+    const char* local_ip = luaL_checkstring(L, 1);
+    // local port
+    int local_port = luaL_checkinteger(L, 2);
     // backlog (optional)
     int backlog = luaL_optinteger(L, 3, DEFAULT_BACKLOG);
 
     // listen socket id
-    int listen_socket_id = node_socket::instance()->listen(svc_ctx->svc_handle_, host, port, backlog);
+    int listen_socket_id = node_socket::instance()->listen(svc_ctx->svc_handle_, local_ip, local_port, backlog);
     if (listen_socket_id < 0)
     {
         return luaL_error(L, "Listen error");
@@ -1079,7 +1079,7 @@ static int l_send_low(lua_State* L)
  *
  * lua examples:
  * function socket.stdin()
- *    return socket.bind(0)
+ *    return socket.bind_os_fd(0)
  * end
  */
 static int l_bind_os_fd(lua_State* L)
@@ -1295,7 +1295,7 @@ static const luaL_Reg socket_funcs_2[] = {
     { "shutdown",    skynet::luaclib::l_shutdown },
     { "send",        skynet::luaclib::l_send },
     { "lsend",       skynet::luaclib::l_send_low },
-    { "bind",        skynet::luaclib::l_bind_os_fd },
+    { "bind_os_fd",  skynet::luaclib::l_bind_os_fd },
     { "start",       skynet::luaclib::l_start },
     { "pause",       skynet::luaclib::l_pause },
     { "nodelay",     skynet::luaclib::l_nodelay },

@@ -78,7 +78,7 @@ else
         end
         local balance = 1
         local protocol = "ws"
-        local id = socket.listen("0.0.0.0", 9948)
+        local id = socket.open_tcp_server("0.0.0.0", 9948)
         skynet.log_info(string.format("Listen websocket port 9948 protocol:%s", protocol))
         socket.start(id, function(id, addr)
             print(string.format("accept client socket_id: %s addr:%s", id, addr))

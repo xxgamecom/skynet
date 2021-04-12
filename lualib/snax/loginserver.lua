@@ -165,7 +165,7 @@ local function launch_master(conf)
     end
 
     skynet.log_info(string.format("login server listen at : %s %d", host, port))
-    local id = socket.listen(host, port)
+    local id = socket.open_tcp_server(host, port)
     socket.start(id, function(fd, addr)
         local s = slave[balance]
         balance = balance + 1

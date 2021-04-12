@@ -73,7 +73,7 @@ public:
     int listen(uint32_t svc_handle, std::string local_ip, uint16_t local_port, int32_t backlog);
 
     /**
-     * create tcp client, connect remote server (async)
+     * create a tcp client, connect remote tcp server (async)
      *
      * @param svc_handle skynet service handle
      * @param remote_ip remote ip or domain name
@@ -193,6 +193,7 @@ private:
     int handle_ctrl_cmd(socket_message* result);
     // return -1 when connecting
     int handle_ctrl_cmd_listen_socket(cmd_request_listen* cmd, socket_message* result);
+    // open a tcp client
     int handle_ctrl_cmd_connect_socket(cmd_request_connect* cmd, socket_message* result);
     int handle_ctrl_cmd_resume_socket(cmd_request_resume_pause* cmd, socket_message* result);
     int handle_ctrl_cmd_pause_socket(cmd_request_resume_pause* cmd, socket_message* result);

@@ -106,7 +106,7 @@ else
             agent[i] = skynet.newservice(SERVICE_NAME, "agent", protocol)
         end
         local balance = 1
-        local id = socket.listen("0.0.0.0", 8001)
+        local id = socket.open_tcp_server("0.0.0.0", 8001)
         skynet.log_info(string.format("Listen web port 8001 protocol:%s", protocol))
         socket.start(id, function(id, addr)
             skynet.log_info(string.format("%s connected, pass it to agent :%08x", addr, agent[balance]))

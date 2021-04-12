@@ -270,7 +270,7 @@ local function connect_once(self)
     end
 
     local function _connect_once(self, addr)
-        local fd, err = socket.open(addr.host, addr.port)
+        local fd, err = socket.open_tcp_client(addr.host, addr.port)
         if not fd then
             -- try next one
             addr = _next_addr()
