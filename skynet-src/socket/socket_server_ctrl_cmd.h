@@ -1,7 +1,7 @@
 #pragma once
 
 #include "socket_server_def.h"
-#include "buffer.h"
+#include "socket_buffer.h"
 
 #include <cstdint>
 

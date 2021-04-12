@@ -40,7 +40,7 @@ end
 
 local function send_package(pack)
     local package = string.pack(">s2", pack)
-    socket.write(client_fd, package)
+    socket.send(client_fd, package)
 end
 
 skynet.register_svc_msg_handler({

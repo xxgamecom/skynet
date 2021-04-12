@@ -270,7 +270,7 @@ local function connect_once(self)
     end
 
     local function _connect_once(self, addr)
-        local fd, err = socket.open(addr.host, addr.port)
+        local fd, err = socket.open_tcp_client(addr.host, addr.port)
         if not fd then
             -- try next one
             addr = _next_addr()
@@ -470,8 +470,8 @@ local function wait_for_response(self, response)
     end
 end
 
-local socket_write = socket.write
-local socket_lwrite = socket.lwrite
+local socket_send = socket.send
+local socket_send_low = socket.send_low
 
 local function sock_err(self)
     close_channel_socket(self)
@@ -486,17 +486,17 @@ function channel:request(request, response, padding)
     if padding then
         -- padding may be a table, to support multi part request
         -- multi part request use low priority socket write
-        -- now socket_lwrite returns as socket_write
-        if not socket_lwrite(fd, request) then
+        -- now socket_send_low returns as socket_send
+        if not socket_send_low(fd, request) then
             sock_err(self)
         end
         for _, v in ipairs(padding) do
-            if not socket_lwrite(fd, v) then
+            if not socket_send_low(fd, v) then
                 sock_err(self)
             end
         end
     else
-        if not socket_write(fd, request) then
+        if not socket_send(fd, request) then
             sock_err(self)
         end
     end

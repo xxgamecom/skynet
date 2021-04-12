@@ -159,14 +159,14 @@ int node_socket::send_low_priority(uint32_t svc_handle, send_data* sd_ptr)
     return socket_server_->send_low_priority(sd_ptr);
 }
 
-int node_socket::listen(uint32_t svc_handle, const char* host, int port, int backlog)
+int node_socket::listen(uint32_t svc_handle, const char* local_ip, int local_port, int backlog)
 {
-    return socket_server_->listen(svc_handle, host, port, backlog);
+    return socket_server_->listen(svc_handle, local_ip, local_port, backlog);
 }
 
-int node_socket::connect(uint32_t svc_handle, const char* host, int port)
+int node_socket::connect(uint32_t svc_handle, const char* remote_host, int remote_port)
 {
-    return socket_server_->connect(svc_handle, host, port);
+    return socket_server_->connect(svc_handle, remote_host, remote_port);
 }
 
 void node_socket::close(uint32_t svc_handle, int socket_id)
@@ -199,9 +199,9 @@ int node_socket::bind_os_fd(uint32_t svc_handle, int os_fd)
     return socket_server_->bind_os_fd(svc_handle, os_fd);
 }
 
-int node_socket::udp_socket(uint32_t svc_handle, const char* addr, int port)
+int node_socket::udp_socket(uint32_t svc_handle, const char* local_ip, int local_port)
 {
-    return socket_server_->udp_socket(svc_handle, addr, port);
+    return socket_server_->udp_socket(svc_handle, local_ip, local_port);
 }
 
 int node_socket::udp_connect(uint32_t svc_handle, int socket_id, const char* remote_ip, int remote_port)

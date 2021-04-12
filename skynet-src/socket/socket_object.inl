@@ -5,14 +5,14 @@ inline bool socket_object::is_invalid(int socket_id)
     return (this->socket_id != socket_id || socket_status == SOCKET_STATUS_INVALID);
 }
 
-inline bool socket_object::is_send_buffer_empty()
+inline bool socket_object::is_write_buffer_empty()
 {
-    return (send_buffer_list_high.head == nullptr && send_buffer_list_low.head == nullptr);
+    return (write_buffer_list_high.head == nullptr && write_buffer_list_low.head == nullptr);
 }
 
 inline bool socket_object::nomore_sending_data()
 {
-    return (is_send_buffer_empty() && direct_send_buffer == nullptr && (sending_count & 0xFFFF) == 0) || is_close_write();
+    return (is_write_buffer_empty() && direct_write_buffer == nullptr && (sending_count & 0xFFFF) == 0) || is_close_write();
 }
 
 inline bool socket_object::can_direct_send(int socket_id)

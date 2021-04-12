@@ -44,7 +44,7 @@ local function assert_socket(service, v, fd)
 end
 
 local function write(service, fd, text)
-    assert_socket(service, socket.write(fd, text), fd)
+    assert_socket(service, socket.send(fd, text), fd)
 end
 
 local function launch_slave(auth_handler)
@@ -165,7 +165,7 @@ local function launch_master(conf)
     end
 
     skynet.log_info(string.format("login server listen at : %s %d", host, port))
-    local id = socket.listen(host, port)
+    local id = socket.open_tcp_server(host, port)
     socket.start(id, function(fd, addr)
         local s = slave[balance]
         balance = balance + 1

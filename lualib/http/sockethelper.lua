@@ -1,8 +1,8 @@
 local socket = require "skynet.socket"
 local skynet = require "skynet"
 
-local readbytes = socket.read
-local writebytes = socket.write
+local read_bytes = socket.read
+local send_bytes = socket.send
 
 local sockethelper = {}
 local socket_error = setmetatable({}, { __tostring = function()
@@ -25,7 +25,7 @@ local function preread(fd, str)
                     return ret
                 else
                     sz = sz - #str
-                    local ret = readbytes(fd, sz)
+                    local ret = read_bytes(fd, sz)
                     if ret then
                         return str .. ret
                     else
@@ -34,7 +34,7 @@ local function preread(fd, str)
                 end
             end
         else
-            local ret = readbytes(fd, sz)
+            local ret = read_bytes(fd, sz)
             if ret then
                 return ret
             else
@@ -49,7 +49,7 @@ function sockethelper.readfunc(fd, pre)
         return preread(fd, pre)
     end
     return function(sz)
-        local ret = readbytes(fd, sz)
+        local ret = read_bytes(fd, sz)
         if ret then
             return ret
         else
@@ -62,7 +62,7 @@ sockethelper.read_all = socket.read_all
 
 function sockethelper.writefunc(fd)
     return function(content)
-        local ok = writebytes(fd, content)
+        local ok = send_bytes(fd, content)
         if not ok then
             error(socket_error)
         end
@@ -76,12 +76,12 @@ function sockethelper.connect(host, port, timeout)
         local co = coroutine.running()
         -- asynchronous connect
         skynet.fork(function()
-            fd = socket.open(host, port)
+            fd = socket.open_tcp_client(host, port)
             if drop_fd then
                 -- sockethelper.connect already return, and raise socket_error
                 socket.close(fd)
             else
-                -- socket.open before sleep, wakeup.
+                -- socket.open_tcp_client before sleep, wakeup.
                 skynet.wakeup(co)
             end
         end)
@@ -92,7 +92,7 @@ function sockethelper.connect(host, port, timeout)
         end
     else
         -- block connect
-        fd = socket.open(host, port)
+        fd = socket.open_tcp_client(host, port)
     end
     if fd then
         return fd

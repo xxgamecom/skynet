@@ -493,7 +493,7 @@ local function remote_resolve(name, ipv6)
     }
     local req = pack_header(question_header) .. pack_question(name, qtype, QCLASS.IN)
     touch_server()
-    socket.write(dns_server.fd, req)
+    socket.send(dns_server.fd, req)
     return suspend(question_header.tid, name, qtype)
 end
 

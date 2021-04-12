@@ -104,7 +104,7 @@ void socket_server::fini()
     {
         if (socket_ref.socket_status != SOCKET_STATUS_ALLOCED)
         {
-            socket_lock sl(socket_ref.direct_send_mutex);
+            socket_lock sl(socket_ref.direct_write_mutex);
             force_close(&socket_ref, sl, &dummy);
         }
     }
@@ -189,7 +189,7 @@ int socket_server::listen(uint32_t svc_handle, std::string local_ip, uint16_t lo
         return INVALID_SOCKET_ID;
     }
 
-    // 从ss的socket池中获取空闲的socket, 并返回id
+    //
     int listen_socket_id = socket_object_pool_.alloc_socket();
     if (listen_socket_id < 0)
     {
@@ -197,7 +197,7 @@ int socket_server::listen(uint32_t svc_handle, std::string local_ip, uint16_t lo
         return listen_socket_id;
     }
 
-    // 保存关联的服务地址，socket池的id，socket套接字fd
+    //
     ctrl_cmd_package cmd;
     prepare_ctrl_cmd_request_listen(cmd, svc_handle, listen_socket_id, listen_fd);
     _send_ctrl_cmd(&cmd);
@@ -280,7 +280,7 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
                 return type;
             }
 
-            // pipe无数据
+            // no pipe data
             need_check_ctrl_cmd_ = false;
         }
 
@@ -314,7 +314,7 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
         if (socket_ptr == nullptr)
             continue;
 
-        socket_lock sl(socket_ptr->direct_send_mutex);
+        socket_lock sl(socket_ptr->direct_write_mutex);
 
         //
         switch (socket_ptr->socket_status)
@@ -374,7 +374,7 @@ int socket_server::poll_socket_event(socket_message* result, bool& is_more)
                 return socket_event;
             }
 
-            // 如果socket已连接且事件可写，通过send_buffer发送数据。
+            // 如果socket已连接且事件可写，通过 write_buffer 发送数据
             if (event_ref.is_writeable)
             {
                 int socket_event = send_write_buffer(socket_ptr, sl, result);
@@ -451,7 +451,7 @@ int socket_server::send(send_data* sd_ptr)
     //
 
     // scope lock
-    std::unique_lock<std::mutex> sl(socket_ref.direct_send_mutex, std::defer_lock);
+    std::unique_lock<std::mutex> sl(socket_ref.direct_write_mutex, std::defer_lock);
 
     if (socket_ref.can_direct_send(socket_id) && sl.try_lock())
     {
@@ -496,9 +496,9 @@ int socket_server::send(send_data* sd_ptr)
                 return 0;
             }
 
-            // direct send failed, add data to s->direct_send_buffer, wait socket thread send. @see send_write_buffer().
-            socket_ref.direct_send_buffer = clone_send_data(sd_ptr, &socket_ref.direct_send_size);
-            socket_ref.direct_send_offset = send_bytes;
+            // direct send failed, add data to s->direct_write_buffer, wait socket thread send. @see send_write_buffer().
+            socket_ref.direct_write_buffer = clone_send_data(sd_ptr, &socket_ref.direct_write_size);
+            socket_ref.direct_write_offset = send_bytes;
 
             //
             sl.unlock();
@@ -648,7 +648,7 @@ int socket_server::udp_send(const socket_udp_address* addr, send_data* sd_ptr)
     if (socket_ref.can_direct_send(socket_id))
     {
         // scope lock
-        std::unique_lock<std::mutex> sl(socket_ref.direct_send_mutex, std::defer_lock);
+        std::unique_lock<std::mutex> sl(socket_ref.direct_write_mutex, std::defer_lock);
 
         if (sl.try_lock())
         {
@@ -695,7 +695,7 @@ int socket_server::udp_connect(int socket_id, const char* remote_ip, int remote_
 
     // increase udp connecting, use scope lock
     {
-        std::lock_guard<std::mutex> lock(socket_ref.direct_send_mutex);
+        std::lock_guard<std::mutex> lock(socket_ref.direct_write_mutex);
 
         if (socket_ref.is_invalid(socket_id))
             return -1;
@@ -882,9 +882,9 @@ int socket_server::handle_ctrl_cmd_connect_socket(cmd_request_connect* cmd, sock
     bool is_ok = false;
     do
     {
-        char port[16] = { 0 };
-        sprintf(port, "%d", cmd->port);
-        int status = ::getaddrinfo(cmd->host, port, &ai_hints, &ai_list);
+        char port_string[16] = { 0 };
+        sprintf(port_string, "%d", cmd->port);
+        int status = ::getaddrinfo(cmd->host, port_string, &ai_hints, &ai_list);
         if (status != 0)
         {
             result->data_ptr = const_cast<char*>(::gai_strerror(status));
@@ -981,7 +981,7 @@ int socket_server::handle_ctrl_cmd_close_socket(cmd_request_close* cmd, socket_m
         return -1;
     }
 
-    socket_lock sl(socket_ref.direct_send_mutex);
+    socket_lock sl(socket_ref.direct_write_mutex);
 
     bool shutdown_read = socket_ref.is_close_read();
     if (cmd->shutdown || socket_ref.nomore_sending_data())
@@ -1161,7 +1161,7 @@ int socket_server::handle_ctrl_cmd_send_socket(cmd_request_send* cmd, socket_mes
     }
 
     // socket send buffer is empty, write data to socket fd directly.
-    if (socket_ref.is_send_buffer_empty())
+    if (socket_ref.is_write_buffer_empty())
     {
         // tcp
         if (socket_ref.socket_type == SOCKET_TYPE_TCP)
@@ -1237,12 +1237,12 @@ int socket_server::handle_ctrl_cmd_send_socket(cmd_request_send* cmd, socket_mes
     }
 
     // check write size, warning
-    if (socket_ref.send_buffer_size >= WARNING_SIZE && socket_ref.send_buffer_size >= socket_ref.warn_size)
+    if (socket_ref.write_buffer_size >= WARNING_SIZE && socket_ref.write_buffer_size >= socket_ref.warn_size)
     {
         socket_ref.warn_size = socket_ref.warn_size == 0 ? WARNING_SIZE * 2 : socket_ref.warn_size * 2;
         result->svc_handle = socket_ref.svc_handle;
         result->socket_id = socket_ref.socket_id;
-        result->ud = socket_ref.send_buffer_size % 1024 == 0 ? socket_ref.send_buffer_size / 1024 : socket_ref.send_buffer_size / 1024 + 1;
+        result->ud = socket_ref.write_buffer_size % 1024 == 0 ? socket_ref.write_buffer_size / 1024 : socket_ref.write_buffer_size / 1024 + 1;
         result->data_ptr = nullptr;
 
         return SOCKET_EVENT_WARNING;
@@ -1383,8 +1383,8 @@ void socket_server::force_close(socket_object* socket_ptr, socket_lock& sl, sock
         return;
 
     assert(socket_ptr->socket_status != SOCKET_STATUS_ALLOCED);
-    free_write_buffer_list(&socket_ptr->send_buffer_list_high);
-    free_write_buffer_list(&socket_ptr->send_buffer_list_low);
+    free_write_buffer_list(&socket_ptr->write_buffer_list_high);
+    free_write_buffer_list(&socket_ptr->write_buffer_list_low);
 
     event_poller_.del(socket_ptr->socket_fd);
 
@@ -1400,15 +1400,15 @@ void socket_server::force_close(socket_object* socket_ptr, socket_lock& sl, sock
     socket_object_pool_.free_socket(socket_ptr->socket_id);
 
     //
-    if (socket_ptr->direct_send_buffer != nullptr)
+    if (socket_ptr->direct_write_buffer != nullptr)
     {
         send_data sd;
-        sd.data_ptr = socket_ptr->direct_send_buffer;
-        sd.data_size = socket_ptr->direct_send_size;
+        sd.data_ptr = socket_ptr->direct_write_buffer;
+        sd.data_size = socket_ptr->direct_write_size;
         sd.socket_id = socket_ptr->socket_id;
         sd.type = (sd.data_size == USER_OBJECT_TAG) ? SEND_DATA_TYPE_USER_OBJECT : SEND_DATA_TYPE_MEMORY;
         free_send_data(&sd);
-        socket_ptr->direct_send_buffer = nullptr;
+        socket_ptr->direct_write_buffer = nullptr;
     }
     sl.unlock();
 }
@@ -1487,7 +1487,7 @@ int socket_server::enable_read(socket_object* socket_ptr, bool enable)
 
 void socket_server::drop_udp(socket_object* socket_ptr, write_buffer_list* wb_list_ptr, write_buffer* wb_ptr)
 {
-    socket_ptr->send_buffer_size -= wb_ptr->sz;
+    socket_ptr->write_buffer_size -= wb_ptr->sz;
     wb_list_ptr->head = wb_ptr->next;
     if (wb_list_ptr->head == nullptr)
         wb_list_ptr->tail = nullptr;
@@ -1516,18 +1516,18 @@ socket_object* socket_server::new_socket(int socket_id, int socket_fd, int socke
     socket_ref.socket_type = socket_type;
     socket_ref.p.size = MIN_READ_BUFFER;
     socket_ref.svc_handle = svc_handle;
-    socket_ref.send_buffer_size = 0;
+    socket_ref.write_buffer_size = 0;
     socket_ref.warn_size = 0;
 
     // check write_buffer_list
-    assert(socket_ref.send_buffer_list_high.head == nullptr);
-    assert(socket_ref.send_buffer_list_high.tail == nullptr);
-    assert(socket_ref.send_buffer_list_low.head == nullptr);
-    assert(socket_ref.send_buffer_list_low.tail == nullptr);
+    assert(socket_ref.write_buffer_list_high.head == nullptr);
+    assert(socket_ref.write_buffer_list_high.tail == nullptr);
+    assert(socket_ref.write_buffer_list_low.head == nullptr);
+    assert(socket_ref.write_buffer_list_low.tail == nullptr);
 
     //
-    socket_ref.direct_send_buffer = nullptr;
-    socket_ref.direct_send_size = 0;
+    socket_ref.direct_write_buffer = nullptr;
+    socket_ref.direct_write_size = 0;
 
     //
     ::memset(&socket_ref.io_statistics, 0, sizeof(socket_ref.io_statistics));
@@ -1581,25 +1581,23 @@ const void* socket_server::clone_send_data(send_data* sd_ptr, size_t* sd_sz)
         *sd_sz = USER_OBJECT_TAG;
         return sd_ptr->data_ptr;
     }
-        // It's a raw pointer, we need make a copy
     else if (sd_ptr->type == SEND_DATA_TYPE_USER_DATA)
     {
+        // It's a raw pointer, we need make a copy
         *sd_sz = sd_ptr->data_size;
         void* tmp = new char[*sd_sz];
         ::memcpy(tmp, sd_ptr->data_ptr, *sd_sz);
         return tmp;
     }
+
     // never get here
-    else
-    {
-        *sd_sz = 0;
-        return nullptr;
-    }
+    *sd_sz = 0;
+    return nullptr;
 }
 
 void socket_server::append_send_buffer(socket_object* socket_ptr, cmd_request_send* cmd, bool is_high/* = true*/, const uint8_t* udp_address/* = nullptr*/)
 {
-    auto wb_list_ptr = is_high ? &socket_ptr->send_buffer_list_high : &socket_ptr->send_buffer_list_low;
+    auto wb_list_ptr = is_high ? &socket_ptr->write_buffer_list_high : &socket_ptr->write_buffer_list_low;
     auto wb_ptr = alloc_write_buffer(wb_list_ptr, cmd, udp_address == nullptr ? SIZEOF_TCP_BUFFER : SIZEOF_UDP_BUFFER);
 
     // append udp address
@@ -1607,7 +1605,7 @@ void socket_server::append_send_buffer(socket_object* socket_ptr, cmd_request_se
         ::memcpy(wb_ptr->udp_address, udp_address, UDP_ADDRESS_SIZE);
 
     // set send buffer size
-    socket_ptr->send_buffer_size += wb_ptr->sz;
+    socket_ptr->write_buffer_size += wb_ptr->sz;
 }
 
 //
@@ -1674,28 +1672,28 @@ int socket_server::send_write_buffer(socket_object* socket_ptr, socket_lock& sl,
     if (!sl.try_lock())
         return -1;
 
-    if (socket_ptr->direct_send_buffer != nullptr)
+    if (socket_ptr->direct_write_buffer != nullptr)
     {
         // add direct write buffer before high.head
         auto write_buf_ptr = (write_buffer*)new char[SIZEOF_TCP_BUFFER] { 0 };
 
         send_user_object so;
-        write_buf_ptr->is_user_object = init_send_user_object(&so, (void*)socket_ptr->direct_send_buffer, socket_ptr->direct_send_size);
-        write_buf_ptr->ptr = (char*)so.buffer + socket_ptr->direct_send_offset;
-        write_buf_ptr->sz = so.sz - socket_ptr->direct_send_offset;
-        write_buf_ptr->buffer = (void*)socket_ptr->direct_send_buffer;
-        socket_ptr->send_buffer_size += write_buf_ptr->sz;
-        if (socket_ptr->send_buffer_list_high.head == nullptr)
+        write_buf_ptr->is_user_object = init_send_user_object(&so, (void*)socket_ptr->direct_write_buffer, socket_ptr->direct_write_size);
+        write_buf_ptr->ptr = (char*)so.buffer + socket_ptr->direct_write_offset;
+        write_buf_ptr->sz = so.sz - socket_ptr->direct_write_offset;
+        write_buf_ptr->buffer = (void*)socket_ptr->direct_write_buffer;
+        socket_ptr->write_buffer_size += write_buf_ptr->sz;
+        if (socket_ptr->write_buffer_list_high.head == nullptr)
         {
-            socket_ptr->send_buffer_list_high.head = socket_ptr->send_buffer_list_high.tail = write_buf_ptr;
+            socket_ptr->write_buffer_list_high.head = socket_ptr->write_buffer_list_high.tail = write_buf_ptr;
             write_buf_ptr->next = nullptr;
         }
         else
         {
-            write_buf_ptr->next = socket_ptr->send_buffer_list_high.head;
-            socket_ptr->send_buffer_list_high.head = write_buf_ptr;
+            write_buf_ptr->next = socket_ptr->write_buffer_list_high.head;
+            socket_ptr->write_buffer_list_high.head = write_buf_ptr;
         }
-        socket_ptr->direct_send_buffer = nullptr;
+        socket_ptr->direct_write_buffer = nullptr;
     }
 
     //
@@ -1736,7 +1734,7 @@ int socket_server::send_write_buffer_list_tcp(socket_object* socket_ptr, write_b
 
             // send statistics
             socket_ptr->statistics_send((int)send_bytes, time_ticks_);
-            socket_ptr->send_buffer_size -= send_bytes;
+            socket_ptr->write_buffer_size -= send_bytes;
             if (send_bytes != tmp->sz)
             {
                 tmp->ptr += send_bytes;
@@ -1786,7 +1784,7 @@ int socket_server::send_write_buffer_list_udp(socket_object* socket_ptr, write_b
         socket_ptr->statistics_send(tmp->sz, time_ticks_);
 
         //
-        socket_ptr->send_buffer_size -= tmp->sz;
+        socket_ptr->write_buffer_size -= tmp->sz;
         wb_list_ptr->head = tmp->next;
         free_write_buffer(tmp);
     }
@@ -1806,14 +1804,14 @@ int socket_server::list_uncomplete(write_buffer_list* wb_list_ptr)
 
 void socket_server::raise_uncomplete(socket_object* socket_ptr)
 {
-    auto wb_list_low = &socket_ptr->send_buffer_list_low;
+    auto wb_list_low = &socket_ptr->write_buffer_list_low;
     auto tmp = wb_list_low->head;
     wb_list_low->head = tmp->next;
     if (wb_list_low->head == nullptr)
         wb_list_low->tail = nullptr;
 
     // move head of low write_buffer_list (tmp) to the empty high write_buffer_list
-    auto wb_list_high = &socket_ptr->send_buffer_list_high;
+    auto wb_list_high = &socket_ptr->write_buffer_list_high;
     assert(wb_list_high->head == nullptr);
 
     tmp->next = nullptr;
@@ -1832,10 +1830,10 @@ void socket_server::raise_uncomplete(socket_object* socket_ptr)
  */
 int socket_server::do_send_write_buffer(socket_object* socket_ptr, socket_lock& sl, socket_message* result)
 {
-    assert(list_uncomplete(&socket_ptr->send_buffer_list_low) == 0);
+    assert(list_uncomplete(&socket_ptr->write_buffer_list_low) == 0);
 
     // step 1
-    int ret = send_write_buffer_list(socket_ptr, &socket_ptr->send_buffer_list_high, sl, result);
+    int ret = send_write_buffer_list(socket_ptr, &socket_ptr->write_buffer_list_high, sl, result);
     if (ret != -1)
     {
         if (ret == SOCKET_EVENT_ERROR)
@@ -1849,12 +1847,12 @@ int socket_server::do_send_write_buffer(socket_object* socket_ptr, socket_lock& 
     }
 
     //
-    if (socket_ptr->send_buffer_list_high.head == nullptr)
+    if (socket_ptr->write_buffer_list_high.head == nullptr)
     {
         // step 2
-        if (socket_ptr->send_buffer_list_low.head != nullptr)
+        if (socket_ptr->write_buffer_list_low.head != nullptr)
         {
-            int ret = send_write_buffer_list(socket_ptr, &socket_ptr->send_buffer_list_low, sl, result);
+            int ret = send_write_buffer_list(socket_ptr, &socket_ptr->write_buffer_list_low, sl, result);
             if (ret != -1)
             {
                 if (ret == SOCKET_EVENT_ERROR)
@@ -1868,17 +1866,17 @@ int socket_server::do_send_write_buffer(socket_object* socket_ptr, socket_lock& 
             }
 
             // step 3
-            if (list_uncomplete(&socket_ptr->send_buffer_list_low) != 0)
+            if (list_uncomplete(&socket_ptr->write_buffer_list_low) != 0)
             {
                 raise_uncomplete(socket_ptr);
                 return -1;
             }
-            if (socket_ptr->send_buffer_list_low.head != nullptr)
+            if (socket_ptr->write_buffer_list_low.head != nullptr)
                 return -1;
         }
 
         // step 4
-        assert(socket_ptr->is_send_buffer_empty() && socket_ptr->send_buffer_size == 0);
+        assert(socket_ptr->is_write_buffer_empty() && socket_ptr->write_buffer_size == 0);
         if (socket_ptr->closing)
         {
             // finish writing

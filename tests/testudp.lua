@@ -15,7 +15,7 @@ local function client()
     end)
     socket.udp_connect(c, "127.0.0.1", 8765)
     for i = 1, 20 do
-        socket.write(c, "hello " .. i)    -- write to the address by udp_connect binding
+        socket.send(c, "hello " .. i)    -- write to the address by udp_connect binding
     end
 end
 

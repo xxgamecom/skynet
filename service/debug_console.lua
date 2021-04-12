@@ -122,7 +122,7 @@ local function console_main_loop(stdin, print)
 end
 
 skynet.start(function()
-    local listen_socket = socket.listen(ip, port)
+    local listen_socket = socket.open_tcp_server(ip, port)
     skynet.log_info("Start debug console at " .. ip .. ":" .. port)
     socket.start(listen_socket, function(id, addr)
         local function print(...)
@@ -130,8 +130,8 @@ skynet.start(function()
             for k, v in ipairs(t) do
                 t[k] = tostring(v)
             end
-            socket.write(id, table.concat(t, "\t"))
-            socket.write(id, "\n")
+            socket.send(id, table.concat(t, "\t"))
+            socket.send(id, "\n")
         end
         socket.start(id)
         skynet.fork(console_main_loop, id, print)

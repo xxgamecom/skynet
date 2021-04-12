@@ -1,16 +1,16 @@
 package.cpath = "luaclib/?.so"
 
-local socket = require "client.socket"
+local client_socket = require "client.socket"
 local crypt = require "client.crypt"
 
 if _VERSION ~= "Lua 5.3" then
     error "Use lua 5.3"
 end
 
-local fd = assert(socket.connect("127.0.0.1", 8001))
+local fd = assert(client_socket.connect("127.0.0.1", 8001))
 
 local function writeline(fd, text)
-    socket.send(fd, text .. "\n")
+    client_socket.send(fd, text .. "\n")
 end
 
 local function unpack_line(text)
@@ -30,7 +30,7 @@ local function unpack_f(f)
         if result then
             return result, last
         end
-        local r = socket.recv(fd)
+        local r = client_socket.recv(fd)
         if not r then
             return nil, last
         end
@@ -47,7 +47,7 @@ local function unpack_f(f)
             if result then
                 return result
             end
-            socket.usleep(100)
+            client_socket.usleep(100)
         end
     end
 end
@@ -86,7 +86,7 @@ local result = readline()
 print(result)
 local code = tonumber(string.sub(result, 1, 3))
 assert(code == 200)
-socket.close(fd)
+client_socket.close(fd)
 
 local subid = crypt.base64decode(string.sub(result, 5))
 
@@ -97,7 +97,7 @@ print("login ok, subid=", subid)
 local function send_request(v, session)
     local size = #v + 4
     local package = string.pack(">I2", size) .. v .. string.pack(">I4", session)
-    socket.send(fd, package)
+    client_socket.send(fd, package)
     return v, session
 end
 
@@ -124,14 +124,14 @@ local readpackage = unpack_f(unpack_package)
 
 local function send_package(fd, pack)
     local package = string.pack(">s2", pack)
-    socket.send(fd, package)
+    client_socket.send(fd, package)
 end
 
 local text = "echo"
 local index = 1
 
 print("connect")
-fd = assert(socket.connect("127.0.0.1", 8888))
+fd = assert(client_socket.connect("127.0.0.1", 8888))
 last = ""
 
 local handshake = string.format("%s@%s#%s:%d", crypt.base64encode(token.user), crypt.base64encode(token.server), crypt.base64encode(subid), index)
@@ -145,12 +145,12 @@ print("===>", send_request(text, 0))
 -- print("<===",recv_response(readpackage()))
 
 print("disconnect")
-socket.close(fd)
+client_socket.close(fd)
 
 index = index + 1
 
 print("connect again")
-fd = assert(socket.connect("127.0.0.1", 8888))
+fd = assert(client_socket.connect("127.0.0.1", 8888))
 last = ""
 
 local handshake = string.format("%s@%s#%s:%d", crypt.base64encode(token.user), crypt.base64encode(token.server), crypt.base64encode(subid), index)
@@ -165,5 +165,5 @@ print("<===", recv_response(readpackage()))
 print("<===", recv_response(readpackage()))
 
 print("disconnect")
-socket.close(fd)
+client_socket.close(fd)
 

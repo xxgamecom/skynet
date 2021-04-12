@@ -132,7 +132,7 @@ bool socket_object::get_socket_info(socket_info& si) const
     si.writing = this->writing;
 
     // write buffer size
-    si.wb_size = this->send_buffer_size;
+    si.write_buffer_size = this->write_buffer_size;
 
     return true;
 }
