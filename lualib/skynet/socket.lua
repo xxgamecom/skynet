@@ -10,6 +10,8 @@ local socket_core = require "skynet.socket.core"
 local pairs = pairs
 local assert = assert
 local tonumber = tonumber
+local table_insert = table.insert
+local table_remove = table.remove
 
 local BUFFER_LIMIT = 128 * 1024
 
@@ -84,43 +86,53 @@ local function suspend_socket(sock_obj)
     end
 end
 
----
----@param socket_id number socket logic id
----@param func function callback function
----@return number, string socket_id, error msg
-local function connect(socket_id, func)
+
+local function create_tcp_socket_object(socket_id, callback)
     local new_buffer
-    if func == nil then
+    if callback == nil then
         new_buffer = socket_core.new_buffer()
     end
 
-    -- create socket object and add to pool
+    assert(not socket_object_pool[socket_id], "socket is not closed")
     local sock_obj = {
         socket_id = socket_id,
         buffer = new_buffer,
         buffer_pool = new_buffer and {},
-        connected = false, --
-        connecting = true, --
+        connected = false, -- connected flag
+        connecting = true, -- connecting flag
         read_required = false, --
         thread = false, -- socket thread, false means
-        callback = func, --
+        callback = callback, --
         socket_type = "TCP", -- socket ip proto type
     }
-    assert(not socket_object_pool[socket_id], "socket is not closed")
     socket_object_pool[socket_id] = sock_obj
+
+    return sock_obj
+end
+
+---
+---@param socket_id number socket logic id
+---@param callback function callback function
+---@return number, string socket_id, error msg
+local function connect(socket_id, callback)
+    -- create socket object
+    local sock_obj = create_tcp_socket_object(socket_id, callback)
 
     --
     suspend_socket(sock_obj)
 
-    --
+    -- reset connecting status, get connect error message
     local err = sock_obj.connecting
     sock_obj.connecting = nil
+
+    -- connect success
     if sock_obj.connected then
         return socket_id
-    else
-        socket_object_pool[socket_id] = nil
-        return nil, err
     end
+
+    -- connect failed
+    socket_object_pool[socket_id] = nil
+    return nil, err
 end
 
 -- ----------------------------------
@@ -132,6 +144,7 @@ end
 ---@param local_addr string local ip or host uri (`ip:port` string)
 ---@param local_port number local port or nil (when local_addr is a host uri)
 ---@param backlog number
+---@return number socket logic id
 function socket.open_tcp_server(local_addr, local_port, backlog)
     -- parse host uri
     if local_port == nil then
@@ -140,7 +153,10 @@ function socket.open_tcp_server(local_addr, local_port, backlog)
     end
 
     --
-    return socket_core.listen(local_addr, local_port, backlog)
+    local socket_id = socket_core.listen(local_addr, local_port, backlog)
+    skynet.log_debug("Open tcp server", local_addr, local_port, backlog, socket_id)
+
+    return socket_id
 end
 
 ---
@@ -149,7 +165,11 @@ end
 ---@param remote_port number remote server port
 ---@return number, string socket_id, error msg
 function socket.open_tcp_client(remote_addr, remote_port)
+    --
     local socket_id = socket_core.connect(remote_addr, remote_port)
+    skynet.log_debug("Open tcp client", remote_addr, remote_port, socket_id)
+
+    --
     return connect(socket_id)
 end
 
@@ -161,7 +181,11 @@ end
 ---@param func function callback function
 ---@return number, string socket_id, error msg
 function socket.start(socket_id, func)
+    --
     socket_core.start(socket_id)
+    skynet.log_debug("Start socket", socket_id)
+
+    --
     return connect(socket_id, func)
 end
 
@@ -173,7 +197,9 @@ function socket.pause(socket_id)
     if sock_obj == nil or sock_obj.is_pause then
         return
     end
+
     pause_socket(sock_obj)
+    skynet.log_debug("Pause socket", socket_id)
 end
 
 ---
@@ -199,6 +225,8 @@ function socket.close(socket_id)
     end
     assert(sock_obj.lock_set == nil or next(sock_obj.lock_set) == nil)
     socket_object_pool[socket_id] = nil
+
+    skynet.log_debug("Close socket", socket_id)
 end
 
 ---
@@ -209,13 +237,19 @@ function socket.shutdown(socket_id)
         -- the framework would send SKYNET_SOCKET_EVENT_CLOSE , need close(socket_id) later
         socket_core.shutdown(socket_id)
     end
+
+    skynet.log_debug("Shutdown socket", socket_id)
 end
 
 ---
 ---  os fd redirection
 ---@param os_fd
 function socket.bind_os_fd(os_fd)
+    --
     local socket_id = socket_core.bind_os_fd(os_fd)
+    skynet.log_debug("Redirect os fd", os_fd)
+
+    --
     return connect(socket_id)
 end
 
@@ -228,7 +262,7 @@ end
 ---
 ---
 ---@param socket_id number socket logic id
----@param sz number read size
+---@param sz number read size, nil means read some bytes
 ---@return boolean, string result and data
 function socket.read(socket_id, sz)
     local sock_obj = socket_object_pool[socket_id]
@@ -376,6 +410,7 @@ end
 function socket.lock(socket_id)
     local sock_obj = socket_object_pool[socket_id]
     assert(sock_obj)
+
     local lock_set = sock_obj.lock_set
     if not lock_set then
         lock_set = {}
@@ -385,7 +420,7 @@ function socket.lock(socket_id)
         lock_set[1] = true
     else
         local current_thread = coroutine.running()
-        table.insert(lock_set, current_thread)
+        table_insert(lock_set, current_thread)
         skynet.wait(current_thread)
     end
 end
@@ -395,8 +430,9 @@ end
 function socket.unlock(socket_id)
     local sock_obj = socket_object_pool[socket_id]
     assert(sock_obj)
+
     local lock_set = assert(sock_obj.lock_set)
-    table.remove(lock_set, 1)
+    table_remove(lock_set, 1)
     local thread = lock_set[1]
     if thread then
         skynet.wakeup(thread)
@@ -429,14 +465,17 @@ end
 -- UDP
 -- ----------------------------------
 
-local function create_udp_object(socket_id, cb)
+local function create_udp_socket_object(socket_id, callback)
     assert(not socket_object_pool[socket_id], "socket is not closed")
-    socket_object_pool[socket_id] = {
+    local sock_obj = {
         socket_id = socket_id,
         connected = true,
         socket_type = "UDP",
-        callback = cb,
+        callback = callback,
     }
+    socket_object_pool[socket_id] = sock_obj
+
+    return sock_obj
 end
 
 ---
@@ -446,7 +485,7 @@ end
 ---@param local_port number
 function socket.udp_socket(callback, local_ip, local_port)
     local socket_id = socket_core.udp_socket(local_ip, local_port)
-    create_udp_object(socket_id, callback)
+    create_udp_socket_object(socket_id, callback)
     return socket_id
 end
 
@@ -464,7 +503,7 @@ function socket.udp_connect(socket_id, remote_ip, remote_port, callback)
             sock_obj.callback = callback
         end
     else
-        create_udp_object(socket_id, callback)
+        create_udp_socket_object(socket_id, callback)
     end
     socket_core.udp_connect(socket_id, remote_ip, remote_port)
 end
@@ -497,7 +536,9 @@ function socket.onclose(socket_id, callback)
     sock_obj.on_close = callback
 end
 
+-- ----------------------------------
 -- skynet socket message handle
+-- ----------------------------------
 
 do
     local socket_message = {}
@@ -505,7 +546,7 @@ do
     socket_message[socket.SKYNET_SOCKET_EVENT_DATA] = function(socket_id, size, data)
         local sock_obj = socket_object_pool[socket_id]
         if sock_obj == nil then
-            skynet.log_error("socket: drop package from " .. socket_id)
+            skynet.log_error("socket: drop package from", socket_id)
             socket_core.drop(data, size)
             return
         end
