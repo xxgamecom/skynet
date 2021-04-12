@@ -168,7 +168,7 @@ int prepare_ctrl_cmd_request_set_opt(ctrl_cmd_package& cmd, int socket_id);
 // prepare create an udp socket data: cmd_request_udp_socket
 int prepare_ctrl_cmd_request_udp_socket(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id, int socket_fd, int family);
 //
-int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int socket_type, const socket_endpoint* sa);
+int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int socket_type, const socket_endpoint* endpoint_ptr);
 //
 int prepare_ctrl_cmd_request_send_udp(ctrl_cmd_package& cmd, int socket_id, const send_data* sd_ptr, const uint8_t* udp_address, int addr_sz);
 

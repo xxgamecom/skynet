@@ -74,8 +74,8 @@ void socket_object::reset_udp_connecting_count()
 
 bool socket_object::get_socket_info(socket_info& si) const
 {
-    socket_endpoint sa;
-    socklen_t sa_sz = sizeof(sa);
+    socket_endpoint endpoint;
+    socklen_t endpoint_sz = sizeof(endpoint);
     bool closing = false;
 
     switch (socket_status)
@@ -90,8 +90,8 @@ bool socket_object::get_socket_info(socket_info& si) const
     {
         si.type = SOCKET_INFO_TYPE_LISTEN;
         // local server listen address
-        if (::getsockname(this->socket_fd, &sa.addr.s, &sa_sz) == 0)
-            sa.to_string(si.endpoint, sizeof(si.endpoint));
+        if (::getsockname(this->socket_fd, &endpoint.addr.s, &endpoint_sz) == 0)
+            endpoint.to_string(si.endpoint, sizeof(si.endpoint));
     }
         break;
     case SOCKET_STATUS_HALF_CLOSE_READ:
@@ -102,16 +102,16 @@ bool socket_object::get_socket_info(socket_info& si) const
         {
             si.type = closing ? SOCKET_INFO_TYPE_CLOSING : SOCKET_INFO_TYPE_TCP;
             // remote client address
-            if (::getpeername(this->socket_fd, &sa.addr.s, &sa_sz) == 0)
-                sa.to_string(si.endpoint, sizeof(si.endpoint));
+            if (::getpeername(this->socket_fd, &endpoint.addr.s, &endpoint_sz) == 0)
+                endpoint.to_string(si.endpoint, sizeof(si.endpoint));
         }
         else
         {
             si.type = SOCKET_INFO_TYPE_UDP;
             //
-            if (sa.from_udp_address(this->socket_type, p.udp_address) != 0)
+            if (endpoint.from_udp_address(this->socket_type, p.udp_address) != 0)
             {
-                sa.to_string(si.endpoint, sizeof(si.endpoint));
+                endpoint.to_string(si.endpoint, sizeof(si.endpoint));
             }
         }
         break;

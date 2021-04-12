@@ -470,8 +470,8 @@ int socket_server::send(send_data* sd_ptr)
             // udp
             else
             {
-                socket_endpoint sa;
-                int sa_sz = sa.from_udp_address(socket_ref.socket_type, socket_ref.p.udp_address);
+                socket_endpoint endpoint;
+                int sa_sz = endpoint.from_udp_address(socket_ref.socket_type, socket_ref.p.udp_address);
                 if (sa_sz == 0)
                 {
                     log_error(nullptr, fmt::format("socket-server : set udp ({}) address first.", socket_id));
@@ -479,7 +479,7 @@ int socket_server::send(send_data* sd_ptr)
                     so.free_func((void*)sd_ptr->data_ptr);
                     return -1;
                 }
-                n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &sa.addr.s, sa_sz);
+                n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &endpoint.addr.s, sa_sz);
             }
 
             // error
@@ -658,15 +658,15 @@ int socket_server::udp_send(const socket_udp_address* addr, send_data* sd_ptr)
                 // send directly
                 send_object so;
                 init_send_object(&so, sd_ptr);
-                socket_endpoint sa;
-                socklen_t sa_sz = sa.from_udp_address(socket_ref.socket_type, udp_address);
+                socket_endpoint endpoint;
+                socklen_t sa_sz = endpoint.from_udp_address(socket_ref.socket_type, udp_address);
                 if (sa_sz == 0)
                 {
                     so.free_func((void*)sd_ptr->data_ptr);
                     return -1;
                 }
 
-                int send_n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &sa.addr.s, sa_sz);
+                int send_n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &endpoint.addr.s, sa_sz);
                 if (send_n >= 0)
                 {
                     // send statistics
@@ -1177,8 +1177,8 @@ int socket_server::handle_ctrl_cmd_send_socket(cmd_request_send* cmd, socket_mes
                 udp_address = socket_ref.p.udp_address;
             }
 
-            socket_endpoint sa;
-            socklen_t sa_sz = sa.from_udp_address(socket_ref.socket_type, udp_address);
+            socket_endpoint endpoint;
+            socklen_t sa_sz = endpoint.from_udp_address(socket_ref.socket_type, udp_address);
             if (sa_sz == 0)
             {
                 // udp type mismatch, just drop it.
@@ -1189,7 +1189,7 @@ int socket_server::handle_ctrl_cmd_send_socket(cmd_request_send* cmd, socket_mes
             }
 
             //
-            int n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &sa.addr.s, sa_sz);
+            int n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &endpoint.addr.s, sa_sz);
             if (n != so.sz)
             {
                 append_sendbuffer(&socket_ref, cmd, priority == PRIORITY_TYPE_HIGH, udp_address);
@@ -1758,8 +1758,8 @@ int socket_server::send_write_buffer_list_udp(socket_object* socket_ptr, write_b
     while (wb_list->head != nullptr)
     {
         auto tmp = wb_list->head;
-        socket_endpoint sa;
-        socklen_t sa_sz = sa.from_udp_address(socket_ptr->socket_type, tmp->udp_address);
+        socket_endpoint endpoint;
+        socklen_t sa_sz = endpoint.from_udp_address(socket_ptr->socket_type, tmp->udp_address);
         if (sa_sz == 0)
         {
             log_error(nullptr, fmt::format("socket-server : udp ({}) type mismatch.", socket_ptr->socket_id));
@@ -1768,7 +1768,7 @@ int socket_server::send_write_buffer_list_udp(socket_object* socket_ptr, write_b
         }
 
         // 发送数据
-        int err = ::sendto(socket_ptr->socket_fd, tmp->ptr, tmp->sz, 0, &sa.addr.s, sa_sz);
+        int err = ::sendto(socket_ptr->socket_fd, tmp->ptr, tmp->sz, 0, &endpoint.addr.s, sa_sz);
         if (err < 0)
         {
             //
@@ -1911,9 +1911,9 @@ int socket_server::do_send_write_buffer(socket_object* socket_ptr, socket_lock& 
 int socket_server::handle_accept(socket_object* socket_ptr, socket_message* result)
 {
     // wait accept
-    socket_endpoint sa;
-    socklen_t sa_sz = sizeof(sa);
-    int client_fd = ::accept(socket_ptr->socket_fd, &sa.addr.s, &sa_sz);
+    socket_endpoint endpoint;
+    socklen_t endpoint_sz = sizeof(endpoint);
+    int client_fd = ::accept(socket_ptr->socket_fd, &endpoint.addr.s, &endpoint_sz);
 
     // accept client failed
     if (client_fd < 0)
@@ -1962,7 +1962,7 @@ int socket_server::handle_accept(socket_object* socket_ptr, socket_message* resu
     result->ud = socket_id;
     result->data_ptr = nullptr;
 
-    if (sa.to_string(addr_tmp_buf_, ADDR_TMP_BUFFER_SIZE))
+    if (endpoint.to_string(addr_tmp_buf_, ADDR_TMP_BUFFER_SIZE))
     {
         result->data_ptr = addr_tmp_buf_;
     }
@@ -2001,12 +2001,12 @@ int socket_server::handle_connect(socket_object* socket_ptr, socket_lock& sl, so
             return SOCKET_EVENT_ERROR;
         }
     }
-    socket_endpoint sa;
-    socklen_t sa_sz = sizeof(sa);
-    if (::getpeername(socket_ptr->socket_fd, &sa.addr.s, &sa_sz) == 0)
+    socket_endpoint endpoint;
+    socklen_t endpoint_sz = sizeof(endpoint);
+    if (::getpeername(socket_ptr->socket_fd, &endpoint.addr.s, &endpoint_sz) == 0)
     {
-        void* sin_addr = (sa.addr.s.sa_family == AF_INET) ? (void*)&sa.addr.v4.sin_addr : (void*)&sa.addr.v6.sin6_addr;
-        if (::inet_ntop(sa.addr.s.sa_family, sin_addr, addr_tmp_buf_, ADDR_TMP_BUFFER_SIZE))
+        void* sin_addr = (endpoint.addr.s.sa_family == AF_INET) ? (void*)&endpoint.addr.v4.sin_addr : (void*)&endpoint.addr.v6.sin6_addr;
+        if (::inet_ntop(endpoint.addr.s.sa_family, sin_addr, addr_tmp_buf_, ADDR_TMP_BUFFER_SIZE))
         {
             result->data_ptr = addr_tmp_buf_;
             return SOCKET_EVENT_OPEN;
@@ -2164,9 +2164,9 @@ int socket_server::forward_message_tcp(socket_object* socket_ptr, socket_lock& s
 
 int socket_server::forward_message_udp(socket_object* socket_ptr, socket_lock& sl, socket_message* result)
 {
-    socket_endpoint sa;
-    socklen_t sa_sz = sizeof(sa);
-    int recv_n = ::recvfrom(socket_ptr->socket_fd, udp_recv_buf_, MAX_UDP_PACKAGE, 0, &sa.addr.s, &sa_sz);
+    socket_endpoint endpoint;
+    socklen_t endpoint_sz = sizeof(endpoint);
+    int recv_n = ::recvfrom(socket_ptr->socket_fd, udp_recv_buf_, MAX_UDP_PACKAGE, 0, &endpoint.addr.s, &endpoint_sz);
     if (recv_n < 0)
     {
         if (errno == EINTR || errno == AGAIN_WOULDBLOCK)
@@ -2185,14 +2185,14 @@ int socket_server::forward_message_udp(socket_object* socket_ptr, socket_lock& s
     // 将udp地址信息附加到数据尾部
     uint8_t* data_ptr = nullptr;
     // udp v4
-    if (sa_sz == sizeof(sa.addr.v4))
+    if (endpoint_sz == sizeof(endpoint.addr.v4))
     {
         // socket type must udp v4
         if (socket_ptr->socket_type != SOCKET_TYPE_UDP)
             return -1;
 
         data_ptr = new uint8_t[recv_n + 1 + 2 + 4] { 0 };
-        sa.to_udp_address(SOCKET_TYPE_UDP, data_ptr + recv_n);
+        endpoint.to_udp_address(SOCKET_TYPE_UDP, data_ptr + recv_n);
     }
         // udp v6
     else
@@ -2202,7 +2202,7 @@ int socket_server::forward_message_udp(socket_object* socket_ptr, socket_lock& s
             return -1;
 
         data_ptr = new uint8_t[recv_n + 1 + 2 + 16] { 0 };
-        sa.to_udp_address(SOCKET_TYPE_UDPv6, data_ptr + recv_n);
+        endpoint.to_udp_address(SOCKET_TYPE_UDPv6, data_ptr + recv_n);
     }
     ::memcpy(data_ptr, udp_recv_buf_, recv_n);
 
