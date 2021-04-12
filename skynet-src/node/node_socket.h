@@ -68,13 +68,13 @@ public:
     void nodelay(uint32_t svc_handle, int socket_id);
     int bind_os_fd(uint32_t svc_handle, int os_fd);
 
-    int sendbuffer(uint32_t svc_handle, send_buffer* buffer);
-    int sendbuffer_low_priority(uint32_t svc_handle, send_buffer* buffer);
+    int send(uint32_t svc_handle, send_data* sd_ptr);
+    int send_low_priority(uint32_t svc_handle, send_data* sd_ptr);
 
     //
     int udp_socket(uint32_t svc_handle, const char* addr, int port);
     int udp_connect(uint32_t svc_handle, int socket_id, const char* remote_ip, int remote_port);
-    int udp_sendbuffer(uint32_t svc_handle, const char* address, send_buffer* buffer);
+    int udp_sendbuffer(uint32_t svc_handle, const char* address, send_data* sd_ptr);
     const char* udp_address(skynet_socket_message*, int* addrsz);
 
     void get_socket_info(std::list<socket_info>& si_list);
@@ -86,13 +86,13 @@ public:
 
 static inline int skynet_socket_send(uint32_t svc_handle, int socket_id, void* buffer, int sz)
 {
-    send_buffer buf;
-    buf.socket_id = socket_id;
-    buf.data_ptr = buffer;
-    buf.type = sz < 0 ? BUFFER_TYPE_OBJECT : BUFFER_TYPE_MEMORY;
-    buf.data_size = (size_t)sz;
+    send_data sd;
+    sd.socket_id = socket_id;
+    sd.data_ptr = buffer;
+    sd.type = sz < 0 ? SEND_DATA_TYPE_OBJECT : SEND_DATA_TYPE_MEMORY;
+    sd.data_size = (size_t)sz;
 
-    return node_socket::instance()->sendbuffer(svc_handle, &buf);
+    return node_socket::instance()->send(svc_handle, &sd);
 }
 
 }

@@ -7,28 +7,28 @@
 namespace skynet {
 
 //----------------------------------------------
-// socket send buffer
+// socket send data
 //----------------------------------------------
 
-// socket send buffer type
-enum buffer_type
+// socket send data type
+enum send_data_type
 {
-    BUFFER_TYPE_MEMORY = 0,                 // memory
-    BUFFER_TYPE_OBJECT = 1,                 // object
-    BUFFER_TYPE_RAW_POINTER = 2,            // user data ptr
+    SEND_DATA_TYPE_MEMORY = 0,              // memory data
+    SEND_DATA_TYPE_OBJECT = 1,              // object data
+    SEND_DATA_TYPE_USER_DATA_PTR = 2,       // user data, must be a raw pointer, can't be a socket object or a memory object.
 };
 
-// socket send buffer
-struct send_buffer
+// socket send data, used to send data in lua layer
+struct send_data
 {
     int socket_id = 0;                      // socket id
-    int type = BUFFER_TYPE_MEMORY;          // buffer type
+    int type = SEND_DATA_TYPE_MEMORY;       // buffer type
     const void* data_ptr = nullptr;         // data
     size_t data_size = 0;                   // data size
 };
 
-//
-#define USER_OBJECT ((size_t)(-1))
+// use object tag
+#define USER_OBJECT_TAG ((size_t)(-1))
 
 // 
 struct send_object
@@ -39,7 +39,7 @@ struct send_object
 };
 
 //----------------------------------------------
-// socket write buffer
+// socket send buffer
 //----------------------------------------------
 
 // send buffer

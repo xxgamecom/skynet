@@ -135,11 +135,11 @@ public:
     /**
      * 发送数据 (低优先级)
      * 
-     * @param buf_ptr 要发送的数据
+     * @param sd_ptr send data ptr
      * @return -1 error, 0 success
      */
-    int send(send_buffer* buf_ptr);
-    int send_low_priority(send_buffer* buf_ptr);
+    int send(send_data* sd_ptr);
+    int send_low_priority(send_data* sd_ptr);
 
     // udp
 public:
@@ -170,7 +170,7 @@ public:
      * 如果 socket_udp_address 为 NULL, 则使用最后调用 socket_server::udp_connect 时传入的address代替。
      * 也可以使用 send 来发送udp数据
      */
-    int udp_send(const socket_udp_address*, send_buffer* buf);
+    int udp_send(const socket_udp_address*, send_data* sd_ptr);
 
     /**
      * 获取消息内的IP地址 (UDP)
@@ -232,11 +232,6 @@ private:
     int send_write_buffer_list_tcp(socket_object* socket_ptr, write_buffer_list* wb_list, socket_lock& sl, socket_message* result);
     int send_write_buffer_list_udp(socket_object* socket_ptr, write_buffer_list* wb_list, socket_message* result);
 
-    // 是否发送缓存
-    void free_send_buffer(send_buffer* buf_ptr);
-    // 复制发送缓存
-    const void* clone_send_buffer(send_buffer* buf_ptr, size_t* sz);
-
     /**
      * add send buffer
      *
@@ -253,6 +248,14 @@ private:
     void free_write_buffer(write_buffer* wb);
     void free_write_buffer_list(write_buffer_list* wb_list);
 
+    // send data
+private:
+    // free send data
+    void free_send_data(send_data* sd_ptr);
+    // clone send data
+    const void* clone_send_data(send_data* sd_ptr, size_t* sd_sz);
+
+    //
 private:
     void close_read(socket_object* socket_ptr, socket_message* result);
     int close_write(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
@@ -290,9 +293,9 @@ private:
     //
     int forward_message_udp(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
 
-    // 初始化send_object
-    bool send_object_init(send_object* so, const void* object, size_t sz);
-    void send_object_init(send_object* so, send_buffer* buf);
+    // init send object
+    void init_send_object(send_object* so, send_data* sd_ptr);
+    bool init_send_object(send_object* so, const void* object, size_t sz);
 
     void _clear_closed_event(int socket_id);
 };

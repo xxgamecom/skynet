@@ -951,7 +951,7 @@ static void _concat_table(lua_State* L, int msg_index, char* buf_ptr, size_t buf
 }
 
 // get message to buffer
-static void _get_message(lua_State* L, int msg_index, send_buffer& sb)
+static void _get_message(lua_State* L, int msg_index, send_data& sd)
 {
     int data_type = lua_type(L, msg_index);
     switch (data_type)
@@ -959,14 +959,14 @@ static void _get_message(lua_State* L, int msg_index, send_buffer& sb)
     case LUA_TUSERDATA:
         // lua full useobject must be a raw pointer,
         // it can't be a socket object or a memory object.
-        sb.type = BUFFER_TYPE_RAW_POINTER;
+        sd.type = SEND_DATA_TYPE_USER_DATA_PTR;
         // data
-        sb.data_ptr = lua_touserdata(L, msg_index);
+        sd.data_ptr = lua_touserdata(L, msg_index);
         // data size
         if (lua_isinteger(L, msg_index + 1))
-            sb.data_size = lua_tointeger(L, msg_index + 1);
+            sd.data_size = lua_tointeger(L, msg_index + 1);
         else
-            sb.data_size = lua_rawlen(L, msg_index);
+            sd.data_size = lua_rawlen(L, msg_index);
         break;
     case LUA_TLIGHTUSERDATA:
     {
@@ -975,12 +975,12 @@ static void _get_message(lua_State* L, int msg_index, send_buffer& sb)
         if (lua_isinteger(L, msg_index + 1))
             data_sz = lua_tointeger(L, msg_index + 1);
 
-        // buffer type
-        sb.type = data_sz < 0 ? sb.type = BUFFER_TYPE_OBJECT : sb.type = BUFFER_TYPE_MEMORY;
+        // data type
+        sd.type = data_sz < 0 ? sd.type = SEND_DATA_TYPE_OBJECT : sd.type = SEND_DATA_TYPE_MEMORY;
         // data
-        sb.data_ptr = lua_touserdata(L, msg_index);
+        sd.data_ptr = lua_touserdata(L, msg_index);
         // data size
-        sb.data_size = (size_t)data_sz;
+        sd.data_size = (size_t)data_sz;
         break;
     }
     case LUA_TTABLE:
@@ -989,14 +989,14 @@ static void _get_message(lua_State* L, int msg_index, send_buffer& sb)
         size_t data_sz = _count_size(L, msg_index);
         char* data_ptr = (char*)skynet_malloc(data_sz);
         _concat_table(L, msg_index, data_ptr, data_sz);
-        sb.type = BUFFER_TYPE_MEMORY;
-        sb.data_ptr = data_ptr;
-        sb.data_size = data_sz;
+        sd.type = SEND_DATA_TYPE_MEMORY;
+        sd.data_ptr = data_ptr;
+        sd.data_size = data_sz;
         break;
     }
     default:
-        sb.type = BUFFER_TYPE_RAW_POINTER;
-        sb.data_ptr = luaL_checklstring(L, msg_index, &sb.data_size);
+        sd.type = SEND_DATA_TYPE_USER_DATA_PTR;
+        sd.data_ptr = luaL_checklstring(L, msg_index, &sd.data_size);
         break;
     }
 }
@@ -1020,13 +1020,13 @@ static int l_send(lua_State* L)
     int socket_id = luaL_checkinteger(L, 1);
 
     // message
-    send_buffer sb;
-    _get_message(L, 2, sb);
+    send_data sd;
+    _get_message(L, 2, sd);
 
-    sb.socket_id = socket_id;
+    sd.socket_id = socket_id;
 
     // send
-    int err = node_socket::instance()->sendbuffer(svc_ctx->svc_handle_, &sb);
+    int err = node_socket::instance()->send(svc_ctx->svc_handle_, &sd);
 
     // return result
     lua_pushboolean(L, !err);
@@ -1044,13 +1044,13 @@ static int l_send_low(lua_State* L)
     int socket_id = luaL_checkinteger(L, 1);
 
     // message
-    send_buffer sb;
-    _get_message(L, 2, sb);
+    send_data sd;
+    _get_message(L, 2, sd);
 
-    sb.socket_id = socket_id;
+    sd.socket_id = socket_id;
 
     // send
-    int err = node_socket::instance()->sendbuffer_low_priority(svc_ctx->svc_handle_, &sb);
+    int err = node_socket::instance()->send_low_priority(svc_ctx->svc_handle_, &sd);
 
     // return result
     lua_pushboolean(L, !err);
@@ -1205,12 +1205,12 @@ static int l_udp_send(lua_State* L)
     const char* address = luaL_checkstring(L, 2);
 
     // message
-    send_buffer sb;
-    sb.socket_id = socket_id;
-    _get_message(L, 3, sb);
+    send_data sd;
+    sd.socket_id = socket_id;
+    _get_message(L, 3, sd);
 
     // send
-    int err = node_socket::instance()->udp_sendbuffer(svc_ctx->svc_handle_, address, &sb);
+    int err = node_socket::instance()->udp_sendbuffer(svc_ctx->svc_handle_, address, &sd);
 
     // return result
     lua_pushboolean(L, !err);

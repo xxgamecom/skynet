@@ -433,18 +433,22 @@ void socket_server::get_socket_info(std::list<socket_info>& si_list)
     socket_object_pool_.get_socket_info(si_list);
 }
 
-int socket_server::send(send_buffer* buf)
+int socket_server::send(send_data* sd_ptr)
 {
-    int socket_id = buf->socket_id;
+    int socket_id = sd_ptr->socket_id;
     auto& socket_ref = socket_object_pool_.get_socket(socket_id);
 
     if (socket_ref.is_invalid(socket_id))
     {
-        free_send_buffer(buf);
+        free_send_data(sd_ptr);
         return -1;
     }
 
-    // 是否可以立刻发送数据，当该socket的发送队列缓冲区为空，且立刻写的缓冲区也为空时，可直接发送。
+    //
+    // direct send condition:
+    // 1) socket send buffer is empty;
+    // 2) and direct send buffer is empty.
+    //
 
     // scope lock
     std::unique_lock<std::mutex> sl(socket_ref.dw_mutex, std::defer_lock);
@@ -454,9 +458,8 @@ int socket_server::send(send_buffer* buf)
         // may be we can send directly, double check
         if (socket_ref.can_direct_write(socket_id))
         {
-            // 直接发送
             send_object so;
-            send_object_init(&so, buf);
+            init_send_object(&so, sd_ptr);
             ssize_t n = 0;
 
             // tcp
@@ -473,7 +476,7 @@ int socket_server::send(send_buffer* buf)
                 {
                     log_error(nullptr, fmt::format("socket-server : set udp ({}) address first.", socket_id));
 
-                    so.free_func((void*)buf->data_ptr);
+                    so.free_func((void*)sd_ptr->data_ptr);
                     return -1;
                 }
                 n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &sa.addr.s, sa_sz);
@@ -489,12 +492,12 @@ int socket_server::send(send_buffer* buf)
             // send complete
             if (n == so.sz)
             {
-                so.free_func((void*)buf->data_ptr);
+                so.free_func((void*)sd_ptr->data_ptr);
                 return 0;
             }
 
-            // 直接发送失败, 将buffer加入到s->dw_*, 让socket线程去发送. 参考: send_write_buffer()
-            socket_ref.dw_buffer = clone_send_buffer(buf, &socket_ref.dw_size);
+            // direct send failed, add data to s->dw_*, wait socket thread send. @see send_write_buffer().
+            socket_ref.dw_buffer = clone_send_data(sd_ptr, &socket_ref.dw_size);
             socket_ref.dw_offset = n;
 
             //
@@ -518,21 +521,21 @@ int socket_server::send(send_buffer* buf)
 
     //
     ctrl_cmd_package cmd;
-    const send_buffer* clone_buf_ptr = (const send_buffer*)clone_send_buffer(buf, &cmd.u.send.data_size);
-    prepare_ctrl_cmd_request_send(cmd, socket_id, clone_buf_ptr, true);
+    auto clone_sd_ptr = (const send_data*)clone_send_data(sd_ptr, &cmd.u.send.data_size);
+    prepare_ctrl_cmd_request_send(cmd, socket_id, clone_sd_ptr, true);
     _send_ctrl_cmd(&cmd);
 
     return 0;
 }
 
-int socket_server::send_low_priority(send_buffer* buf)
+int socket_server::send_low_priority(send_data* sd_ptr)
 {
-    int socket_id = buf->socket_id;
+    int socket_id = sd_ptr->socket_id;
     auto& socket_ref = socket_object_pool_.get_socket(socket_id);
 
     if (socket_ref.is_invalid(socket_id))
     {
-        free_send_buffer(buf);
+        free_send_data(sd_ptr);
         return -1;
     }
 
@@ -541,8 +544,8 @@ int socket_server::send_low_priority(send_buffer* buf)
 
     // 
     ctrl_cmd_package cmd;
-    const send_buffer* clone_buf_ptr = (const send_buffer*)clone_send_buffer(buf, &cmd.u.send.data_size);
-    prepare_ctrl_cmd_request_send(cmd, socket_id, clone_buf_ptr, false);
+    auto clone_sd_ptr = (const send_data*)clone_send_data(sd_ptr, &cmd.u.send.data_size);
+    prepare_ctrl_cmd_request_send(cmd, socket_id, clone_sd_ptr, false);
     _send_ctrl_cmd(&cmd);
 
     return 0;
@@ -617,13 +620,13 @@ int socket_server::udp_socket(uint32_t svc_handle, std::string local_ip, uint16_
     return socket_id;
 }
 
-int socket_server::udp_send(const socket_udp_address* addr, send_buffer* buf)
+int socket_server::udp_send(const socket_udp_address* addr, send_data* sd_ptr)
 {
-    int socket_id = buf->socket_id;
+    int socket_id = sd_ptr->socket_id;
     auto& socket_ref = socket_object_pool_.get_socket(socket_id);
     if (socket_ref.is_invalid(socket_id))
     {
-        free_send_buffer(buf);
+        free_send_data(sd_ptr);
         return -1;
     }
 
@@ -638,7 +641,7 @@ int socket_server::udp_send(const socket_udp_address* addr, send_buffer* buf)
         addr_sz = 1 + 2 + 16;   // 1 type, 2 port, 16 ipv6
         break;
     default:
-        free_send_buffer(buf);
+        free_send_data(sd_ptr);
         return -1;
     }
 
@@ -654,12 +657,12 @@ int socket_server::udp_send(const socket_udp_address* addr, send_buffer* buf)
             {
                 // send directly
                 send_object so;
-                send_object_init(&so, buf);
+                init_send_object(&so, sd_ptr);
                 socket_addr sa;
                 socklen_t sa_sz = sa.from_udp_address(socket_ref.socket_type, udp_address);
                 if (sa_sz == 0)
                 {
-                    so.free_func((void*)buf->data_ptr);
+                    so.free_func((void*)sd_ptr->data_ptr);
                     return -1;
                 }
 
@@ -668,7 +671,7 @@ int socket_server::udp_send(const socket_udp_address* addr, send_buffer* buf)
                 {
                     // send statistics
                     socket_ref.statistics_send(send_n, time_ticks_);
-                    so.free_func((void*)buf->data_ptr);
+                    so.free_func((void*)sd_ptr->data_ptr);
                     return 0;
                 }
             }
@@ -677,8 +680,8 @@ int socket_server::udp_send(const socket_udp_address* addr, send_buffer* buf)
     }
 
     ctrl_cmd_package cmd;
-    send_buffer* clone_buf = (send_buffer*)clone_send_buffer(buf, &cmd.u.send_udp.send.data_size);
-    prepare_ctrl_cmd_request_send_udp(cmd, socket_id, clone_buf, udp_address, addr_sz);
+    auto clone_sd_ptr = (send_data*)clone_send_data(sd_ptr, &cmd.u.send_udp.send.data_size);
+    prepare_ctrl_cmd_request_send_udp(cmd, socket_id, clone_sd_ptr, udp_address, addr_sz);
     _send_ctrl_cmd(&cmd);
 
     return 0;
@@ -1137,7 +1140,7 @@ int socket_server::handle_ctrl_cmd_send_socket(cmd_request_send* cmd, socket_mes
     auto& socket_ref = socket_object_pool_.get_socket(socket_id);
 
     send_object so;
-    send_object_init(&so, cmd->data_ptr, cmd->data_size);
+    init_send_object(&so, cmd->data_ptr, cmd->data_size);
 
     // can't send data when the socket is 'invalid' or 'write closed' or '' or 'closing'
     if (socket_ref.is_invalid(socket_id) ||
@@ -1399,12 +1402,12 @@ void socket_server::force_close(socket_object* socket_ptr, socket_lock& sl, sock
     //
     if (socket_ptr->dw_buffer != nullptr)
     {
-        send_buffer tmp;
-        tmp.data_ptr = socket_ptr->dw_buffer;
-        tmp.data_size = socket_ptr->dw_size;
-        tmp.socket_id = socket_ptr->socket_id;
-        tmp.type = (tmp.data_size == USER_OBJECT) ? BUFFER_TYPE_OBJECT : BUFFER_TYPE_MEMORY;
-        free_send_buffer(&tmp);
+        send_data sd;
+        sd.data_ptr = socket_ptr->dw_buffer;
+        sd.data_size = socket_ptr->dw_size;
+        sd.socket_id = socket_ptr->socket_id;
+        sd.type = (sd.data_size == USER_OBJECT_TAG) ? SEND_DATA_TYPE_OBJECT : SEND_DATA_TYPE_MEMORY;
+        free_send_data(&sd);
         socket_ptr->dw_buffer = nullptr;
     }
     sl.unlock();
@@ -1538,56 +1541,56 @@ socket_object* socket_server::new_socket(int socket_id, int socket_fd, int socke
     return &socket_ref;
 }
 
-void socket_server::free_send_buffer(send_buffer* buf_ptr)
+void socket_server::free_send_data(send_data* sd_ptr)
 {
-    if (buf_ptr == nullptr)
+    if (sd_ptr == nullptr)
         return;
 
-    char* buffer = (char*)buf_ptr->data_ptr;
-    if (buf_ptr->type == BUFFER_TYPE_MEMORY)
+    char* data_ptr = (char*)sd_ptr->data_ptr;
+    if (sd_ptr->type == SEND_DATA_TYPE_MEMORY)
     {
-        delete[] buffer;
+        delete[] data_ptr;
     }
-    else if (buf_ptr->type == BUFFER_TYPE_OBJECT)
+    else if (sd_ptr->type == SEND_DATA_TYPE_OBJECT)
     {
-        soi_.free(buffer);
+        soi_.free(data_ptr);
     }
-    else if (buf_ptr->type == BUFFER_TYPE_RAW_POINTER)
+    else if (sd_ptr->type == SEND_DATA_TYPE_USER_DATA_PTR)
     {
-        //
+        // do nothing
     }
 }
 
-const void* socket_server::clone_send_buffer(send_buffer* buf_ptr, size_t* sz)
+const void* socket_server::clone_send_data(send_data* sd_ptr, size_t* sd_sz)
 {
-    if (buf_ptr == nullptr)
+    if (sd_ptr == nullptr)
     {
-        *sz = 0;
+        *sd_sz = 0;
         return nullptr;
     }
 
-    if (buf_ptr->type == BUFFER_TYPE_MEMORY)
+    if (sd_ptr->type == SEND_DATA_TYPE_MEMORY)
     {
-        *sz = buf_ptr->data_size;
-        return buf_ptr->data_ptr;
+        *sd_sz = sd_ptr->data_size;
+        return sd_ptr->data_ptr;
     }
-    else if (buf_ptr->type == BUFFER_TYPE_OBJECT)
+    else if (sd_ptr->type == SEND_DATA_TYPE_OBJECT)
     {
-        *sz = USER_OBJECT;
-        return buf_ptr->data_ptr;
+        *sd_sz = USER_OBJECT_TAG;
+        return sd_ptr->data_ptr;
     }
         // It's a raw pointer, we need make a copy
-    else if (buf_ptr->type == BUFFER_TYPE_RAW_POINTER)
+    else if (sd_ptr->type == SEND_DATA_TYPE_USER_DATA_PTR)
     {
-        *sz = buf_ptr->data_size;
-        void* tmp = new char[*sz];
-        ::memcpy(tmp, buf_ptr->data_ptr, *sz);
+        *sd_sz = sd_ptr->data_size;
+        void* tmp = new char[*sd_sz];
+        ::memcpy(tmp, sd_ptr->data_ptr, *sd_sz);
         return tmp;
     }
-        // never get here
+    // never get here
     else
     {
-        *sz = 0;
+        *sd_sz = 0;
         return nullptr;
     }
 }
@@ -1613,7 +1616,7 @@ write_buffer* socket_server::prepare_write_buffer(write_buffer_list* wb_list, cm
 
     //
     send_object so;
-    write_buf_ptr->is_user_object = send_object_init(&so, cmd->data_ptr, cmd->data_size);
+    write_buf_ptr->is_user_object = init_send_object(&so, cmd->data_ptr, cmd->data_size);
     write_buf_ptr->ptr = (char*)so.buffer;
     write_buf_ptr->sz = so.sz;
     write_buf_ptr->buffer = cmd->data_ptr;
@@ -1675,7 +1678,7 @@ int socket_server::send_write_buffer(socket_object* socket_ptr, socket_lock& sl,
         auto write_buf_ptr = (write_buffer*)new char[SIZEOF_TCP_BUFFER] { 0 };
 
         send_object so;
-        write_buf_ptr->is_user_object = send_object_init(&so, (void*)socket_ptr->dw_buffer, socket_ptr->dw_size);
+        write_buf_ptr->is_user_object = init_send_object(&so, (void*)socket_ptr->dw_buffer, socket_ptr->dw_size);
         write_buf_ptr->ptr = (char*)so.buffer + socket_ptr->dw_offset;
         write_buf_ptr->sz = so.sz - socket_ptr->dw_offset;
         write_buf_ptr->buffer = (void*)socket_ptr->dw_buffer;
@@ -2211,9 +2214,37 @@ int socket_server::forward_message_udp(socket_object* socket_ptr, socket_lock& s
     return SOCKET_EVENT_UDP;
 }
 
-bool socket_server::send_object_init(send_object* so, const void* object, size_t sz)
+void socket_server::init_send_object(send_object* so, send_data* sd_ptr)
 {
-    if (sz == USER_OBJECT)
+    if (sd_ptr == nullptr)
+        return;
+
+    if (sd_ptr->type == SEND_DATA_TYPE_MEMORY)
+    {
+        init_send_object(so, (void*)sd_ptr->data_ptr, sd_ptr->data_size);
+    }
+    else if (sd_ptr->type == SEND_DATA_TYPE_OBJECT)
+    {
+        init_send_object(so, (void*)sd_ptr->data_ptr, USER_OBJECT_TAG);
+    }
+    else if (sd_ptr->type == SEND_DATA_TYPE_USER_DATA_PTR)
+    {
+        so->buffer = (void*)sd_ptr->data_ptr;
+        so->sz = sd_ptr->data_size;
+        so->free_func = [](void* ptr) { (void)ptr; };
+    }
+    // never get here
+    else
+    {
+        so->buffer = nullptr;
+        so->sz = 0;
+        so->free_func = nullptr;
+    }
+}
+
+bool socket_server::init_send_object(send_object* so, const void* object, size_t sz)
+{
+    if (sz == USER_OBJECT_TAG)
     {
         so->buffer = soi_.buffer(object);
         so->sz = soi_.size(object);
@@ -2226,34 +2257,6 @@ bool socket_server::send_object_init(send_object* so, const void* object, size_t
         so->sz = sz;
 //         so->free_func = skynet_free;
         return false;
-    }
-}
-
-void socket_server::send_object_init(send_object* so, send_buffer* buf_ptr)
-{
-    if (buf_ptr == nullptr)
-        return;
-
-    if (buf_ptr->type == BUFFER_TYPE_MEMORY)
-    {
-        send_object_init(so, (void*)buf_ptr->data_ptr, buf_ptr->data_size);
-    }
-    else if (buf_ptr->type == BUFFER_TYPE_OBJECT)
-    {
-        send_object_init(so, (void*)buf_ptr->data_ptr, USER_OBJECT);
-    }
-    else if (buf_ptr->type == BUFFER_TYPE_RAW_POINTER)
-    {
-        so->buffer = (void*)buf_ptr->data_ptr;
-        so->sz = buf_ptr->data_size;
-        so->free_func = [](void* ptr) { (void)ptr; };
-    }
-        // never get here
-    else
-    {
-        so->buffer = nullptr;
-        so->sz = 0;
-        so->free_func = nullptr;
     }
 }
 

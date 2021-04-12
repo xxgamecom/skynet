@@ -149,14 +149,14 @@ int node_socket::poll_socket_event()
     return 1;
 }
 
-int node_socket::sendbuffer(uint32_t svc_handle, send_buffer* buffer)
+int node_socket::send(uint32_t svc_handle, send_data* sd_ptr)
 {
-    return socket_server_->send(buffer);
+    return socket_server_->send(sd_ptr);
 }
 
-int node_socket::sendbuffer_low_priority(uint32_t svc_handle, send_buffer* buffer)
+int node_socket::send_low_priority(uint32_t svc_handle, send_data* sd_ptr)
 {
-    return socket_server_->send_low_priority(buffer);
+    return socket_server_->send_low_priority(sd_ptr);
 }
 
 int node_socket::listen(uint32_t svc_handle, const char* host, int port, int backlog)
@@ -209,9 +209,9 @@ int node_socket::udp_connect(uint32_t svc_handle, int socket_id, const char* rem
     return socket_server_->udp_connect(socket_id, remote_ip, remote_port);
 }
 
-int node_socket::udp_sendbuffer(uint32_t svc_handle, const char* address, send_buffer* buffer)
+int node_socket::udp_sendbuffer(uint32_t svc_handle, const char* address, send_data* sd_ptr)
 {
-    return socket_server_->udp_send((const struct socket_udp_address*)address, buffer);
+    return socket_server_->udp_send((const struct socket_udp_address*)address, sd_ptr);
 }
 
 const char* node_socket::udp_address(skynet_socket_message* msg, int* addrsz)

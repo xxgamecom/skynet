@@ -140,11 +140,11 @@ int prepare_ctrl_cmd_request_listen(ctrl_cmd_package& cmd, uint32_t svc_handle, 
     return len;
 }
 
-int prepare_ctrl_cmd_request_send(ctrl_cmd_package& cmd, int socket_id, const send_buffer* buf_ptr, bool is_high)
+int prepare_ctrl_cmd_request_send(ctrl_cmd_package& cmd, int socket_id, const send_data* sd_ptr, bool is_high)
 {
     // cmd data
     cmd.u.send.socket_id = socket_id;
-    cmd.u.send.data_ptr = buf_ptr;
+    cmd.u.send.data_ptr = sd_ptr;
 
     // actually length
     int len = sizeof(cmd.u.send);
@@ -224,11 +224,11 @@ int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int s
     return len;
 }
 
-int prepare_ctrl_cmd_request_send_udp(ctrl_cmd_package& cmd, int socket_id, const send_buffer* buf_ptr, const uint8_t* udp_address, int addr_sz)
+int prepare_ctrl_cmd_request_send_udp(ctrl_cmd_package& cmd, int socket_id, const send_data* sd_ptr, const uint8_t* udp_address, int addr_sz)
 {
     // cmd data
     cmd.u.send_udp.send.socket_id = socket_id;
-    cmd.u.send_udp.send.data_ptr = buf_ptr;
+    cmd.u.send_udp.send.data_ptr = sd_ptr;
     ::memcpy(cmd.u.send_udp.address, udp_address, addr_sz);
 
     // actually length
