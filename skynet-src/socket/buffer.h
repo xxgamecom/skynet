@@ -55,13 +55,13 @@ struct send_user_object
 
 
 //----------------------------------------------
-// socket send buffer
+// socket write buffer
 //----------------------------------------------
 
-// send buffer
-struct send_buffer
+// write buffer
+struct write_buffer
 {
-    send_buffer* next = nullptr;                               //
+    write_buffer* next = nullptr;                               //
 
     const void* buffer = nullptr;                               //
     char* ptr = nullptr;                                        //
@@ -70,11 +70,11 @@ struct send_buffer
     uint8_t udp_address[UDP_ADDRESS_SIZE] = { 0 };              //
 };
 
-// send buffer list
-struct send_buffer_list
+// write buffer list
+struct write_buffer_list
 {
-    send_buffer* head = nullptr;
-    send_buffer* tail = nullptr;
+    write_buffer* head = nullptr;
+    write_buffer* tail = nullptr;
 };
 
 }

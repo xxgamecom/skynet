@@ -223,14 +223,14 @@ private:
     int do_send_write_buffer(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
 
     // 写缓存列表内的数据是否完整 (write_buffer_list head不完整, 之前发送了部分数据)
-    int list_uncomplete(send_buffer_list* sb_list_ptr);
+    int list_uncomplete(write_buffer_list* wb_list_ptr);
     // 将 ‘低优先级’ 写缓存列表的head移到 '高优先级' 写缓存列表内
     void raise_uncomplete(socket_object* socket_ptr);
 
     //
-    int send_send_buffer_list(socket_object* socket_ptr, send_buffer_list* sb_list_ptr, socket_lock& sl, socket_message* result);
-    int send_send_buffer_list_tcp(socket_object* socket_ptr, send_buffer_list* sb_list_ptr, socket_lock& sl, socket_message* result);
-    int send_send_buffer_list_udp(socket_object* socket_ptr, send_buffer_list* sb_list_ptr, socket_message* result);
+    int send_write_buffer_list(socket_object* socket_ptr, write_buffer_list* wb_list_ptr, socket_lock& sl, socket_message* result);
+    int send_write_buffer_list_tcp(socket_object* socket_ptr, write_buffer_list* wb_list_ptr, socket_lock& sl, socket_message* result);
+    int send_write_buffer_list_udp(socket_object* socket_ptr, write_buffer_list* wb_list_ptr, socket_message* result);
 
     /**
      * add send buffer
@@ -240,13 +240,12 @@ private:
      * @param is_high add to `high priority` buffer. default is true.
      * @param udp_address when send udp data, add the udp address to the end of data. default is nullptr.
      */
-    void append_sendbuffer(socket_object* socket_ptr, cmd_request_send* cmd, bool is_high = true, const uint8_t* udp_address = nullptr);
+    void append_send_buffer(socket_object* socket_ptr, cmd_request_send* cmd, bool is_high = true, const uint8_t* udp_address = nullptr);
 
-    // prepare send buffer
-    send_buffer* prepare_send_buffer(send_buffer_list* sb_list_ptr, cmd_request_send* cmd, int size);
-    // 清理发送缓存
-    void free_send_buffer(send_buffer* sb_ptr);
-    void free_send_buffer_list(send_buffer_list* sb_list_ptr);
+    // alloc/free write buffer
+    write_buffer* alloc_write_buffer(write_buffer_list* wb_list_ptr, cmd_request_send* cmd, int size);
+    void free_write_buffer(write_buffer* wb_ptr);
+    void free_write_buffer_list(write_buffer_list* wb_list_ptr);
 
     // send data
 private:
@@ -278,7 +277,7 @@ private:
     socket_object* new_socket(int socket_id, int socket_fd, int socket_type, uint32_t svc_handle, bool add = true);
 
     //
-    void drop_udp(socket_object* socket_ptr, send_buffer_list* sb_list_ptr, send_buffer* sb_ptr);
+    void drop_udp(socket_object* socket_ptr, write_buffer_list* wb_list_ptr, write_buffer* wb_ptr);
 
     // return 0 when failed, or -1 when file limit
     int handle_accept(socket_object* socket_ptr, socket_message* result);

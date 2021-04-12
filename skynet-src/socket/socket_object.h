@@ -69,8 +69,8 @@ public:
     bool closing = false;                                       // closing flag
 
     // send
-    send_buffer_list send_buffer_list_high;                     // high priority send buffer
-    send_buffer_list send_buffer_list_low;                      // low priority send buffer
+    write_buffer_list send_buffer_list_high;                    // high priority write buffer
+    write_buffer_list send_buffer_list_low;                     // low priority write buffer
     int64_t send_buffer_size = 0;                               // wait send data bytes
 
     std::atomic<uint32_t> sending_count = 0;                    // wait to send count, divide into 2 parts:
