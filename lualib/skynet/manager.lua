@@ -12,7 +12,7 @@ end
 
 ---
 --- kill service
---- @param name string|number
+---@param name string|number
 function skynet.kill(name)
     if type(name) == "number" then
         skynet.send(".launcher", "lua", "REMOVE", name, true)
@@ -28,14 +28,14 @@ function skynet.abort()
 end
 
 ---
---- @param name string
+---@param name string
 function skynet.register(name)
     skynet_core.command("REGISTER", name)
 end
 
 ---
---- @param name string
---- @param handle
+---@param name string
+---@param handle
 function skynet.name(name, handle)
     skynet_core.command("NAME", name .. " " .. skynet.to_address(handle))
 end
@@ -44,8 +44,8 @@ local handle_service_message = skynet.handle_service_message
 
 ---
 --- forward message by service message type translate map
---- @param forward_svc_msg_type_map table service message type map, key: origin service message type, forward service message type
---- @param start_func function
+---@param forward_svc_msg_type_map table service message type map, key: origin service message type, forward service message type
+---@param start_func function
 function skynet.forward_by_type(forward_svc_msg_type_map, start_func)
     -- set service message callback
     skynet_core.callback(function(svc_msg_type, msg, msg_sz, ...)
@@ -68,8 +68,8 @@ function skynet.forward_by_type(forward_svc_msg_type_map, start_func)
 end
 
 ---
---- @param f function filter function
---- @param start_func function
+---@param f function filter function
+---@param start_func function
 function skynet.filter(f, start_func)
     -- set service message callback
     skynet_core.callback(function(...)
@@ -83,8 +83,8 @@ end
 
 ---
 --- set/get montior service
---- @param service string the monitor service
---- @param query boolean
+---@param service string the monitor service
+---@param query boolean
 function skynet.monitor(service, query)
     local monitor
     if query then

@@ -264,7 +264,7 @@ function CMD.inject(address, filename, ...)
 end
 
 ---
---- @param address
+---@param address
 function CMD.task(address)
     address = adjust_address(address)
     return skynet.call(address, "debug", "TASK")
