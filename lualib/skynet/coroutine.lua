@@ -22,9 +22,9 @@ skynet_co.status = coroutine.status
 local skynet_coroutines = setmetatable({}, { __mode = "kv" })
 
 function skynet_co.create(f)
-    local co = coroutine.create(f)
-    skynet_coroutines[co] = true -- mark co as a skynet coroutine
-    return co
+    local thread = coroutine.create(f)
+    skynet_coroutines[thread] = true -- mark thread as a skynet coroutine
+    return thread
 end
 
 -- skynet_co.resume
@@ -35,70 +35,70 @@ do
     local profile_resume = profile.resume_co
     local profile_yield = profile.yield_co
 
-    local function unlock(co, ...)
-        skynet_coroutines[co] = true
+    local function unlock(thread, ...)
+        skynet_coroutines[thread] = true
         return ...
     end
 
-    local function skynet_yielding(co, from, ...)
-        skynet_coroutines[co] = false
-        return unlock(co, profile_resume(co, from, profile_yield(from, ...)))
+    local function skynet_yielding(thread, from, ...)
+        skynet_coroutines[thread] = false
+        return unlock(thread, profile_resume(thread, from, profile_yield(from, ...)))
     end
 
-    local function resume(co, from, ok, ...)
+    local function resume(thread, from, ok, ...)
         if not ok then
             return ok, ...
-        elseif coroutine_status(co) == "dead" then
+        elseif coroutine_status(thread) == "dead" then
             -- the main function exit
-            skynet_coroutines[co] = nil
+            skynet_coroutines[thread] = nil
             return true, ...
         elseif (...) == "USER" then
             return true, select(2, ...)
         else
             -- blocked in skynet framework, so raise the yielding message
-            return resume(co, from, skynet_yielding(co, from, ...))
+            return resume(thread, from, skynet_yielding(thread, from, ...))
         end
     end
 
     -- record the root of coroutine caller (It should be a skynet thread)
     local coroutine_caller = setmetatable({}, { __mode = "kv" })
 
-    function skynet_co.resume(co, ...)
-        local co_status = skynet_coroutines[co]
+    function skynet_co.resume(thread, ...)
+        local co_status = skynet_coroutines[thread]
         if not co_status then
             if co_status == false then
                 -- is running
                 return false, "cannot resume a skynet coroutine suspend by skynet framework"
             end
-            if coroutine_status(co) == "dead" then
+            if coroutine_status(thread) == "dead" then
                 -- always return false, "cannot resume dead coroutine"
-                return coroutine_resume(co, ...)
+                return coroutine_resume(thread, ...)
             else
                 return false, "cannot resume none skynet coroutine"
             end
         end
         local from = coroutine_running()
         local caller = coroutine_caller[from] or from
-        coroutine_caller[co] = caller
-        return resume(co, caller, coroutine_resume(co, ...))
+        coroutine_caller[thread] = caller
+        return resume(thread, caller, coroutine_resume(thread, ...))
     end
 
-    function skynet_co.thread(co)
-        co = co or coroutine_running()
-        if skynet_coroutines[co] ~= nil then
-            return coroutine_caller[co], false
+    function skynet_co.thread(thread)
+        thread = thread or coroutine_running()
+        if skynet_coroutines[thread] ~= nil then
+            return coroutine_caller[thread], false
         else
-            return co, true
+            return thread, true
         end
     end
 
 end
 
 --
-function skynet_co.status(co)
-    local status = coroutine.status(co)
+function skynet_co.status(thread)
+    local status = coroutine.status(thread)
     if status == "suspended" then
-        if skynet_coroutines[co] == false then
+        if skynet_coroutines[thread] == false then
             return "blocked"
         else
             return "suspended"
@@ -123,11 +123,11 @@ do
     end
 
     function skynet_co.wrap(f)
-        local co = skynet_co.create(function(...)
+        local thread = skynet_co.create(function(...)
             return f(...)
         end)
         return function(...)
-            return wrap_co(skynet_co.resume(co, ...))
+            return wrap_co(skynet_co.resume(thread, ...))
         end
     end
 

@@ -4,10 +4,10 @@ local function timeout(t)
     print(t)
 end
 
-local function wakeup(co)
+local function wakeup(thread)
     for i = 1, 5 do
         skynet.sleep(50)
-        skynet.wakeup(co)
+        skynet.wakeup(thread)
     end
 end
 

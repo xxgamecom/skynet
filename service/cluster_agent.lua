@@ -15,22 +15,22 @@ local inquery_name = {}
 
 local register_name_mt = {
     __index = function(self, name)
-        local waitco = inquery_name[name]
-        if waitco then
-            local co = coroutine.running()
-            table.insert(waitco, co)
-            skynet.wait(co)
+        local wait_thread = inquery_name[name]
+        if wait_thread then
+            local thread = coroutine.running()
+            table.insert(wait_thread, thread)
+            skynet.wait(thread)
             return rawget(self, name)
         else
-            waitco = {}
-            inquery_name[name] = waitco
+            wait_thread = {}
+            inquery_name[name] = wait_thread
             local addr = skynet.call(clusterd, "lua", "queryname", name:sub(2))    -- name must be '@xxxx'
             if addr then
                 self[name] = addr
             end
             inquery_name[name] = nil
-            for _, co in ipairs(waitco) do
-                skynet.wakeup(co)
+            for _, thread in ipairs(wait_thread) do
+                skynet.wakeup(thread)
             end
             return addr
         end

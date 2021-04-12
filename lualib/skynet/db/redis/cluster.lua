@@ -28,15 +28,15 @@ function sync.once.Do(id, func, ...)
         local waiting = task.waiting
         tasks[id] = nil
         if next(waiting) then
-            for i, co in ipairs(waiting) do
-                skynet.wakeup(co)
+            for i, thread in ipairs(waiting) do
+                skynet.wakeup(thread)
             end
         end
         return table.unpack(task.result, 1, task.result.n)
     else
-        local co = coroutine.running()
-        table.insert(task.waiting, co)
-        skynet.wait(co)
+        local thread = coroutine.running()
+        table.insert(task.waiting, thread)
+        skynet.wait(thread)
         return table.unpack(task.result, 1, task.result.n)
     end
 end

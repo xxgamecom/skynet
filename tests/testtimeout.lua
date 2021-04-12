@@ -14,15 +14,15 @@ local function test_service()
 end
 
 local function timeout_call(ti, ...)
-    local token = {}
+    local thread = {}
     local ret
 
     skynet.fork(function(...)
         ret = table.pack(pcall(skynet.call, ...))
-        skynet.wakeup(token)
+        skynet.wakeup(thread)
     end, ...)
 
-    skynet.sleep(ti, token)
+    skynet.sleep(ti, thread)
     if ret then
         if ret[1] then
             return table.unpack(ret, 1, ret.n)

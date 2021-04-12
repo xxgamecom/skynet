@@ -324,16 +324,16 @@ end
 ---
 --- sleep current thread
 --- @param ticks number sleep ticks
---- @param token
-function skynet.sleep(ticks, token)
+--- @param thread thread
+function skynet.sleep(ticks, thread)
     -- set timer
     local session_id = skynet_core.intcommand("TIMEOUT", ticks)
     assert(session_id)
 
     --
-    token = token or thread_running()
-    local succ, ret = suspend_sleep(session_id, token)
-    sleep_session_map[token] = nil
+    thread = thread or thread_running()
+    local succ, ret = suspend_sleep(session_id, thread)
+    sleep_session_map[thread] = nil
     if succ then
         return
     end
@@ -352,21 +352,21 @@ end
 
 ---
 --- wait a thread
---- @param token
-function skynet.wait(token)
+--- @param thread thread
+function skynet.wait(thread)
     local session_id = skynet_core.gen_session_id()
-    token = token or thread_running()
-    local ret, msg = suspend_sleep(session_id, token)
-    sleep_session_map[token] = nil
+    thread = thread or thread_running()
+    local ret, msg = suspend_sleep(session_id, thread)
+    sleep_session_map[thread] = nil
     session_thread_map[session_id] = nil
 end
 
 ---
 --- wakeup a thread
---- @param token thread
-function skynet.wakeup(token)
-    if sleep_session_map[token] then
-        table_insert(wakeup_queue, token)
+--- @param thread thread
+function skynet.wakeup(thread)
+    if sleep_session_map[thread] then
+        table_insert(wakeup_queue, thread)
         return true
     end
 end

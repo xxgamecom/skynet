@@ -386,9 +386,9 @@ local function resolve_replace(replace_map)
     end
 
     local stack_values_tmp = {}
-    local function match_thread(co)
+    local function match_thread(thread)
         -- match stackvalues
-        local n = stackvalues(co, stack_values_tmp)
+        local n = stackvalues(thread, stack_values_tmp)
         for i = 1, n do
             local v = stack_values_tmp[i]
             stack_values_tmp[i] = nil
@@ -398,10 +398,10 @@ local function resolve_replace(replace_map)
         -- match callinfo
         local level = 1
         -- jump the fucntion from sharetable.update to top
-        local is_self = coroutine.running() == co
+        local is_self = coroutine.running() == thread
         if is_self then
             while true do
-                local info = getinfo(co, level, "uf")
+                local info = getinfo(thread, level, "uf")
                 level = level + 1
                 if not info then
                     level = 1
@@ -413,12 +413,12 @@ local function resolve_replace(replace_map)
         end
 
         while true do
-            local info = getinfo(co, level, "uf")
+            local info = getinfo(thread, level, "uf")
             if not info then
                 break
             end
             info.level = is_self and level + 1 or level
-            info.curco = co
+            info.curco = thread
             match_funcinfo(info)
             level = level + 1
         end

@@ -284,7 +284,7 @@ function CMD_X.debug(cmd)
     local address = adjust_address(cmd[2])
     local agent = skynet.newservice "debug_agent"
     local stop
-    local term_co = coroutine.running()
+    local term_thread = coroutine.running()
     local function forward_cmd()
         repeat
             -- notice :  It's a bad practice to call socket.read_line from two threads (this one and console_main_loop), be careful.
@@ -302,16 +302,16 @@ function CMD_X.debug(cmd)
         pcall(forward_cmd)
         if not stop then
             -- block at skynet.call "start"
-            term_co = nil
+            term_thread = nil
         else
-            skynet.wakeup(term_co)
+            skynet.wakeup(term_thread)
         end
     end)
     local ok, err = skynet.call(agent, "lua", "start", address, cmd.fd)
     stop = true
-    if term_co then
+    if term_thread then
         -- wait for fork coroutine exit.
-        skynet.wait(term_co)
+        skynet.wait(term_thread)
     end
 
     if not ok then

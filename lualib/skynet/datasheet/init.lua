@@ -48,9 +48,9 @@ function datasheet.query(name)
         return t.object
     end
     if t.queue then
-        local co = coroutine.running()
-        table.insert(t.queue, co)
-        skynet.wait(co)
+        local thread = coroutine.running()
+        table.insert(t.queue, thread)
+        skynet.wait(thread)
     else
         t.queue = {}    -- create wait queue for other query
         local ok, handle = pcall(querysheet, name)
@@ -62,8 +62,8 @@ function datasheet.query(name)
         end
         local q = t.queue
         t.queue = nil
-        for _, co in ipairs(q) do
-            skynet.wakeup(co)
+        for _, thread in ipairs(q) do
+            skynet.wakeup(thread)
         end
     end
     if t.error then

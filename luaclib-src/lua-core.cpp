@@ -447,7 +447,7 @@ static int l_gen_session_id(lua_State* L)
     // service context upvalue
     auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
 
-    // gen session id
+    // new session id
     int session_id = skynet::service_manager::instance()->send(svc_ctx, 0, 0, MESSAGE_TAG_ALLOC_SESSION, 0, nullptr, 0);
 
     // return session id
