@@ -13,6 +13,7 @@ skynet++
 * [x] 底层skynet使用C++重新编写
 * [x] 使用CMake进行项目构建
 * [x] 移除了分布式harbor模式(harbor模式有点鸡肋), 只支持cluster模式
+* [x] 移除gate的c服务模块, 该部分已经废弃
 * [x] 为上层提供OO封装
 * [x] 配置文件支持table, 原skynet只支持单kv格式
 * [x] 为上层提供更方便的服务消息处理机制 skynet.msg_handler
@@ -80,7 +81,6 @@ skynet                              // skynet源码目录
 │   └── ...
 |
 ├── service-src                     // skynet c service 源码目录
-│   ├── gate                        // c service gate
 │   ├── logger                      // c service logger
 │   └── snlua                       // c service snlua
 |
