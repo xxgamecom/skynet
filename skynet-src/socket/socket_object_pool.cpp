@@ -47,7 +47,7 @@ int socket_object_pool::alloc_socket()
 
 void socket_object_pool::free_socket(int socket_id)
 {
-    int idx = calc_slot_index(socket_id);
+    int idx = socket_array_index(socket_id);
     socket_array_[idx].status = SOCKET_STATUS_INVALID;
 }
 

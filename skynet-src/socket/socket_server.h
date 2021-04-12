@@ -197,7 +197,7 @@ private:
     int handle_ctrl_cmd_resume_socket(cmd_request_resume_pause* cmd, socket_message* result);
     int handle_ctrl_cmd_pause_socket(cmd_request_resume_pause* cmd, socket_message* result);
     int handle_ctrl_cmd_close_socket(cmd_request_close* cmd, socket_message* result);
-    int handle_ctrl_cmd_bind_socket(cmd_request_bind* cmd, socket_message* result);
+    int handle_ctrl_cmd_bind_os_fd(cmd_request_bind_os_fd* cmd, socket_message* result);
     int handle_ctrl_cmd_setopt_socket(cmd_request_set_opt* cmd);
     int handle_ctrl_cmd_exit_socket(socket_message* result);
     int handle_ctrl_cmd_send_socket(cmd_request_send* cmd, socket_message* result, int priority, const uint8_t* udp_address);

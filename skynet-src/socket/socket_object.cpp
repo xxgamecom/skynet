@@ -57,7 +57,7 @@ bool socket_object::get_socket_info(socket_info& si) const
 {
     socket_addr sa;
     socklen_t sa_sz = sizeof(sa);
-    int closing = 0;
+    bool closing = false;
 
     switch (this->status)
     {
@@ -77,7 +77,7 @@ bool socket_object::get_socket_info(socket_info& si) const
         break;
     case SOCKET_STATUS_HALF_CLOSE_READ:
     case SOCKET_STATUS_HALF_CLOSE_WRITE:
-        closing = 1;
+        closing = true;
     case SOCKET_STATUS_CONNECTED:
         if (this->protocol_type == SOCKET_TYPE_TCP)
         {

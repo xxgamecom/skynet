@@ -10,7 +10,7 @@ typedef void* dll_handle;
 class dll_loader final
 {
 private:
-    dll_handle                  handle_ = nullptr;                    // dll mod handle
+    dll_handle handle_ = nullptr;                   // dll mod handle
 
 public:
     dll_loader() = default;

@@ -1,7 +1,7 @@
 /**
  * skynet API
  *
- * for c service & luaclib
+ * for c service mod & luaclib
  */
 
 #pragma once
@@ -39,7 +39,7 @@
 #include "node/node_socket.h"
 
 // time api:
-// timer_manager::now();
+// timer_manager::now_ticks();
 #include "timer/timer_manager.h"
 
 // utils api

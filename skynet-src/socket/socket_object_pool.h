@@ -68,9 +68,17 @@ public:
     void get_socket_info(std::list<socket_info>& si_list);
 
 public:
-    // socket array index
-    static uint32_t calc_slot_index(int socket_id);
-    // socket id high 16 bits
+    /**
+     * calc socket array index
+     * @param socket_id
+     * @return
+     */
+    static uint32_t socket_array_index(int socket_id);
+    /**
+     * socket id high 16 bits
+     * @param socket_id
+     * @return
+     */
     static uint16_t socket_id_high(int socket_id);
 
 };

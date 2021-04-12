@@ -47,11 +47,11 @@ typedef void (*timer_execute_func)(void* ud, void* arg);
 //
 struct timer_event
 {
-    uint32_t            svc_handle;                 // source service handle, which service set the timer.
-                                                    // it also the target of sending timeout messages.
+    uint32_t svc_handle;                // source service handle, which service set the timer.
+                                        // it also the target of sending timeout messages.
 
-    int                 session;                    // a self increasing id. todo: check this, this means context call session_id?
-                                                    // when overflowing, restart with 1, so don't set a timer that takes a long time.
+    int session;                        // a self increasing id. todo: check this, this means context call session_id?
+                                        // when overflowing, restart with 1, so don't set a timer that takes a long time.
 };
 
 // create a timer

@@ -17,9 +17,9 @@ public:
 
 private:
     // service mq link list
-    mq_private*                     head_ = nullptr;
-    mq_private*                     tail_ = nullptr;
-    std::mutex                      mutex_;
+    mq_private* head_ = nullptr;
+    mq_private* tail_ = nullptr;
+    std::mutex mutex_;
 
 public:
     // initialize

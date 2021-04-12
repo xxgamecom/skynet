@@ -109,12 +109,12 @@ int prepare_ctrl_cmd_request_connect(ctrl_cmd_package& cmd, uint32_t svc_handle,
 int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id, int os_fd)
 {
     // cmd data
-    cmd.u.bind.svc_handle = svc_handle;
-    cmd.u.bind.socket_id = socket_id;
-    cmd.u.bind.os_fd = os_fd;
+    cmd.u.bind_os_fd.svc_handle = svc_handle;
+    cmd.u.bind_os_fd.socket_id = socket_id;
+    cmd.u.bind_os_fd.os_fd = os_fd;
 
     // actually length
-    int len = sizeof(cmd.u.bind);
+    int len = sizeof(cmd.u.bind_os_fd);
 
     // cmd header
     cmd.header[6] = (uint8_t)'B';

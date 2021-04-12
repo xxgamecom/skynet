@@ -11,10 +11,10 @@ class socket_addr
 public:
     union
     {
-        struct sockaddr             s;
-        struct sockaddr_in          v4;
-        struct sockaddr_in6         v6;
-    } addr;
+        struct sockaddr s;
+        struct sockaddr_in v4;
+        struct sockaddr_in6 v6;
+    } addr {{ 0 }};
 
 public:
     // ip:port string

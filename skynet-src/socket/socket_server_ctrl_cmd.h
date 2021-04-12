@@ -57,10 +57,10 @@ struct cmd_request_close
 
 
 // cmd - bind os fd
-struct cmd_request_bind
+struct cmd_request_bind_os_fd
 {
     int socket_id = 0;                          //
-    int os_fd = 0;                              //
+    int os_fd = 0;                              // os fd (stdin, stdout)
     uint32_t svc_handle = 0;                    // skynet service handle
 };
 
@@ -128,7 +128,7 @@ struct ctrl_cmd_package
         cmd_request_send send;
         cmd_request_send_udp send_udp;
         cmd_request_close close;
-        cmd_request_bind bind;
+        cmd_request_bind_os_fd bind_os_fd;
         cmd_request_resume_pause resume_pause;
         cmd_request_set_opt set_opt;
         cmd_request_udp_socket udp_socket;

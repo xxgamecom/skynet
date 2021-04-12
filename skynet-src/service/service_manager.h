@@ -30,31 +30,31 @@ private:
     // constants
     enum
     {
-        DEFAULT_SLOT_SIZE       = 4,                                    // default service context array size
-        MAX_SLOT_SIZE           = 0x40000000,                           // max service context array size
+        DEFAULT_SLOT_SIZE = 4,                              // default service context array size
+        MAX_SLOT_SIZE = 0x40000000,                         // max service context array size
     };
 
     // service handle naming (corresponding relationship between handle and name)
     struct handle_name
     {
-        std::string             svc_name = "";                          // service name
-        uint32_t                svc_handle = 0;                         // service handle
+        std::string svc_name = "";                          // service name
+        uint32_t svc_handle = 0;                            // service handle
     };
 
 private:
-    std::shared_mutex           rw_mutex_;                              // read write lock (need C++17)
+    std::shared_mutex rw_mutex_;                            // read write lock (need C++17)
 
     // service context data
-    uint32_t                    alloc_svc_handle_seed_ = 1;             // service handle seed, used to alloc service handle (count start of 1, 0 is reserved)
-    int                         svc_ctx_slot_size_ = DEFAULT_SLOT_SIZE; // service context array size (2^n, initialize is 4)
-    service_context**           svc_ctx_slot_ = nullptr;                // service context array
+    uint32_t alloc_svc_handle_seed_ = 1;                    // service handle seed, used to alloc service handle (count start of 1, 0 is reserved)
+    int svc_ctx_slot_size_ = DEFAULT_SLOT_SIZE;             // service context array size (2^n, initialize is 4)
+    service_context** svc_ctx_slot_ = nullptr;              // service context array
 
     // service naming (register a name for service handle, name can be more than one)
-    int                         name_cap_ = 2;                          // service alias name list capacity (2^n)
-    int                         name_count_ = 0;                        // number of service alias name in service alias name list.
-    handle_name*                name_ = nullptr;                        // service alias name list (sort by svc_name, because find_by_name() use binary search)
+    int name_cap_ = 2;                                      // service alias name list capacity (2^n)
+    int name_count_ = 0;                                    // number of service alias name in service alias name list.
+    handle_name* name_ = nullptr;                           // service alias name list (sort by svc_name, because find_by_name() use binary search)
 
-    std::atomic<int>            svc_count_ { 0 };                       // service context count in this skynet node
+    std::atomic<int> svc_count_ { 0 };                   // service context count in this skynet node
 
 public:
     // initialize service context manager

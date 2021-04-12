@@ -31,7 +31,7 @@ enum socket_status
     SOCKET_STATUS_HALF_CLOSE_READ = 6,                          //
     SOCKET_STATUS_HALF_CLOSE_WRITE = 7,                         //
     SOCKET_STATUS_PREPARE_ACCEPT = 8,                           // prepare accept (only for server accept client connection)
-    SOCKET_STATUS_BIND = 9,                                     // bind stdin, stdout fd
+    SOCKET_STATUS_BIND = 9,                                     // bind os fd (stdin, stdout)
 };
 
 // 协议类型
@@ -88,20 +88,20 @@ public:
 
     socket_statistics io_statistics;                            // socket statistics info
 
-    std::atomic<uint32_t> sending { 0 };                     // divide into 2 parts:
+    std::atomic<uint32_t> sending = 0;                          // divide into 2 parts:
                                                                 // - high 16 bits: socket id
                                                                 // - low 16 bits: actually sending count
 
     int socket_fd = INVALID_FD;                                 // socket fd
     int socket_id = 0;                                          // 应用层维护一个与fd对应的socket id
-    uint8_t protocol_type { SOCKET_TYPE_UNKNOWN };              // socket protocol type（TCP/UDP）
-    std::atomic<uint8_t> status { SOCKET_STATUS_INVALID };   // socket status（read、write、listen...）
+    uint8_t protocol_type = SOCKET_TYPE_UNKNOWN;                // socket protocol type（TCP/UDP）
+    std::atomic<uint8_t> status = SOCKET_STATUS_INVALID;        // socket status（read、write、listen...）
     bool reading = false;                                       // half close read flag
     bool writing = false;                                       // half close write flag
     bool closing = false;                                       // closing flag
 
-    std::atomic<uint16_t> udp_connecting { 0 };              //
-    int64_t warn_size = 0;                                      //
+    std::atomic<uint16_t> udp_connecting = 0;
+    int64_t warn_size = 0;
     
     //
     union

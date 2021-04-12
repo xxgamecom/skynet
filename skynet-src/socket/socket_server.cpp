@@ -817,7 +817,7 @@ int socket_server::handle_ctrl_cmd(socket_message* result)
     case 'S':
         return handle_ctrl_cmd_pause_socket((cmd_request_resume_pause*)buf, result);
     case 'B':
-        return handle_ctrl_cmd_bind_socket((cmd_request_bind*)buf, result);
+        return handle_ctrl_cmd_bind_os_fd((cmd_request_bind_os_fd*)buf, result);
     case 'L':
         return handle_ctrl_cmd_listen_socket((cmd_request_listen*)buf, result);
     case 'K':
@@ -1003,7 +1003,7 @@ int socket_server::handle_ctrl_cmd_close_socket(cmd_request_close* cmd, socket_m
     return -1;
 }
 
-int socket_server::handle_ctrl_cmd_bind_socket(cmd_request_bind* cmd, socket_message* result)
+int socket_server::handle_ctrl_cmd_bind_os_fd(cmd_request_bind_os_fd* cmd, socket_message* result)
 {
     int socket_id = cmd->socket_id;
     result->socket_id = socket_id;
