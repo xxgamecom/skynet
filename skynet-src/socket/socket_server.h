@@ -139,7 +139,7 @@ public:
      * @return -1 error, 0 success
      */
     int send(send_buffer* buf_ptr);
-    int send_low_priority(send_buffer* buf_ptr);    
+    int send_low_priority(send_buffer* buf_ptr);
 
     // udp
 public:
@@ -226,7 +226,7 @@ private:
     int list_uncomplete(write_buffer_list* wb_list);
     // 将 ‘低优先级’ 写缓存列表的head移到 '高优先级' 写缓存列表内
     void raise_uncomplete(socket_object* socket_ptr);
-    
+
     //
     int send_write_buffer_list(socket_object* socket_ptr, write_buffer_list* wb_list, socket_lock& sl, socket_message* result);
     int send_write_buffer_list_tcp(socket_object* socket_ptr, write_buffer_list* wb_list, socket_lock& sl, socket_message* result);
@@ -238,10 +238,12 @@ private:
     const void* clone_send_buffer(send_buffer* buf_ptr, size_t* sz);
 
     /**
-     * 添加发送缓存
-     * 
-     * @param is_high 加入到 '高优先级'发送缓存
-     * @param udp_address 发送udp数据时, 附加udp地址到数据尾部
+     * add send buffer
+     *
+     * @param socket_ptr socket object ptr
+     * @param cmd
+     * @param is_high add to `high priority` buffer. default is true.
+     * @param udp_address when send udp data, add the udp address to the end of data. default is nullptr.
      */
     void append_sendbuffer(socket_object* socket_ptr, cmd_request_send* cmd, bool is_high = true, const uint8_t* udp_address = nullptr);
 
@@ -249,7 +251,7 @@ private:
     write_buffer* prepare_write_buffer(write_buffer_list* wb_list, cmd_request_send* cmd, int size);
     // 清理发送缓存
     void free_write_buffer(write_buffer* wb);
-    void free_write_buffer_list(write_buffer_list* wb_list);    
+    void free_write_buffer_list(write_buffer_list* wb_list);
 
 private:
     void close_read(socket_object* socket_ptr, socket_message* result);
@@ -261,13 +263,16 @@ private:
     //
     void force_close(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
 
-    // 
-    // @param socket_id
-    // @param socket_fd socket句柄
-    // @param protocol_type
-    // @param svc_handle skynet服务句柄
-    // @param add 是否加入到event_poller中, 默认true
-    socket_object* new_socket(int socket_id, int socket_fd, int protocol_type, uint32_t svc_handle, bool add = true);
+    /**
+     *
+     * @param socket_id socket logic id
+     * @param socket_fd socket fd
+     * @param socket_type socket ip proto type (TCP/UDP)
+     * @param svc_handle skynet service handle
+     * @param add need add to poller, default true
+     * @return socket_object
+     */
+    socket_object* new_socket(int socket_id, int socket_fd, int socket_type, uint32_t svc_handle, bool add = true);
 
     //
     void drop_udp(socket_object* socket_ptr, write_buffer_list* wb_list, write_buffer* wb);
@@ -289,7 +294,7 @@ private:
     bool send_object_init(send_object* so, const void* object, size_t sz);
     void send_object_init(send_object* so, send_buffer* buf);
 
-    void _clear_closed_event(int socket_id);    
+    void _clear_closed_event(int socket_id);
 };
 
 }

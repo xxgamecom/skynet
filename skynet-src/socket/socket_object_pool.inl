@@ -15,7 +15,7 @@ inline uint32_t socket_object_pool::socket_array_index(int socket_id)
     return (((uint32_t)socket_id) % MAX_SOCKET);
 }
 
-inline uint16_t socket_object_pool::socket_id_high(int socket_id)
+inline uint16_t socket_object_pool::socket_id_high16(int socket_id)
 {
     return ((socket_id >> MAX_SOCKET_P) & 0xFFFF);
 }

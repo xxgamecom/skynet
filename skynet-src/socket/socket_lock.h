@@ -5,7 +5,7 @@
 namespace skynet {
 
 /**
- * 调用单次锁定
+ * 调用单次锁定, used for call lock
  * 用于函数内嵌套调用时锁定资源, 单次实际只锁定一次, 防止出现阻塞
  */
 class socket_lock final

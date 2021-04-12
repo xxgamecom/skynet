@@ -5,7 +5,10 @@
 
 namespace skynet {
 
-// endpoint
+/**
+ * socket endpoint info
+ *
+ */
 class socket_addr
 {
 public:

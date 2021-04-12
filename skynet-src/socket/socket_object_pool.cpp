@@ -19,24 +19,24 @@ int socket_object_pool::alloc_socket()
         auto& socket_ref = get_socket(socket_id);
 
         // socket is not available
-        if (socket_ref.status != SOCKET_STATUS_INVALID)
+        if (socket_ref.socket_status != SOCKET_STATUS_INVALID)
             continue;
 
         // set socket status: alloced
-        uint8_t expect_status = socket_ref.status;
+        uint8_t expect_status = socket_ref.socket_status;
         if (expect_status == SOCKET_STATUS_INVALID)
         {
-            if (socket_ref.status.compare_exchange_strong(expect_status, SOCKET_STATUS_ALLOCED))
+            if (socket_ref.socket_status.compare_exchange_strong(expect_status, SOCKET_STATUS_ALLOCED))
             {
                 socket_ref.socket_id = socket_id;
-                socket_ref.protocol_type = SOCKET_TYPE_UNKNOWN;
-                socket_ref.udp_connecting = 0;  // socket_server::udp_connect 可以直接增加 socket_ref.udp_conncting (在其他线程, new_fd之前), 因此这里重置为0
+                socket_ref.socket_type = SOCKET_TYPE_UNKNOWN;
+                socket_ref.reset_udp_connecting_count();
                 socket_ref.socket_fd = INVALID_FD;
                 return socket_id;
             }
-                // socket status change before set, retry
             else
             {
+                // socket status change before set, retry
                 --i;
             }
         }
@@ -48,7 +48,7 @@ int socket_object_pool::alloc_socket()
 void socket_object_pool::free_socket(int socket_id)
 {
     int idx = socket_array_index(socket_id);
-    socket_array_[idx].status = SOCKET_STATUS_INVALID;
+    socket_array_[idx].socket_status = SOCKET_STATUS_INVALID;
 }
 
 void socket_object_pool::get_socket_info(std::list<socket_info>& si_list)
