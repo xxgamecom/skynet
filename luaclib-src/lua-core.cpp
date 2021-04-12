@@ -888,7 +888,7 @@ LUAMOD_API int luaopen_skynet_core(lua_State* L)
         { "unpack",      l_unpack },
         { "pack_string", l_pack_string },
         { "trash",       l_trash },
-        { "now",         l_now_ticks },
+        { "now_ticks",   l_now_ticks },
         { "hpc",         l_hpc },
 
         { nullptr,       nullptr },

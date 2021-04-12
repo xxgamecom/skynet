@@ -407,8 +407,15 @@ function skynet.localname(name)
     return skynet_core.addresscommand("QUERY", name)
 end
 
-skynet.now = skynet_core.now    -- current tick (1tick = 10ms)
-skynet.hpc = skynet_core.hpc    -- high performance counter
+--- current tick (1tick = 10ms)
+function skynet.now()
+    return skynet_core.now_ticks()
+end
+
+--- high performance counter (nanoseconds)
+function skynet.hpc()
+    return skynet_core.hpc()
+end
 
 local trace_id = 0
 
@@ -648,7 +655,7 @@ end
 
 ---
 --- get current thread context
---- @return session_id, address
+--- @return number, string session_id and address
 function skynet.context()
     local session_id = thread_session_map[current_thread]
     local svc_handle = thread_svc_handle_map[current_thread]
