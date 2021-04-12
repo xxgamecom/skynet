@@ -69,9 +69,9 @@ public:
     bool closing = false;                                       // closing flag
 
     // send
-    write_buffer_list send_buffer_list_high;                    // high priority write buffer
-    write_buffer_list send_buffer_list_low;                     // low priority write buffer
-    int64_t send_buffer_size = 0;                               // wait send data bytes
+    write_buffer_list write_buffer_list_high;                   // high priority write buffer
+    write_buffer_list write_buffer_list_low;                    // low priority write buffer
+    int64_t write_buffer_size = 0;                              // wait send data bytes
 
     std::atomic<uint32_t> sending_count = 0;                    // wait to send count, divide into 2 parts:
                                                                 // - high 16 bits: socket id
@@ -92,15 +92,15 @@ public:
     } p { 0 };
 
     // direct send
-    std::mutex direct_send_mutex;                               // direct send buffer protected
-    int direct_send_offset = 0;                                 // direct send buffer offset
-    const void* direct_send_buffer = nullptr;                   // direct send buffer
-    size_t direct_send_size = 0;                                // direct send buffer size
+    std::mutex direct_write_mutex;                              // direct write buffer protected
+    int direct_write_offset = 0;                                // direct write buffer offset
+    const void* direct_write_buffer = nullptr;                  // direct write buffer
+    size_t direct_write_size = 0;                               // direct write buffer size
 
 public:
     bool is_invalid(int socket_id);
 
-    bool is_send_buffer_empty();
+    bool is_write_buffer_empty();
     bool nomore_sending_data();
     bool can_direct_send(int socket_id);
 
