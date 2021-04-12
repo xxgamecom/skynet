@@ -5,8 +5,11 @@
 
 namespace skynet {
 
-// endpoint
-class socket_addr
+/**
+ * socket endpoint info
+ *
+ */
+class socket_endpoint
 {
 public:
     union
@@ -22,9 +25,9 @@ public:
     // ip:string string
     bool to_string(char* buf_ptr, size_t buf_sz) const;
 
-    // udp_address convert to socket_addr
+    // udp_address convert to socket_endpoint
     int from_udp_address(int protocol_type, const uint8_t* udp_address);
-    // socket_addr convert to udp_address
+    // socket_endpoint convert to udp_address
     int to_udp_address(int protocol_type, uint8_t* udp_address) const;
 };
 

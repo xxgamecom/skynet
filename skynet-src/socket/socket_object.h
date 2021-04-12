@@ -1,6 +1,6 @@
 #pragma once
 
-#include "socket_server_def.h"
+#include "buffer.h"
 
 #include <cstdint>
 #include <atomic>
@@ -34,7 +34,7 @@ enum socket_status
     SOCKET_STATUS_BIND = 9,                                     // bind os fd (stdin, stdout)
 };
 
-// 协议类型
+// socket ip proto type
 enum socket_type
 {
     SOCKET_TYPE_TCP = 0,
@@ -43,23 +43,13 @@ enum socket_type
     SOCKET_TYPE_UNKNOWN = 255,
 };
 
-// 发送缓存
-struct write_buffer
+// r/w statistics
+struct socket_statistics
 {
-    write_buffer* next = nullptr;                               //
-
-    const void* buffer = nullptr;                               //
-    char* ptr = nullptr;                                        //
-    size_t sz = 0;                                              //
-    bool is_user_object = false;                                //
-    uint8_t udp_address[UDP_ADDRESS_SIZE] = { 0 };              //
-};
-
-// 发送缓存队列
-struct write_buffer_list
-{
-    write_buffer* head = nullptr;                               // 写缓冲区的头指针
-    write_buffer* tail = nullptr;                               // 写缓冲区的尾指针
+    uint64_t recv_time_ticks = 0;                               // last recv time
+    uint64_t send_time_ticks = 0;                               // last send time
+    uint64_t recv_bytes = 0;                                    // total recv bytes
+    uint64_t send_bytes = 0;                                    // total send bytes
 };
 
 // forward declare
@@ -69,62 +59,50 @@ struct socket_info;
 class socket_object final
 {
 public:
-    // r/w statistics
-    struct socket_statistics
-    {
-        uint64_t recv_time_ticks = 0;                           // last recv time
-        uint64_t send_time_ticks = 0;                           // last send time
-        uint64_t recv_bytes = 0;                                // total recv bytes
-        uint64_t send_bytes = 0;                                // total send bytes
-    };
+    uint32_t svc_handle = 0;                                    // skynet service handle, the received socket data will be transmitted to the service
+    int socket_fd = INVALID_FD;                                 // socket fd
+    int socket_id = 0;                                          // socket logic id, used for upper layer
+    uint8_t socket_type = SOCKET_TYPE_UNKNOWN;                  // socket ip proto type（TCP/UDP）
+    std::atomic<uint8_t> socket_status = SOCKET_STATUS_INVALID; // socket status（read、write、listen...）
+    bool reading = false;                                       // half close recv flag
+    bool writing = false;                                       // half close send flag
+    bool closing = false;                                       // closing flag
 
-public:
-    uint32_t svc_handle = 0;                                    // skynet service handle
-                                                                // the received socket data will be transmitted to the service.
+    // send
+    write_buffer_list send_buffer_list_high;                    // high priority write buffer
+    write_buffer_list send_buffer_list_low;                     // low priority write buffer
+    int64_t send_buffer_size = 0;                               // wait send data bytes
 
-    write_buffer_list wb_list_high;                             // high priority write buffer
-    write_buffer_list wb_list_low;                              // low priority write buffer
-    int64_t wb_size = 0;                                        // wait send data size
-
-    socket_statistics io_statistics;                            // socket statistics info
-
-    std::atomic<uint32_t> sending = 0;                          // divide into 2 parts:
+    std::atomic<uint32_t> sending_count = 0;                    // wait to send count, divide into 2 parts:
                                                                 // - high 16 bits: socket id
                                                                 // - low 16 bits: actually sending count
 
-    int socket_fd = INVALID_FD;                                 // socket fd
-    int socket_id = 0;                                          // 应用层维护一个与fd对应的socket id
-    uint8_t protocol_type = SOCKET_TYPE_UNKNOWN;                // socket protocol type（TCP/UDP）
-    std::atomic<uint8_t> status = SOCKET_STATUS_INVALID;        // socket status（read、write、listen...）
-    bool reading = false;                                       // half close read flag
-    bool writing = false;                                       // half close write flag
-    bool closing = false;                                       // closing flag
+    std::atomic<uint16_t> udp_connecting_count = 0;             // udp connecting count
 
-    std::atomic<uint16_t> udp_connecting = 0;
+    // statistics
+    socket_statistics io_statistics;                            // socket statistics info
+
     int64_t warn_size = 0;
     
     //
     union
     {
-        int size;                                               // 读缓存预估需要的大小
+        int size;                                               // recv buffer estimate size
         uint8_t udp_address[UDP_ADDRESS_SIZE];                  //
     } p { 0 };
 
-    //
-    std::mutex dw_mutex;                                        // 发送缓存保护
-    int dw_offset = 0;                                          // 立刻发送缓冲区偏移
-    const void* dw_buffer = nullptr;                            // 立刻发送缓冲区
-    size_t dw_size = 0;                                         // 立刻发送缓冲区大小
+    // direct send
+    std::mutex direct_send_mutex;                               // direct send buffer protected
+    int direct_send_offset = 0;                                 // direct send buffer offset
+    const void* direct_send_buffer = nullptr;                   // direct send buffer
+    size_t direct_send_size = 0;                                // direct send buffer size
 
 public:
     bool is_invalid(int socket_id);
 
-    // 发送缓存为空
     bool is_send_buffer_empty();
-    // 没有发送数据
     bool nomore_sending_data();
-    //
-    bool can_direct_write(int socket_id);
+    bool can_direct_send(int socket_id);
 
     void shutdown_read();
     void shutdown_write();
@@ -134,17 +112,18 @@ public:
 
     //
 public:
-    //
-    void inc_sending_ref(int socket_id);
-    //
-    void dec_sending_ref(int socket_id);
+    void inc_sending_count(int socket_id);
+    void dec_sending_count(int socket_id);
+    void reset_sending_count(int socket_id);
+
+    void inc_udp_connecting_count();
+    void dec_udp_connecting_count();
+    void reset_udp_connecting_count();
 
     // io statistics
 public:
-    // recv statistics
-    void stat_recv(int bytes, uint64_t time_ticks);
-    // send statistics
-    void stat_send(int bytes, uint64_t time_ticks);
+    void statistics_recv(int bytes, uint64_t time_ticks);
+    void statistics_send(int bytes, uint64_t time_ticks);
 
 public:
     // query socket info

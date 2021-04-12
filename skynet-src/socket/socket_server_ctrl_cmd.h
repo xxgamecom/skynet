@@ -140,7 +140,7 @@ struct ctrl_cmd_package
 };
 
 // forward declare
-class socket_addr;
+class socket_endpoint;
 
 // prepare start data: cmd_request_resume_pause
 int prepare_ctrl_cmd_request_resume(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id);
@@ -158,7 +158,7 @@ int prepare_ctrl_cmd_request_bind(ctrl_cmd_package& cmd, uint32_t svc_handle, in
 // prepare create tcp server data: cmd_request_listen
 int prepare_ctrl_cmd_request_listen(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id, int listen_fd);
 //
-int prepare_ctrl_cmd_request_send(ctrl_cmd_package& cmd, int socket_id, const send_buffer* buf_ptr, bool is_high);
+int prepare_ctrl_cmd_request_send(ctrl_cmd_package& cmd, int socket_id, const send_data* sd_ptr, bool is_high);
 // let socket thread enable write event
 int prepare_ctrl_cmd_request_trigger_write(ctrl_cmd_package& cmd, int socket_id);
 
@@ -168,8 +168,8 @@ int prepare_ctrl_cmd_request_set_opt(ctrl_cmd_package& cmd, int socket_id);
 // prepare create an udp socket data: cmd_request_udp_socket
 int prepare_ctrl_cmd_request_udp_socket(ctrl_cmd_package& cmd, uint32_t svc_handle, int socket_id, int socket_fd, int family);
 //
-int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int socket_type, const socket_addr* sa);
+int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int socket_type, const socket_endpoint* endpoint_ptr);
 //
-int prepare_ctrl_cmd_request_send_udp(ctrl_cmd_package& cmd, int socket_id, const send_buffer* buf_ptr, const uint8_t* udp_address, int addr_sz);
+int prepare_ctrl_cmd_request_send_udp(ctrl_cmd_package& cmd, int socket_id, const send_data* sd_ptr, const uint8_t* udp_address, int addr_sz);
 
 }

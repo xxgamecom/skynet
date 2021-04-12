@@ -79,7 +79,7 @@ public:
      * @param socket_id
      * @return
      */
-    static uint16_t socket_id_high(int socket_id);
+    static uint16_t socket_id_high16(int socket_id);
 
 };
 

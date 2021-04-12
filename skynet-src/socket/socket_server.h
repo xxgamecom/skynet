@@ -6,7 +6,7 @@
 
 #include "socket_object.h"
 #include "socket_lock.h"
-#include "socket_addr.h"
+#include "socket_endpoint.h"
 #include "socket_info.h"
 #include "socket_object_pool.h"
 #include "buffer.h"
@@ -42,7 +42,7 @@ private:
     int event_next_index_ = 0;                          // poller 的下一个未处理的事件索引
 
     //
-    socket_object_interface soi_;                       //
+    socket_user_object uo_socket_;                      // socket user_object
     socket_object_pool socket_object_pool_;             // socket object pool
     uint8_t udp_recv_buf_[MAX_UDP_PACKAGE] = { 0 };     //
     char addr_tmp_buf_[ADDR_TMP_BUFFER_SIZE] = { 0 };   // 地址信息临时数据
@@ -135,11 +135,11 @@ public:
     /**
      * 发送数据 (低优先级)
      * 
-     * @param buf_ptr 要发送的数据
+     * @param sd_ptr send data ptr
      * @return -1 error, 0 success
      */
-    int send(send_buffer* buf_ptr);
-    int send_low_priority(send_buffer* buf_ptr);    
+    int send(send_data* sd_ptr);
+    int send_low_priority(send_data* sd_ptr);
 
     // udp
 public:
@@ -170,7 +170,7 @@ public:
      * 如果 socket_udp_address 为 NULL, 则使用最后调用 socket_server::udp_connect 时传入的address代替。
      * 也可以使用 send 来发送udp数据
      */
-    int udp_send(const socket_udp_address*, send_buffer* buf);
+    int udp_send(const socket_udp_address*, send_data* sd_ptr);
 
     /**
      * 获取消息内的IP地址 (UDP)
@@ -223,34 +223,38 @@ private:
     int do_send_write_buffer(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
 
     // 写缓存列表内的数据是否完整 (write_buffer_list head不完整, 之前发送了部分数据)
-    int list_uncomplete(write_buffer_list* wb_list);
+    int list_uncomplete(write_buffer_list* wb_list_ptr);
     // 将 ‘低优先级’ 写缓存列表的head移到 '高优先级' 写缓存列表内
     void raise_uncomplete(socket_object* socket_ptr);
-    
-    //
-    int send_write_buffer_list(socket_object* socket_ptr, write_buffer_list* wb_list, socket_lock& sl, socket_message* result);
-    int send_write_buffer_list_tcp(socket_object* socket_ptr, write_buffer_list* wb_list, socket_lock& sl, socket_message* result);
-    int send_write_buffer_list_udp(socket_object* socket_ptr, write_buffer_list* wb_list, socket_message* result);
 
-    // 是否发送缓存
-    void free_send_buffer(send_buffer* buf_ptr);
-    // 复制发送缓存
-    const void* clone_send_buffer(send_buffer* buf_ptr, size_t* sz);
+    //
+    int send_write_buffer_list(socket_object* socket_ptr, write_buffer_list* wb_list_ptr, socket_lock& sl, socket_message* result);
+    int send_write_buffer_list_tcp(socket_object* socket_ptr, write_buffer_list* wb_list_ptr, socket_lock& sl, socket_message* result);
+    int send_write_buffer_list_udp(socket_object* socket_ptr, write_buffer_list* wb_list_ptr, socket_message* result);
 
     /**
-     * 添加发送缓存
-     * 
-     * @param is_high 加入到 '高优先级'发送缓存
-     * @param udp_address 发送udp数据时, 附加udp地址到数据尾部
+     * add send buffer
+     *
+     * @param socket_ptr socket object ptr
+     * @param cmd
+     * @param is_high add to `high priority` buffer. default is true.
+     * @param udp_address when send udp data, add the udp address to the end of data. default is nullptr.
      */
-    void append_sendbuffer(socket_object* socket_ptr, cmd_request_send* cmd, bool is_high = true, const uint8_t* udp_address = nullptr);
+    void append_send_buffer(socket_object* socket_ptr, cmd_request_send* cmd, bool is_high = true, const uint8_t* udp_address = nullptr);
 
-    // 准备发送缓存
-    write_buffer* prepare_write_buffer(write_buffer_list* wb_list, cmd_request_send* cmd, int size);
-    // 清理发送缓存
-    void free_write_buffer(write_buffer* wb);
-    void free_write_buffer_list(write_buffer_list* wb_list);    
+    // alloc/free write buffer
+    write_buffer* alloc_write_buffer(write_buffer_list* wb_list_ptr, cmd_request_send* cmd, int size);
+    void free_write_buffer(write_buffer* wb_ptr);
+    void free_write_buffer_list(write_buffer_list* wb_list_ptr);
 
+    // send data
+private:
+    // free send data
+    void free_send_data(send_data* sd_ptr);
+    // clone send data
+    const void* clone_send_data(send_data* sd_ptr, size_t* sd_sz);
+
+    //
 private:
     void close_read(socket_object* socket_ptr, socket_message* result);
     int close_write(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
@@ -261,16 +265,19 @@ private:
     //
     void force_close(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
 
-    // 
-    // @param socket_id
-    // @param socket_fd socket句柄
-    // @param protocol_type
-    // @param svc_handle skynet服务句柄
-    // @param add 是否加入到event_poller中, 默认true
-    socket_object* new_socket(int socket_id, int socket_fd, int protocol_type, uint32_t svc_handle, bool add = true);
+    /**
+     *
+     * @param socket_id socket logic id
+     * @param socket_fd socket fd
+     * @param socket_type socket ip proto type (TCP/UDP)
+     * @param svc_handle skynet service handle
+     * @param add need add to poller, default true
+     * @return socket_object
+     */
+    socket_object* new_socket(int socket_id, int socket_fd, int socket_type, uint32_t svc_handle, bool add = true);
 
     //
-    void drop_udp(socket_object* socket_ptr, write_buffer_list* wb_list, write_buffer* wb);
+    void drop_udp(socket_object* socket_ptr, write_buffer_list* wb_list_ptr, write_buffer* wb_ptr);
 
     // return 0 when failed, or -1 when file limit
     int handle_accept(socket_object* socket_ptr, socket_message* result);
@@ -285,11 +292,11 @@ private:
     //
     int forward_message_udp(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
 
-    // 初始化send_object
-    bool send_object_init(send_object* so, const void* object, size_t sz);
-    void send_object_init(send_object* so, send_buffer* buf);
+    // init send object
+    void init_send_user_object(send_user_object* so, send_data* sd_ptr);
+    bool init_send_user_object(send_user_object* so, const void* object, size_t sz);
 
-    void _clear_closed_event(int socket_id);    
+    void _clear_closed_event(int socket_id);
 };
 
 }

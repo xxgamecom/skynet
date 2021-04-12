@@ -9,57 +9,76 @@
 namespace skynet {
 
 //
-void socket_object::inc_sending_ref(int socket_id)
+void socket_object::inc_sending_count(int socket_id)
 {
     // only tcp
-    if (protocol_type != SOCKET_TYPE_TCP)
+    if (socket_type != SOCKET_TYPE_TCP)
         return;
 
     // busy lock
     for (;;)
     {
-        uint32_t expect_sending = sending;
-        uint16_t expect_socket_id = expect_sending >> 16;
+        uint32_t expect_sending_count = sending_count;
+        uint16_t expect_socket_id = expect_sending_count >> 16;
 
         // inc sending only matching the same socket id
-        if (expect_socket_id == socket_object_pool::socket_id_high(socket_id))
+        if (expect_socket_id == socket_object_pool::socket_id_high16(socket_id))
         {
-            // s->sending maybe overflow, wait socket thread dec. see issue #794
-            if ((expect_sending & 0xFFFF) == 0xFFFF)
+            // s->sending maybe overflow, wait socket thread dec.
+            if ((expect_sending_count & 0xFFFF) == 0xFFFF)
                 continue;
 
-            if (sending.compare_exchange_strong(expect_sending, expect_sending + 1))
+            if (sending_count.compare_exchange_strong(expect_sending_count, expect_sending_count + 1))
                 return;
 
-            // here means inc failed, retry
+            // to here means inc failed, retry
         }
-        // socket id changed
         else
         {
-            // just return
+            // to here means socket id changed, just return
             return;
         }
     }
 }
 
 //
-void socket_object::dec_sending_ref(int socket_id)
+void socket_object::dec_sending_count(int socket_id)
 {
     // notice: udp may inc sending while status == SOCKET_STATUS_ALLOCED
-    if (this->socket_id == socket_id && protocol_type == SOCKET_TYPE_TCP)
+    if (this->socket_id == socket_id && socket_type == SOCKET_TYPE_TCP)
     {
-        assert((sending & 0xFFFF) != 0);
-        --sending;
+        assert((sending_count & 0xFFFF) != 0);
+        --sending_count;
     }
+}
+
+void socket_object::reset_sending_count(int socket_id)
+{
+    sending_count = socket_object_pool::socket_id_high16(socket_id) << 16 | 0;
+}
+
+void socket_object::inc_udp_connecting_count()
+{
+    ++udp_connecting_count;
+}
+
+void socket_object::dec_udp_connecting_count()
+{
+    --udp_connecting_count;
+}
+
+void socket_object::reset_udp_connecting_count()
+{
+    udp_connecting_count = 0;
 }
 
 bool socket_object::get_socket_info(socket_info& si) const
 {
-    socket_addr sa;
-    socklen_t sa_sz = sizeof(sa);
+    socket_endpoint endpoint;
+    socklen_t endpoint_sz = sizeof(endpoint);
     bool closing = false;
 
-    switch (this->status)
+    switch (socket_status)
     {
     case SOCKET_STATUS_BIND:
     {
@@ -71,28 +90,28 @@ bool socket_object::get_socket_info(socket_info& si) const
     {
         si.type = SOCKET_INFO_TYPE_LISTEN;
         // local server listen address
-        if (::getsockname(this->socket_fd, &sa.addr.s, &sa_sz) == 0)
-            sa.to_string(si.endpoint, sizeof(si.endpoint));
+        if (::getsockname(this->socket_fd, &endpoint.addr.s, &endpoint_sz) == 0)
+            endpoint.to_string(si.endpoint, sizeof(si.endpoint));
     }
         break;
     case SOCKET_STATUS_HALF_CLOSE_READ:
     case SOCKET_STATUS_HALF_CLOSE_WRITE:
         closing = true;
     case SOCKET_STATUS_CONNECTED:
-        if (this->protocol_type == SOCKET_TYPE_TCP)
+        if (this->socket_type == SOCKET_TYPE_TCP)
         {
             si.type = closing ? SOCKET_INFO_TYPE_CLOSING : SOCKET_INFO_TYPE_TCP;
             // remote client address
-            if (::getpeername(this->socket_fd, &sa.addr.s, &sa_sz) == 0)
-                sa.to_string(si.endpoint, sizeof(si.endpoint));
+            if (::getpeername(this->socket_fd, &endpoint.addr.s, &endpoint_sz) == 0)
+                endpoint.to_string(si.endpoint, sizeof(si.endpoint));
         }
         else
         {
             si.type = SOCKET_INFO_TYPE_UDP;
             //
-            if (sa.from_udp_address(protocol_type, p.udp_address) != 0)
+            if (endpoint.from_udp_address(this->socket_type, p.udp_address) != 0)
             {
-                sa.to_string(si.endpoint, sizeof(si.endpoint));
+                endpoint.to_string(si.endpoint, sizeof(si.endpoint));
             }
         }
         break;
@@ -113,7 +132,7 @@ bool socket_object::get_socket_info(socket_info& si) const
     si.writing = this->writing;
 
     // write buffer size
-    si.wb_size = this->wb_size;
+    si.wb_size = this->send_buffer_size;
 
     return true;
 }
