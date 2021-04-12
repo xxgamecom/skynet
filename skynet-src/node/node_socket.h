@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../socket/socket_info.h"
-#include "../socket/buffer.h"
+#include "../socket/socket_buffer.h"
 
 #include <memory>
 #include <list>

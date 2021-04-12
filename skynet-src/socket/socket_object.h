@@ -1,6 +1,6 @@
 #pragma once
 
-#include "buffer.h"
+#include "socket_buffer.h"
 
 #include <cstdint>
 #include <atomic>

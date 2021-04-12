@@ -31,15 +31,15 @@ struct send_data
     size_t data_size = 0;                   // data size
 };
 
-// use object tag
+// use_object tag
 #define USER_OBJECT_TAG ((size_t)(-1))
 
 // socket user_object interface
 struct socket_user_object
 {
-    // user_object buffer
+    // get user_object buffer
     const void* (*buffer)(const void* uo_ptr);
-    // user_object size
+    // get user_object size
     size_t (*size)(const void* uo_ptr);
     // free user_object
     void (*free)(void* uo_ptr);

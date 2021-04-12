@@ -12,7 +12,7 @@ set(SKYNET_SOCKET_HEADER
     socket/pipe/pipe.inl
     socket/utils/socket_helper.h
     socket/utils/socket_helper.inl
-    socket/buffer.h
+    socket/socket_buffer.h
     socket/socket_endpoint.h
     socket/socket_object.h
     socket/socket_object.inl

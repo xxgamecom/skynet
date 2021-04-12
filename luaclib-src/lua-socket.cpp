@@ -663,7 +663,7 @@ static void _get_socket_info(lua_State* L, socket_info& si)
     lua_pushinteger(L, si.send_bytes);
     lua_setfield(L, -2, "write");
 
-    lua_pushinteger(L, si.wb_size);
+    lua_pushinteger(L, si.write_buffer_size);
     lua_setfield(L, -2, "wbuffer");
 
     lua_pushinteger(L, si.recv_time_ticks);
@@ -705,7 +705,7 @@ static void _get_socket_info(lua_State* L, socket_info& si)
  *         type = 'TCP',
  *         read = si.recv,
  *         write = si.send,
- *         wbuffer = si.wb_size,
+ *         wbuffer = si.write_buffer_size,
  *         rtime = si.recv_time,
  *         stime = si.send_time,
  *         peer = si.endpoint,

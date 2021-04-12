@@ -9,7 +9,7 @@
 #include "socket_endpoint.h"
 #include "socket_info.h"
 #include "socket_object_pool.h"
-#include "buffer.h"
+#include "socket_buffer.h"
 #include "socket_server_ctrl_cmd.h"
 #include "pipe/pipe.h"
 #include "poller/poller.h"

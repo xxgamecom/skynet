@@ -28,13 +28,11 @@ struct socket_info
     uint64_t send_bytes = 0;                        // total send bytes
     uint64_t recv_time_ticks = 0;                   // last recv time
     uint64_t send_time_ticks = 0;                   // last send time
-    int64_t wb_size = 0;                            // wait send data size
+    int64_t write_buffer_size = 0;                  // wait send data size
     uint8_t reading = 0;                            //
     uint8_t writing = 0;                            //
 
-    char endpoint[128] = { 0 };                     // endpoint info (ip:port)
-                                                    // for LISTEN - it is sock info
-                                                    // for TCP, UDP, BIND - peer info
+    char endpoint[128] = { 0 };                     // endpoint info (ip:port), for LISTEN: it is sock info; for TCP, UDP, BIND: it is peer info.
 };
 
 }

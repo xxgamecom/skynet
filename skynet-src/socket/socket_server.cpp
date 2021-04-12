@@ -1581,20 +1581,18 @@ const void* socket_server::clone_send_data(send_data* sd_ptr, size_t* sd_sz)
         *sd_sz = USER_OBJECT_TAG;
         return sd_ptr->data_ptr;
     }
-        // It's a raw pointer, we need make a copy
     else if (sd_ptr->type == SEND_DATA_TYPE_USER_DATA)
     {
+        // It's a raw pointer, we need make a copy
         *sd_sz = sd_ptr->data_size;
         void* tmp = new char[*sd_sz];
         ::memcpy(tmp, sd_ptr->data_ptr, *sd_sz);
         return tmp;
     }
+
     // never get here
-    else
-    {
-        *sd_sz = 0;
-        return nullptr;
-    }
+    *sd_sz = 0;
+    return nullptr;
 }
 
 void socket_server::append_send_buffer(socket_object* socket_ptr, cmd_request_send* cmd, bool is_high/* = true*/, const uint8_t* udp_address/* = nullptr*/)
