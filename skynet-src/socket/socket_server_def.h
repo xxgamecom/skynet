@@ -44,14 +44,6 @@ enum socket_event
     SOCKET_EVENT_RST = 8,               // only for internal use
 };
 
-// 
-struct socket_object_interface
-{
-    const void* (* buffer)(const void*);
-    size_t (* size)(const void*);
-    void (* free)(void*);
-};
-
 //
 struct socket_message
 {

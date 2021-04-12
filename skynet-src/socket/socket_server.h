@@ -42,7 +42,7 @@ private:
     int event_next_index_ = 0;                          // poller 的下一个未处理的事件索引
 
     //
-    socket_object_interface soi_;                       //
+    socket_user_object uo_socket_;                      // socket user_object
     socket_object_pool socket_object_pool_;             // socket object pool
     uint8_t udp_recv_buf_[MAX_UDP_PACKAGE] = { 0 };     //
     char addr_tmp_buf_[ADDR_TMP_BUFFER_SIZE] = { 0 };   // 地址信息临时数据
@@ -228,9 +228,9 @@ private:
     void raise_uncomplete(socket_object* socket_ptr);
 
     //
-    int send_write_buffer_list(socket_object* socket_ptr, send_buffer_list* sb_list_ptr, socket_lock& sl, socket_message* result);
-    int send_write_buffer_list_tcp(socket_object* socket_ptr, send_buffer_list* sb_list_ptr, socket_lock& sl, socket_message* result);
-    int send_write_buffer_list_udp(socket_object* socket_ptr, send_buffer_list* sb_list_ptr, socket_message* result);
+    int send_send_buffer_list(socket_object* socket_ptr, send_buffer_list* sb_list_ptr, socket_lock& sl, socket_message* result);
+    int send_send_buffer_list_tcp(socket_object* socket_ptr, send_buffer_list* sb_list_ptr, socket_lock& sl, socket_message* result);
+    int send_send_buffer_list_udp(socket_object* socket_ptr, send_buffer_list* sb_list_ptr, socket_message* result);
 
     /**
      * add send buffer
@@ -242,11 +242,11 @@ private:
      */
     void append_sendbuffer(socket_object* socket_ptr, cmd_request_send* cmd, bool is_high = true, const uint8_t* udp_address = nullptr);
 
-    // 准备发送缓存
-    send_buffer* prepare_write_buffer(send_buffer_list* sb_list_ptr, cmd_request_send* cmd, int size);
+    // prepare send buffer
+    send_buffer* prepare_send_buffer(send_buffer_list* sb_list_ptr, cmd_request_send* cmd, int size);
     // 清理发送缓存
-    void free_write_buffer(send_buffer* sb_ptr);
-    void free_write_buffer_list(send_buffer_list* sb_list_ptr);
+    void free_send_buffer(send_buffer* sb_ptr);
+    void free_send_buffer_list(send_buffer_list* sb_list_ptr);
 
     // send data
 private:
@@ -294,8 +294,8 @@ private:
     int forward_message_udp(socket_object* socket_ptr, socket_lock& sl, socket_message* result);
 
     // init send object
-    void init_send_object(send_object* so, send_data* sd_ptr);
-    bool init_send_object(send_object* so, const void* object, size_t sz);
+    void init_send_user_object(send_user_object* so, send_data* sd_ptr);
+    bool init_send_user_object(send_user_object* so, const void* object, size_t sz);
 
     void _clear_closed_event(int socket_id);
 };

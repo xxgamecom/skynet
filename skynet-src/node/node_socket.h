@@ -80,20 +80,5 @@ public:
     void get_socket_info(std::list<socket_info>& si_list);
 };
 
-//
-// legacy APIs
-//
-
-static inline int skynet_socket_send(uint32_t svc_handle, int socket_id, void* buffer, int sz)
-{
-    send_data sd;
-    sd.socket_id = socket_id;
-    sd.data_ptr = buffer;
-    sd.type = sz < 0 ? SEND_DATA_TYPE_OBJECT : SEND_DATA_TYPE_MEMORY;
-    sd.data_size = (size_t)sz;
-
-    return node_socket::instance()->send(svc_handle, &sd);
-}
-
 }
 

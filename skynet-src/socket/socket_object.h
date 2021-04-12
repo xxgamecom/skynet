@@ -87,7 +87,7 @@ public:
     //
     union
     {
-        int size;                                               // read buffer estimate size
+        int size;                                               // recv buffer estimate size
         uint8_t udp_address[UDP_ADDRESS_SIZE];                  //
     } p { 0 };
 

@@ -10,33 +10,49 @@ namespace skynet {
 // socket send data
 //----------------------------------------------
 
+
 // socket send data type
 enum send_data_type
 {
-    SEND_DATA_TYPE_MEMORY = 0,              // memory data
-    SEND_DATA_TYPE_OBJECT = 1,              // object data
-    SEND_DATA_TYPE_USER_DATA_PTR = 2,       // user data, must be a raw pointer, can't be a socket object or a memory object.
+    SEND_DATA_TYPE_MEMORY = 0,              // memory data (manage memory by self)
+
+    SEND_DATA_TYPE_USER_OBJECT = 1,         // user object data (manage memory by self)
+
+    SEND_DATA_TYPE_USER_DATA = 2,           // user data(LUA_TUSERDATA, full userdata),
+                                            // must be a raw pointer, can't be a socket object or a memory object.
 };
 
 // socket send data, used to send data in lua layer
 struct send_data
 {
-    int socket_id = 0;                      // socket id
-    int type = SEND_DATA_TYPE_MEMORY;       // buffer type
-    const void* data_ptr = nullptr;         // data
+    int socket_id = 0;                      // socket logic id
+    int type = SEND_DATA_TYPE_MEMORY;       // buffer type, default: memory data
+    const void* data_ptr = nullptr;         // data ptr
     size_t data_size = 0;                   // data size
 };
 
 // use object tag
 #define USER_OBJECT_TAG ((size_t)(-1))
 
-// 
-struct send_object
+// socket user_object interface
+struct socket_user_object
 {
-    const void* buffer = nullptr;           //
-    size_t sz = 0;                          //
-    void (* free_func)(void*);
+    // user_object buffer
+    const void* (*buffer)(const void* uo_ptr);
+    // user_object size
+    size_t (*size)(const void* uo_ptr);
+    // free user_object
+    void (*free)(void* uo_ptr);
 };
+
+// socket send user object
+struct send_user_object
+{
+    const void* buffer = nullptr;           // user_object ptr
+    size_t sz = 0;                          // user_object size
+    void (*free_func)(void* uo_ptr);        // free user_object function
+};
+
 
 //----------------------------------------------
 // socket send buffer
