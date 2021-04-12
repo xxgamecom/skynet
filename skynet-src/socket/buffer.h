@@ -43,9 +43,9 @@ struct send_object
 //----------------------------------------------
 
 // send buffer
-struct write_buffer
+struct send_buffer
 {
-    write_buffer* next = nullptr;                               //
+    send_buffer* next = nullptr;                               //
 
     const void* buffer = nullptr;                               //
     char* ptr = nullptr;                                        //
@@ -55,10 +55,10 @@ struct write_buffer
 };
 
 // send buffer list
-struct write_buffer_list
+struct send_buffer_list
 {
-    write_buffer* head = nullptr;
-    write_buffer* tail = nullptr;
+    send_buffer* head = nullptr;
+    send_buffer* tail = nullptr;
 };
 
 }

@@ -64,14 +64,14 @@ public:
     int socket_id = 0;                                          // socket logic id, used for upper layer
     uint8_t socket_type = SOCKET_TYPE_UNKNOWN;                  // socket ip proto type（TCP/UDP）
     std::atomic<uint8_t> socket_status = SOCKET_STATUS_INVALID; // socket status（read、write、listen...）
-    bool reading = false;                                       // half close read flag
-    bool writing = false;                                       // half close write flag
+    bool reading = false;                                       // half close recv flag
+    bool writing = false;                                       // half close send flag
     bool closing = false;                                       // closing flag
 
     // send
-    write_buffer_list wb_list_high;                             // high priority write buffer
-    write_buffer_list wb_list_low;                              // low priority write buffer
-    int64_t wb_size = 0;                                        // wait send data size
+    send_buffer_list send_buffer_list_high;                     // high priority send buffer
+    send_buffer_list send_buffer_list_low;                      // low priority send buffer
+    int64_t send_buffer_size = 0;                               // wait send data bytes
 
     std::atomic<uint32_t> sending_count = 0;                    // wait to send count, divide into 2 parts:
                                                                 // - high 16 bits: socket id
@@ -91,18 +91,18 @@ public:
         uint8_t udp_address[UDP_ADDRESS_SIZE];                  //
     } p { 0 };
 
-    //
-    std::mutex dw_mutex;                                        // direct write buffer protected
-    int dw_offset = 0;                                          // direct write buffer offset
-    const void* dw_buffer = nullptr;                            // direct write buffer
-    size_t dw_size = 0;                                         // direct write buffer size
+    // direct send
+    std::mutex direct_send_mutex;                               // direct send buffer protected
+    int direct_send_offset = 0;                                 // direct send buffer offset
+    const void* direct_send_buffer = nullptr;                   // direct send buffer
+    size_t direct_send_size = 0;                                // direct send buffer size
 
 public:
     bool is_invalid(int socket_id);
 
     bool is_send_buffer_empty();
     bool nomore_sending_data();
-    bool can_direct_write(int socket_id);
+    bool can_direct_send(int socket_id);
 
     void shutdown_read();
     void shutdown_write();
