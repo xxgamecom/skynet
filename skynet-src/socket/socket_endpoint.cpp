@@ -1,4 +1,4 @@
-#include "socket_addr.h"
+#include "socket_endpoint.h"
 #include "socket_object.h"
 
 #include "fmt/format.h"
@@ -7,7 +7,7 @@
 
 namespace skynet {
 
-std::string socket_addr::to_string() const
+std::string socket_endpoint::to_string() const
 {
     // ip & port
     void* sin_addr = (addr.s.sa_family == AF_INET) ? (void*)&addr.v4.sin_addr : (void*)&addr.v6.sin6_addr;
@@ -21,7 +21,7 @@ std::string socket_addr::to_string() const
     return fmt::format("{}:{}", tmp, sin_port);
 }
 
-bool socket_addr::to_string(char* buf_ptr, size_t buf_sz) const
+bool socket_endpoint::to_string(char* buf_ptr, size_t buf_sz) const
 {
     // ip & port
     void* sin_addr = (addr.s.sa_family == AF_INET) ? (void*)&addr.v4.sin_addr : (void*)&addr.v6.sin6_addr;
@@ -41,7 +41,7 @@ bool socket_addr::to_string(char* buf_ptr, size_t buf_sz) const
 }
 
 //
-int socket_addr::from_udp_address(int protocol_type, const uint8_t* udp_address)
+int socket_endpoint::from_udp_address(int protocol_type, const uint8_t* udp_address)
 {
     // protocol_type: 1 byte
     int type = (uint8_t)udp_address[0];
@@ -93,7 +93,7 @@ int socket_addr::from_udp_address(int protocol_type, const uint8_t* udp_address)
  * | protocol_type |  port    |  v6.sin_addr   |
  * +---------------+----------+----------------+
  */
-int socket_addr::to_udp_address(int protocol_type, uint8_t* udp_address) const
+int socket_endpoint::to_udp_address(int protocol_type, uint8_t* udp_address) const
 {
     // 1 byte
     udp_address[0] = (uint8_t)protocol_type;

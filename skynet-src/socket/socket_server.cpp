@@ -470,7 +470,7 @@ int socket_server::send(send_data* sd_ptr)
             // udp
             else
             {
-                socket_addr sa;
+                socket_endpoint sa;
                 int sa_sz = sa.from_udp_address(socket_ref.socket_type, socket_ref.p.udp_address);
                 if (sa_sz == 0)
                 {
@@ -658,7 +658,7 @@ int socket_server::udp_send(const socket_udp_address* addr, send_data* sd_ptr)
                 // send directly
                 send_object so;
                 init_send_object(&so, sd_ptr);
-                socket_addr sa;
+                socket_endpoint sa;
                 socklen_t sa_sz = sa.from_udp_address(socket_ref.socket_type, udp_address);
                 if (sa_sz == 0)
                 {
@@ -734,7 +734,7 @@ int socket_server::udp_connect(int socket_id, const char* remote_ip, int remote_
     }
 
     ctrl_cmd_package cmd;
-    prepare_ctrl_cmd_request_set_udp(cmd, socket_id, type, (socket_addr*)ai_list->ai_addr);
+    prepare_ctrl_cmd_request_set_udp(cmd, socket_id, type, (socket_endpoint*)ai_list->ai_addr);
     ::freeaddrinfo(ai_list);
     _send_ctrl_cmd(&cmd);
 
@@ -1177,7 +1177,7 @@ int socket_server::handle_ctrl_cmd_send_socket(cmd_request_send* cmd, socket_mes
                 udp_address = socket_ref.p.udp_address;
             }
 
-            socket_addr sa;
+            socket_endpoint sa;
             socklen_t sa_sz = sa.from_udp_address(socket_ref.socket_type, udp_address);
             if (sa_sz == 0)
             {
@@ -1758,7 +1758,7 @@ int socket_server::send_write_buffer_list_udp(socket_object* socket_ptr, write_b
     while (wb_list->head != nullptr)
     {
         auto tmp = wb_list->head;
-        socket_addr sa;
+        socket_endpoint sa;
         socklen_t sa_sz = sa.from_udp_address(socket_ptr->socket_type, tmp->udp_address);
         if (sa_sz == 0)
         {
@@ -1911,7 +1911,7 @@ int socket_server::do_send_write_buffer(socket_object* socket_ptr, socket_lock& 
 int socket_server::handle_accept(socket_object* socket_ptr, socket_message* result)
 {
     // wait accept
-    socket_addr sa;
+    socket_endpoint sa;
     socklen_t sa_sz = sizeof(sa);
     int client_fd = ::accept(socket_ptr->socket_fd, &sa.addr.s, &sa_sz);
 
@@ -2001,7 +2001,7 @@ int socket_server::handle_connect(socket_object* socket_ptr, socket_lock& sl, so
             return SOCKET_EVENT_ERROR;
         }
     }
-    socket_addr sa;
+    socket_endpoint sa;
     socklen_t sa_sz = sizeof(sa);
     if (::getpeername(socket_ptr->socket_fd, &sa.addr.s, &sa_sz) == 0)
     {
@@ -2164,7 +2164,7 @@ int socket_server::forward_message_tcp(socket_object* socket_ptr, socket_lock& s
 
 int socket_server::forward_message_udp(socket_object* socket_ptr, socket_lock& sl, socket_message* result)
 {
-    socket_addr sa;
+    socket_endpoint sa;
     socklen_t sa_sz = sizeof(sa);
     int recv_n = ::recvfrom(socket_ptr->socket_fd, udp_recv_buf_, MAX_UDP_PACKAGE, 0, &sa.addr.s, &sa_sz);
     if (recv_n < 0)

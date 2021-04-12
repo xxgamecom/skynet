@@ -6,7 +6,7 @@
 
 #include "socket_object.h"
 #include "socket_lock.h"
-#include "socket_addr.h"
+#include "socket_endpoint.h"
 #include "socket_info.h"
 #include "socket_object_pool.h"
 #include "buffer.h"

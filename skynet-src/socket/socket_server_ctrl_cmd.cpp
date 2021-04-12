@@ -1,5 +1,5 @@
 #include "socket_server_ctrl_cmd.h"
-#include "socket_addr.h"
+#include "socket_endpoint.h"
 
 #include "../log/log.h"
 
@@ -208,7 +208,7 @@ int prepare_ctrl_cmd_request_udp_socket(ctrl_cmd_package& cmd, uint32_t svc_hand
     return len;
 }
 
-int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int socket_type, const socket_addr* sa)
+int prepare_ctrl_cmd_request_set_udp(ctrl_cmd_package& cmd, int socket_id, int socket_type, const socket_endpoint* sa)
 {
     // cmd data
     cmd.u.set_udp.socket_id = socket_id;

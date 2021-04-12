@@ -74,7 +74,7 @@ void socket_object::reset_udp_connecting_count()
 
 bool socket_object::get_socket_info(socket_info& si) const
 {
-    socket_addr sa;
+    socket_endpoint sa;
     socklen_t sa_sz = sizeof(sa);
     bool closing = false;
 
