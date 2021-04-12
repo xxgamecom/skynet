@@ -471,15 +471,15 @@ int socket_server::send(send_data* sd_ptr)
             else
             {
                 socket_endpoint endpoint;
-                int sa_sz = endpoint.from_udp_address(socket_ref.socket_type, socket_ref.p.udp_address);
-                if (sa_sz == 0)
+                int endpoint_sz = endpoint.from_udp_address(socket_ref.socket_type, socket_ref.p.udp_address);
+                if (endpoint_sz == 0)
                 {
                     log_error(nullptr, fmt::format("socket-server : set udp ({}) address first.", socket_id));
 
                     so.free_func((void*)sd_ptr->data_ptr);
                     return -1;
                 }
-                n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &endpoint.addr.s, sa_sz);
+                n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &endpoint.addr.s, endpoint_sz);
             }
 
             // error
@@ -659,14 +659,14 @@ int socket_server::udp_send(const socket_udp_address* addr, send_data* sd_ptr)
                 send_object so;
                 init_send_object(&so, sd_ptr);
                 socket_endpoint endpoint;
-                socklen_t sa_sz = endpoint.from_udp_address(socket_ref.socket_type, udp_address);
-                if (sa_sz == 0)
+                socklen_t endpoint_sz = endpoint.from_udp_address(socket_ref.socket_type, udp_address);
+                if (endpoint_sz == 0)
                 {
                     so.free_func((void*)sd_ptr->data_ptr);
                     return -1;
                 }
 
-                int send_n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &endpoint.addr.s, sa_sz);
+                int send_n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &endpoint.addr.s, endpoint_sz);
                 if (send_n >= 0)
                 {
                     // send statistics
@@ -1178,8 +1178,8 @@ int socket_server::handle_ctrl_cmd_send_socket(cmd_request_send* cmd, socket_mes
             }
 
             socket_endpoint endpoint;
-            socklen_t sa_sz = endpoint.from_udp_address(socket_ref.socket_type, udp_address);
-            if (sa_sz == 0)
+            socklen_t endpoint_sz = endpoint.from_udp_address(socket_ref.socket_type, udp_address);
+            if (endpoint_sz == 0)
             {
                 // udp type mismatch, just drop it.
                 log_error(nullptr, fmt::format("socket-server : udp ({}) type mismatch.", socket_id));
@@ -1189,7 +1189,7 @@ int socket_server::handle_ctrl_cmd_send_socket(cmd_request_send* cmd, socket_mes
             }
 
             //
-            int n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &endpoint.addr.s, sa_sz);
+            int n = ::sendto(socket_ref.socket_fd, so.buffer, so.sz, 0, &endpoint.addr.s, endpoint_sz);
             if (n != so.sz)
             {
                 append_sendbuffer(&socket_ref, cmd, priority == PRIORITY_TYPE_HIGH, udp_address);
@@ -1759,8 +1759,8 @@ int socket_server::send_write_buffer_list_udp(socket_object* socket_ptr, write_b
     {
         auto tmp = wb_list->head;
         socket_endpoint endpoint;
-        socklen_t sa_sz = endpoint.from_udp_address(socket_ptr->socket_type, tmp->udp_address);
-        if (sa_sz == 0)
+        socklen_t endpoint_sz = endpoint.from_udp_address(socket_ptr->socket_type, tmp->udp_address);
+        if (endpoint_sz == 0)
         {
             log_error(nullptr, fmt::format("socket-server : udp ({}) type mismatch.", socket_ptr->socket_id));
             drop_udp(socket_ptr, wb_list, tmp);
@@ -1768,7 +1768,7 @@ int socket_server::send_write_buffer_list_udp(socket_object* socket_ptr, write_b
         }
 
         // 发送数据
-        int err = ::sendto(socket_ptr->socket_fd, tmp->ptr, tmp->sz, 0, &endpoint.addr.s, sa_sz);
+        int err = ::sendto(socket_ptr->socket_fd, tmp->ptr, tmp->sz, 0, &endpoint.addr.s, endpoint_sz);
         if (err < 0)
         {
             //
