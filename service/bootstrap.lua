@@ -8,7 +8,7 @@ skynet.start(function()
 
     -- start service_mgr service
     skynet.newservice("service_mgr")
-    pcall(skynet.newservice, skynet.getenv("start") or "main")
+    pcall(skynet.newservice, skynet.get_env("start") or "main")
 
     --
     skynet.exit()

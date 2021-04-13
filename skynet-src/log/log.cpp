@@ -22,6 +22,7 @@ enum log_level
     LOG_LEVEL_ERROR = 3,
 };
 
+// todo: process max_log_msg_size
 void _log(service_context* svc_ctx, int log_level, const char* msg)
 {
     // find logger service 'logger'

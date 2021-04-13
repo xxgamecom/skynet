@@ -439,10 +439,13 @@ static int l_set_service_callback(lua_State* L)
 /**
  * generate a new session id
  *
+ * outputs:
+ * 1) session id                - number
+ *
  * lua examples:
- * c.gen_session_id()
+ * c.new_session_id()
  */
-static int l_gen_session_id(lua_State* L)
+static int l_new_session_id(lua_State* L)
 {
     // service context upvalue
     auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
@@ -688,14 +691,18 @@ static int l_trace(lua_State* L)
     switch (index)
     {
     case 1:
-        log_info(svc_ctx, fmt::format("<TRACE {}> {} {} : {}:{}", tag, skynet::time_helper::get_time_ns(), user, si[0].source, si[0].line));
+        log_info(svc_ctx, fmt::format("<TRACE {}> {} {} : {}:{}",
+                                      tag, skynet::time_helper::get_time_ns(), user,
+                                      si[0].source, si[0].line));
         break;
     case 2:
-        log_info(svc_ctx, fmt::format("<TRACE {}> {} {} : {}:{} {}:{}", tag, skynet::time_helper::get_time_ns(), user,
+        log_info(svc_ctx, fmt::format("<TRACE {}> {} {} : {}:{} {}:{}",
+                                      tag, skynet::time_helper::get_time_ns(), user,
                                       si[0].source, si[0].line, si[1].source, si[1].line));
         break;
     case 3:
-        log_info(svc_ctx, fmt::format("<TRACE {}> {} {} : {}:{} {}:{} {}:{}", tag, skynet::time_helper::get_time_ns(), user,
+        log_info(svc_ctx, fmt::format("<TRACE {}> {} {} : {}:{} {}:{} {}:{}",
+                                      tag, skynet::time_helper::get_time_ns(), user,
                                       si[0].source, si[0].line, si[1].source, si[1].line, si[2].source, si[2].line));
         break;
     default:
@@ -871,7 +878,7 @@ LUAMOD_API int luaopen_skynet_core(lua_State* L)
         { "intcommand",     l_service_command_int },
         { "addresscommand", l_service_command_address },
         { "callback",       l_set_service_callback },
-        { "gen_session_id", l_gen_session_id },
+        { "new_session_id", l_new_session_id },
         { "log_debug",      l_log_debug },
         { "log_info",       l_log_info },
         { "log_warn",       l_log_warn },

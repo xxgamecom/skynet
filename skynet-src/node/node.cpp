@@ -217,7 +217,6 @@ mq_private* node::dispatch_message(service_monitor& svc_monitor, mq_private* q, 
     return q;
 }
 
-
 // use snlua to start lua service `bootstrap`
 void node::_bootstrap(service_context* log_svc_ctx, const char* cmdline)
 {

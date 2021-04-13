@@ -2,7 +2,7 @@ local skynet = require "skynet"
 require "skynet.manager"
 local cluster_core = require "skynet.cluster.core"
 
-local config_name = skynet.getenv("cluster")
+local config_name = skynet.get_env("cluster")
 
 local node_map = {}             -- cluster node map, key: node name, value: node address
 local node_sender_svc_map = {}  -- cluster node sender service map, key: node name, value: cluster sender service handle

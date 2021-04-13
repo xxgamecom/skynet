@@ -202,13 +202,13 @@ const char* cmd_launch(service_context* context, const char* param)
     return context->cmd_result_;
 }
 
-// skynet cmd: getenv, 获取skynet环境变量，是key-value结构，所有ctx共享的
+// skynet cmd: get_env, 获取skynet环境变量，是key-value结构，所有ctx共享的
 const char* cmd_get_env(service_context* svc_ctx, const char* param)
 {
     return node_env::instance()->get_env(param);
 }
 
-// skynet cmd: setenv, 设置skynet环境变量，是key-value结构，所有ctx共享的
+// skynet cmd: set_env, 设置skynet环境变量，是key-value结构，所有ctx共享的
 const char* cmd_set_env(service_context* svc_ctx, const char* param)
 {
     size_t sz = ::strlen(param);
