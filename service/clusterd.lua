@@ -2,7 +2,7 @@ local skynet = require "skynet"
 require "skynet.manager"
 local cluster_core = require "skynet.cluster.core"
 
-local config_name = skynet.getenv("cluster")
+local config_name = skynet.get_env("cluster")
 
 local node_map = {}             -- cluster node map, key: node name, value: node address
 local node_sender_svc_map = {}  -- cluster node sender service map, key: node name, value: cluster sender service handle
@@ -14,8 +14,8 @@ local this_node_name = cluster_core.nodename()
 
 ---
 --- open sender service
---- @param t
---- @param key string cluster node name
+---@param t
+---@param key string cluster node name
 local function open_channel(t, key)
     -- check reslove, block
     local connecting_info = connecting[key]
@@ -103,7 +103,7 @@ local node_channel = setmetatable({}, { __index = open_channel })
 --- gate_1 = "0.0.0.0:9020"
 --- ...
 ---
---- @param env
+---@param env
 local function load_config(env)
     -- load cluster config file
     if env == nil then

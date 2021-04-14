@@ -12,11 +12,11 @@ end
 ]]
 
 local temp = {}
-local function wrap_locals(co, source, level, ext_funcs)
-    if co == coroutine.running() then
+local function wrap_locals(thread, source, level, ext_funcs)
+    if thread == coroutine.running() then
         level = level + 3
     end
-    local f = debug.getinfo(co, level,"f").func
+    local f = debug.getinfo(thread, level,"f").func
     if f == nil then
         return false, "Invalid level"
     end
@@ -33,7 +33,7 @@ local function wrap_locals(co, source, level, ext_funcs)
     end
     local i = 1
     while true do
-        local name, value = debug.getlocal(co, level, i)
+        local name, value = debug.getlocal(thread, level, i)
         if name == nil then
             break
         end
@@ -87,12 +87,12 @@ local function wrap_locals(co, source, level, ext_funcs)
         end
         i=i+1
     end
-    local vararg, v = debug.getlocal(co, level, -1)
+    local vararg, v = debug.getlocal(thread, level, -1)
     if vararg then
         local vargs = { v }
         local i = 2
         while true do
-            local vararg,v = debug.getlocal(co, level, -i)
+            local vararg,v = debug.getlocal(thread, level, -i)
             if vararg then
                 vargs[i] = v
             else
@@ -106,18 +106,18 @@ local function wrap_locals(co, source, level, ext_funcs)
     end
 end
 
-local function exec(co, level, func, update, ...)
+local function exec(thread, level, func, update, ...)
     if not func then
         return false, update
     end
-    if co == coroutine.running() then
+    if thread == coroutine.running() then
         level = level + 2
     end
     local rets = table.pack(pcall(func, ...))
     if rets[1] then
         local needupdate = update()
         for k,v in pairs(needupdate) do
-            debug.setlocal(co, level,k,v)
+            debug.setlocal(thread, level,k,v)
         end
         return table.unpack(rets, 1, rets.n)
     else
@@ -125,9 +125,9 @@ local function exec(co, level, func, update, ...)
     end
 end
 
-return function (source, co, level, ext_funcs)
-    co = co or coroutine.running()
+return function (source, thread, level, ext_funcs)
+    thread = thread or coroutine.running()
     level = level or 0
-    return exec(co, level, wrap_locals(co, source, level, ext_funcs))
+    return exec(thread, level, wrap_locals(thread, source, level, ext_funcs))
 end
 

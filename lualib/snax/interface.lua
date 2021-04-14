@@ -73,7 +73,7 @@ return function(name, G, loader)
         end
     end
 
-    local path = assert(skynet.getenv "snax", "please set snax in config file")
+    local path = assert(skynet.get_env "snax", "please set snax in config file")
     local mainfunc, pattern = loader(path, name, G)
 
     setmetatable(G, { __index = env, __newindex = init_system })

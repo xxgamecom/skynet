@@ -4,7 +4,7 @@ local profile = require "skynet.profile"
 local snax = require "skynet.snax"
 
 local snax_name = tostring(...)
-local loaderpath = skynet.getenv "snax_loader"
+local loaderpath = skynet.get_env "snax_loader"
 local loader = loaderpath and assert(dofile(loaderpath))
 local func, pattern = snax_interface(snax_name, _ENV, loader)
 local snax_path = pattern:sub(1, pattern:find("?", 1, true) - 1) .. snax_name .. "/"

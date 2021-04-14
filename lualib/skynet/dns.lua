@@ -364,7 +364,7 @@ local function resolve(content)
         resp.answers = r.answers
     end
 
-    skynet.wakeup(resp.co)
+    skynet.wakeup(resp.thread)
 end
 
 local function connect_server()
@@ -433,7 +433,7 @@ local function suspend(tid, name, qtype)
         name = name,
         tid = tid,
         qtype = qtype,
-        co = coroutine.running(),
+        thread = coroutine.running(),
     }
     request_pool[tid] = req
     skynet.fork(function()
@@ -443,10 +443,10 @@ local function suspend(tid, name, qtype)
             -- cancel tid
             skynet.log_warn(string.format("DNS query %s timeout", name))
             request_pool[tid] = nil
-            skynet.wakeup(req.co)
+            skynet.wakeup(req.thread)
         end
     end)
-    skynet.wait(req.co)
+    skynet.wait(req.thread)
     request_pool[tid] = nil
     if not req.answers then
         local answers = lookup_cache(name, qtype, true)

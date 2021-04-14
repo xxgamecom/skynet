@@ -23,6 +23,7 @@ namespace skynet::luaclib {
 #define POOL_SIZE_WARNING   32
 #define BUFFER_LIMIT        (256 * 1024)
 
+// recv buffer node
 struct buffer_node
 {
     char* msg = nullptr;
@@ -30,7 +31,8 @@ struct buffer_node
     buffer_node* next = nullptr;
 };
 
-struct socket_buffer
+// socket recv buffer
+struct socket_recv_buffer
 {
     int size = 0;
     int offset = 0;
@@ -38,7 +40,7 @@ struct socket_buffer
     buffer_node* tail = nullptr;
 };
 
-static void _return_free_node(lua_State* L, int pool, socket_buffer* sb)
+static void _return_free_node(lua_State* L, int pool, socket_recv_buffer* sb)
 {
     buffer_node* free_node = sb->head;
     sb->offset = 0;
@@ -61,7 +63,7 @@ static void _return_free_node(lua_State* L, int pool, socket_buffer* sb)
 }
 
 //
-static void _pop_lstring(lua_State* L, socket_buffer* sb, int sz, int skip)
+static void _pop_lstring(lua_State* L, socket_recv_buffer* sb, int sz, int skip)
 {
     buffer_node* curr_node_ptr = sb->head;
     if (sz < curr_node_ptr->sz - sb->offset)
@@ -128,8 +130,8 @@ static int _free_pool(lua_State* L)
     return 0;
 }
 
-// alloc buffer pool
-static int _new_pool(lua_State* L, int sz)
+// alloc recv buffer pool
+static int _new_recv_buffer_pool(lua_State* L, int sz)
 {
     auto pool = (buffer_node*)lua_newuserdata(L, sizeof(buffer_node) * sz);
     for (int i = 0; i < sz; i++)
@@ -141,7 +143,7 @@ static int _new_pool(lua_State* L, int sz)
     pool[sz - 1].next = nullptr;
 
     //
-    if (luaL_newmetatable(L, "buffer_pool") != 0)
+    if (luaL_newmetatable(L, "recv_buffer_pool") != 0)
     {
         lua_pushcfunction(L, _free_pool);
         lua_setfield(L, -2, "__gc");
@@ -152,14 +154,14 @@ static int _new_pool(lua_State* L, int sz)
 }
 
 /**
- * alloc socket buffer
+ * alloc socket recv buffer
  *
  * lua examples:
- * new_buffer = socket_core.new_buffer()
+ * new_recv_buffer = socket_core.new_recv_buffer()
  */
-static int l_new_socket_buffer(lua_State* L)
+static int l_new_socket_recv_buffer(lua_State* L)
 {
-    auto sb = (socket_buffer*)lua_newuserdata(L, sizeof(socket_buffer));
+    auto sb = (socket_recv_buffer*)lua_newuserdata(L, sizeof(socket_recv_buffer));
     sb->size = 0;
     sb->offset = 0;
     sb->head = nullptr;
@@ -169,7 +171,7 @@ static int l_new_socket_buffer(lua_State* L)
 }
 
 /**
- * push data to socket buffer
+ * push data to socket recv buffer
  *
  * arguments:
  * 1 socket buffer          - userdata (socket_buffer)
@@ -187,16 +189,16 @@ static int l_new_socket_buffer(lua_State* L)
  * we never free them until the VM closed. The size of first chunk ([2]) is 16 buffer_node, and the
  * second size is 32 ... The largest size of chunk is LARGE_PAGE_NODE (4096).
  *
- * l_push_socket_buffer will get a free buffer_node from table pool, and then put the msg/size in it.
- * l_pop_socket_buffer return the buffer_node back to table pool (By calling _return_free_node).
+ * l_push_socket_recv_buffer will get a free buffer_node from table pool, and then put the msg/size in it.
+ * l_pop_socket_recv_buffer return the buffer_node back to table pool (By calling _return_free_node).
  *
  * lua examples:
- * local sz = socket_core.push(s.buffer, s.buffer_pool, data, size)
+ * local sz = socket_core.push(s.recv_buffer, s.recv_buffer_pool, data, size)
  */
-static int l_push_socket_buffer(lua_State* L)
+static int l_push_socket_recv_buffer(lua_State* L)
 {
-    // socket buffer
-    auto sb = (socket_buffer*)lua_touserdata(L, 1);
+    // socket recv buffer
+    auto sb = (socket_recv_buffer*)lua_touserdata(L, 1);
     if (sb == nullptr)
     {
         return luaL_error(L, "need buffer object at param 1");
@@ -231,7 +233,7 @@ static int l_push_socket_buffer(lua_State* L)
             size <<= tsz;
         else
             size <<= LARGE_PAGE_NODE - 3;
-        _new_pool(L, size);
+        _new_recv_buffer_pool(L, size);
         free_node = (buffer_node*)lua_touserdata(L, -1);
         lua_rawseti(L, pool_index, tsz + 1);
         if (tsz > POOL_SIZE_WARNING)
@@ -263,7 +265,7 @@ static int l_push_socket_buffer(lua_State* L)
 }
 
 /**
- * get a free socket buffer
+ * get a free socket recv buffer
  *
  * arguments:
  * 1 socket buffer          - userdata (socket_buffer)
@@ -275,12 +277,12 @@ static int l_push_socket_buffer(lua_State* L)
  * 2
  *
  * lua examples:
- * ret = socket_core.pop(s.buffer, s.buffer_pool, sz)
+ * ret = socket_core.pop(s.recv_buffer, s.recv_buffer_pool, sz)
  */
-static int l_pop_socket_buffer(lua_State* L)
+static int l_pop_socket_recv_buffer(lua_State* L)
 {
-    // socket buffer
-    auto sb = (socket_buffer*)lua_touserdata(L, 1);
+    // socket recv buffer
+    auto sb = (socket_recv_buffer*)lua_touserdata(L, 1);
     if (sb == nullptr)
     {
         return luaL_error(L, "Need buffer object at param 1");
@@ -308,7 +310,7 @@ static int l_pop_socket_buffer(lua_State* L)
 }
 
 /**
- * clear socket buffer
+ * clear socket recv buffer
  *
  * arguments:
  * 1 socket buffer              - userdata (socket_buffer)
@@ -317,10 +319,10 @@ static int l_pop_socket_buffer(lua_State* L)
  * lua examples:
  *
  */
-static int l_clear_socket_buffer(lua_State* L)
+static int l_clear_socket_recv_buffer(lua_State* L)
 {
-    // socket buffer
-    auto sb = (socket_buffer*)lua_touserdata(L, 1);
+    // socket recv buffer
+    auto sb = (socket_recv_buffer*)lua_touserdata(L, 1);
     if (sb == nullptr)
     {
         if (lua_isnil(L, 1))
@@ -376,12 +378,12 @@ static int l_drop(lua_State* L)
  *
  *
  * lua examples:
- * local ret = socket_core.read_all(s.buffer, s.buffer_pool)
+ * local ret = socket_core.read_all(s.recv_buffer, s.recv_buffer_pool)
  */
 static int l_read_all(lua_State* L)
 {
-    // socket buffer
-    auto sb = (socket_buffer*)lua_touserdata(L, 1);
+    // socket recv buffer
+    auto sb = (socket_recv_buffer*)lua_touserdata(L, 1);
     if (sb == nullptr)
     {
         return luaL_error(L, "Need buffer object at param 1");
@@ -440,12 +442,12 @@ static bool _check_sep(buffer_node* node, int from, const char* sep, int sep_len
  * 3 separate, end line tag     - string
  *
  * lua examples:
- * socket_core.read_line(s.buffer, s.buffer_pool, sep)
+ * socket_core.read_line(s.recv_buffer, s.recv_buffer_pool, sep)
  */
 static int l_read_line(lua_State* L)
 {
-    // socket buffer
-    auto sb = (socket_buffer*)lua_touserdata(L, 1);
+    // socket recv buffer
+    auto sb = (socket_recv_buffer*)lua_touserdata(L, 1);
     if (sb == nullptr)
     {
         return luaL_error(L, "Need buffer object at param 1");
@@ -1272,19 +1274,19 @@ extern "C" {
 
 // functions without service_context
 static const luaL_Reg socket_funcs_1[] = {
-    { "new_buffer",   skynet::luaclib::l_new_socket_buffer },
-    { "push_buffer",  skynet::luaclib::l_push_socket_buffer },
-    { "pop_buffer",   skynet::luaclib::l_pop_socket_buffer },
-    { "clear_buffer", skynet::luaclib::l_clear_socket_buffer },
-    { "drop",         skynet::luaclib::l_drop },
-    { "read_all",     skynet::luaclib::l_read_all },
-    { "read_line",    skynet::luaclib::l_read_line },
-    { "str2p",        skynet::luaclib::l_str2p },
-    { "header",       skynet::luaclib::l_header },
-    { "info",         skynet::luaclib::l_query_socket_info },
-    { "unpack",       skynet::luaclib::l_unpack },
+    { "new_recv_buffer",   skynet::luaclib::l_new_socket_recv_buffer },
+    { "push_recv_buffer",  skynet::luaclib::l_push_socket_recv_buffer },
+    { "pop_recv_buffer",   skynet::luaclib::l_pop_socket_recv_buffer },
+    { "clear_recv_buffer", skynet::luaclib::l_clear_socket_recv_buffer },
+    { "drop",              skynet::luaclib::l_drop },
+    { "read_all",          skynet::luaclib::l_read_all },
+    { "read_line",         skynet::luaclib::l_read_line },
+    { "str2p",             skynet::luaclib::l_str2p },
+    { "header",            skynet::luaclib::l_header },
+    { "info",              skynet::luaclib::l_query_socket_info },
+    { "unpack",            skynet::luaclib::l_unpack },
 
-    { nullptr,        nullptr },
+    { nullptr,             nullptr },
 };
 
 // need service_context upvalue

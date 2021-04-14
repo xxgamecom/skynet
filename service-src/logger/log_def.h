@@ -7,7 +7,7 @@ namespace skynet {
 // logger type
 enum logger_type
 {
-    LOG_TYPE_NULL = 0,                  // log null
+    LOG_TYPE_NULL = 0,
 
     LOG_TYPE_CONSOLE = 0x01,            // log to console
     LOG_TYPE_CONSOLE_COLOR = 0x02,      // log to console
@@ -22,8 +22,7 @@ inline logger_type string_to_logger_type(const char* type)
 {
     assert(type != nullptr);
 
-    if (::strcasecmp(type, "null") == 0) return LOG_TYPE_NULL;
-    else if (::strcasecmp(type, "console") == 0) return LOG_TYPE_CONSOLE;
+    if (::strcasecmp(type, "console") == 0) return LOG_TYPE_CONSOLE;
     else if (::strcasecmp(type, "console_color") == 0) return LOG_TYPE_CONSOLE_COLOR;
     else if (::strcasecmp(type, "hourly") == 0) return LOG_TYPE_HOURLY;
     else if (::strcasecmp(type, "daily") == 0) return LOG_TYPE_DAILY;
@@ -34,11 +33,12 @@ inline logger_type string_to_logger_type(const char* type)
 // log level
 enum log_level
 {
-    LOG_LEVEL_DEBUG = 0,
-    LOG_LEVEL_INFO = 1,
-    LOG_LEVEL_WARN = 2,
-    LOG_LEVEL_ERROR = 3,
-    LOG_LEVEL_OFF = 4,
+    LOG_LEVEL_TRACE = 0,
+    LOG_LEVEL_DEBUG = 1,
+    LOG_LEVEL_INFO = 2,
+    LOG_LEVEL_WARN = 3,
+    LOG_LEVEL_ERROR = 4,
+    LOG_LEVEL_OFF = 5,
 };
 
 // convert string to log level
@@ -46,7 +46,8 @@ inline log_level string_to_log_level(const char* level)
 {
     assert(level != nullptr);
 
-    if (::strcasecmp(level, "debug") == 0) return LOG_LEVEL_DEBUG;
+    if (::strcasecmp(level, "trace") == 0) return LOG_LEVEL_TRACE;
+    else if (::strcasecmp(level, "debug") == 0) return LOG_LEVEL_DEBUG;
     else if (::strcasecmp(level, "info") == 0) return LOG_LEVEL_INFO;
     else if (::strcasecmp(level, "warn") == 0) return LOG_LEVEL_WARN;
     else if (::strcasecmp(level, "error") == 0) return LOG_LEVEL_ERROR;
@@ -57,7 +58,8 @@ inline log_level string_to_log_level(const char* level)
 // convert log_level to spdlog log level
 inline spdlog::level::level_enum to_spdlog_level(log_level level)
 {
-    if (level == LOG_LEVEL_DEBUG) return spdlog::level::level_enum::debug;
+    if (level == LOG_LEVEL_TRACE) return spdlog::level::level_enum::trace;
+    else if (level == LOG_LEVEL_DEBUG) return spdlog::level::level_enum::debug;
     else if (level == LOG_LEVEL_INFO) return spdlog::level::level_enum::info;
     else if (level == LOG_LEVEL_WARN) return spdlog::level::level_enum::warn;
     else if (level == LOG_LEVEL_ERROR) return spdlog::level::level_enum::err;
@@ -65,18 +67,36 @@ inline spdlog::level::level_enum to_spdlog_level(log_level level)
     else return spdlog::level::level_enum::info;
 }
 
+// logger log level type
+enum log_level_type
+{
+    LOG_LEVEL_TYPE_LONG = 0,
+    LOG_LEVEL_TYPE_SHORT = 1,
+};
+
+// convert string to log level type
+inline log_level_type string_to_log_level_type(const char* type)
+{
+    assert(type != nullptr);
+
+    if (::strcasecmp(type, "long") == 0) return LOG_LEVEL_TYPE_LONG;
+    else if (::strcasecmp(type, "short") == 0) return LOG_LEVEL_TYPE_SHORT;
+    else return LOG_LEVEL_TYPE_LONG;
+}
+
 // base info
-#define DEFAULT_LOG_TYPE                    "console"           // default log type
-#define DEFAULT_LOG_BASENAME                "./logs/skynet.log" // default log basename
-#define DEFAULT_LOG_LEVEL                   "info"              // default log level
+#define DEFAULT_LOG_TYPE                    "console"               // default log type
+#define DEFAULT_LOG_BASENAME                "./logs/skynet.log"     // default log basename
+#define DEFAULT_LOG_LEVEL                   "info"                  // default log level
+#define DEFAULT_LOG_LEVEL_TYPE              "long"                  // default log level type
 
 // log rotating file
-#define DEFAULT_LOG_ROTATING_MAX_FILES      5                   // default the number of rotatiing file
-#define DEFAULT_LOG_ROTATING_MAX_SIZE       50                  // default the size of rotating file, 50MB
+#define DEFAULT_LOG_ROTATING_MAX_FILES      5                       // default the number of rotatiing file
+#define DEFAULT_LOG_ROTATING_MAX_SIZE       50                      // default the size of rotating file, 50MB
 
 // log daily file
-#define DEFAULT_LOG_DAILY_ROTATING_HOUR     23                  //
-#define DEFAULT_LOG_DAILY_ROTATING_MINUTE   59                  //
+#define DEFAULT_LOG_DAILY_ROTATING_HOUR     23                      //
+#define DEFAULT_LOG_DAILY_ROTATING_MINUTE   59                      //
 
 }
 

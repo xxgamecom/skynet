@@ -10,18 +10,20 @@
 
 namespace skynet {
 
-// log message max size
-#define MAX_LOG_MSG_SIZE 255
+// log message max size, DISCARD THE PART BEYOND THE LENGTH (JUST PROTECT).
+#define MAX_LOG_MSG_SIZE 64*1024
 
 // log level
 enum log_level
 {
-    LOG_LEVEL_DEBUG = 0,
-    LOG_LEVEL_INFO = 1,
-    LOG_LEVEL_WARN = 2,
-    LOG_LEVEL_ERROR = 3,
+    LOG_LEVEL_TRACE = 0,
+    LOG_LEVEL_DEBUG = 1,
+    LOG_LEVEL_INFO = 2,
+    LOG_LEVEL_WARN = 3,
+    LOG_LEVEL_ERROR = 4,
 };
 
+// todo: process max_log_msg_size
 void _log(service_context* svc_ctx, int log_level, const char* msg)
 {
     // find logger service 'logger'
@@ -57,77 +59,10 @@ void _log(service_context* svc_ctx, int log_level, const char* msg)
     service_manager::instance()->push_service_message(log_svc_handle, &smsg);
 }
 
-//void log(service_context* svc_ctx, const char* msg, ...)
-//{
-//    // find logger service 'logger'
-//    static uint32_t log_svc_handle = 0;
-//    if (log_svc_handle == 0)
-//        log_svc_handle = service_manager::instance()->find_by_name("logger");
-//    if (log_svc_handle == 0)
-//        return;
-//
-//    //
-//    char tmp[MAX_LOG_MSG_SIZE] = { 0 };
-//
-//    va_list ap;
-//    va_start(ap, msg);
-//    int len = ::vsnprintf(tmp, MAX_LOG_MSG_SIZE, msg, ap);
-//    va_end(ap);
-//
-//    // error
-//    if (len < 0)
-//    {
-//        ::perror("vsnprintf error :");
-//        return;
-//    }
-//
-//    char* data_ptr = nullptr;
-//
-//    // log message length < 256
-//    if (len >= 0 && len < MAX_LOG_MSG_SIZE)
-//    {
-//        data_ptr = new char[len + 1] { 0 };
-//        ::memcpy(data_ptr, tmp, len + 1);
-//    }
-//        // log message length >= 256
-//    else
-//    {
-//        int max_size = MAX_LOG_MSG_SIZE;
-//        for (;;)
-//        {
-//            // alloc double size
-//            max_size *= 2;
-//            data_ptr = new char[max_size];
-//
-//            //
-//            va_start(ap, msg);
-//            len = ::vsnprintf(data_ptr, max_size, msg, ap);
-//            va_end(ap);
-//
-//            // alloc log message buffer success
-//            if (len < max_size)
-//                break;
-//
-//            // not enought, try alloc again
-//            delete[] data_ptr;
-//        }
-//    }
-//
-//    if (len < 0)
-//    {
-//        delete[] data_ptr;
-//        ::perror("vsnprintf error :");
-//        return;
-//    }
-//
-//    // push message to log service
-//    service_message smsg;
-//    smsg.src_svc_handle = svc_ctx != nullptr ? svc_ctx->svc_handle_ : 0;
-//    smsg.session_id = 0;
-//    smsg.data_ptr = data_ptr;
-//    smsg.data_size = len | ((size_t)SERVICE_MSG_TYPE_TEXT << MESSAGE_TYPE_SHIFT);
-//    service_manager::instance()->push_service_message(log_svc_handle, &smsg);
-//}
+void log_trace(service_context* svc_ctx, const char* msg)
+{
+    _log(svc_ctx, LOG_LEVEL_TRACE, msg);
+}
 
 void log_debug(service_context* svc_ctx, const char* msg)
 {
@@ -147,6 +82,11 @@ void log_warn(service_context* svc_ctx, const char* msg)
 void log_error(service_context* svc_ctx, const char* msg)
 {
     _log(svc_ctx, LOG_LEVEL_ERROR, msg);
+}
+
+void log_trace(service_context* svc_ctx, const std::string& msg)
+{
+    _log(svc_ctx, LOG_LEVEL_TRACE, msg.c_str());
 }
 
 void log_debug(service_context* svc_ctx, const std::string& msg)

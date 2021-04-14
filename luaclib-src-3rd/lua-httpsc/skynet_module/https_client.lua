@@ -169,11 +169,11 @@ local function send_data(request)
 end
 
 local function finish_request(requests, request, ret, step)
-    if request.co then
+    if request.thread then
         request.ret = ret
         request.step = step
-        requests[request.co] = nil
-        xpcall(skynet.wakeup, handle_err, request.co)
+        requests[request.thread] = nil
+        xpcall(skynet.wakeup, handle_err, request.thread)
     end
 end
 
@@ -182,22 +182,22 @@ local function do_timeout()
     while true do
         skynet.sleep(interval)
         local now = os.time()
-        for co, request in pairs(requests_r) do
+        for thread, request in pairs(requests_r) do
             if now - request.time > timeout then
                 finish_request(requests_r, request, "recv request timeout", req_step.error)
             end
         end
-        for co, request in pairs(requests_w) do
+        for thread, request in pairs(requests_w) do
             if now - request.time > timeout then
                 finish_request(requests_w, request, "send request timeout", req_step.error)
             end
         end
-        for co, connection in pairs(connections) do
+        for thread, connection in pairs(connections) do
             if now - connection.time > timeout_connect then
-                connections[co] = nil
+                connections[thread] = nil
                 connection.error = "connect timeout"
                 httpsc.close(connection.fd)
-                skynet.wakeup(co)
+                skynet.wakeup(thread)
             end
         end
     end
@@ -214,17 +214,17 @@ end
 local function do_connect()
     while true do
         while next(connections) do
-            for co, connection in pairs(connections) do
+            for thread, connection in pairs(connections) do
                 local ok, is_ok = pcall(httpsc.check_connect, connection.fd)
                 if ok then
                     if is_ok then
-                        connections[co] = nil
-                        skynet.wakeup(co)
+                        connections[thread] = nil
+                        skynet.wakeup(thread)
                     end
                 else
                     connection.error = is_ok or "check_connect fail"
-                    connections[co] = nil
-                    skynet.wakeup(co)
+                    connections[thread] = nil
+                    skynet.wakeup(thread)
                 end
             end
             skynet.sleep(1)
@@ -287,12 +287,12 @@ local function raw_request(method, host, url, header, content)
         return false, fd
     end
 
-    local self_co = coroutine.running()
+    local self_thread = coroutine.running()
     local connection = {
         fd = fd,
         time = os.time(),
     }
-    connections[self_co] = connection
+    connections[self_thread] = connection
     skynet.wait()
     if connection.error then
         httpsc.close(fd)
@@ -319,15 +319,15 @@ local function raw_request(method, host, url, header, content)
     end
     local request = {
         step = req_step.start,
-        co = self_co,
+        thread = self_thread,
         time = os.time(),
         fd = fd,
         data = request_header,
     }
-    requests_w[self_co] = request
+    requests_w[self_thread] = request
     skynet.fork(raw_job, request, requests_w, send_data, "send_data error", "send_data timeout")
     skynet.wait()
-    request.co = nil
+    request.thread = nil
     request.fd = nil
     request.data = nil
     if request.step ~= req_step.finish then
@@ -352,17 +352,17 @@ function command.request(method, host, url, header, content)
         return false, "request connection fail 2"
     end
 
-    local self_co = coroutine.running()
+    local self_thread = coroutine.running()
     local request = {
         step = req_step.start,
-        co = self_co,
+        thread = self_thread,
         time = os.time(),
         fd = fd,
     }
-    requests_r[self_co] = request
+    requests_r[self_thread] = request
     skynet.fork(raw_job, request, requests_r, recv_data, "recv_data error", "recv_data timeout")
     skynet.wait()
-    request.co = nil
+    request.thread = nil
     request.fd = nil
 
     httpsc.close(fd)

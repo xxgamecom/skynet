@@ -256,7 +256,7 @@ static int l_profile_stop(lua_State* L)
  * lua examples:
  * local profile = require "skynet.profile"
  * profile_resume = profile.resume
- * profile_resume(co, ...)
+ * profile_resume(thread, ...)
  */
 static int l_resume(lua_State* L)
 {

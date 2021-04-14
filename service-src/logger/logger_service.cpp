@@ -64,6 +64,10 @@ bool logger_service::init(service_context* svc_ctx, const char* param)
     value = _get_env(svc_ctx, "logger_log_level", DEFAULT_LOG_LEVEL);
     log_config_.base_.level_ = string_to_log_level(value.c_str());
 
+    // log level type
+    value = _get_env(svc_ctx, "logger_log_level_type", DEFAULT_LOG_LEVEL_TYPE);
+    log_config_.base_.level_type_ = string_to_log_level_type(value.c_str());
+
     //
     std::shared_ptr<spdlog::sinks::sink> file_sink_ptr;
     std::shared_ptr<spdlog::sinks::sink> console_sink_ptr;
@@ -144,8 +148,8 @@ bool logger_service::init(service_context* svc_ctx, const char* param)
     }
     logger->set_level(to_spdlog_level(log_config_.base_.level_));
     spdlog::set_default_logger(logger);
-    spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
-    spdlog::flush_on(to_spdlog_level(LOG_LEVEL_DEBUG));
+    spdlog::set_pattern(log_config_.base_.level_type_ == LOG_LEVEL_TYPE_LONG ? "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v" : "[%Y-%m-%d %H:%M:%S.%e] [%^%L%$] %v");
+    spdlog::flush_on(to_spdlog_level(LOG_LEVEL_TRACE));
 
     //
     svc_ctx->set_callback(logger_cb, this);
@@ -190,7 +194,9 @@ int logger_service::logger_cb(service_context* svc_ctx, void* ud, int svc_msg_ty
         const char* log_msg = (const char*)msg + log_level_len;
         int log_msg_len = sz - log_level_len;
 
-        if (log_level == LOG_LEVEL_DEBUG)
+        if (log_level == LOG_LEVEL_TRACE)
+            spdlog::trace("[:{:08X}] {}", src_svc_handle, std::string(log_msg, log_msg_len));
+        else if (log_level == LOG_LEVEL_DEBUG)
             spdlog::debug("[:{:08X}] {}", src_svc_handle, std::string(log_msg, log_msg_len));
         else if (log_level == LOG_LEVEL_INFO)
             spdlog::info("[:{:08X}] {}", src_svc_handle, std::string(log_msg, log_msg_len));
@@ -198,7 +204,9 @@ int logger_service::logger_cb(service_context* svc_ctx, void* ud, int svc_msg_ty
             spdlog::warn("[:{:08X}] {}", src_svc_handle, std::string(log_msg, log_msg_len));
         else if (log_level == LOG_LEVEL_ERROR)
             spdlog::error("[:{:08X}] {}", src_svc_handle, std::string(log_msg, log_msg_len));
+        break;
     }
+    default:
         break;
     }
 

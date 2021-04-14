@@ -26,7 +26,7 @@ local socket = {
     SKYNET_SOCKET_EVENT_WARNING = 7,
 }
 
--- store all socket object
+--- store socket object
 local socket_object_pool = setmetatable({}, { __gc = function(p)
     for socket_id, v in pairs(p) do
         socket_core.close(socket_id)
@@ -34,7 +34,9 @@ local socket_object_pool = setmetatable({}, { __gc = function(p)
     end
 end })
 
+---
 --- wakeup socket thread
+---@param sock_obj
 local function wakeup_socket(sock_obj)
     local thread = sock_obj.thread
     if thread then
@@ -43,22 +45,23 @@ local function wakeup_socket(sock_obj)
     end
 end
 
+---
 --- pause socket thread
+---@param sock_obj
+---@param size
 local function pause_socket(sock_obj, size)
     -- has paused
     if sock_obj.is_pause then
         return
     end
 
-    -- pause socket thread
-    if size then
-        skynet.log_info(string.format("Pause socket (%d) size : %d", sock_obj.socket_id, size))
-    else
-        skynet.log_info(string.format("Pause socket (%d)", sock_obj.socket_id))
-    end
+    -- pause socket
+    skynet.log_debug("Pause socket", sock_obj.socket_id, size)
     socket_core.pause(sock_obj.socket_id)
     sock_obj.is_pause = true
-    skynet.yield()    -- there are subsequent socket messages in mqueue, maybe.
+
+    -- there are subsequent socket messages in mqueue, maybe.
+    skynet.yield()
 end
 
 ---
@@ -71,11 +74,15 @@ local function suspend_socket(sock_obj)
 
     --
     if sock_obj.is_pause then
-        skynet.log_info(string.format("Resume socket (%d)", sock_obj.socket_id))
+        -- has paused, resume socket
+        skynet.log_debug("Resume socket", sock_obj.socket_id)
         socket_core.start(sock_obj.socket_id)
+
+        -- wait socket thread
         skynet.wait(sock_obj.thread)
         sock_obj.is_pause = nil
     else
+        -- wait socket thread
         skynet.wait(sock_obj.thread)
     end
 
@@ -86,18 +93,22 @@ local function suspend_socket(sock_obj)
     end
 end
 
+-- ----------------------------------
+-- TCP
+-- ----------------------------------
 
+---
 local function create_tcp_socket_object(socket_id, callback)
-    local new_buffer
+    local new_recv_buffer
     if callback == nil then
-        new_buffer = socket_core.new_buffer()
+        new_recv_buffer = socket_core.new_recv_buffer()
     end
 
     assert(not socket_object_pool[socket_id], "socket is not closed")
     local sock_obj = {
         socket_id = socket_id,
-        buffer = new_buffer,
-        buffer_pool = new_buffer and {},
+        recv_buffer = new_recv_buffer,              --
+        recv_buffer_pool = new_recv_buffer and {},  --
         connected = false, -- connected flag
         connecting = true, -- connecting flag
         read_required = false, --
@@ -134,10 +145,6 @@ local function connect(socket_id, callback)
     socket_object_pool[socket_id] = nil
     return nil, err
 end
-
--- ----------------------------------
--- TCP
--- ----------------------------------
 
 ---
 --- open a tcp server
@@ -194,12 +201,12 @@ end
 ---@param socket_id number socket logic id
 function socket.pause(socket_id)
     local sock_obj = socket_object_pool[socket_id]
+    -- has pouse
     if sock_obj == nil or sock_obj.is_pause then
         return
     end
 
     pause_socket(sock_obj)
-    skynet.log_debug("Pause socket", socket_id)
 end
 
 ---
@@ -265,13 +272,14 @@ end
 ---@param sz number read size, nil means read some bytes
 ---@return boolean, string result and data
 function socket.read(socket_id, sz)
+    --
     local sock_obj = socket_object_pool[socket_id]
     assert(sock_obj)
 
     --
     if sz == nil then
         -- read some bytes
-        local ret = socket_core.read_all(sock_obj.buffer, sock_obj.buffer_pool)
+        local ret = socket_core.read_all(sock_obj.recv_buffer, sock_obj.recv_buffer_pool)
         if ret ~= "" then
             return ret
         end
@@ -285,33 +293,33 @@ function socket.read(socket_id, sz)
         assert(not sock_obj.read_required)
         sock_obj.read_required = 0
         suspend_socket(sock_obj)
-        ret = socket_core.read_all(sock_obj.buffer, sock_obj.buffer_pool)
+        ret = socket_core.read_all(sock_obj.recv_buffer, sock_obj.recv_buffer_pool)
         if ret ~= "" then
             return ret
-        else
-            return false, ret
         end
-    end
 
-    --
-    local ret = socket_core.pop_buffer(sock_obj.buffer, sock_obj.buffer_pool, sz)
-    if ret then
-        return ret
-    end
+        return false, ret
+    else
+        --
+        local ret = socket_core.pop_recv_buffer(sock_obj.recv_buffer, sock_obj.recv_buffer_pool, sz)
+        if ret then
+            return ret
+        end
 
-    if not sock_obj.connected then
-        return false, socket_core.read_all(sock_obj.buffer, sock_obj.buffer_pool)
-    end
+        if not sock_obj.connected then
+            return false, socket_core.read_all(sock_obj.recv_buffer, sock_obj.recv_buffer_pool)
+        end
 
-    assert(not sock_obj.read_required)
-    sock_obj.read_required = sz
-    suspend_socket(sock_obj)
-    ret = socket_core.pop_buffer(sock_obj.buffer, sock_obj.buffer_pool, sz)
-    if ret then
-        return ret
-    end
+        assert(not sock_obj.read_required)
+        sock_obj.read_required = sz
+        suspend_socket(sock_obj)
+        ret = socket_core.pop_recv_buffer(sock_obj.recv_buffer, sock_obj.recv_buffer_pool, sz)
+        if ret then
+            return ret
+        end
 
-    return false, socket_core.read_all(sock_obj.buffer, sock_obj.buffer_pool)
+        return false, socket_core.read_all(sock_obj.recv_buffer, sock_obj.recv_buffer_pool)
+    end
 end
 
 ---
@@ -323,7 +331,7 @@ function socket.read_all(socket_id)
 
     --
     if not sock_obj.connected then
-        local ret = socket_core.read_all(sock_obj.buffer, sock_obj.buffer_pool)
+        local ret = socket_core.read_all(sock_obj.recv_buffer, sock_obj.recv_buffer_pool)
         return ret ~= "" and ret
     end
 
@@ -332,7 +340,7 @@ function socket.read_all(socket_id)
     sock_obj.read_required = true
     suspend_socket(sock_obj)
     assert(sock_obj.connected == false)
-    return socket_core.read_all(sock_obj.buffer, sock_obj.buffer_pool)
+    return socket_core.read_all(sock_obj.recv_buffer, sock_obj.recv_buffer_pool)
 end
 
 ---
@@ -345,23 +353,23 @@ function socket.read_line(socket_id, sep)
     assert(sock_obj)
 
     --
-    local ret = socket_core.read_line(sock_obj.buffer, sock_obj.buffer_pool, sep)
+    local ret = socket_core.read_line(sock_obj.recv_buffer, sock_obj.recv_buffer_pool, sep)
     if ret then
         return ret
     end
 
     --
     if not sock_obj.connected then
-        return false, socket_core.read_all(sock_obj.buffer, sock_obj.buffer_pool)
+        return false, socket_core.read_all(sock_obj.recv_buffer, sock_obj.recv_buffer_pool)
     end
 
     assert(not sock_obj.read_required)
     sock_obj.read_required = sep
     suspend_socket(sock_obj)
     if sock_obj.connected then
-        return socket_core.read_line(sock_obj.buffer, sock_obj.buffer_pool, sep)
+        return socket_core.read_line(sock_obj.recv_buffer, sock_obj.recv_buffer_pool, sep)
     else
-        return false, socket_core.read_all(sock_obj.buffer, sock_obj.buffer_pool)
+        return false, socket_core.read_all(sock_obj.recv_buffer, sock_obj.recv_buffer_pool)
     end
 end
 
@@ -369,6 +377,7 @@ function socket.send(...)
     return socket_core.send(...)
 end
 
+--- send low priority
 function socket.send_low(...)
     return socket_core.send_low(...)
 end
@@ -384,6 +393,7 @@ function socket.block(socket_id)
     if not sock_obj or not sock_obj.connected then
         return false
     end
+
     assert(not sock_obj.read_required)
     sock_obj.read_required = 0
     suspend_socket(sock_obj)
@@ -552,7 +562,7 @@ do
         end
 
         -- push data to socket buffer, will get a free buffer_node from pool, and then put the data/size in it.
-        local sz = socket_core.push_buffer(sock_obj.buffer, sock_obj.buffer_pool, data, size)
+        local sz = socket_core.push_recv_buffer(sock_obj.recv_buffer, sock_obj.recv_buffer_pool, data, size)
         local rr = sock_obj.read_required
         local rrt = type(rr)
         if rrt == "number" then
@@ -573,7 +583,7 @@ do
             end
             if rrt == "string" then
                 -- read line
-                if socket_core.read_line(sock_obj.buffer, nil, rr) then
+                if socket_core.read_line(sock_obj.recv_buffer, nil, rr) then
                     sock_obj.read_required = nil
                     if sz > BUFFER_LIMIT then
                         pause_socket(sock_obj, sz)
@@ -591,6 +601,7 @@ do
         if sock_obj == nil then
             return
         end
+
         -- log remote addr
         if not sock_obj.connected then
             -- resume may also post connect message
@@ -605,6 +616,7 @@ do
             socket_core.close(socket_id)
             return
         end
+
         sock_obj.connected = false
         wakeup_socket(sock_obj)
         if sock_obj.on_close then
@@ -619,6 +631,7 @@ do
             socket_core.close(newid)
             return
         end
+
         sock_obj.callback(newid, addr)
     end
 
@@ -633,6 +646,7 @@ do
             skynet.log_error("socket: accpet error:", err)
             return
         end
+
         if sock_obj.connected then
             skynet.log_error("socket: error on", socket_id, err)
         elseif sock_obj.connecting then
@@ -651,6 +665,7 @@ do
             socket_core.drop(data, size)
             return
         end
+
         local str = skynet.tostring(data, size)
         skynet_core.trash(data, size)
         sock_obj.callback(str, address)
@@ -661,6 +676,7 @@ do
         if not sock_obj then
             return
         end
+
         skynet.log_warn(string.format("WARNING: %d K bytes need to send out (fd = %d)", size, socket_id))
     end
 

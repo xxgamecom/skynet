@@ -76,8 +76,9 @@ end
 
 ---
 --- define a class
---- @param classname string class name
---- @param ... any
+---@generic T
+---@param classname string class name
+---@param T
 function class(classname, ...)
     local cls = { __cname = classname }
 
@@ -182,8 +183,8 @@ end
 
 ---
 --- is kind of class
---- @param obj table|userdata object
---- @param classname string class name
+---@param obj table|userdata object
+---@param classname string class name
 function iskindof(obj, classname)
     local t = type(obj)
     if t ~= "table" and t ~= "userdata" then

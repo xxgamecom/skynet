@@ -25,7 +25,7 @@ local function request(name, func, ...)
     end
 
     for _, v in ipairs(s) do
-        skynet.wakeup(v.co)
+        skynet.wakeup(v.thread)
     end
 
     if ok then
@@ -57,13 +57,13 @@ local function wait_for(name, func, ...)
         s.launch = {
             session = session_id,
             source = src_svc_handle,
-            co = current_thread,
+            thread = current_thread,
         }
         return request(name, func, ...)
     end
 
     table.insert(s, {
-        co = current_thread,
+        thread = current_thread,
         session = session_id,
         source = src_svc_handle,
     })
@@ -121,7 +121,7 @@ local function list_service()
         elseif type(v) == "table" then
             local querying = {}
             if v.launch then
-                local session = skynet.task(v.launch.co)
+                local session = skynet.task(v.launch.thread)
                 local launching_address = skynet.call(".launcher", "lua", "QUERY", session)
                 if launching_address then
                     table.insert(querying, "Init as " .. skynet.to_address(launching_address))

@@ -12,17 +12,17 @@ local function request_sender(q, node)
         c = nil
     end
     -- run tasks in queue
-    local confirm = coroutine.running()
-    q.confirm = confirm
+    local thread = coroutine.running()
+    q.thread = thread
     q.sender = c
-    for _, task in ipairs(q) do
-        if type(task) == "table" then
+    for _, thread in ipairs(q) do
+        if type(thread) == "table" then
             if c then
-                skynet.send(c, "lua", "push", task[1], skynet.pack(table.unpack(task, 2, task.n)))
+                skynet.send(c, "lua", "push", thread[1], skynet.pack(table.unpack(thread, 2, thread.n)))
             end
         else
-            skynet.wakeup(task)
-            skynet.wait(confirm)
+            skynet.wakeup(thread)
+            skynet.wait(thread)
         end
     end
     task_queue[node] = nil
@@ -42,10 +42,10 @@ local function get_sender(node)
     local s = sender[node]
     if not s then
         local q = task_queue[node]
-        local task = coroutine.running()
-        table.insert(q, task)
-        skynet.wait(task)
-        skynet.wakeup(q.confirm)
+        local thread = coroutine.running()
+        table.insert(q, thread)
+        skynet.wait(thread)
+        skynet.wakeup(q.thread)
         return q.sender
     end
     return s

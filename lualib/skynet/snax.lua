@@ -4,7 +4,7 @@ local snax_interface = require "snax.interface"
 local snax = {}
 local typeclass = {}
 
-local interface_g = skynet.getenv("snax_interface_g")
+local interface_g = skynet.get_env("snax_interface_g")
 local G = interface_g and require(interface_g) or { require = function()
 end }
 interface_g = nil

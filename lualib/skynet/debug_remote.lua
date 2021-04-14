@@ -8,7 +8,6 @@ local debug = debug
 local coroutine = coroutine
 local sethook = debugchannel.sethook
 
-
 local M = {}
 
 local HOOK_FUNC = "raw_dispatch_message"
@@ -53,7 +52,7 @@ local function gen_print(fd)
     -- redirect print to socket fd
     return function(...)
         local tmp = table.pack(...)
-        for i=1,tmp.n do
+        for i = 1, tmp.n do
             tmp[i] = tostring(tmp[i])
         end
         table.insert(tmp, "\n")
@@ -68,20 +67,20 @@ local function run_exp(ok, ...)
     return ok
 end
 
-local function run_cmd(cmd, env, co, level)
-    if not run_exp(injectrun("return "..cmd, co, level, env)) then
-        print(select(2, injectrun(cmd,co, level,env)))
+local function run_cmd(cmd, env, thread, level)
+    if not run_exp(injectrun("return " .. cmd, thread, level, env)) then
+        print(select(2, injectrun(cmd, thread, level, env)))
     end
 end
 
-local ctx_skynet = debug.getinfo(skynet.start,"S").short_src	-- skip when enter this source file
-local ctx_term = debug.getinfo(run_cmd, "S").short_src	-- term when get here
+local ctx_skynet = debug.getinfo(skynet.start, "S").short_src    -- skip when enter this source file
+local ctx_term = debug.getinfo(run_cmd, "S").short_src    -- term when get here
 local ctx_active = {}
 
 local linehook
 local function skip_hook(mode)
-    local co = coroutine.running()
-    local ctx = ctx_active[co]
+    local thread = coroutine.running()
+    local ctx = ctx_active[thread]
     if mode == "return" then
         ctx.level = ctx.level - 1
         if ctx.level == 0 then
@@ -94,12 +93,12 @@ local function skip_hook(mode)
 end
 
 function linehook(mode, line)
-    local co = coroutine.running()
-    local ctx = ctx_active[co]
+    local thread = coroutine.running()
+    local ctx = ctx_active[thread]
     if mode ~= "line" then
         ctx.needupdate = true
         if mode ~= "return" then
-            if ctx.next_mode or debug.getinfo(2,"S").short_src == ctx_skynet then
+            if ctx.next_mode or debug.getinfo(2, "S").short_src == ctx_skynet then
                 ctx.level = 1
                 sethook(skip_hook, "cr")
             end
@@ -109,21 +108,21 @@ function linehook(mode, line)
             ctx.needupdate = false
             ctx.filename = debug.getinfo(2, "S").short_src
             if ctx.filename == ctx_term then
-                ctx_active[co] = nil
+                ctx_active[thread] = nil
                 sethook()
                 change_prompt(string.format(":%08x>", skynet.self()))
                 return
             end
         end
-        change_prompt(string.format("%s(%d)>",ctx.filename, line))
-        return true	-- yield
+        change_prompt(string.format("%s(%d)>", ctx.filename, line))
+        return true    -- yield
     end
 end
 
 local function add_watch_hook()
-    local co = coroutine.running()
+    local thread = coroutine.running()
     local ctx = {}
-    ctx_active[co] = ctx
+    ctx_active[thread] = ctx
     local level = 1
     sethook(function(mode)
         if mode == "return" then
@@ -151,7 +150,7 @@ local function watch_proto(protoname, cond)
     p.dispatch_origin = dispatch
     p.dispatch = function(...)
         if not cond or cond(...) then
-            p.dispatch = dispatch	-- restore origin dispatch function
+            p.dispatch = dispatch    -- restore origin dispatch function
             add_watch_hook()
         end
         dispatch(...)
@@ -159,31 +158,31 @@ local function watch_proto(protoname, cond)
 end
 
 local function remove_watch()
-    for co in pairs(ctx_active) do
-        sethook(co)
+    for thread in pairs(ctx_active) do
+        sethook(thread)
     end
     ctx_active = {}
 end
 
 local dbgcmd = {}
 
-function dbgcmd.s(co)
-    local ctx = ctx_active[co]
+function dbgcmd.s(thread)
+    local ctx = ctx_active[thread]
     ctx.next_mode = false
-    skynet_suspend(co, coroutine.resume(co))
+    skynet_suspend(thread, coroutine.resume(thread))
 end
 
-function dbgcmd.n(co)
-    local ctx = ctx_active[co]
+function dbgcmd.n(thread)
+    local ctx = ctx_active[thread]
     ctx.next_mode = true
-    skynet_suspend(co, coroutine.resume(co))
+    skynet_suspend(thread, coroutine.resume(thread))
 end
 
-function dbgcmd.c(co)
-    sethook(co)
-    ctx_active[co] = nil
+function dbgcmd.c(thread)
+    sethook(thread)
+    ctx_active[thread] = nil
     change_prompt(string.format(":%08x>", skynet.self()))
-    skynet_suspend(co, coroutine.resume(co))
+    skynet_suspend(thread, coroutine.resume(thread))
 end
 
 local function hook_dispatch(dispatcher, resp, fd, channel)
@@ -200,12 +199,12 @@ local function hook_dispatch(dispatcher, resp, fd, channel)
     }
 
     local function watch_cmd(cmd)
-        local co = next(ctx_active)
-        watch_env._CO = co
+        local thread = next(ctx_active)
+        watch_env._CO = thread
         if dbgcmd[cmd] then
-            dbgcmd[cmd](co)
+            dbgcmd[cmd](thread)
         else
-            run_cmd(cmd, watch_env, co, 0)
+            run_cmd(cmd, watch_env, thread, 0)
         end
     end
 
@@ -225,7 +224,7 @@ local function hook_dispatch(dispatcher, resp, fd, channel)
                     if next(ctx_active) then
                         watch_cmd(cmd)
                     else
-                        run_cmd(cmd, env, coroutine.running(),2)
+                        run_cmd(cmd, env, coroutine.running(), 2)
                     end
                 end
                 newline = true
@@ -249,7 +248,7 @@ local function hook_dispatch(dispatcher, resp, fd, channel)
     if func then
         local function idle()
             if raw_dispatcher then
-                skynet.timeout(10,idle)	-- idle every 0.1s
+                skynet.timeout(10, idle)    -- idle every 0.1s
             end
         end
         skynet.timeout(0, idle)

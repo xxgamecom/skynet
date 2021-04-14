@@ -3,29 +3,29 @@ local skynet = require "skynet"
 local skynet_co = require "skynet.coroutine"
 local profile = require "skynet.profile"
 
-local function status(co)
+local function status(thread)
     repeat
-        local status = skynet_co.status(co)
+        local status = skynet_co.status(thread)
         print("STATUS", status)
         skynet.sleep(100)
     until status == "suspended"
 
     repeat
-        local ok, n = assert(skynet_co.resume(co))
+        local ok, n = assert(skynet_co.resume(thread))
         print("status thread", n)
     until not n
     skynet.exit()
 end
 
 local function test(n)
-    local co = skynet_co.running()
-    print("begin", co, skynet_co.thread(co))    -- false
-    skynet.fork(status, co)
+    local thread = skynet_co.running()
+    print("begin", thread, skynet_co.thread(thread))    -- false
+    skynet.fork(status, thread)
     for i = 1, n do
         skynet.sleep(100)
         skynet_co.yield(i)
     end
-    print("end", co)
+    print("end", thread)
 end
 
 local function main()

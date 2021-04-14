@@ -6,8 +6,8 @@
 ```lua
 logger = {
     -- base
-    type = "console_color, daily",          -- "null", "console", "console_color", "hourly", "daily", "rotating", "[console|console_color], [hourly|daily|rotating]"
-    log_level = "info",                     -- info, warn, error, off
+    type = "console_color, daily",          -- "console", "console_color", "hourly", "daily", "rotating", "[console|console_color], [hourly|daily|rotating]"
+    log_level = "info",                     -- trace, debug, info, warn, error, off
     file_basename = "./logs/skynet.log",    -- log basename (include file extension)
 
     -- rotating log file

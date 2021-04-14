@@ -343,8 +343,8 @@ local function _new_server_ws(socket_id, handle, protocol)
             SSLCTX_SERVER = tls.newctx()
             -- gen cert and key
             -- openssl req -x509 -newkey rsa:2048 -days 3650 -nodes -keyout server-key.pem -out server-cert.pem
-            local certfile = skynet.getenv("certfile") or "./server-cert.pem"
-            local keyfile = skynet.getenv("keyfile") or "./server-key.pem"
+            local certfile = skynet.get_env("certfile") or "./server-cert.pem"
+            local keyfile = skynet.get_env("keyfile") or "./server-key.pem"
             SSLCTX_SERVER:set_cert(certfile, keyfile)
         end
         local tls_ctx = tls.newtls("server", SSLCTX_SERVER)

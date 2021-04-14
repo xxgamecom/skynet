@@ -12,7 +12,7 @@ namespace skynet::service {
  * when skynet node start, the default logger is this service, you can config to use snlua logger.
  *
  * log api:
- * skynet::log()
+ * skynet::log_*()
  */
 class logger_service : public cservice
 {
