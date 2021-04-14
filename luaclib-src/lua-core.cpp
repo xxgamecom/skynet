@@ -498,6 +498,36 @@ static const char* _get_log_msg(lua_State* L)
 }
 
 /**
+ * log trace
+ *
+ * arguments:
+ * args num <= 1
+ * 1 log message    - string
+ * args num > 1
+ * 1
+ *
+ * lua examples:
+ * skynet.log_trace("Server start")
+ * skynet.log_trace(string.format("socket accept from %s", msg))
+ * skynet.log_trace(addr, "connected")
+ * ...
+ */
+static int l_log_trace(lua_State* L)
+{
+    // service context upvalue
+    auto svc_ctx = (skynet::service_context*)lua_touserdata(L, lua_upvalueindex(1));
+
+    //
+    const char* log_msg = _get_log_msg(L);
+    if (log_msg != nullptr)
+    {
+        log_trace(svc_ctx, fmt::format("{}", log_msg));
+    }
+
+    return 0;
+}
+
+/**
  * log debug
  *
  * arguments:
@@ -507,9 +537,9 @@ static const char* _get_log_msg(lua_State* L)
  * 1
  *
  * lua examples:
- * skynet.log_info("Server start")
- * skynet.log_info(string.format("socket accept from %s", msg))
- * skynet.log_info(addr, "connected")
+ * skynet.log_debug("Server start")
+ * skynet.log_debug(string.format("socket accept from %s", msg))
+ * skynet.log_debug(addr, "connected")
  * ...
  */
 static int l_log_debug(lua_State* L)
@@ -567,9 +597,9 @@ static int l_log_info(lua_State* L)
  * 1
  *
  * lua examples:
- * skynet.log_info("Server start")
- * skynet.log_info(string.format("socket accept from %s", msg))
- * skynet.log_info(addr, "connected")
+ * skynet.log_warn("Server start")
+ * skynet.log_warn(string.format("socket accept from %s", msg))
+ * skynet.log_warn(addr, "connected")
  * ...
  */
 static int l_log_warn(lua_State* L)
@@ -597,9 +627,9 @@ static int l_log_warn(lua_State* L)
  * 1
  *
  * lua examples:
- * skynet.log_info("Server start")
- * skynet.log_info(string.format("socket accept from %s", msg))
- * skynet.log_info(addr, "connected")
+ * skynet.log_error("Server start")
+ * skynet.log_error(string.format("socket accept from %s", msg))
+ * skynet.log_error(addr, "connected")
  * ...
  */
 static int l_log_error(lua_State* L)
@@ -879,6 +909,7 @@ LUAMOD_API int luaopen_skynet_core(lua_State* L)
         { "addresscommand", l_service_command_address },
         { "callback",       l_set_service_callback },
         { "new_session_id", l_new_session_id },
+        { "log_trace",      l_log_trace },
         { "log_debug",      l_log_debug },
         { "log_info",       l_log_info },
         { "log_warn",       l_log_warn },

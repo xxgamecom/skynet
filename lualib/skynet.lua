@@ -79,11 +79,22 @@ end
 -- ------------------------------------------------------
 
 -- supported log levels (NOT USE, ONLY TIPS)
-skynet.LOG_LEVEL_DEBUG = 0
-skynet.LOG_LEVEL_INFO = 1
-skynet.LOG_LEVEL_WARN = 2
-skynet.LOG_LEVEL_ERROR = 3
-skynet.LOG_LEVEL_OFF = 4
+skynet.LOG_LEVEL_TRACE = 0
+skynet.LOG_LEVEL_DEBUG = 1
+skynet.LOG_LEVEL_INFO = 2
+skynet.LOG_LEVEL_WARN = 3
+skynet.LOG_LEVEL_ERROR = 4
+skynet.LOG_LEVEL_OFF = 5
+
+---
+--- log debug message, if you don't want to ouptut `trace` messages,
+--- please set log_level to above `trace` level in the config file.
+--- e.g, log_level = "debug"
+---@generic T
+---@vararg T
+function skynet.log_trace(...)
+    skynet_core.log_trace(...)
+end
 
 ---
 --- log debug message, if you don't want to ouptut `debug` messages,

@@ -76,8 +76,9 @@ end
 
 ---
 --- define a class
+---@generic T
 ---@param classname string class name
----@param ... any
+---@param T
 function class(classname, ...)
     local cls = { __cname = classname }
 

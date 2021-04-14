@@ -7,6 +7,8 @@ namespace skynet {
 // logger type
 enum logger_type
 {
+    LOG_TYPE_NULL = 0,
+
     LOG_TYPE_CONSOLE = 0x01,            // log to console
     LOG_TYPE_CONSOLE_COLOR = 0x02,      // log to console
 
