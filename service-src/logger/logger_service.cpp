@@ -64,6 +64,10 @@ bool logger_service::init(service_context* svc_ctx, const char* param)
     value = _get_env(svc_ctx, "logger_log_level", DEFAULT_LOG_LEVEL);
     log_config_.base_.level_ = string_to_log_level(value.c_str());
 
+    // log level type
+    value = _get_env(svc_ctx, "logger_log_level_type", DEFAULT_LOG_LEVEL_TYPE);
+    log_config_.base_.level_type_ = string_to_log_level_type(value.c_str());
+
     //
     std::shared_ptr<spdlog::sinks::sink> file_sink_ptr;
     std::shared_ptr<spdlog::sinks::sink> console_sink_ptr;
@@ -144,7 +148,7 @@ bool logger_service::init(service_context* svc_ctx, const char* param)
     }
     logger->set_level(to_spdlog_level(log_config_.base_.level_));
     spdlog::set_default_logger(logger);
-    spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+    spdlog::set_pattern(log_config_.base_.level_type_ == LOG_LEVEL_TYPE_LONG ? "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v" : "[%Y-%m-%d %H:%M:%S.%e] [%^%L%$] %v");
     spdlog::flush_on(to_spdlog_level(LOG_LEVEL_TRACE));
 
     //

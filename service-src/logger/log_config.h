@@ -12,6 +12,7 @@ struct log_config_base
     uint32_t type_ = LOG_TYPE_CONSOLE;                          // log type
     std::string basename_ = DEFAULT_LOG_BASENAME;               // log filename prefix
     log_level level_ = LOG_LEVEL_INFO;                          // log level, default info
+    log_level_type level_type_ = LOG_LEVEL_TYPE_LONG;           // log level_type, default long
 };
 
 // log rotating file config

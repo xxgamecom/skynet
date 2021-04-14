@@ -67,18 +67,36 @@ inline spdlog::level::level_enum to_spdlog_level(log_level level)
     else return spdlog::level::level_enum::info;
 }
 
+// logger log level type
+enum log_level_type
+{
+    LOG_LEVEL_TYPE_LONG = 0,
+    LOG_LEVEL_TYPE_SHORT = 1,
+};
+
+// convert string to log level type
+inline log_level_type string_to_log_level_type(const char* type)
+{
+    assert(type != nullptr);
+
+    if (::strcasecmp(type, "long") == 0) return LOG_LEVEL_TYPE_LONG;
+    else if (::strcasecmp(type, "short") == 0) return LOG_LEVEL_TYPE_SHORT;
+    else return LOG_LEVEL_TYPE_LONG;
+}
+
 // base info
-#define DEFAULT_LOG_TYPE                    "console"           // default log type
-#define DEFAULT_LOG_BASENAME                "./logs/skynet.log" // default log basename
-#define DEFAULT_LOG_LEVEL                   "info"              // default log level
+#define DEFAULT_LOG_TYPE                    "console"               // default log type
+#define DEFAULT_LOG_BASENAME                "./logs/skynet.log"     // default log basename
+#define DEFAULT_LOG_LEVEL                   "info"                  // default log level
+#define DEFAULT_LOG_LEVEL_TYPE              "long"                  // default log level type
 
 // log rotating file
-#define DEFAULT_LOG_ROTATING_MAX_FILES      5                   // default the number of rotatiing file
-#define DEFAULT_LOG_ROTATING_MAX_SIZE       50                  // default the size of rotating file, 50MB
+#define DEFAULT_LOG_ROTATING_MAX_FILES      5                       // default the number of rotatiing file
+#define DEFAULT_LOG_ROTATING_MAX_SIZE       50                      // default the size of rotating file, 50MB
 
 // log daily file
-#define DEFAULT_LOG_DAILY_ROTATING_HOUR     23                  //
-#define DEFAULT_LOG_DAILY_ROTATING_MINUTE   59                  //
+#define DEFAULT_LOG_DAILY_ROTATING_HOUR     23                      //
+#define DEFAULT_LOG_DAILY_ROTATING_MINUTE   59                      //
 
 }
 
