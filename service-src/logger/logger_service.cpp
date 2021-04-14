@@ -51,7 +51,7 @@ bool logger_service::init(service_context* svc_ctx, const char* param)
         std::sregex_token_iterator()
     };
 
-    log_config_.base_.type_ = LOG_TYPE_NULL;
+    log_config_.base_.type_ = LOG_TYPE_CONSOLE;
     for (auto& type : type_info)
     {
         log_config_.base_.type_ |= string_to_logger_type(_trim(type).c_str());
@@ -65,66 +65,59 @@ bool logger_service::init(service_context* svc_ctx, const char* param)
     log_config_.base_.level_ = string_to_log_level(value.c_str());
 
     //
-    std::shared_ptr<spdlog::sinks::sink> file_sink_ptr;
     std::shared_ptr<spdlog::sinks::sink> console_sink_ptr;
+    std::shared_ptr<spdlog::sinks::sink> file_sink_ptr;
 
-    if (log_config_.base_.type_ == LOG_TYPE_NULL)
+    // console sink
+    if ((log_config_.base_.type_ & LOG_TYPE_CONSOLE) != 0)
     {
-        file_sink_ptr = std::make_shared<spdlog::sinks::null_sink_st>();
+        console_sink_ptr = std::make_shared<spdlog::sinks::stdout_sink_st>();
     }
-    else
+    else if ((log_config_.base_.type_ & LOG_TYPE_CONSOLE_COLOR) != 0)
     {
-        // console sink
-        if ((log_config_.base_.type_ & LOG_TYPE_CONSOLE) != 0)
-        {
-            console_sink_ptr = std::make_shared<spdlog::sinks::stdout_sink_st>();
-        }
-        else if ((log_config_.base_.type_ & LOG_TYPE_CONSOLE_COLOR) != 0)
-        {
-            console_sink_ptr = std::make_shared<spdlog::sinks::stderr_color_sink_st>();
-        }
+        console_sink_ptr = std::make_shared<spdlog::sinks::stderr_color_sink_st>();
+    }
 
-        // file sink
-        if ((log_config_.base_.type_ & LOG_TYPE_HOURLY) != 0)
-        {
-            file_sink_ptr = std::make_shared<spdlog::sinks::hourly_file_sink_st>(log_config_.base_.basename_);
-        }
-        else if ((log_config_.base_.type_ & LOG_TYPE_DAILY) != 0)
-        {
-            // read daily log config
-            value = _get_env(svc_ctx, "logger_daily_rotating_hour", "");
-            if (value.empty())
-                log_config_.daily_.rotating_hour_ = DEFAULT_LOG_DAILY_ROTATING_HOUR;
-            else
-                log_config_.daily_.rotating_hour_ = std::stoi(value);
+    // file sink
+    if ((log_config_.base_.type_ & LOG_TYPE_HOURLY) != 0)
+    {
+        file_sink_ptr = std::make_shared<spdlog::sinks::hourly_file_sink_st>(log_config_.base_.basename_);
+    }
+    else if ((log_config_.base_.type_ & LOG_TYPE_DAILY) != 0)
+    {
+        // read daily log config
+        value = _get_env(svc_ctx, "logger_daily_rotating_hour", "");
+        if (value.empty())
+            log_config_.daily_.rotating_hour_ = DEFAULT_LOG_DAILY_ROTATING_HOUR;
+        else
+            log_config_.daily_.rotating_hour_ = std::stoi(value);
 
-            value = _get_env(svc_ctx, "logger_daily_rotation_minute", "");
-            if (value.empty())
-                log_config_.daily_.rotation_minute_ = DEFAULT_LOG_DAILY_ROTATING_MINUTE;
-            else
-                log_config_.daily_.rotation_minute_ = std::stoi(value);
+        value = _get_env(svc_ctx, "logger_daily_rotation_minute", "");
+        if (value.empty())
+            log_config_.daily_.rotation_minute_ = DEFAULT_LOG_DAILY_ROTATING_MINUTE;
+        else
+            log_config_.daily_.rotation_minute_ = std::stoi(value);
 
-            //
-            file_sink_ptr = std::make_shared<spdlog::sinks::daily_file_sink_st>(log_config_.base_.basename_, log_config_.daily_.rotating_hour_, log_config_.daily_.rotation_minute_);
-        }
-        else if ((log_config_.base_.type_ & LOG_TYPE_ROTATING) != 0)
-        {
-            // read rotation log config
-            value = _get_env(svc_ctx, "logger_rotating_max_size", "");
-            if (value.empty())
-                log_config_.rotating_.max_size_ = DEFAULT_LOG_ROTATING_MAX_SIZE * 1024 * 1024;
-            else
-                log_config_.rotating_.max_size_ = std::stoi(value) * 1024 * 1024;
+        //
+        file_sink_ptr = std::make_shared<spdlog::sinks::daily_file_sink_st>(log_config_.base_.basename_, log_config_.daily_.rotating_hour_, log_config_.daily_.rotation_minute_);
+    }
+    else if ((log_config_.base_.type_ & LOG_TYPE_ROTATING) != 0)
+    {
+        // read rotation log config
+        value = _get_env(svc_ctx, "logger_rotating_max_size", "");
+        if (value.empty())
+            log_config_.rotating_.max_size_ = DEFAULT_LOG_ROTATING_MAX_SIZE * 1024 * 1024;
+        else
+            log_config_.rotating_.max_size_ = std::stoi(value) * 1024 * 1024;
 
-            value = _get_env(svc_ctx, "logger_rotating_max_files", "");
-            if (value.empty())
-                log_config_.rotating_.max_files_ = DEFAULT_LOG_ROTATING_MAX_FILES;
-            else
-                log_config_.rotating_.max_files_ = std::stoi(value);
+        value = _get_env(svc_ctx, "logger_rotating_max_files", "");
+        if (value.empty())
+            log_config_.rotating_.max_files_ = DEFAULT_LOG_ROTATING_MAX_FILES;
+        else
+            log_config_.rotating_.max_files_ = std::stoi(value);
 
-            //
-            file_sink_ptr = std::make_shared<spdlog::sinks::rotating_file_sink_st>(log_config_.base_.basename_, log_config_.rotating_.max_size_, log_config_.rotating_.max_files_);
-        }
+        //
+        file_sink_ptr = std::make_shared<spdlog::sinks::rotating_file_sink_st>(log_config_.base_.basename_, log_config_.rotating_.max_size_, log_config_.rotating_.max_files_);
     }
 
     // logger
@@ -145,7 +138,7 @@ bool logger_service::init(service_context* svc_ctx, const char* param)
     logger->set_level(to_spdlog_level(log_config_.base_.level_));
     spdlog::set_default_logger(logger);
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
-    spdlog::flush_on(to_spdlog_level(LOG_LEVEL_DEBUG));
+    spdlog::flush_on(to_spdlog_level(LOG_LEVEL_TRACE));
 
     //
     svc_ctx->set_callback(logger_cb, this);
@@ -190,7 +183,9 @@ int logger_service::logger_cb(service_context* svc_ctx, void* ud, int svc_msg_ty
         const char* log_msg = (const char*)msg + log_level_len;
         int log_msg_len = sz - log_level_len;
 
-        if (log_level == LOG_LEVEL_DEBUG)
+        if (log_level == LOG_LEVEL_TRACE)
+            spdlog::trace("[:{:08X}] {}", src_svc_handle, std::string(log_msg, log_msg_len));
+        else if (log_level == LOG_LEVEL_DEBUG)
             spdlog::debug("[:{:08X}] {}", src_svc_handle, std::string(log_msg, log_msg_len));
         else if (log_level == LOG_LEVEL_INFO)
             spdlog::info("[:{:08X}] {}", src_svc_handle, std::string(log_msg, log_msg_len));
@@ -198,7 +193,9 @@ int logger_service::logger_cb(service_context* svc_ctx, void* ud, int svc_msg_ty
             spdlog::warn("[:{:08X}] {}", src_svc_handle, std::string(log_msg, log_msg_len));
         else if (log_level == LOG_LEVEL_ERROR)
             spdlog::error("[:{:08X}] {}", src_svc_handle, std::string(log_msg, log_msg_len));
+        break;
     }
+    default:
         break;
     }
 

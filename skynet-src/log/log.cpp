@@ -16,10 +16,11 @@ namespace skynet {
 // log level
 enum log_level
 {
-    LOG_LEVEL_DEBUG = 0,
-    LOG_LEVEL_INFO = 1,
-    LOG_LEVEL_WARN = 2,
-    LOG_LEVEL_ERROR = 3,
+    LOG_LEVEL_TRACE = 0,
+    LOG_LEVEL_DEBUG = 1,
+    LOG_LEVEL_INFO = 2,
+    LOG_LEVEL_WARN = 3,
+    LOG_LEVEL_ERROR = 4,
 };
 
 // todo: process max_log_msg_size
@@ -58,6 +59,11 @@ void _log(service_context* svc_ctx, int log_level, const char* msg)
     service_manager::instance()->push_service_message(log_svc_handle, &smsg);
 }
 
+void log_trace(service_context* svc_ctx, const char* msg)
+{
+    _log(svc_ctx, LOG_LEVEL_TRACE, msg);
+}
+
 void log_debug(service_context* svc_ctx, const char* msg)
 {
     _log(svc_ctx, LOG_LEVEL_DEBUG, msg);
@@ -76,6 +82,11 @@ void log_warn(service_context* svc_ctx, const char* msg)
 void log_error(service_context* svc_ctx, const char* msg)
 {
     _log(svc_ctx, LOG_LEVEL_ERROR, msg);
+}
+
+void log_trace(service_context* svc_ctx, const std::string& msg)
+{
+    _log(svc_ctx, LOG_LEVEL_TRACE, msg.c_str());
 }
 
 void log_debug(service_context* svc_ctx, const std::string& msg)
