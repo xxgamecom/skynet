@@ -11,5 +11,4 @@ set_target_properties(protobuf
     ARCHIVE_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_LUACLIB_3RD}"
     LIBRARY_OUTPUT_DIRECTORY "${SKYNET_BIN_PATH_LUACLIB_3RD}"
 )
-#target_link_libraries(protobuf ${SKYNET_SHARED} pbc)
-target_link_libraries(protobuf ${SKYNET_SHARED})
+target_link_libraries(protobuf ${SKYNET_SHARED} pbc)
