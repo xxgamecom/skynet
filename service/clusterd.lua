@@ -215,9 +215,9 @@ end
 ---
 --- get a cluster node sender
 ---@param source
----@param node string skynet cluster node
-function CMD.sender(source, node)
-    skynet.ret_pack(node_sender_channel[node])
+---@param node_name string skynet cluster node
+function CMD.sender(source, node_name)
+    skynet.ret_pack(node_sender_channel[node_name])
 end
 
 ---
@@ -229,21 +229,24 @@ end
 ---
 --- create a cluster proxy
 ---@param source
----@param node string the skynet cluster node
----@param name string
-function CMD.proxy(source, node, name)
-    if name == nil then
-        node, name = node:match("^([^@.]+)([@.].+)")
-        if name == nil then
-            error("Invalid name " .. tostring(node))
+---@param node_name string the skynet cluster node name
+---@param svc_addr string service address within cluster node
+function CMD.proxy(source, node_name, svc_addr)
+    -- check name
+    if svc_addr == nil then
+        -- maybe 'node@name', parse
+        node_name, svc_addr = node_name:match("^([^@.]+)([@.].+)")
+        -- failed
+        if svc_addr == nil then
+            error("Invalid name " .. tostring(node_name))
         end
     end
 
     --
-    local fullname = node .. "." .. name
+    local fullname = node_name .. "." .. svc_addr
     local p = proxy[fullname]
     if p == nil then
-        p = skynet.newservice("cluster_proxy", node, name)
+        p = skynet.newservice("cluster_proxy", node_name, svc_addr)
         -- double check
         if proxy[fullname] then
             skynet.kill(p)
@@ -295,6 +298,7 @@ function CMD.queryname(source, name)
 end
 
 ---
+--- socket cmd
 ---@param source
 ---@param subcmd
 ---@param fd

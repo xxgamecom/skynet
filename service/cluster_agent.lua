@@ -14,8 +14,8 @@ clusterd = tonumber(clusterd)
 gate = tonumber(gate)
 fd = tonumber(fd)
 
-local large_request = {}
-local inquery_name = {}
+local large_request = {}   --
+local inquery_name = {}    --
 
 local register_name_mt = {
     __index = function(self, name)

@@ -48,11 +48,11 @@ function CMD.req(...)
 end
 
 ---
----@param addr
+---@param svc_addr
 ---@param msg
 ---@param msg_sz
-function CMD.push(addr, msg, msg_sz)
-    local req, new_session, padding = cluster_core.pack_push(addr, session, msg, msg_sz)
+function CMD.push(svc_addr, msg, msg_sz)
+    local req, new_session, padding = cluster_core.pack_push(svc_addr, session, msg, msg_sz)
     if padding then
         -- is multi push
         session = new_session
@@ -67,6 +67,9 @@ local function read_response(sock)
     return cluster_core.unpack_response(msg)    -- session, ok, data, padding
 end
 
+---
+---@param host
+---@param port
 function CMD.changenode(host, port)
     channel:changehost(host, tonumber(port))
     channel:connect(true)
@@ -75,12 +78,12 @@ end
 
 skynet.start(function()
     --
-    channel = socket_channel.channel {
+    channel = socket_channel.channel({
         host = init_host,
         port = tonumber(init_port),
         response = read_response,
         nodelay = true,
-    }
+    })
 
     -- set "lua" service message dispatch function
     skynet.dispatch("lua", function(session_id, src_svc_handle, cmd, ...)

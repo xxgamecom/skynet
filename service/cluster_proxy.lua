@@ -1,12 +1,12 @@
 --[[
-
+    proxy of the service within the cluster node
 ]]
 
 local skynet = require "skynet"
 local cluster = require "skynet.cluster"
 require "skynet.manager"
 
-local node, address = ...
+local node_name, svc_addr = ...
 
 --
 skynet.register_svc_msg_handler({
@@ -24,23 +24,23 @@ local forward_svc_msg_type_map = {
     [skynet.SERVICE_MSG_TYPE_RESPONSE] = skynet.SERVICE_MSG_TYPE_RESPONSE, -- don't free response message
 }
 
--- forward message
+-- forward message to the service within cluster node
 skynet.forward_by_type(forward_svc_msg_type_map, function()
-    local n = tonumber(address)
+    local n = tonumber(svc_addr)
     if n then
-        address = n
+        svc_addr = n
     end
 
     -- get the cluster node sender
     local clusterd = skynet.uniqueservice("clusterd")
-    local sender = skynet.call(clusterd, "lua", "sender", node)
+    local sender = skynet.call(clusterd, "lua", "sender", node_name)
 
     --
     skynet.dispatch("system", function(session, source, msg, sz)
         if session == 0 then
-            skynet.send(sender, "lua", "push", address, msg, sz)
+            skynet.send(sender, "lua", "push", svc_addr, msg, sz)
         else
-            skynet.ret(skynet.call_raw(sender, "lua", skynet.pack("req", address, msg, sz)))
+            skynet.ret(skynet.call_raw(sender, "lua", skynet.pack("req", svc_addr, msg, sz)))
         end
     end)
 end)
