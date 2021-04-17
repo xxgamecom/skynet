@@ -81,31 +81,38 @@ function CMD.REMOVE(_, handle, kill)
     return NORET
 end
 
+---
+--- launch service
+---@param service
+---@return number service handle
 local function launch_service(service, ...)
     local param = table.concat({ ... }, " ")
-    local inst = skynet.launch(service, param)
+    local svc_handle = skynet.launch(service, param)
     local session_id = skynet.context()
     local response = skynet.response()
-    if inst then
-        services[inst] = service .. " " .. param
-        instance[inst] = response
-        launch_session[inst] = session_id
+    if svc_handle then
+        services[svc_handle] = service .. " " .. param
+        instance[svc_handle] = response
+        launch_session[svc_handle] = session_id
     else
         response(false)
         return
     end
-    return inst
+
+    return svc_handle
 end
 
+---
+---@param service
 function CMD.LAUNCH(_, service, ...)
     launch_service(service, ...)
     return NORET
 end
 
 function CMD.LOGLAUNCH(_, service, ...)
-    local inst = launch_service(service, ...)
-    if inst then
-        skynet_core.command("LOG_ON", skynet.to_address(inst))
+    local svc_handle = launch_service(service, ...)
+    if svc_handle then
+        skynet_core.command("LOG_ON", skynet.to_address(svc_handle))
     end
     return NORET
 end

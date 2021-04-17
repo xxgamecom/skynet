@@ -1,3 +1,7 @@
+--[[
+
+]]
+
 local skynet = require "skynet"
 local socket_channel = require "skynet.socket_channel"
 local socket = require "skynet.socket"
@@ -74,7 +78,7 @@ local function dispatch_request(_, _, addr, session, msg, sz, padding, is_push)
         end
         if not msg then
             tracetag = nil
-            local response = cluster_core.packresponse(session, false, "Invalid large req")
+            local response = cluster_core.pack_response(session, false, "Invalid large req")
             socket.send(fd, response)
             return
         end
@@ -92,9 +96,11 @@ local function dispatch_request(_, _, addr, session, msg, sz, padding, is_push)
             msg = "name not found"
         end
     else
+        -- is node name, the name start with `@`
         if cluster_core.isname(addr) then
             addr = register_name[addr]
         end
+        --
         if addr then
             if is_push then
                 skynet.send_raw(addr, "lua", msg, sz)
@@ -113,7 +119,7 @@ local function dispatch_request(_, _, addr, session, msg, sz, padding, is_push)
         end
     end
     if ok then
-        response = cluster_core.packresponse(session, true, msg, sz)
+        response = cluster_core.pack_response(session, true, msg, sz)
         if type(response) == "table" then
             for _, v in ipairs(response) do
                 socket.send_low(fd, v)
@@ -122,7 +128,7 @@ local function dispatch_request(_, _, addr, session, msg, sz, padding, is_push)
             socket.send(fd, response)
         end
     else
-        response = cluster_core.packresponse(session, false, msg)
+        response = cluster_core.pack_response(session, false, msg)
         socket.send(fd, response)
     end
 end
@@ -143,7 +149,7 @@ skynet.start(function()
     skynet.register_svc_msg_handler({
         msg_type_name = "client",
         msg_type = skynet.SERVICE_MSG_TYPE_CLIENT,
-        unpack = cluster_core.unpackrequest,
+        unpack = cluster_core.unpack_request,
         dispatch = dispatch_request,
     })
 

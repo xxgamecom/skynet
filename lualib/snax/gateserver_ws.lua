@@ -150,7 +150,7 @@ function gateserver.start(handler)
         local port = assert(conf.port)
         max_client = conf.max_client or 1024
         nodelay = conf.nodelay
-        skynet.log_info(string.format("Listen on %s:%d", address, port))
+        skynet.log_info(string.format("Start gate at %s:%d", address, port))
         socket = socket_core.listen(address, port)
         socket_core.start(socket)
         if handler.open then

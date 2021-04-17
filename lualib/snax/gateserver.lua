@@ -50,7 +50,7 @@ function gateserver.start(handler)
         nodelay = conf.nodelay
 
         --
-        skynet.log_info(string.format("Listen on %s:%d", address, port))
+        skynet.log_info(string.format("State gate at %s:%d", address, port))
 
         -- socket listen & start
         listen_socket_id = socket_core.listen(address, port)

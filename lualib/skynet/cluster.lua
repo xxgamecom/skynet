@@ -1,3 +1,7 @@
+--[[
+    clusterd service api & helper
+]]
+
 local skynet = require "skynet"
 
 local clusterd
@@ -51,11 +55,17 @@ local function get_sender(node)
     return s
 end
 
+---
+---@param node
+---@param address
 function cluster.call(node, address, ...)
-    -- skynet.pack(...) will free by cluster.core.packrequest
+    -- skynet.pack(...) will free by cluster.core.pack_request
     return skynet.call(get_sender(node), "lua", "req", address, skynet.pack(...))
 end
 
+---
+---@param node
+---@param address
 function cluster.send(node, address, ...)
     -- push is the same with req, but no response
     local s = sender[node]
@@ -66,22 +76,35 @@ function cluster.send(node, address, ...)
     end
 end
 
-function cluster.open(port)
-    if type(port) == "string" then
-        skynet.call(clusterd, "lua", "listen", port)
+---
+--- start cluster service, listen on port
+---@param uri_or_port string|number the listen uri or port (socket bind ip and port), e.g, "192.168.0.1:1234" or 1234
+function cluster.open(uri_or_port)
+    if type(uri_or_port) == "string" then
+        skynet.call(clusterd, "lua", "listen", uri_or_port)
     else
-        skynet.call(clusterd, "lua", "listen", "0.0.0.0", port)
+        skynet.call(clusterd, "lua", "listen", "0.0.0.0", uri_or_port)
     end
 end
 
+---
+---@param config
 function cluster.reload(config)
     skynet.call(clusterd, "lua", "reload", config)
 end
 
+---
+--- start a cluster proxy
+---@param node
+---@param name
 function cluster.proxy(node, name)
     return skynet.call(clusterd, "lua", "proxy", node, name)
 end
 
+---
+---@param node
+---@param name
+---@param address
 function cluster.snax(node, name, address)
     local snax = require "skynet.snax"
     if not address then
@@ -91,17 +114,24 @@ function cluster.snax(node, name, address)
     return snax.bind(handle, name)
 end
 
-function cluster.register(name, addr)
-    assert(type(name) == "string")
-    assert(addr == nil or type(addr) == "number")
-    return skynet.call(clusterd, "lua", "register", name, addr)
+---
+--- register the service within cluster node
+---@param node_name string cluster node name
+---@param svc_handle number service handle
+function cluster.register(node_name, svc_handle)
+    assert(type(node_name) == "string")
+    assert(svc_handle == nil or type(svc_handle) == "number")
+    return skynet.call(clusterd, "lua", "register", node_name, svc_handle)
 end
 
+---
+---@param node
+---@param name
 function cluster.query(node, name)
     return skynet.call(get_sender(node), "lua", "req", 0, skynet.pack(name))
 end
 
---- register init function
+-- auto create clusterd service
 skynet.init(function()
     clusterd = skynet.uniqueservice("clusterd")
 end)

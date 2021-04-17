@@ -161,7 +161,7 @@ function socket.open_tcp_server(local_addr, local_port, backlog)
 
     --
     local socket_id = socket_core.listen(local_addr, local_port, backlog)
-    skynet.log_debug("Open tcp server", local_addr, local_port, backlog, socket_id)
+    skynet.log_trace("Open tcp server", local_addr, local_port, backlog, socket_id)
 
     return socket_id
 end
@@ -190,7 +190,7 @@ end
 function socket.start(socket_id, func)
     --
     socket_core.start(socket_id)
-    skynet.log_debug("Start socket", socket_id)
+    skynet.log_trace("Start socket", socket_id)
 
     --
     return connect(socket_id, func)

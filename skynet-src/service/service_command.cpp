@@ -18,6 +18,8 @@
 #include "../utils/time_helper.h"
 
 #include <cstdio>
+#include <regex>
+#include <vector>
 #include <unordered_map>
 
 namespace skynet {
@@ -46,7 +48,7 @@ static uint32_t _to_svc_handle(service_context* svc_ctx, const char* param)
     return svc_handle;
 }
 
-// id -> hex string
+// convert id to hex string (format: ":00000001")
 static void _id_to_hex(uint32_t id, char* str)
 {
     char hex[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
@@ -96,7 +98,7 @@ const char* cmd_timeout(service_context* svc_ctx, const char* param)
     return svc_ctx->cmd_result_;
 }
 
-// skynet cmd: reg, register service name（支持多个）
+// skynet cmd: reg, register current service's name（支持多个）
 // cmd_name给指定ctx起一个名字，即将ctx->handle绑定一个名称(service_manager::instance()->set_handle_by_name)
 const char* cmd_register(service_context* svc_ctx, const char* param)
 {
@@ -134,30 +136,53 @@ const char* cmd_query(service_context* svc_ctx, const char* param)
     return nullptr;
 }
 
-// skynet cmd: name
-const char* cmd_name(service_context* svc_ctx, const char* param)
+// skynet cmd: name, register service name
+const char* cmd_register_service_name(service_context* svc_ctx, const char* param)
 {
-    int size = ::strlen(param);
-    char name[size + 1];
-    char svc_handle[size + 1];
-    ::sscanf(param, "%s %s", name, svc_handle);
-    if (svc_handle[0] != ':')
-        return nullptr;
+    // param string: "svc_name svc_addr"
+    std::string param_string = param;
+    std::regex re {' '};
+    std::vector<std::string> name_info {
+        std::sregex_token_iterator(param_string.begin(), param_string.end(), re, -1),
+        std::sregex_token_iterator()
+    };
 
-    uint32_t handle_id = ::strtoul(svc_handle + 1, nullptr, 16);
+    // param error
+    if (name_info.size() != 2)
+    {
+        log_error(svc_ctx, "Invalid service name or handle");
+        return nullptr;
+    }
+
+    std::string svc_name = name_info[0];
+    std::string svc_addr = name_info[1];
+
+    //
+    if (svc_name.empty() || svc_addr.empty())
+    {
+        log_error(svc_ctx, "Invalid service name or handle");
+        return nullptr;
+    }
+
+    // not a local service name
+    if (svc_name[0] != '.')
+    {
+        log_error(svc_ctx, fmt::format("Invalid service name {}", svc_name));
+        return nullptr;
+    }
+    //
+    if (svc_addr[0] != ':')
+    {
+        log_error(svc_ctx, fmt::format("Invalid service handle {}", svc_addr));
+        return nullptr;
+    }
+
+
+    uint32_t handle_id = std::stoi(svc_addr.substr(1), nullptr, 16);
     if (handle_id == 0)
         return nullptr;
 
-    if (name[0] == '.')
-    {
-        return service_manager::instance()->set_handle_by_name(name + 1, handle_id);
-    }
-    else
-    {
-        log_error(svc_ctx, fmt::format("Can't set global name {} in C", (char*)name));
-    }
-
-    return nullptr;
+    return service_manager::instance()->set_handle_by_name(svc_name.substr(1).c_str(), handle_id);
 }
 
 // skynet cmd: exit, 服务主动退出
@@ -183,8 +208,7 @@ const char* cmd_kill(service_context* svc_ctx, const char* param)
     return nullptr;
 }
 
-// skynet cmd: launch
-// 启动一个新服务，最终会通过service_context_new创建一个ctx，初始化ctx中各个数据。
+// skynet cmd: launch, start a new service
 const char* cmd_launch(service_context* context, const char* param)
 {
     size_t sz = ::strlen(param);
@@ -420,8 +444,8 @@ typedef const char* (*cmd_proc)(service_context* context, const char* param);
 static std::unordered_map<std::string, cmd_proc> cmd_map {
     { "TIMEOUT", cmd_timeout },
     { "REGISTER", cmd_register },
+    { "REGISTER_NAME", cmd_register_service_name },
     { "QUERY", cmd_query },
-    { "NAME", cmd_name },
     { "EXIT", cmd_exit },
     { "KILL", cmd_kill },
     { "LAUNCH", cmd_launch },

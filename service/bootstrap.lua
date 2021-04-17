@@ -4,7 +4,7 @@ require "skynet.manager"
 skynet.start(function()
     -- start launcher service
     local launcher = assert(skynet.launch("snlua", "launcher"))
-    skynet.name(".launcher", launcher)
+    skynet.register_name(".launcher", launcher)
 
     -- start service_mgr service
     skynet.newservice("service_mgr")

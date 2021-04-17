@@ -1,43 +1,67 @@
+--[[
+    skynet service manager
+
+    - launch(), launch a new service instance
+    - kill(), kill a service instance
+    - abort(), kill all service
+    - register(), register current service name
+    - register_name(), register service name
+    - forward_by_type(),
+    - filter(),
+    - monitor(), monitor service exit
+]]
+
 local skynet = require "skynet"
 local skynet_core = require "skynet.core"
 
 ---
---- launch service
+--- launch a new service instance
+---@generic T
+---@vararg T
+---@return number service handle, e,g, 1,2,3,...
 function skynet.launch(...)
+    -- addr format: ":00000001", ...
     local addr = skynet_core.command("LAUNCH", table.concat({ ... }, " "))
+    -- convert to number, e,g, 1,2,3,...
     if addr then
         return tonumber("0x" .. string.sub(addr, 2))
     end
 end
 
 ---
---- kill service
----@param name string|number
-function skynet.kill(name)
-    if type(name) == "number" then
-        skynet.send(".launcher", "lua", "REMOVE", name, true)
-        name = skynet.to_address(name)
+--- kill a service instance
+---@param addr_or_handle string|number
+function skynet.kill(addr_or_handle)
+    -- service handle
+    if type(addr_or_handle) == "number" then
+        skynet.send(".launcher", "lua", "REMOVE", addr_or_handle, true)
+        addr_or_handle = skynet.to_address(addr_or_handle)
     end
-    skynet_core.command("KILL", name)
+
+    -- kill service instance
+    skynet_core.command("KILL", addr_or_handle)
 end
 
 ---
----
+--- kill all service instance
 function skynet.abort()
     skynet_core.command("ABORT")
 end
 
 ---
----@param name string
-function skynet.register(name)
-    skynet_core.command("REGISTER", name)
+--- register `current` service local name. for the service, can set multi service local name.
+---@param svc_name string service local name, start with '.', e,g, ".launcher" ...
+function skynet.register(svc_name)
+    skynet_core.command("REGISTER", svc_name)
 end
 
 ---
----@param name string
----@param handle
-function skynet.name(name, handle)
-    skynet_core.command("NAME", name .. " " .. skynet.to_address(handle))
+--- register service local name.
+---@param svc_name string service local name
+---@param svc_handle number service handle, e.g, 1,2,3...
+function skynet.register_name(svc_name, svc_handle)
+    local svc_addr = skynet.to_address(svc_handle)
+    skynet_core.command("REGISTER_NAME", svc_name .. " " .. svc_addr)
 end
 
 local handle_service_message = skynet.handle_service_message
@@ -84,15 +108,17 @@ end
 ---
 --- set/get montior service
 ---@param service string the monitor service
----@param query boolean
-function skynet.monitor(service, query)
+---@param is_query boolean is query
+function skynet.monitor(service, is_query)
     local monitor
-    if query then
+    if is_query then
         monitor = skynet.queryservice(true, service)
     else
         monitor = skynet.uniqueservice(true, service)
     end
     assert(monitor, "Monitor launch failed")
+
+    -- monitor
     skynet_core.command("MONITOR", string.format(":%08x", monitor))
     return monitor
 end

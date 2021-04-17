@@ -185,13 +185,20 @@ static void packreq_multi(lua_State* L, int session, void* msg, uint32_t sz)
     }
 }
 
-static int packrequest(lua_State* L, int is_push)
+/**
+ *
+ * @param L
+ * @param is_push
+ * @return
+ */
+static int _pack_request(lua_State* L, int is_push)
 {
     void* msg = lua_touserdata(L, 3);
     if (msg == nullptr)
     {
         return luaL_error(L, "Invalid request message");
     }
+
     uint32_t sz = (uint32_t)luaL_checkinteger(L, 4);
     int session = luaL_checkinteger(L, 2);
     if (session <= 0)
@@ -199,6 +206,7 @@ static int packrequest(lua_State* L, int is_push)
         delete[] msg;
         return luaL_error(L, "Invalid request session %d", session);
     }
+
     int addr_type = lua_type(L, 1);
     int multipak;
     if (addr_type == LUA_TNUMBER)
@@ -229,17 +237,17 @@ static int packrequest(lua_State* L, int is_push)
     }
 }
 
-static int l_packrequest(lua_State* L)
+static int l_pack_request(lua_State* L)
 {
-    return packrequest(L, 0);
+    return _pack_request(L, 0);
 }
 
-static int l_packpush(lua_State* L)
+static int l_pack_push(lua_State* L)
 {
-    return packrequest(L, 1);
+    return _pack_request(L, 1);
 }
 
-static int l_packtrace(lua_State* L)
+static int l_pack_trace(lua_State* L)
 {
     size_t sz;
     const char* tag = luaL_checklstring(L, 1, &sz);
@@ -390,7 +398,7 @@ static int unpackmreq_string(lua_State* L, const uint8_t* buf, int sz, int is_pu
     return 6;
 }
 
-static int l_unpackrequest(lua_State* L)
+static int l_unpack_request(lua_State* L)
 {
     int sz;
     const char* msg;
@@ -452,10 +460,10 @@ static int l_unpackrequest(lua_State* L)
     int sz
     return string response
  */
-static int l_packresponse(lua_State* L)
+static int l_pack_response(lua_State* L)
 {
     uint32_t session = (uint32_t)luaL_checkinteger(L, 1);
-    // clusterd.lua:command.socket call l_packresponse,
+    // clusterd.lua:command.socket call l_pack_response,
     // and the msg/sz is return by skynet.call_raw , so don't free(msg)
     int ok = lua_toboolean(L, 2);
     void* msg;
@@ -540,39 +548,61 @@ static int l_packresponse(lua_State* L)
         string msg
         boolean padding
  */
-static int l_unpackresponse(lua_State* L)
-{
-    size_t sz;
-    const char* buf = luaL_checklstring(L, 1, &sz);
-    if (sz < 5)
-        return 0;
 
-    uint32_t session = unpack_uint32((const uint8_t*)buf);
-    lua_pushinteger(L, (lua_Integer)session);
-    switch (buf[4])
+/**
+ * unpack reponse message
+ *
+ * arguments:
+ * 1) packed message    - string, must be >= 5 (the first field of message is session_id, it is uint32_t)
+ *
+ * outputs:
+ * 1) session id        - number
+ * 2) is ok             - boolean
+ * 3) error message     - string
+ * 4) error message siz - number
+ */
+static int l_unpack_response(lua_State* L)
+{
+    // get packed message
+    size_t msg_sz;
+    const char* msg = luaL_checklstring(L, 1, &msg_sz);
+    // the first field of message is session_id, it is a uint32_t (4 bytes)
+    if (msg_sz < 5)
     {
-    case 0:    // error
+        return 0;
+    }
+
+    // unpack session id & push back as the 1st return value
+    uint32_t session_id = unpack_uint32((const uint8_t*)msg);
+    lua_pushinteger(L, (lua_Integer)session_id);
+
+    // unpack message
+    switch (msg[4])
+    {
+    case 0:     // response the error message
+        // push back `false` and `error message` as the 2th, 3rd return value
         lua_pushboolean(L, 0);
-        lua_pushlstring(L, buf + 5, sz - 5);
+        lua_pushlstring(L, msg + 5, msg_sz - 5);
         return 3;
-    case 1:    // ok
-    case 4:    // multi end
+
+    case 1:     // response the success
+    case 4:     // reponse multi end
         lua_pushboolean(L, 1);
-        lua_pushlstring(L, buf + 5, sz - 5);
+        lua_pushlstring(L, msg + 5, msg_sz - 5);
         return 3;
     case 2:    // multi begin
-        if (sz != 9)
+        if (msg_sz != 9)
         {
             return 0;
         }
-        sz = unpack_uint32((const uint8_t*)buf + 5);
+        msg_sz = unpack_uint32((const uint8_t*)msg + 5);
         lua_pushboolean(L, 1);
-        lua_pushinteger(L, sz);
+        lua_pushinteger(L, msg_sz);
         lua_pushboolean(L, 1);
         return 4;
     case 3:    // multi part
         lua_pushboolean(L, 1);
-        lua_pushlstring(L, buf + 5, sz - 5);
+        lua_pushlstring(L, msg + 5, msg_sz - 5);
         lua_pushboolean(L, 1);
         return 4;
     }
@@ -587,59 +617,98 @@ static int l_unpackresponse(lua_State* L)
 
     push (pointer/sz) as string into table, and free pointer
  */
+
+/**
+ *
+ * arguments:
+ * 1) request message       -
+ * 2) message               - string
+ * 3) message size          - number
+ *
+ *
+ */
 static int l_append(lua_State* L)
 {
+    // the first argument of append() must be a `table`
     luaL_checktype(L, 1, LUA_TTABLE);
-    int n = lua_rawlen(L, 1);
+    // get table length
+    int table_len = lua_rawlen(L, 1);
+
+    // the second argument of append() is nil, it means:
     if (lua_isnil(L, 2))
     {
         lua_settop(L, 3);
-        lua_seti(L, 1, n + 1);
-        return 0;
     }
-    void* buffer = lua_touserdata(L, 2);
-    if (buffer == nullptr)
-        return luaL_error(L, "Need lightuserdata");
+    //
+    else
+    {
+        // if the second argument of append() is a full userdata, will return a memory address;
+        // if it is a light userdata, will return the data ptr.
+        void* buf_ptr = lua_touserdata(L, 2);
+        if (buf_ptr == nullptr)
+        {
+            return luaL_error(L, "Need lightuserdata");
+        }
 
-    int sz = luaL_checkinteger(L, 3);
-    lua_pushlstring(L, (const char*)buffer, sz);
-    delete[] buffer;
-    lua_seti(L, 1, n + 1);
+        // the third argument of append() must be a number (userdata size)
+        int sz = luaL_checkinteger(L, 3);
+        lua_pushlstring(L, (const char*)buf_ptr, sz);
+
+        // release
+        delete[] buf_ptr;
+    }
+
+    lua_seti(L, 1, table_len + 1);
     return 0;
 }
 
+/**
+ *
+ * outputs:
+ * 1) buffer            - string
+ * 2) buffer size       - number
+ */
 static int l_concat(lua_State* L)
 {
+    // must a table, in stack bottom (the first argument of concat function)
     if (!lua_istable(L, 1))
         return 0;
+    // table[1] must a number (size field)
     if (lua_geti(L, 1, 1) != LUA_TNUMBER)
         return 0;
 
+    // size
     int sz = lua_tointeger(L, -1);
     lua_pop(L, 1);
+
+    // alloc buffer
     char* buff = new char[sz];
-    int idx = 2;
+    int table_idx = 2;
     int offset = 0;
-    while (lua_geti(L, 1, idx) == LUA_TSTRING)
+    while (lua_geti(L, 1, table_idx) == LUA_TSTRING)
     {
-        size_t s;
-        const char* str = lua_tolstring(L, -1, &s);
-        if (s + offset > sz)
+        size_t len = 0;
+        const char* str = lua_tolstring(L, -1, &len);
+        if ((len + offset) > sz)
         {
             delete[] buff;
             return 0;
         }
-        ::memcpy(buff + offset, str, s);
+
+        //
+        ::memcpy(buff + offset, str, len);
         lua_pop(L, 1);
-        offset += s;
-        ++idx;
+        offset += len;
+        ++table_idx;
     }
+    //
     if (offset != sz)
     {
         delete[] buff;
         return 0;
     }
-    // buff/sz will send to other service, See clusterd.lua
+
+    // buff/sz will send to other service, @see clusterd.lua
     lua_pushlightuserdata(L, buff);
     lua_pushinteger(L, sz);
 
@@ -662,9 +731,7 @@ static int l_is_name(lua_State* L)
 }
 
 /**
- * get cluster node name
- *
- * arguments:
+ * get cluster node name of this skynet node
  *
  * outputs:
  * 1 - string, cluster node name, hostname + pid | noname + pid
@@ -692,25 +759,27 @@ static int l_node_name(lua_State* L)
 extern "C" {
 #endif
 
-static const luaL_Reg cluster_funcs[] = {
-    { "packrequest",    l_packrequest },
-    { "packpush",       l_packpush },
-    { "packtrace",      l_packtrace },
-    { "unpackrequest",  l_unpackrequest },
-    { "packresponse",   l_packresponse },
-    { "unpackresponse", l_unpackresponse },
-    { "append",         l_append },
-    { "concat",         l_concat },
-    { "isname",         l_is_name },
-    { "nodename",       l_node_name },
-
-    { nullptr,          nullptr },
-};
-
 LUAMOD_API int luaopen_skynet_cluster_core(lua_State* L)
 {
     luaL_checkversion(L);
+
+    const luaL_Reg cluster_funcs[] = {
+        { "pack_request",    l_pack_request },
+        { "pack_push",       l_pack_push },
+        { "pack_trace",      l_pack_trace },
+        { "unpack_request",  l_unpack_request },
+        { "pack_response",   l_pack_response },
+        { "unpack_response", l_unpack_response },
+        { "append",          l_append },
+        { "concat",          l_concat },
+        { "isname",          l_is_name },
+        { "nodename",        l_node_name },
+
+        { nullptr,           nullptr },
+    };
+
     luaL_newlib(L, cluster_funcs);
+
     return 1;
 }
 

@@ -1,3 +1,7 @@
+--[[
+
+]]
+
 local skynet = require "skynet"
 local cluster = require "skynet.cluster"
 require "skynet.manager"
@@ -22,12 +26,16 @@ local forward_svc_msg_type_map = {
 
 -- forward message
 skynet.forward_by_type(forward_svc_msg_type_map, function()
-    local clusterd = skynet.uniqueservice("clusterd")
     local n = tonumber(address)
     if n then
         address = n
     end
+
+    -- get the cluster node sender
+    local clusterd = skynet.uniqueservice("clusterd")
     local sender = skynet.call(clusterd, "lua", "sender", node)
+
+    --
     skynet.dispatch("system", function(session, source, msg, sz)
         if session == 0 then
             skynet.send(sender, "lua", "push", address, msg, sz)

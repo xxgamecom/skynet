@@ -985,9 +985,13 @@ function skynet.handle_service_message(...)
 end
 
 ---
---- create a new service, will use launcher service to load a new service
+--- create a new service
+---@generic T
 ---@param name string lua service mod filename
+---@param T
+---@return number service handle
 function skynet.newservice(name, ...)
+    -- use launcher service to create lua service
     return skynet.call(".launcher", "lua", "LAUNCH", "snlua", name, ...)
 end
 
@@ -1016,8 +1020,8 @@ end
 
 ---
 --- convert addr to string (format: ':00000001')
----@param svc_handle string|number service handle
----@return string
+---@param svc_handle string|number service handle, e.g, 0,1,2,...
+---@return string service address, e.g, ":00000001", ":00000002", ...
 function skynet.to_address(svc_handle)
     if type(svc_handle) == "number" then
         return string.format(":%08x", svc_handle)
